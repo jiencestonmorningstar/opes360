@@ -1,0 +1,98 @@
+<?php
+
+namespace App\Models;
+
+use Illuminate\Database\Eloquent\Concerns\HasUlids;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
+use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\SoftDeletes;
+
+class Company extends Model
+{
+    use HasFactory;
+    use HasUlids;
+    use SoftDeletes;
+
+    protected $guarded = ['id'];
+
+    protected function casts(): array
+    {
+        return [
+            'phones' => 'array',
+            'socials' => 'array',
+            'operating_hours' => 'array',
+            'brand_tokens' => 'array',
+            'latitude' => 'decimal:7',
+            'longitude' => 'decimal:7',
+            // Encrypted at rest; tax_id_index carries lookups.
+            'tax_id' => 'encrypted',
+            'vat_number' => 'encrypted',
+        ];
+    }
+
+    public function getRouteKeyName(): string
+    {
+        return 'slug';
+    }
+
+    public function owner(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'owner_id');
+    }
+
+    public function users(): BelongsToMany
+    {
+        return $this->belongsToMany(User::class)
+            ->withPivot(['role_id', 'job_title', 'status', 'joined_at'])
+            ->withTimestamps();
+    }
+
+    public function contacts(): HasMany
+    {
+        return $this->hasMany(Contact::class);
+    }
+
+    public function items(): HasMany
+    {
+        return $this->hasMany(Item::class);
+    }
+
+    public function documents(): HasMany
+    {
+        return $this->hasMany(Document::class);
+    }
+
+    public function payments(): HasMany
+    {
+        return $this->hasMany(Payment::class);
+    }
+
+    public function receipts(): HasMany
+    {
+        return $this->hasMany(Receipt::class);
+    }
+
+    public function devices(): HasMany
+    {
+        return $this->hasMany(Device::class);
+    }
+
+    /**
+     * Brand token with a fallback, e.g. brandToken('primary', '#2563eb').
+     * Phase 2 populates these; until then templates get the defaults.
+     */
+    public function brandToken(string $key, mixed $default = null): mixed
+    {
+        return data_get($this->brand_tokens, $key, $default);
+    }
+
+    public function initials(): string
+    {
+        $words = preg_split('/\s+/', trim($this->name)) ?: [];
+
+        return strtoupper(collect($words)->take(2)->map(fn ($w) => mb_substr($w, 0, 1))->implode(''));
+    }
+}
