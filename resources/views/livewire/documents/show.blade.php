@@ -134,6 +134,12 @@
         {{-- Side column: actions + verification --}}
         <div class="space-y-4">
             <x-ui.panel title="Actions">
+                @if (session('documentError'))
+                    <div class="mb-3 rounded-xl bg-tint-orange px-4 py-2.5 text-[13px] font-semibold text-warning">
+                        {{ session('documentError') }}
+                    </div>
+                @endif
+
                 <div class="space-y-2.5">
                     <a href="{{ route('documents.print', $document) }}" target="_blank"
                        class="focusable flex h-11 w-full items-center justify-center gap-2 rounded-xl bg-brand text-[14px] font-semibold text-white transition-opacity hover:opacity-90">
@@ -149,13 +155,62 @@
                         </button>
                     @endif
 
-                    <button type="button"
-                            class="focusable flex h-11 w-full items-center justify-center gap-2 rounded-xl bg-surface-2 text-[14px] font-semibold text-ink-2 transition-colors hover:bg-tint-blue hover:text-brand">
-                        <x-icon name="qr-code" class="size-[18px]" stroke-width="2" />
-                        Share
-                    </button>
+                    @if ($canConvert && $convertTarget)
+                        <button type="button" wire:click="convert" wire:loading.attr="disabled"
+                                class="focusable flex h-11 w-full items-center justify-center gap-2 rounded-xl bg-surface-2 text-[14px] font-semibold text-ink-2 transition-colors hover:bg-tint-blue hover:text-brand">
+                            <x-icon name="document-plus" class="size-[18px]" stroke-width="2" />
+                            Convert to {{ $convertTarget->label() }}
+                        </button>
+                    @endif
+
+                    @if ($document->verificationToken)
+                        <a href="{{ route('verification.show', $document->verificationToken->token) }}" target="_blank"
+                           class="focusable flex h-11 w-full items-center justify-center gap-2 rounded-xl bg-surface-2 text-[14px] font-semibold text-ink-2 transition-colors hover:bg-tint-blue hover:text-brand">
+                            <x-icon name="qr-code" class="size-[18px]" stroke-width="2" />
+                            Share
+                        </a>
+                    @endif
+
+                    @if ($document->status->value !== 'void')
+                        <button type="button" wire:click="openVoid"
+                                class="focusable flex h-11 w-full items-center justify-center gap-2 rounded-xl text-[14px] font-semibold text-negative transition-colors hover:bg-tint-orange">
+                            <x-icon name="alert" class="size-[18px]" stroke-width="2" />
+                            Void {{ $document->type->label() }}
+                        </button>
+                    @endif
                 </div>
             </x-ui.panel>
+
+            {{-- Void confirmation, revealed in place --}}
+            @if ($voidingOpen)
+                <x-ui.panel title="Void this document?">
+                    <x-slot:actions>
+                        <button type="button" wire:click="closeVoid"
+                                class="focusable text-[14px] font-semibold text-muted hover:text-ink">Cancel</button>
+                    </x-slot:actions>
+
+                    <p class="text-[13.5px] leading-relaxed text-muted">
+                        The number is retired, not reused, and anyone scanning the printed copy will see
+                        <span class="font-semibold text-ink-2">Voided</span>. This cannot be undone —
+                        issue a replacement instead.
+                    </p>
+
+                    <label class="mt-4 block">
+                        <span class="mb-1.5 block text-[13px] font-semibold text-ink-2">Reason <span class="font-normal text-faint">(optional)</span></span>
+                        <input type="text" wire:model="voidReason" placeholder="Duplicate, cancelled order…"
+                               class="h-12 w-full rounded-xl border border-border bg-surface px-3.5 text-[14.5px] text-ink placeholder:text-faint focus:border-brand focus:outline-none focus:ring-2 focus:ring-brand/20">
+                    </label>
+                    @error('voidReason')
+                        <p class="mt-2 text-[13px] font-medium text-warning">{{ $message }}</p>
+                    @enderror
+
+                    <button type="button" wire:click="voidDocument" wire:loading.attr="disabled"
+                            class="focusable mt-5 flex h-12 w-full items-center justify-center rounded-xl bg-negative text-[14.5px] font-semibold text-white hover:opacity-90">
+                        <span wire:loading.remove wire:target="voidDocument">Yes, void it</span>
+                        <span wire:loading wire:target="voidDocument">Voiding…</span>
+                    </button>
+                </x-ui.panel>
+            @endif
 
             {{-- Record-payment panel, revealed in place --}}
             @if ($payingOpen)

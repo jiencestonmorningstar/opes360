@@ -1,6 +1,18 @@
 import './bootstrap';
 import '@fontsource-variable/inter/index.css';
 
+/*
+ * Register the service worker so the app shell is installable and survives a lost
+ * connection. Registered after load so it never competes with first paint.
+ */
+if ('serviceWorker' in navigator) {
+    window.addEventListener('load', () => {
+        navigator.serviceWorker.register('/sw.js').catch(() => {
+            /* Unsupported or blocked (private mode) — the app still works online. */
+        });
+    });
+}
+
 /**
  * Shell behaviour for the app layout.
  *

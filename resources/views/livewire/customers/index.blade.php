@@ -15,7 +15,7 @@
             <p class="mt-1 text-[14.5px] text-muted">Everyone you do business with.</p>
         </div>
 
-        <a href="#"
+        <a href="{{ route('customers.create', ['type' => $type]) }}"
            class="tap focusable flex shrink-0 items-center gap-2 rounded-full bg-brand px-5 text-[14.5px] font-semibold text-white transition-opacity hover:opacity-90">
             <x-icon name="user-plus" class="size-[18px]" stroke-width="2" />
             <span class="hidden min-[420px]:inline">Add Customer</span>

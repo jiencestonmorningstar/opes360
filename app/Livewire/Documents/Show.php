@@ -4,6 +4,7 @@ namespace App\Livewire\Documents;
 
 use App\Enums\PaymentMethod;
 use App\Models\Document;
+use App\Services\DocumentConverter;
 use App\Services\PaymentRecorder;
 use Illuminate\Contracts\View\View;
 use Livewire\Component;
@@ -20,6 +21,10 @@ class Show extends Component
     public string $method = 'cash';
 
     public string $reference = '';
+
+    public bool $voidingOpen = false;
+
+    public string $voidReason = '';
 
     public function mount(Document $document): void
     {
@@ -72,6 +77,48 @@ class Show extends Component
         $this->document = $this->loaded($this->document->fresh());
     }
 
+    public function convert(): void
+    {
+        try {
+            $created = app(DocumentConverter::class)->convert($this->document, auth()->user());
+        } catch (RuntimeException $e) {
+            session()->flash('documentError', $e->getMessage());
+
+            return;
+        }
+
+        $this->redirectRoute('documents.show', $created);
+    }
+
+    public function openVoid(): void
+    {
+        $this->voidingOpen = true;
+        $this->resetErrorBag();
+    }
+
+    public function closeVoid(): void
+    {
+        $this->voidingOpen = false;
+    }
+
+    public function voidDocument(): void
+    {
+        try {
+            app(DocumentConverter::class)->void(
+                $this->document,
+                auth()->user(),
+                $this->voidReason !== '' ? $this->voidReason : null,
+            );
+        } catch (RuntimeException $e) {
+            $this->addError('voidReason', $e->getMessage());
+
+            return;
+        }
+
+        $this->reset('voidingOpen', 'voidReason');
+        $this->document = $this->loaded($this->document->fresh());
+    }
+
     protected function loaded(Document $document): Document
     {
         return $document->load([
@@ -84,10 +131,14 @@ class Show extends Component
 
     public function render(): View
     {
-        return view('livewire.documents.show')
-            ->layout('components.layouts.app', [
-                'title' => $this->document->number ?? 'Document',
-                'active' => 'sales',
-            ]);
+        $converter = app(DocumentConverter::class);
+
+        return view('livewire.documents.show', [
+            'canConvert' => $converter->canConvert($this->document),
+            'convertTarget' => $converter->targetType($this->document),
+        ])->layout('components.layouts.app', [
+            'title' => $this->document->number ?? 'Document',
+            'active' => 'sales',
+        ]);
     }
 }

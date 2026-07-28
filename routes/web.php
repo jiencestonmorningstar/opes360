@@ -5,6 +5,7 @@ use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\VerificationController;
 use App\Livewire\Business\Edit as BusinessEdit;
 use App\Livewire\CalendarPage\Index as CalendarIndex;
+use App\Livewire\Customers\Form as CustomerForm;
 use App\Livewire\Customers\Index as CustomersIndex;
 use App\Livewire\Customers\Show as CustomerShow;
 use App\Livewire\Dashboard;
@@ -61,7 +62,9 @@ Route::middleware('auth')->group(function () {
     Route::get('/sales', SalesIndex::class)->name('sales');
 
     Route::get('/customers', CustomersIndex::class)->name('customers');
+    Route::get('/customers/create', CustomerForm::class)->name('customers.create');
     Route::get('/customers/{contact}', CustomerShow::class)->name('customers.show');
+    Route::get('/customers/{contact}/edit', CustomerForm::class)->name('customers.edit');
 
     // "create" is registered before the wildcard so it is never read as an id.
     Route::get('/documents/create', DocumentCreate::class)->name('documents.create');
@@ -104,6 +107,9 @@ Route::middleware('throttle:60,1')->group(function () {
  * Served from a route rather than a static file so the manifest can pick up a
  * company's own branding and start URL once Phase 1 makes those configurable.
  */
+// Precached by the service worker so a failed navigation has somewhere to land.
+Route::view('/offline', 'offline')->name('offline');
+
 Route::get('/manifest.webmanifest', function () {
     return response()->json([
         'name' => config('opes.brand.name').' — '.config('opes.brand.tagline'),

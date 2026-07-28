@@ -51,6 +51,7 @@
          class="fixed inset-0 z-30 bg-slate-900/40 lg:hidden" aria-hidden="true"></div>
 
     <div class="flex min-w-0 flex-1 flex-col">
+        @include('partials.offline-banner')
         @include('partials.topbar')
 
         {{-- Bottom padding clears the fixed bottom bar and the iOS home indicator;
