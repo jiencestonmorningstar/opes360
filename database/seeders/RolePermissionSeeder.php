@@ -27,6 +27,7 @@ class RolePermissionSeeder extends Seeder
             'Payments' => ['view', 'record'],
             'Customers' => ['view', 'create', 'update'],
             'Products' => ['view', 'create', 'update', 'adjust-stock'],
+            'Papers' => ['view', 'create', 'issue'],
             'Reports' => ['view', 'export'],
             'Users' => ['view'],
             'Devices' => ['view'],
@@ -39,6 +40,7 @@ class RolePermissionSeeder extends Seeder
             'Payments' => ['view', 'record', 'refund'],
             'Customers' => ['view', 'create', 'update'],
             'Products' => ['view'],
+            'Papers' => ['view', 'create'],
             'Reports' => ['view', 'export'],
             'Settings' => ['view'],
         ]],
@@ -49,8 +51,12 @@ class RolePermissionSeeder extends Seeder
             'Payments' => ['view', 'record'],
             'Customers' => ['view', 'create', 'update'],
             'Products' => ['view'],
+            'Papers' => ['view', 'create'],
             'Reports' => ['view'],
         ]],
+        // No Papers for a Cashier: a till operator has no reason to read the
+        // business's employment letters and contracts. Read Only does get them,
+        // because that role is for auditors and accountants looking in.
         'cashier' => ['name' => 'Cashier', 'level' => 6, 'grants' => [
             'Business' => ['view'],
             'Sales' => ['view'],
@@ -66,6 +72,7 @@ class RolePermissionSeeder extends Seeder
             'Payments' => ['view'],
             'Customers' => ['view'],
             'Products' => ['view'],
+            'Papers' => ['view'],
             'Reports' => ['view'],
         ]],
     ];

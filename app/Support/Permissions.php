@@ -22,6 +22,7 @@ class Permissions
         'Payments' => ['view', 'record', 'refund'],
         'Customers' => ['view', 'create', 'update', 'delete'],
         'Products' => ['view', 'create', 'update', 'delete', 'adjust-stock'],
+        'Papers' => ['view', 'create', 'issue', 'void'],
         'Reports' => ['view', 'export'],
         'Users' => ['view', 'invite', 'update-role', 'remove'],
         'Devices' => ['view', 'revoke'],

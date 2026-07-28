@@ -2,13 +2,16 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\BusinessDocument;
 use App\Models\Company;
 use App\Models\Document;
 use App\Models\Receipt;
 use App\Models\VerificationToken;
+use App\Services\DocumentComposer;
 use App\Services\LogoComposer;
 use App\Services\QrCodes;
 use App\Support\CurrentCompany;
+use App\Support\DocumentTemplates;
 use Illuminate\Http\Request;
 use Illuminate\Routing\Controller;
 
@@ -30,6 +33,31 @@ class PrintController extends Controller
             'company' => app(CurrentCompany::class)->get(),
             'qrSvg' => $document->verificationToken
                 ? $qr->svg($document->verificationToken->publicUrl(), 132)
+                : null,
+            'autoprint' => $request->boolean('print'),
+        ]);
+    }
+
+    /**
+     * A generated business document, on the company letterhead.
+     *
+     * Deliberately the same sheet as the stationery: a contract that does not
+     * look like it came from the same business as the invoice invites the
+     * question of whether it did.
+     */
+    public function paper(Request $request, BusinessDocument $paper, QrCodes $qr, DocumentComposer $composer)
+    {
+        $paper->load('verificationToken');
+
+        return view('print.paper', [
+            'paper' => $paper,
+            'company' => app(CurrentCompany::class)->get(),
+            'bodyHtml' => $composer->toHtml($paper->body),
+            'notice' => ($paper->template()['binding'] ?? false)
+                ? DocumentTemplates::reviewNotice()
+                : null,
+            'qrSvg' => $paper->verificationToken
+                ? $qr->svg($paper->verificationToken->publicUrl(), 120)
                 : null,
             'autoprint' => $request->boolean('print'),
         ]);

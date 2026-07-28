@@ -18,6 +18,9 @@ use App\Livewire\Dashboard;
 use App\Livewire\Documents\Create as DocumentCreate;
 use App\Livewire\Documents\Show as DocumentShow;
 use App\Livewire\Onboarding\Register;
+use App\Livewire\Papers\Compose as PapersCompose;
+use App\Livewire\Papers\Index as PapersIndex;
+use App\Livewire\Papers\Show as PapersShow;
 use App\Livewire\Payments\Index as PaymentsIndex;
 use App\Livewire\Products\Form as ProductForm;
 use App\Livewire\Products\Index as ProductsIndex;
@@ -89,6 +92,17 @@ Route::middleware('auth')->group(function () {
     Route::get('/stationery/print', [PrintController::class, 'stationery'])->middleware('can:business.manage-stationery')->name('stationery.print');
     Route::get('/payments', PaymentsIndex::class)->middleware('can:payments.view')->name('payments');
     Route::get('/reports', ReportsIndex::class)->middleware('can:reports.view')->name('reports');
+
+    /*
+     * Module 13 — generated business documents (contracts, letters,
+     * certificates). Its own prefix rather than a branch of /documents, whose
+     * wildcard would otherwise swallow the index as a sales-document id.
+     */
+    Route::get('/library', PapersIndex::class)->middleware('can:papers.view')->name('papers');
+    Route::get('/library/new/{template}', PapersCompose::class)->middleware('can:papers.create')->name('papers.create');
+    Route::get('/library/{paper}', PapersShow::class)->middleware('can:view,paper')->name('papers.show');
+    Route::get('/library/{paper}/edit', PapersCompose::class)->middleware('can:update,paper')->name('papers.edit');
+    Route::get('/library/{paper}/print', [PrintController::class, 'paper'])->middleware('can:view,paper')->name('papers.print');
     Route::get('/calendar', CalendarIndex::class)->middleware('can:sales.view')->name('calendar');
     Route::get('/settings', SettingsIndex::class)->name('settings');
     Route::get('/scan', Scan::class)->name('scan');

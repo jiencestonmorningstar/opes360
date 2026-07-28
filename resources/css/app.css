@@ -182,3 +182,61 @@
 [x-cloak] {
     display: none !important;
 }
+
+/*
+ * Generated business documents (Module 13).
+ *
+ * The composer emits a deliberately small set of tags, so this is a short and
+ * complete list rather than a general prose reset. Sized to read like a printed
+ * page on screen: a contract someone is about to sign should not look like a
+ * web page.
+ */
+@utility prose-paper {
+    color: var(--color-ink-2);
+    font-size: 14.5px;
+    line-height: 1.7;
+
+    & h1 {
+        margin: 1.5rem 0 1rem;
+        color: var(--color-ink);
+        font-size: 22px;
+        font-weight: 800;
+        letter-spacing: -0.02em;
+        text-align: center;
+    }
+
+    & h2 {
+        margin: 1.5rem 0 0.5rem;
+        color: var(--color-ink);
+        font-size: 15px;
+        font-weight: 700;
+        letter-spacing: -0.01em;
+    }
+
+    & h1:first-child,
+    & h2:first-child {
+        margin-top: 0;
+    }
+
+    & p {
+        margin-bottom: 0.85rem;
+    }
+
+    & ul {
+        margin: 0 0 0.85rem 1.15rem;
+        list-style: disc;
+    }
+
+    & li {
+        margin-bottom: 0.3rem;
+    }
+
+    & strong {
+        color: var(--color-ink);
+        font-weight: 650;
+    }
+
+    & > :last-child {
+        margin-bottom: 0;
+    }
+}

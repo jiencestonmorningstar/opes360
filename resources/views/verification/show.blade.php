@@ -110,6 +110,35 @@
         </div>
     @endif
 
+    @if ($paper ?? null)
+        <div class="card mt-4 p-6">
+            <div class="flex items-baseline justify-between gap-3">
+                <h2 class="text-[16px] font-bold text-ink">{{ $paper->templateName() }}</h2>
+                <span class="tnum text-[14px] font-semibold text-muted">{{ $paper->reference }}</span>
+            </div>
+
+            <dl class="mt-4 space-y-3">
+                @foreach (array_filter([
+                    'Document' => $paper->title,
+                    'For' => $paper->recipient,
+                    'Issued' => $paper->issued_at?->format('F j, Y'),
+                ]) as $label => $value)
+                    <div class="flex items-center justify-between gap-4">
+                        <dt class="text-[13.5px] text-muted">{{ $label }}</dt>
+                        <dd class="text-right text-[13.5px] font-semibold text-ink-2">{{ $value }}</dd>
+                    </div>
+                @endforeach
+            </dl>
+
+            {{-- The wording matters: this page confirms the document is
+                 genuine and unaltered, not that its contents are agreed. --}}
+            <p class="mt-4 border-t border-border pt-4 text-[12.5px] leading-snug text-muted">
+                This confirms the document was issued by {{ $company?->name }} and has not been altered since.
+                It does not confirm that either party has signed it.
+            </p>
+        </div>
+    @endif
+
     @if ($subjectKind === 'company' && $company)
         <div class="card mt-4 p-6">
             <h2 class="text-[16px] font-bold text-ink">Business details</h2>

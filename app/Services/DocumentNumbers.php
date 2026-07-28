@@ -37,6 +37,12 @@ class DocumentNumbers
         return $this->allocate('receipt', 'RCP', $date);
     }
 
+    /** Generated business documents — contracts, letters, certificates. */
+    public function nextBusinessDocument(?CarbonImmutable $date = null): string
+    {
+        return $this->allocate('business_document', 'DOC', $date);
+    }
+
     /**
      * Leases a block of numbers to a device so it can number documents with no
      * connection.
@@ -158,9 +164,11 @@ class DocumentNumbers
     /** The ledger key and human prefix for anything that draws a number. */
     public static function prefixFor(string $typeKey): string
     {
-        return $typeKey === 'receipt'
-            ? 'RCP'
-            : DocumentType::from($typeKey)->prefix();
+        return match ($typeKey) {
+            'receipt' => 'RCP',
+            'business_document' => 'DOC',
+            default => DocumentType::from($typeKey)->prefix(),
+        };
     }
 
     public function format(string $typeKey, int $year, int $value): string

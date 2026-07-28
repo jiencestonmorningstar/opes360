@@ -3,6 +3,7 @@
 namespace App\Providers;
 
 use App\Models\Artisan;
+use App\Models\BusinessDocument;
 use App\Models\Contact;
 use App\Models\Document;
 use App\Models\Item;
@@ -10,6 +11,7 @@ use App\Models\Payment;
 use App\Models\Receipt;
 use App\Models\User;
 use App\Policies\ArtisanPolicy;
+use App\Policies\BusinessDocumentPolicy;
 use App\Policies\ContactPolicy;
 use App\Policies\DocumentPolicy;
 use App\Policies\ItemPolicy;
@@ -29,6 +31,7 @@ class AuthServiceProvider extends ServiceProvider
         Payment::class => PaymentPolicy::class,
         Receipt::class => ReceiptPolicy::class,
         Artisan::class => ArtisanPolicy::class,
+        BusinessDocument::class => BusinessDocumentPolicy::class,
     ];
 
     public function boot(): void
