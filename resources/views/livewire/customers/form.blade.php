@@ -5,7 +5,36 @@
     $labelClass = 'mb-1.5 block text-[13px] font-semibold text-ink-2';
 @endphp
 
-<div class="px-5 pb-8 lg:px-6 lg:pt-6">
+{{-- State lives in Alpine so a new contact can be added with no connection —
+     see resources/js/forms/record.js. --}}
+<div class="px-5 pb-8 lg:px-6 lg:pt-6"
+     x-data="opesRecordForm({
+        entityType: 'contact',
+        isEdit: @js((bool) $contact),
+        initial: @js($initial),
+        rules: {
+            name: { required: true, message: 'Give this contact a name.' },
+            email: { email: true },
+            payment_terms_days: { numeric: true },
+        },
+        toPayload: (form) => ({
+            type: form.type,
+            name: form.name.trim(),
+            company_name: form.company_name || null,
+            email: form.email ? form.email.trim().toLowerCase() : null,
+            phones: [form.phone].filter(Boolean),
+            whatsapp: form.whatsapp || null,
+            address: Object.fromEntries(Object.entries({
+                street: form.street || null,
+                city: form.city || null,
+                country: form.country ? form.country.toUpperCase() : null,
+            }).filter(([, v]) => v)),
+            tax_id: form.tax_id || null,
+            payment_terms_days: form.payment_terms_days === '' ? null : Number(form.payment_terms_days),
+            notes: form.notes || null,
+        }),
+        label: (form) => form.company_name || form.name,
+     })">
 
     <div class="flex items-center gap-3">
         <a href="{{ $contact ? route('customers.show', $contact) : route('customers', ['type' => $type]) }}"
@@ -17,14 +46,41 @@
         </h1>
     </div>
 
-    <div class="mx-auto mt-5 max-w-[640px] space-y-4">
+    {{-- Offline confirmation: there is no server page to send them to yet. --}}
+    <template x-if="savedOffline">
+        <div class="card mx-auto mt-5 max-w-[640px] p-6 text-center">
+            <span class="mx-auto flex size-[52px] items-center justify-center rounded-full bg-tint-green">
+                <x-icon name="check-circle" class="size-[26px] text-accent-green" stroke-width="2.2" />
+            </span>
+            <h2 class="mt-4 text-[19px] font-bold tracking-[-0.02em] text-ink">
+                <span x-text="savedOffline.name"></span> saved on this device
+            </h2>
+            <p class="mt-1.5 text-[14px] text-muted">
+                They're ready to invoice now, and will sync when you're back online.
+            </p>
+            <div class="mt-5 flex gap-3">
+                <a href="{{ route('customers', ['type' => $type]) }}"
+                   class="focusable flex h-12 flex-1 items-center justify-center rounded-xl bg-surface-2 text-[14.5px] font-semibold text-ink-2 hover:bg-tint-blue hover:text-brand">
+                    Done
+                </a>
+                <button type="button" @click="startAnother()"
+                        class="focusable h-12 flex-[1.4] rounded-xl bg-brand text-[14.5px] font-semibold text-white transition-opacity hover:opacity-90">
+                    Add Another
+                </button>
+            </div>
+        </div>
+    </template>
+
+    <div class="mx-auto mt-5 max-w-[640px] space-y-4" x-show="! savedOffline">
 
         @unless ($contact)
             <div class="grid grid-cols-4 gap-2">
                 @foreach (Index::TYPES as $key => $label)
-                    <button type="button" wire:click="$set('type', '{{ $key }}')"
-                            class="focusable h-11 rounded-xl text-[13px] font-semibold transition-colors
-                                   {{ $type === $key ? 'bg-tint-blue text-brand ring-1 ring-brand/40' : 'border border-border bg-surface text-ink-2 hover:bg-surface-2' }}">
+                    <button type="button" @click="form.type = @js($key)"
+                            class="focusable h-11 rounded-xl text-[13px] font-semibold transition-colors"
+                            :class="form.type === @js($key)
+                                ? 'bg-tint-blue text-brand ring-1 ring-brand/40'
+                                : 'border border-border bg-surface text-ink-2 hover:bg-surface-2'">
                         {{ rtrim($label, 's') }}
                     </button>
                 @endforeach
@@ -35,12 +91,13 @@
             <div class="grid gap-4 min-[560px]:grid-cols-2">
                 <label class="block">
                     <span class="{{ $labelClass }}">Name</span>
-                    <input type="text" wire:model="form.name" class="{{ $inputClass }}">
-                    @error('form.name') <p class="mt-1 text-[12.5px] font-medium text-warning">{{ $message }}</p> @enderror
+                    <input type="text" x-model="form.name" class="{{ $inputClass }}">
+                    <p class="mt-1 text-[12.5px] font-medium text-warning" x-cloak
+                       x-show="error('name')" x-text="error('name')"></p>
                 </label>
                 <label class="block">
                     <span class="{{ $labelClass }}">Business name</span>
-                    <input type="text" wire:model="form.company_name" class="{{ $inputClass }}">
+                    <input type="text" x-model="form.company_name" class="{{ $inputClass }}">
                 </label>
             </div>
         </x-ui.panel>
@@ -49,28 +106,29 @@
             <div class="grid gap-4 min-[560px]:grid-cols-2">
                 <label class="block">
                     <span class="{{ $labelClass }}">Email</span>
-                    <input type="email" wire:model="form.email" class="{{ $inputClass }}">
-                    @error('form.email') <p class="mt-1 text-[12.5px] font-medium text-warning">{{ $message }}</p> @enderror
+                    <input type="email" x-model="form.email" class="{{ $inputClass }}">
+                    <p class="mt-1 text-[12.5px] font-medium text-warning" x-cloak
+                       x-show="error('email')" x-text="error('email')"></p>
                 </label>
                 <label class="block">
                     <span class="{{ $labelClass }}">Phone</span>
-                    <input type="tel" wire:model="form.phone" class="{{ $inputClass }}">
+                    <input type="tel" x-model="form.phone" class="{{ $inputClass }}">
                 </label>
                 <label class="block">
                     <span class="{{ $labelClass }}">WhatsApp</span>
-                    <input type="tel" wire:model="form.whatsapp" class="{{ $inputClass }}">
+                    <input type="tel" x-model="form.whatsapp" class="{{ $inputClass }}">
                 </label>
                 <label class="block">
                     <span class="{{ $labelClass }}">Street</span>
-                    <input type="text" wire:model="form.street" class="{{ $inputClass }}">
+                    <input type="text" x-model="form.street" class="{{ $inputClass }}">
                 </label>
                 <label class="block">
                     <span class="{{ $labelClass }}">City</span>
-                    <input type="text" wire:model="form.city" class="{{ $inputClass }}">
+                    <input type="text" x-model="form.city" class="{{ $inputClass }}">
                 </label>
                 <label class="block">
                     <span class="{{ $labelClass }}">Country code</span>
-                    <input type="text" wire:model="form.country" maxlength="2" placeholder="NG" class="{{ $inputClass }} uppercase">
+                    <input type="text" x-model="form.country" maxlength="2" placeholder="NG" class="{{ $inputClass }} uppercase">
                 </label>
             </div>
         </x-ui.panel>
@@ -79,25 +137,29 @@
             <div class="grid gap-4 min-[560px]:grid-cols-2">
                 <label class="block">
                     <span class="{{ $labelClass }}">Tax ID</span>
-                    <input type="text" wire:model="form.tax_id" class="{{ $inputClass }}">
+                    <input type="text" x-model="form.tax_id" class="{{ $inputClass }}">
                 </label>
                 <label class="block">
                     <span class="{{ $labelClass }}">Payment terms (days)</span>
-                    <input type="number" min="0" max="365" wire:model="form.payment_terms_days" class="tnum {{ $inputClass }}">
-                    @error('form.payment_terms_days') <p class="mt-1 text-[12.5px] font-medium text-warning">{{ $message }}</p> @enderror
+                    <input type="number" min="0" max="365" x-model="form.payment_terms_days" class="tnum {{ $inputClass }}">
+                    <p class="mt-1 text-[12.5px] font-medium text-warning" x-cloak
+                       x-show="error('payment_terms_days')" x-text="error('payment_terms_days')"></p>
                 </label>
                 <label class="block min-[560px]:col-span-2">
                     <span class="{{ $labelClass }}">Notes</span>
-                    <textarea wire:model="form.notes" rows="2"
+                    <textarea x-model="form.notes" rows="2"
                               class="w-full rounded-xl border border-border bg-surface px-3.5 py-3 text-[14.5px] text-ink focus:border-brand focus:outline-none focus:ring-2 focus:ring-brand/20"></textarea>
                 </label>
             </div>
         </x-ui.panel>
 
-        <button type="button" wire:click="save" wire:loading.attr="disabled"
-                class="focusable flex h-12 w-full items-center justify-center rounded-xl bg-brand text-[15px] font-semibold text-white hover:opacity-90">
-            <span wire:loading.remove wire:target="save">{{ $contact ? 'Save Changes' : 'Add Contact' }}</span>
-            <span wire:loading wire:target="save">Saving…</span>
+        <p class="rounded-lg bg-tint-orange px-3 py-2 text-[12.5px] font-medium text-warning" x-cloak
+           x-show="error('form')" x-text="error('form')"></p>
+
+        <button type="button" @click="save()" :disabled="saving"
+                class="focusable flex h-12 w-full items-center justify-center rounded-xl bg-brand text-[15px] font-semibold text-white hover:opacity-90 disabled:opacity-60">
+            <span x-show="! saving">{{ $contact ? 'Save Changes' : 'Add Contact' }}</span>
+            <span x-show="saving" x-cloak>Saving…</span>
         </button>
     </div>
 </div>

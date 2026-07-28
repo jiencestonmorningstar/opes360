@@ -173,17 +173,22 @@ class OnboardingTest extends TestCase
     {
         $user = $this->signInOwner();
 
-        Livewire::actingAs($user)
-            ->test(ProductForm::class, ['type' => 'product'])
-            ->set('form.name', 'Cement Bag')
-            ->set('form.sku', 'CEM-001')
-            ->set('form.price', '12.50')
-            ->set('form.track_stock', true)
-            ->set('form.reorder_level', '10')
-            ->set('openingStock', '40')
-            ->call('save')
-            ->assertHasNoErrors()
-            ->assertRedirect(route('products', ['type' => 'product']));
+        $result = $this->returned(
+            Livewire::actingAs($user)
+                ->test(ProductForm::class, ['type' => 'product'])
+                ->call('save', [
+                    'type' => 'product',
+                    'name' => 'Cement Bag',
+                    'sku' => 'CEM-001',
+                    'price' => '12.50',
+                    'track_stock' => true,
+                    'reorder_level' => '10',
+                    'opening_stock' => '40',
+                ])
+        );
+
+        $this->assertTrue($result['ok']);
+        $this->assertSame(route('products', ['type' => 'product']), $result['redirect']);
 
         $item = Item::firstOrFail();
 
@@ -199,14 +204,18 @@ class OnboardingTest extends TestCase
     {
         $user = $this->signInOwner();
 
-        Livewire::actingAs($user)
-            ->test(ProductForm::class, ['type' => 'service'])
-            ->set('form.name', 'Consulting hour')
-            ->set('form.price', '75')
-            ->set('form.track_stock', true)   // ignored for services
-            ->call('save')
-            ->assertHasNoErrors();
+        $result = $this->returned(
+            Livewire::actingAs($user)
+                ->test(ProductForm::class, ['type' => 'service'])
+                ->call('save', [
+                    'type' => 'service',
+                    'name' => 'Consulting hour',
+                    'price' => '75',
+                    'track_stock' => true,   // ignored for services
+                ])
+        );
 
+        $this->assertTrue($result['ok']);
         $this->assertFalse(Item::firstOrFail()->track_stock);
     }
 
@@ -221,14 +230,19 @@ class OnboardingTest extends TestCase
             'track_stock' => true,
         ]);
 
-        Livewire::actingAs($user)
-            ->test(ProductForm::class, ['item' => $item])
-            ->assertSet('form.name', 'Old name')
-            ->set('form.name', 'New name')
-            ->set('form.price', '15')
-            ->call('save')
-            ->assertHasNoErrors();
+        $component = Livewire::actingAs($user)->test(ProductForm::class, ['item' => $item]);
 
+        // The form is handed its starting values for the client to hold.
+        $this->assertSame('Old name', $component->instance()->initial()['name']);
+
+        $result = $this->returned($component->call('save', [
+            'type' => 'product',
+            'name' => 'New name',
+            'price' => '15',
+            'track_stock' => true,
+        ]));
+
+        $this->assertTrue($result['ok']);
         $this->assertSame('New name', $item->fresh()->name);
         $this->assertSame(0, StockMovement::count());
     }

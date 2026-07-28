@@ -17,6 +17,7 @@ use App\Services\DocumentIssuer;
 use App\Services\PaymentRecorder;
 use App\Support\CurrentCompany;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Str;
 use Livewire\Livewire;
 use RuntimeException;
 use Tests\TestCase;
@@ -176,15 +177,19 @@ class DocumentLifecycleTest extends TestCase
 
     public function test_the_customer_form_creates_a_contact(): void
     {
-        Livewire::actingAs($this->user)
-            ->test(CustomerForm::class, ['type' => 'customer'])
-            ->set('form.name', 'Blue Sky Ltd')
-            ->set('form.email', 'HELLO@BlueSky.test')
-            ->set('form.phone', '+234 700 000 1111')
-            ->set('form.payment_terms_days', '30')
-            ->call('save')
-            ->assertHasNoErrors()
-            ->assertRedirect();
+        $result = $this->returned(
+            Livewire::actingAs($this->user)
+                ->test(CustomerForm::class, ['type' => 'customer'])
+                ->call('save', [
+                    'type' => 'customer',
+                    'name' => 'Blue Sky Ltd',
+                    'email' => 'HELLO@BlueSky.test',
+                    'phone' => '+234 700 000 1111',
+                    'payment_terms_days' => '30',
+                ])
+        );
+
+        $this->assertTrue($result['ok']);
 
         $contact = Contact::where('name', 'Blue Sky Ltd')->firstOrFail();
 
@@ -196,11 +201,71 @@ class DocumentLifecycleTest extends TestCase
 
     public function test_the_customer_form_requires_a_name(): void
     {
-        Livewire::actingAs($this->user)
-            ->test(CustomerForm::class)
-            ->set('form.email', 'no-name@example.com')
-            ->call('save')
-            ->assertHasErrors(['form.name']);
+        $result = $this->returned(
+            Livewire::actingAs($this->user)
+                ->test(CustomerForm::class)
+                ->call('save', ['type' => 'customer', 'email' => 'no-name@example.com'])
+        );
+
+        $this->assertFalse($result['ok']);
+        $this->assertArrayHasKey('name', $result['errors']);
+    }
+
+    public function test_a_contact_created_offline_gets_the_same_shape_as_the_form(): void
+    {
+        $id = (string) Str::ulid();
+
+        // The offline path must not produce a second-class record: same columns,
+        // same normalisation, including the derived tax-ID blind index.
+        $this->actingAs($this->user)->postJson('/api/sync/v1/push', [
+            'envelopes' => [[
+                'id' => (string) Str::ulid(),
+                'entity_type' => 'contact',
+                'entity_id' => $id,
+                'operation' => 'create',
+                'payload' => [
+                    'type' => 'customer',
+                    'name' => 'Roadside Stall',
+                    'email' => 'stall@example.test',
+                    'phones' => ['+234 800 111 2222'],
+                    'address' => ['city' => 'Lagos', 'country' => 'NG'],
+                    'tax_id' => 'TIN-99 8877',
+                ],
+            ]],
+        ])->assertOk();
+
+        $contact = Contact::findOrFail($id);
+
+        $this->assertSame('Roadside Stall', $contact->name);
+        $this->assertSame(['+234 800 111 2222'], $contact->phones);
+        $this->assertSame('Lagos', data_get($contact->address, 'city'));
+        $this->assertSame(
+            hash('sha256', 'TIN998877'),
+            $contact->tax_id_index,
+        );
+    }
+
+    public function test_a_device_cannot_choose_its_own_blind_index(): void
+    {
+        $id = (string) Str::ulid();
+
+        $this->actingAs($this->user)->postJson('/api/sync/v1/push', [
+            'envelopes' => [[
+                'id' => (string) Str::ulid(),
+                'entity_type' => 'contact',
+                'entity_id' => $id,
+                'operation' => 'create',
+                'payload' => [
+                    'type' => 'customer',
+                    'name' => 'Someone',
+                    'tax_id' => 'TIN-1234',
+                    'tax_id_index' => 'attacker-controlled-value',
+                ],
+            ]],
+        ])->assertOk();
+
+        // The index is derived from the tax ID, never taken from the envelope.
+        $this->assertSame(hash('sha256', 'TIN1234'), Contact::findOrFail($id)->tax_id_index);
     }
 
     public function test_the_offline_shell_page_is_public(): void

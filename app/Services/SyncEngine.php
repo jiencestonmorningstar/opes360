@@ -227,7 +227,17 @@ class SyncEngine
             'id', 'company_id', 'number', 'number_lease_id', 'content_hash',
             'verification_token_id', 'issued_at', 'issued_by', 'sync_sequence',
             'created_at', 'updated_at', 'deleted_at',
+            // Derived from tax_id, never accepted from a device: a client must
+            // not get to decide how a tax ID is looked up.
+            'tax_id_index',
         ];
+
+        // A contact created offline goes through the same field mapping the web
+        // form uses, so a blind index is derived rather than silently missing.
+        if ($modelClass === Contact::class && filled($payload['tax_id'] ?? null)) {
+            $payload['tax_id_index'] = hash('sha256', preg_replace('/\W+/', '', (string) $payload['tax_id']));
+            $serverOwned = array_diff($serverOwned, ['tax_id_index']);
+        }
 
         $columns = (new $modelClass)->getConnection()
             ->getSchemaBuilder()
