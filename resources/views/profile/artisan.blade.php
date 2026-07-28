@@ -11,7 +11,7 @@
     <title>{{ $artisan->full_name }} · {{ $artisan->occupation ?? 'Artisan' }}</title>
     <meta name="description" content="{{ $artisan->occupation }} at {{ $company->name }}">
 
-    <script>
+    <script @cspNonce>
         (function () {
             try {
                 var stored = localStorage.getItem('opes-theme');

@@ -15,7 +15,7 @@
     <title>{{ $company->name }} · {{ config('opes.brand.name') }}</title>
     <meta name="description" content="{{ $company->motto ?? $company->name }}">
 
-    <script>
+    <script @cspNonce>
         (function () {
             try {
                 var stored = localStorage.getItem('opes-theme');

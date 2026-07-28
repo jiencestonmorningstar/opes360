@@ -21,7 +21,7 @@
     <title>{{ $headline }} · {{ config('opes.brand.name') }}</title>
     <meta name="robots" content="noindex">
 
-    <script>
+    <script @cspNonce>
         (function () {
             try {
                 var stored = localStorage.getItem('opes-theme');

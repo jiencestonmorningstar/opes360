@@ -28,7 +28,7 @@
         Runs before first paint so the correct theme is already on <html>.
         Anything slower produces a white flash on every load in dark mode.
     --}}
-    <script>
+    <script @cspNonce>
         (function () {
             try {
                 var stored = localStorage.getItem('opes-theme');

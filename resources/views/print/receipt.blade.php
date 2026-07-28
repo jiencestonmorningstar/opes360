@@ -80,7 +80,7 @@
 </div>
 
 @if ($autoprint)
-    <script>window.addEventListener('load', function () { window.print(); });</script>
+    <script @cspNonce>window.addEventListener('load', function () { window.print(); });</script>
 @endif
 </body>
 </html>

@@ -6,7 +6,7 @@
     <title>Sign in · {{ config('opes.brand.name') }}</title>
     <link rel="manifest" href="{{ url('/manifest.webmanifest') }}">
 
-    <script>
+    <script @cspNonce>
         (function () {
             try {
                 var stored = localStorage.getItem('opes-theme');

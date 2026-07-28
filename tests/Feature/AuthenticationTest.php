@@ -3,8 +3,8 @@
 namespace Tests\Feature;
 
 use App\Models\User;
+use App\Notifications\ResetPassword;
 use App\Services\TwoFactor;
-use Illuminate\Auth\Notifications\ResetPassword;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Crypt;
 use Illuminate\Support\Facades\Notification;

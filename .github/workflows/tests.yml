@@ -2,46 +2,122 @@ name: Tests
 
 on:
   push:
-    branches:
-      - master
-      - '*.x'
   pull_request:
-  schedule:
-    - cron: '0 0 * * *'
 
 permissions:
   contents: read
 
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
-  tests:
+  # Fast feedback: SQLite in memory, no services to wait for. Most breakage
+  # shows up here within a minute.
+  suite:
     runs-on: ubuntu-latest
-
-    strategy:
-      fail-fast: true
-      matrix:
-        php: [8.2, 8.3, 8.4]
-
-    name: PHP ${{ matrix.php }}
+    name: Test suite (SQLite)
 
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v6
+      - uses: actions/checkout@v4
 
-      - name: Setup PHP
-        uses: shivammathur/setup-php@v2
+      - uses: shivammathur/setup-php@v2
         with:
-          php-version: ${{ matrix.php }}
-          extensions: dom, curl, libxml, mbstring, zip, pcntl, pdo, sqlite, pdo_sqlite
+          php-version: '8.4'
+          extensions: dom, curl, libxml, mbstring, zip, pcntl, pdo, sqlite, pdo_sqlite, bcmath, gd
           coverage: none
 
-      - name: Install Composer dependencies
+      - name: Install PHP dependencies
         run: composer install --prefer-dist --no-interaction --no-progress
 
-      - name: Copy environment file
-        run: cp .env.example .env
+      - name: Prepare environment
+        run: |
+          cp .env.example .env
+          php artisan key:generate
 
-      - name: Generate app key
-        run: php artisan key:generate
+      # The suite renders real pages, and a page whose asset manifest is missing
+      # fails for a reason that has nothing to do with the change under test.
+      - name: Build assets
+        run: |
+          npm ci
+          npm run build
 
-      - name: Execute tests
+      - name: Run tests
         run: php artisan test
+
+  # The database the product actually ships on. SQLite is permissive in ways
+  # MySQL is not — strict mode, ONLY_FULL_GROUP_BY, real column types — so a
+  # green SQLite run is not evidence the app works in production.
+  mysql:
+    runs-on: ubuntu-latest
+    name: Test suite (MySQL 8.4)
+
+    services:
+      mysql:
+        image: mysql:8.4
+        env:
+          MYSQL_ALLOW_EMPTY_PASSWORD: 'yes'
+          MYSQL_DATABASE: opes360_test
+        ports:
+          - 3306:3306
+        options: >-
+          --health-cmd="mysqladmin ping --silent"
+          --health-interval=10s
+          --health-timeout=5s
+          --health-retries=10
+
+    env:
+      DB_CONNECTION: mysql
+      DB_HOST: 127.0.0.1
+      DB_PORT: 3306
+      DB_DATABASE: opes360_test
+      DB_USERNAME: root
+      DB_PASSWORD: ''
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.4'
+          extensions: dom, curl, libxml, mbstring, zip, pcntl, pdo, mysql, pdo_mysql, bcmath, gd
+          coverage: none
+
+      - name: Install PHP dependencies
+        run: composer install --prefer-dist --no-interaction --no-progress
+
+      - name: Prepare environment
+        run: |
+          cp .env.example .env
+          php artisan key:generate
+
+      - name: Build assets
+        run: |
+          npm ci
+          npm run build
+
+      - name: Run tests
+        run: php artisan test
+
+      # Migrations and seeders are shipped artefacts too. Index lengths, default
+      # values and enum widths only fail on a real server.
+      - name: Migrate and seed from scratch
+        run: php artisan migrate:fresh --seed --force
+
+  static:
+    runs-on: ubuntu-latest
+    name: Style
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.4'
+          coverage: none
+
+      - name: Install PHP dependencies
+        run: composer install --prefer-dist --no-interaction --no-progress
+
+      - name: Check code style
+        run: ./vendor/bin/pint --test

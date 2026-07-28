@@ -2,6 +2,8 @@
 
 namespace App\Models;
 
+use App\Notifications\ResetPassword;
+use App\Notifications\VerifyEmail;
 use Database\Factories\UserFactory;
 use Illuminate\Contracts\Encryption\DecryptException;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -45,6 +47,22 @@ class User extends Authenticatable
             'two_factor_confirmed_at' => 'datetime',
             'password' => 'hashed',
         ];
+    }
+
+    /*
+     * Both account emails are branded and queued rather than Laravel's stock
+     * synchronous ones — see the notification classes. Overridden here because
+     * that is the only hook Laravel offers for either.
+     */
+
+    public function sendPasswordResetNotification(#[\SensitiveParameter] $token): void
+    {
+        $this->notify(new ResetPassword($token));
+    }
+
+    public function sendEmailVerificationNotification(): void
+    {
+        $this->notify(new VerifyEmail);
     }
 
     public function companies(): BelongsToMany

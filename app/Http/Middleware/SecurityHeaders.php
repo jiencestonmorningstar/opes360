@@ -2,26 +2,32 @@
 
 namespace App\Http\Middleware;
 
+use App\Support\Csp;
 use Closure;
 use Illuminate\Http\Request;
 use Symfony\Component\HttpFoundation\Response;
 
 /**
- * Baseline security headers.
+ * Baseline security headers, including the Content Security Policy.
  *
- * No CSP is set here. A meaningful policy has to account for Livewire's inline
- * bootstrapping and the inline SVG the print and logo views emit; shipping a
- * permissive `unsafe-inline` policy would look like protection while providing
- * none. Adding a real nonce-based CSP is tracked as a pre-launch item in
- * docs/PLAN.md rather than faked here.
+ * The policy itself — and an honest account of what it can and cannot enforce
+ * given that Livewire ships Alpine — lives in App\Support\Csp.
+ *
+ * It can be run in report-only mode (`CSP_REPORT_ONLY=true`) to watch for
+ * breakage on a live deployment before enforcing, and disabled outright
+ * (`CSP_ENABLED=false`) if a specific deployment needs it off.
  */
 class SecurityHeaders
 {
+    public function __construct(protected Csp $csp) {}
+
     public function handle(Request $request, Closure $next): Response
     {
         $response = $next($request);
 
         $response->headers->set('X-Content-Type-Options', 'nosniff');
+        // Superseded by the policy's frame-ancestors, kept for browsers that
+        // predate CSP level 2.
         $response->headers->set('X-Frame-Options', 'SAMEORIGIN');
         $response->headers->set('Referrer-Policy', 'strict-origin-when-cross-origin');
 
@@ -30,6 +36,15 @@ class SecurityHeaders
             'Permissions-Policy',
             'camera=(self), microphone=(), geolocation=(self), payment=(), usb=(self)'
         );
+
+        if (config('security.csp.enabled', true)) {
+            $response->headers->set(
+                config('security.csp.report_only')
+                    ? 'Content-Security-Policy-Report-Only'
+                    : 'Content-Security-Policy',
+                $this->csp->header(),
+            );
+        }
 
         // HSTS only over HTTPS: sending it over plain HTTP is meaningless, and in
         // local development it would pin the browser to a scheme that is not served.
