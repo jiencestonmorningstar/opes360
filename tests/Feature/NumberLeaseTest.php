@@ -181,6 +181,55 @@ class NumberLeaseTest extends TestCase
         $this->numbers()->claim('not-a-number', 'invoice', $this->device());
     }
 
+    public function test_an_abandoned_lease_is_closed_with_its_gap_recorded(): void
+    {
+        $device = $this->device();
+        $lease = $this->numbers()->leaseFor($device, 'invoice', 10);
+
+        // The device used two numbers, then was lost.
+        $this->numbers()->claim(
+            $this->numbers()->format('invoice', (int) $lease->year, (int) $lease->range_start + 1),
+            'invoice',
+            $device,
+        );
+
+        $lease->forceFill(['expires_at' => now()->subDay()])->save();
+
+        $this->artisan('opes:expire-leases')->assertSuccessful();
+
+        $lease->refresh();
+
+        $this->assertSame('expired', $lease->status);
+        // Every gap in the sequence needs a dated row explaining it — this is
+        // the answer to "what happened to invoices 3 through 10".
+        $this->assertSame((int) $lease->range_start + 2, (int) $lease->void_unused_from);
+    }
+
+    public function test_a_fully_used_lease_records_no_phantom_gap(): void
+    {
+        $device = $this->device();
+        $lease = $this->numbers()->leaseFor($device, 'invoice', 2);
+
+        $lease->forceFill([
+            'next_available' => $lease->range_end + 1,
+            'expires_at' => now()->subDay(),
+        ])->save();
+
+        $this->artisan('opes:expire-leases')->assertSuccessful();
+
+        $this->assertNull($lease->fresh()->void_unused_from);
+    }
+
+    public function test_a_dry_run_changes_nothing(): void
+    {
+        $lease = $this->numbers()->leaseFor($this->device(), 'invoice', 5);
+        $lease->forceFill(['expires_at' => now()->subDay()])->save();
+
+        $this->artisan('opes:expire-leases --dry-run')->assertSuccessful();
+
+        $this->assertSame('active', $lease->fresh()->status);
+    }
+
     // ---- through the API -------------------------------------------------
 
     public function test_the_lease_endpoint_returns_everything_the_client_needs(): void
