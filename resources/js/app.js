@@ -1,5 +1,6 @@
 import './bootstrap';
 import '@fontsource-variable/inter/index.css';
+import { SyncEngine } from './offline/sync.js';
 
 /*
  * Register the service worker so the app shell is installable and survives a lost
@@ -19,6 +20,17 @@ if ('serviceWorker' in navigator) {
  * Registered on `alpine:init` because Livewire 3 boots Alpine itself — defining
  * the component before that event guarantees it exists when the shell renders.
  */
+/*
+ * Offline sync. Booted only when the page names a company, so the login and
+ * public verification pages never open an IndexedDB database they cannot use.
+ */
+const companyId = document.querySelector('meta[name=opes-company]')?.content;
+
+if (companyId) {
+    window.opesSync = new SyncEngine(companyId);
+    window.opesSync.start();
+}
+
 document.addEventListener('alpine:init', () => {
     window.Alpine.data('opesShell', () => ({
         drawer: false,
@@ -93,6 +105,28 @@ document.addEventListener('alpine:init', () => {
 
         applyTheme(dark) {
             document.documentElement.classList.toggle('dark', dark);
+        },
+    }));
+
+    /* Live sync state for the header indicator. */
+    window.Alpine.data('opesSyncStatus', () => ({
+        online: navigator.onLine,
+        pending: 0,
+        failed: 0,
+        running: false,
+
+        init() {
+            const update = (state) => Object.assign(this, state);
+
+            window.opesSync?.onChange(update);
+            window.opesSync?.announce();
+
+            window.addEventListener('online', () => (this.online = true));
+            window.addEventListener('offline', () => (this.online = false));
+        },
+
+        syncNow() {
+            window.opesSync?.sync();
         },
     }));
 });

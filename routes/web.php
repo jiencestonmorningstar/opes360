@@ -1,7 +1,9 @@
 <?php
 
+use App\Http\Controllers\AuthController;
 use App\Http\Controllers\PrintController;
 use App\Http\Controllers\ProfileController;
+use App\Http\Controllers\SyncController;
 use App\Http\Controllers\VerificationController;
 use App\Livewire\Business\Artisans as BusinessArtisans;
 use App\Livewire\Business\Companies as BusinessCompanies;
@@ -27,29 +29,26 @@ use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Route;
 
 /*
- * Sign-in and sign-up. Email verification, password reset and TOTP two-factor
- * complete this flow in Phase 0's hardening pass.
+ * Guest authentication: sign-in with a TOTP challenge, sign-up, and password
+ * reset. Login is throttled per email+IP in AuthController.
  */
 Route::middleware('guest')->group(function () {
     Route::view('/login', 'auth.login')->name('login');
+    Route::post('/login', [AuthController::class, 'login']);
+
     Route::get('/register', Register::class)->name('register');
 
-    Route::post('/login', function (Request $request) {
-        $credentials = $request->validate([
-            'email' => ['required', 'email'],
-            'password' => ['required', 'string'],
-        ]);
+    Route::view('/forgot-password', 'auth.forgot-password')->name('password.request');
+    Route::post('/forgot-password', [AuthController::class, 'sendResetLink'])->name('password.email');
 
-        if (! Auth::attempt($credentials, $request->boolean('remember'))) {
-            return back()
-                ->withInput($request->only('email'))
-                ->withErrors(['email' => 'Those credentials do not match our records.']);
-        }
+    Route::get('/reset-password/{token}', fn (string $token) => view('auth.reset-password', ['token' => $token]))
+        ->name('password.reset');
+    Route::post('/reset-password', [AuthController::class, 'resetPassword'])->name('password.update');
 
-        $request->session()->regenerate();
-
-        return redirect()->intended(route('dashboard'));
-    });
+    // The challenge sits between credentials and an authenticated session, so it
+    // is reachable by a guest — the session holds only a pending user id.
+    Route::get('/two-factor', [AuthController::class, 'showChallenge'])->name('two-factor.challenge');
+    Route::post('/two-factor', [AuthController::class, 'challenge'])->name('two-factor.verify');
 });
 
 Route::post('/logout', function (Request $request) {
@@ -90,7 +89,19 @@ Route::middleware('auth')->group(function () {
     Route::get('/calendar', CalendarIndex::class)->name('calendar');
     Route::get('/settings', SettingsIndex::class)->name('settings');
     Route::get('/scan', Scan::class)->name('scan');
+    Route::get('/two-factor/qr.svg', [AuthController::class, 'twoFactorQr'])->name('two-factor.qr');
+    Route::get('/email/verify/{id}/{hash}', [AuthController::class, 'verifyEmail'])
+        ->middleware('signed')->name('verification.verify');
     Route::view('/help', 'help.index')->name('help');
+});
+
+/*
+ * Offline sync API. Session-authenticated because the PWA runs same-origin;
+ * versioned so a device on older code keeps working after a server deploy.
+ */
+Route::middleware(['auth', 'throttle:120,1'])->prefix('api/sync/v1')->group(function () {
+    Route::post('/push', [SyncController::class, 'push'])->name('sync.push');
+    Route::get('/pull', [SyncController::class, 'pull'])->name('sync.pull');
 });
 
 /*

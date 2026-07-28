@@ -2,6 +2,15 @@
 
 namespace App\Providers;
 
+use App\Models\Artisan;
+use App\Models\Company;
+use App\Models\Contact;
+use App\Models\Document;
+use App\Models\Item;
+use App\Models\Payment;
+use App\Models\Receipt;
+use App\Models\User;
+use App\Observers\AuditObserver;
 use App\Support\CurrentCompany;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Pagination\Paginator;
@@ -32,5 +41,16 @@ class AppServiceProvider extends ServiceProvider
         // break in dark mode.
         Paginator::defaultView('pagination.opes');
         Paginator::defaultSimpleView('pagination.opes');
+
+        /*
+         * Audit trail. Deliberately a fixed list rather than every model: these
+         * are the records where "who changed this, and from what" has to be
+         * answerable. Logging line items or stock movements as well would bury
+         * that signal in churn, and both are already immutable or append-only.
+         */
+        foreach ([Company::class, User::class, Contact::class, Item::class,
+            Document::class, Payment::class, Receipt::class, Artisan::class] as $model) {
+            $model::observe(AuditObserver::class);
+        }
     }
 }

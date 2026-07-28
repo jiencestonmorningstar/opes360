@@ -5,6 +5,7 @@ namespace App\Livewire\Settings;
 use App\Models\Device;
 use App\Models\Role;
 use App\Models\User;
+use App\Services\TwoFactor;
 use App\Support\CurrentCompany;
 use Illuminate\Contracts\View\View;
 use Illuminate\Support\Facades\Hash;
@@ -24,6 +25,12 @@ class Index extends Component
     public string $newPassword = '';
 
     public string $newPasswordConfirmation = '';
+
+    public bool $enrolling = false;
+
+    public string $twoFactorSecret = '';
+
+    public string $twoFactorCode = '';
 
     public function mount(): void
     {
@@ -76,6 +83,42 @@ class Index extends Component
         session()->flash('passwordStatus', 'Password changed.');
     }
 
+    public function startTwoFactor(TwoFactor $twoFactor): void
+    {
+        $this->twoFactorSecret = $twoFactor->startEnrolment(auth()->user());
+        $this->enrolling = true;
+        $this->twoFactorCode = '';
+        $this->resetErrorBag();
+    }
+
+    public function confirmTwoFactor(TwoFactor $twoFactor): void
+    {
+        $this->validate(['twoFactorCode' => ['required', 'string']]);
+
+        if (! $twoFactor->confirm(auth()->user(), $this->twoFactorCode)) {
+            $this->addError('twoFactorCode', 'That code is not valid. Check your authenticator app.');
+
+            return;
+        }
+
+        $this->reset('enrolling', 'twoFactorSecret', 'twoFactorCode');
+        session()->flash('twoFactorStatus', 'Two-factor authentication is on. Save your recovery codes.');
+    }
+
+    public function cancelTwoFactor(TwoFactor $twoFactor): void
+    {
+        // A half-finished enrolment is discarded rather than left dangling, so a
+        // stored-but-unconfirmed secret can never be treated as enabled.
+        $twoFactor->disable(auth()->user());
+        $this->reset('enrolling', 'twoFactorSecret', 'twoFactorCode');
+    }
+
+    public function disableTwoFactor(TwoFactor $twoFactor): void
+    {
+        $twoFactor->disable(auth()->user());
+        session()->flash('twoFactorStatus', 'Two-factor authentication is off.');
+    }
+
     public function revokeDevice(string $deviceId): void
     {
         // Scoped query: a device id from another company simply is not found.
@@ -88,8 +131,12 @@ class Index extends Component
     {
         $company = app(CurrentCompany::class)->get();
 
+        $user = auth()->user();
+
         return view('livewire.settings.index', [
             'company' => $company,
+            'twoFactorEnabled' => $user->hasTwoFactorEnabled(),
+            'recoveryCodes' => $user->hasTwoFactorEnabled() ? $user->recoveryCodes() : [],
             'team' => $company
                 ? User::query()
                     ->whereHas('companies', fn ($q) => $q->where('companies.id', $company->id))

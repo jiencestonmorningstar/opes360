@@ -63,6 +63,87 @@
                 </div>
             </x-ui.panel>
 
+
+            <x-ui.panel title="Two-Factor Authentication">
+                @if (session('twoFactorStatus'))
+                    <div class="mb-4 rounded-xl bg-tint-green px-4 py-2.5 text-[13px] font-semibold text-positive">
+                        {{ session('twoFactorStatus') }}
+                    </div>
+                @endif
+
+                @if ($enrolling)
+                    <p class="text-[13.5px] leading-relaxed text-muted">
+                        Scan this with Google Authenticator, 1Password or any TOTP app, then enter the
+                        6-digit code it shows to finish.
+                    </p>
+
+                    <div class="mt-4 flex flex-col items-center rounded-xl border border-border p-4">
+                        <img src="{{ route('two-factor.qr') }}" alt="Two-factor setup QR"
+                             class="size-[168px] rounded-lg bg-white p-2">
+                        <p class="mt-3 text-[12px] text-muted">Can't scan? Enter this key manually:</p>
+                        <p class="tnum mt-1 select-all break-all text-center text-[13px] font-semibold text-ink">
+                            {{ $twoFactorSecret }}
+                        </p>
+                    </div>
+
+                    <label class="mt-4 block">
+                        <span class="{{ $labelClass }}">6-digit code</span>
+                        <input type="text" inputmode="numeric" wire:model="twoFactorCode" placeholder="000000"
+                               class="tnum h-12 w-full rounded-xl border border-border bg-surface px-3.5 text-center text-[17px] tracking-[0.3em] text-ink placeholder:text-faint focus:border-brand focus:outline-none focus:ring-2 focus:ring-brand/20">
+                        @error('twoFactorCode') <p class="mt-1 text-[12.5px] font-medium text-warning">{{ $message }}</p> @enderror
+                    </label>
+
+                    <div class="mt-4 flex gap-3">
+                        <button type="button" wire:click="cancelTwoFactor"
+                                class="focusable h-11 flex-1 rounded-xl bg-surface-2 text-[14.5px] font-semibold text-ink-2 hover:bg-tint-blue hover:text-brand">
+                            Cancel
+                        </button>
+                        <button type="button" wire:click="confirmTwoFactor"
+                                class="focusable h-11 flex-[1.4] rounded-xl bg-brand text-[14.5px] font-semibold text-white hover:opacity-90">
+                            Turn on
+                        </button>
+                    </div>
+                @elseif ($twoFactorEnabled)
+                    <div class="flex items-center gap-3">
+                        <span class="flex size-[42px] shrink-0 items-center justify-center rounded-xl bg-tint-green">
+                            <x-icon name="check-circle" class="size-[22px] text-accent-green" />
+                        </span>
+                        <div class="min-w-0 flex-1">
+                            <p class="text-[14.5px] font-semibold text-positive">Two-factor is on</p>
+                            <p class="text-[12.5px] text-muted">A code from your app is required at sign-in.</p>
+                        </div>
+                    </div>
+
+                    @if ($recoveryCodes)
+                        <div class="mt-4 rounded-xl bg-surface-2 p-4">
+                            <p class="text-[12.5px] font-semibold text-ink-2">Recovery codes</p>
+                            <p class="mt-0.5 text-[12px] text-muted">
+                                Each works once if you lose your phone. Store them somewhere safe.
+                            </p>
+                            <div class="tnum mt-2.5 grid grid-cols-2 gap-1.5">
+                                @foreach ($recoveryCodes as $code)
+                                    <span class="select-all rounded bg-surface px-2 py-1 text-center text-[12.5px] font-semibold text-ink">{{ $code }}</span>
+                                @endforeach
+                            </div>
+                        </div>
+                    @endif
+
+                    <button type="button" wire:click="disableTwoFactor"
+                            class="focusable mt-4 flex h-11 w-full items-center justify-center rounded-xl text-[14.5px] font-semibold text-negative hover:bg-tint-orange">
+                        Turn off two-factor
+                    </button>
+                @else
+                    <p class="text-[13.5px] leading-relaxed text-muted">
+                        Adds a second step at sign-in using a code from your phone. Strongly recommended for
+                        an account that can issue invoices and take payments.
+                    </p>
+                    <button type="button" wire:click="startTwoFactor"
+                            class="focusable mt-4 flex h-11 w-full items-center justify-center rounded-xl bg-brand text-[14.5px] font-semibold text-white hover:opacity-90">
+                        Set up two-factor
+                    </button>
+                @endif
+            </x-ui.panel>
+
             <x-ui.panel title="Password">
                 @if (session('passwordStatus'))
                     <div class="mb-4 rounded-xl bg-tint-green px-4 py-2.5 text-[13px] font-semibold text-positive">

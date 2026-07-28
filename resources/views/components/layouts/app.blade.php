@@ -9,6 +9,11 @@
     <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, maximum-scale=5">
     <title>{{ $title ? $title.' · '.config('opes.brand.name') : config('opes.brand.name') }}</title>
 
+    <meta name="csrf-token" content="{{ csrf_token() }}">
+    @if ($companyId = app(\App\Support\CurrentCompany::class)->id())
+        {{-- Names the tenant whose IndexedDB database this session uses. --}}
+        <meta name="opes-company" content="{{ $companyId }}">
+    @endif
     <meta name="description" content="{{ config('opes.brand.tagline') }}">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">

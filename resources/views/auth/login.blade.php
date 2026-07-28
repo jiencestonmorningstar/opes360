@@ -34,6 +34,12 @@
         <h1 class="text-[20px] font-bold tracking-[-0.02em] text-ink">Welcome back</h1>
         <p class="mt-1 text-[14px] text-muted">Sign in to continue to your business.</p>
 
+        @if (session('status'))
+            <div class="mt-5 rounded-xl bg-tint-green px-4 py-3 text-[13.5px] font-medium text-positive">
+                {{ session('status') }}
+            </div>
+        @endif
+
         @if ($errors->any())
             <div class="mt-5 rounded-xl bg-tint-orange px-4 py-3 text-[13.5px] font-medium text-warning">
                 {{ $errors->first() }}
@@ -58,11 +64,16 @@
                        placeholder="••••••••">
             </div>
 
-            <label class="flex items-center gap-2.5 pt-1 text-[14px] text-ink-2">
-                <input type="checkbox" name="remember" value="1"
-                       class="size-[18px] rounded border-border-strong text-brand focus:ring-brand/30">
-                Keep me signed in
-            </label>
+            <div class="flex items-center justify-between gap-3 pt-1">
+                <label class="flex items-center gap-2.5 text-[14px] text-ink-2">
+                    <input type="checkbox" name="remember" value="1"
+                           class="size-[18px] rounded border-border-strong text-brand focus:ring-brand/30">
+                    Keep me signed in
+                </label>
+                <a href="{{ route('password.request') }}" class="text-[13.5px] font-semibold text-brand hover:underline">
+                    Forgot password?
+                </a>
+            </div>
 
             <button type="submit"
                     class="tap focusable mt-2 flex h-12 w-full items-center justify-center rounded-xl bg-brand text-[15px] font-semibold text-white transition-opacity hover:opacity-90">
