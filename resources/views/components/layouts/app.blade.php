@@ -1,4 +1,6 @@
-@props(['title' => null, 'active' => 'home'])
+{{-- bottomNav=false hides the mobile tab bar on focused flows (forms with their
+     own fixed action bar), where the two would otherwise stack and collide. --}}
+@props(['title' => null, 'active' => 'home', 'bottomNav' => true])
 
 <!DOCTYPE html>
 <html lang="{{ str_replace('_', '-', app()->getLocale()) }}" class="h-full">
@@ -53,14 +55,16 @@
 
         {{-- Bottom padding clears the fixed bottom bar and the iOS home indicator;
              from `lg` the bottom bar is gone and the inset collapses to normal padding. --}}
-        <main class="flex-1 pb-[calc(6rem+env(safe-area-inset-bottom))] lg:pb-6 lg:pr-6">
+        <main class="flex-1 {{ $bottomNav ? 'pb-[calc(6rem+env(safe-area-inset-bottom))]' : 'pb-6' }} lg:pb-6 lg:pr-6">
             <div class="lg:card lg:min-h-[calc(100vh-7.5rem)]">
                 {{ $slot }}
             </div>
         </main>
     </div>
 
-    @include('partials.bottom-nav', ['active' => $active])
+    @if ($bottomNav)
+        @include('partials.bottom-nav', ['active' => $active])
+    @endif
 </div>
 
 @livewireScripts

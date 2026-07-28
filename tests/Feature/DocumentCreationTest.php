@@ -1,0 +1,201 @@
+<?php
+
+namespace Tests\Feature;
+
+use App\Enums\DocumentStatus;
+use App\Enums\DocumentType;
+use App\Livewire\Documents\Create;
+use App\Models\Company;
+use App\Models\Contact;
+use App\Models\Document;
+use App\Models\NumberLease;
+use App\Models\User;
+use App\Services\DocumentIssuer;
+use App\Services\DocumentNumbers;
+use App\Support\CurrentCompany;
+use Illuminate\Foundation\Testing\RefreshDatabase;
+use Livewire\Livewire;
+use Tests\TestCase;
+
+class DocumentCreationTest extends TestCase
+{
+    use RefreshDatabase;
+
+    protected User $user;
+
+    protected Contact $contact;
+
+    protected function setUp(): void
+    {
+        parent::setUp();
+
+        $this->user = User::factory()->create();
+
+        $company = Company::create([
+            'slug' => 'acme',
+            'name' => 'Acme Ltd',
+            'owner_id' => $this->user->id,
+            'currency' => 'USD',
+        ]);
+
+        $this->user->forceFill(['current_company_id' => $company->id])->save();
+        app(CurrentCompany::class)->set($company);
+
+        $this->contact = Contact::create(['name' => 'A Customer']);
+    }
+
+    public function test_numbers_are_sequential_within_a_type_and_year(): void
+    {
+        $numbers = app(DocumentNumbers::class);
+        $year = now()->format('Y');
+
+        $this->assertSame("INV-{$year}-00001", $numbers->next(DocumentType::Invoice));
+        $this->assertSame("INV-{$year}-00002", $numbers->next(DocumentType::Invoice));
+        // A different type runs its own sequence.
+        $this->assertSame("QUO-{$year}-00001", $numbers->next(DocumentType::Quotation));
+    }
+
+    public function test_an_exhausted_lease_rolls_into_a_new_block_without_overlap(): void
+    {
+        $numbers = app(DocumentNumbers::class);
+        $year = (int) now()->format('Y');
+
+        // A nearly-exhausted server lease with one number left.
+        NumberLease::create([
+            'document_type' => 'invoice',
+            'year' => $year,
+            'range_start' => 1,
+            'range_end' => 5,
+            'next_available' => 5,
+            'status' => 'active',
+            'issued_at' => now(),
+        ]);
+
+        $this->assertSame("INV-{$year}-00005", $numbers->next(DocumentType::Invoice));
+        // The next allocation opens a fresh block starting after the old range.
+        $this->assertSame("INV-{$year}-00006", $numbers->next(DocumentType::Invoice));
+
+        $this->assertDatabaseHas('number_leases', [
+            'document_type' => 'invoice',
+            'range_start' => 6,
+            'status' => 'active',
+        ]);
+    }
+
+    public function test_issuing_assigns_number_hash_and_verification_token(): void
+    {
+        $document = Document::create([
+            'type' => DocumentType::Invoice,
+            'contact_id' => $this->contact->id,
+            'status' => DocumentStatus::Draft,
+            'issue_date' => now()->toDateString(),
+            'subtotal' => 100,
+            'total' => 100,
+            'balance' => 100,
+        ]);
+
+        $document->lines()->create([
+            'company_id' => $document->company_id,
+            'description' => 'Consulting',
+            'quantity' => 1,
+            'unit_price' => 100,
+            'line_total' => 100,
+        ]);
+
+        $issued = app(DocumentIssuer::class)->issue($document, $this->user);
+
+        $this->assertSame(DocumentStatus::Issued, $issued->status);
+        $this->assertNotNull($issued->number);
+        $this->assertNotNull($issued->content_hash);
+        $this->assertNotNull($issued->verification_token_id);
+        // The hash must verify against what the database now holds.
+        $this->assertFalse($issued->fresh()->load('lines')->isTampered());
+    }
+
+    public function test_an_issued_document_cannot_be_issued_twice(): void
+    {
+        $document = Document::create([
+            'type' => DocumentType::Invoice,
+            'contact_id' => $this->contact->id,
+            'status' => DocumentStatus::Issued,
+            'number' => 'INV-X-1',
+            'issue_date' => now()->toDateString(),
+            'total' => 50,
+            'balance' => 50,
+        ]);
+
+        $this->expectException(\RuntimeException::class);
+
+        app(DocumentIssuer::class)->issue($document, $this->user);
+    }
+
+    public function test_the_form_saves_a_draft_without_a_number(): void
+    {
+        Livewire::actingAs($this->user)
+            ->test(Create::class, ['type' => 'invoice'])
+            ->call('selectContact', $this->contact->id)
+            ->set('lines.0.description', 'Web design')
+            ->set('lines.0.quantity', '2')
+            ->set('lines.0.unit_price', '150')
+            ->call('saveDraft')
+            ->assertHasNoErrors()
+            ->assertRedirect();
+
+        $document = Document::firstOrFail();
+
+        $this->assertSame(DocumentStatus::Draft, $document->status);
+        $this->assertNull($document->number);
+        $this->assertSame('300.00', $document->total);
+        $this->assertCount(1, $document->lines);
+    }
+
+    public function test_the_form_issues_an_invoice_with_a_final_number(): void
+    {
+        $year = now()->format('Y');
+
+        Livewire::actingAs($this->user)
+            ->test(Create::class, ['type' => 'invoice'])
+            ->call('selectContact', $this->contact->id)
+            ->set('lines.0.description', 'Web design')
+            ->set('lines.0.quantity', '1')
+            ->set('lines.0.unit_price', '500')
+            ->call('saveAndIssue')
+            ->assertHasNoErrors()
+            ->assertRedirect();
+
+        $document = Document::firstOrFail();
+
+        $this->assertSame(DocumentStatus::Issued, $document->status);
+        $this->assertSame("INV-{$year}-00001", $document->number);
+        $this->assertNotNull($document->verification_token_id);
+        $this->assertFalse($document->load('lines')->isTampered());
+    }
+
+    public function test_the_form_rejects_a_missing_customer_and_empty_lines(): void
+    {
+        Livewire::actingAs($this->user)
+            ->test(Create::class, ['type' => 'invoice'])
+            ->set('lines.0.description', '')
+            ->call('saveAndIssue')
+            ->assertHasErrors(['contactId', 'lines.0.description']);
+
+        $this->assertSame(0, Document::count());
+    }
+
+    public function test_the_form_rejects_a_contact_from_another_company(): void
+    {
+        $otherOwner = User::factory()->create();
+        $other = Company::create(['slug' => 'other', 'name' => 'Other Ltd', 'owner_id' => $otherOwner->id]);
+
+        $foreign = app(CurrentCompany::class)->as(
+            $other,
+            fn () => Contact::create(['name' => 'Foreign Customer'])
+        );
+
+        // The picker method refuses ids the tenant scope cannot see.
+        Livewire::actingAs($this->user)
+            ->test(Create::class, ['type' => 'invoice'])
+            ->call('selectContact', $foreign->id)
+            ->assertSet('contactId', null);
+    }
+}

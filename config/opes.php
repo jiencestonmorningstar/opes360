@@ -36,8 +36,8 @@ return [
     ],
 
     'quick_actions' => [
-        ['label' => 'New Invoice', 'icon' => 'document-plus', 'accent' => 'blue', 'route' => 'sales'],
-        ['label' => 'New Quotation', 'icon' => 'document', 'accent' => 'green', 'route' => 'sales'],
+        ['label' => 'New Invoice', 'icon' => 'document-plus', 'accent' => 'blue', 'route' => 'documents.create', 'params' => ['type' => 'invoice']],
+        ['label' => 'New Quotation', 'icon' => 'document', 'accent' => 'green', 'route' => 'documents.create', 'params' => ['type' => 'quotation']],
         ['label' => 'New Receipt', 'icon' => 'printer', 'accent' => 'orange', 'route' => null],
         ['label' => 'Add Customer', 'icon' => 'user-plus', 'accent' => 'purple', 'route' => 'customers'],
         ['label' => 'Add Product', 'icon' => 'cube', 'accent' => 'blue', 'route' => null],

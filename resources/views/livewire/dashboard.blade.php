@@ -60,7 +60,7 @@
                             :label="$action['label']"
                             :icon="$action['icon']"
                             :accent="$action['accent']"
-                            :href="$action['route'] ? route($action['route']) : '#'" />
+                            :href="$action['route'] ? route($action['route'], $action['params'] ?? []) : '#'" />
                     @endforeach
                 </div>
             </x-ui.panel>

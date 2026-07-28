@@ -2,6 +2,7 @@
 
 use App\Livewire\Customers\Index as CustomersIndex;
 use App\Livewire\Dashboard;
+use App\Livewire\Documents\Create as DocumentCreate;
 use App\Livewire\Documents\Show as DocumentShow;
 use App\Livewire\Sales\Index as SalesIndex;
 use Illuminate\Http\Request;
@@ -46,6 +47,8 @@ Route::middleware('auth')->group(function () {
     Route::get('/', Dashboard::class)->name('dashboard');
     Route::get('/sales', SalesIndex::class)->name('sales');
     Route::get('/customers', CustomersIndex::class)->name('customers');
+    // Registered before the wildcard so "create" is never captured as an id.
+    Route::get('/documents/create', DocumentCreate::class)->name('documents.create');
     Route::get('/documents/{document}', DocumentShow::class)->name('documents.show');
 });
 

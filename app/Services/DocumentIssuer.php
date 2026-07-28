@@ -1,0 +1,60 @@
+<?php
+
+namespace App\Services;
+
+use App\Enums\DocumentStatus;
+use App\Models\Document;
+use App\Models\User;
+use App\Models\VerificationToken;
+use Illuminate\Support\Facades\DB;
+use RuntimeException;
+
+/**
+ * The single path from draft to issued.
+ *
+ * Issuing is the moment a document becomes immutable, so everything that must be
+ * true of an immutable document happens here in one transaction: final number,
+ * frozen dates, content hash, verification token. There is deliberately no other
+ * code path that flips a document out of draft.
+ */
+class DocumentIssuer
+{
+    public function __construct(protected DocumentNumbers $numbers) {}
+
+    public function issue(Document $document, User $user): Document
+    {
+        if ($document->status !== DocumentStatus::Draft) {
+            throw new RuntimeException(sprintf(
+                'Document %s is already %s and cannot be issued again.',
+                $document->number ?? $document->id,
+                $document->status->value,
+            ));
+        }
+
+        return DB::transaction(function () use ($document, $user) {
+            $document->issue_date ??= now()->toDateString();
+            $document->number ??= $this->numbers->next($document->type);
+            $document->status = DocumentStatus::Issued;
+            $document->issued_at = now();
+            $document->issued_by = $user->id;
+            $document->save();
+
+            // Hash from a refreshed model so stored casts ("250.00"), not raw PHP
+            // values (250), are what verification recomputes against later.
+            $document->refresh()->load('lines');
+            $document->forceFill([
+                'content_hash' => hash('sha256', $document->canonicalPayload()),
+            ])->saveQuietly();
+
+            $token = VerificationToken::create([
+                'token' => VerificationToken::newToken(),
+                'subject_type' => Document::class,
+                'subject_id' => $document->id,
+            ]);
+
+            $document->forceFill(['verification_token_id' => $token->id])->saveQuietly();
+
+            return $document;
+        });
+    }
+}
