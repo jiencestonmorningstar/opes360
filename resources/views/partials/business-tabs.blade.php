@@ -2,6 +2,7 @@
 <div class="no-scrollbar -mx-5 mt-5 flex gap-2 overflow-x-auto px-5 lg:mx-0 lg:px-0">
     @foreach ([
         ['label' => 'Profile', 'route' => 'business', 'icon' => 'briefcase'],
+        ['label' => 'Logo', 'route' => 'logo', 'icon' => 'spark'],
         ['label' => 'Stationery', 'route' => 'stationery', 'icon' => 'printer'],
         ['label' => 'Artisans', 'route' => 'artisans', 'icon' => 'users'],
         ['label' => 'Businesses', 'route' => 'businesses', 'icon' => 'cube'],

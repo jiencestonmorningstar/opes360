@@ -6,6 +6,7 @@ use App\Models\Company;
 use App\Models\Document;
 use App\Models\Receipt;
 use App\Models\VerificationToken;
+use App\Services\LogoComposer;
 use App\Services\QrCodes;
 use App\Support\CurrentCompany;
 use Illuminate\Http\Request;
@@ -57,6 +58,28 @@ class PrintController extends Controller
             'title' => $request->string('title')->toString() ?: 'Business Owner',
             // Sized per asset: a card QR is physically small, a letterhead's larger.
             'qrSvg' => $qr->svg($token->publicUrl(), $asset === 'letterhead' ? 150 : 110),
+        ]);
+    }
+
+    /** Downloads the current logo configuration as a standalone SVG file. */
+    public function logo(Request $request, LogoComposer $composer)
+    {
+        $company = app(CurrentCompany::class)->get();
+        abort_if($company === null, 404);
+
+        $svg = $composer->render(
+            $company->name,
+            $request->string('tagline')->toString(),
+            [
+                'palette' => $request->string('palette')->toString(),
+                'mark' => $request->string('mark')->toString(),
+                'layout' => $request->string('layout')->toString(),
+            ],
+        );
+
+        return response($svg, 200, [
+            'Content-Type' => 'image/svg+xml',
+            'Content-Disposition' => 'attachment; filename="'.$company->slug.'-logo.svg"',
         ]);
     }
 

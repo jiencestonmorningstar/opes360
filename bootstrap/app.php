@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Middleware\SecurityHeaders;
 use App\Http\Middleware\SetCurrentCompany;
 use Illuminate\Auth\Middleware\Authorize;
 use Illuminate\Contracts\Auth\Middleware\AuthenticatesRequests;
@@ -27,6 +28,10 @@ return Application::configure(basePath: dirname(__DIR__))
         $middleware->web(append: [
             SetCurrentCompany::class,
         ]);
+
+        // Applied globally so public verification and profile pages — the ones a
+        // stranger opens from a printed code — are covered too.
+        $middleware->append(SecurityHeaders::class);
 
         /*
          * SetCurrentCompany must run after auth (it reads the user) but BEFORE

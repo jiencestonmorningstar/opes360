@@ -8,6 +8,7 @@ use App\Http\Controllers\VerificationController;
 use App\Livewire\Business\Artisans as BusinessArtisans;
 use App\Livewire\Business\Companies as BusinessCompanies;
 use App\Livewire\Business\Edit as BusinessEdit;
+use App\Livewire\Business\Logo as BusinessLogo;
 use App\Livewire\Business\Stationery;
 use App\Livewire\CalendarPage\Index as CalendarIndex;
 use App\Livewire\Customers\Form as CustomerForm;
@@ -80,6 +81,8 @@ Route::middleware('auth')->group(function () {
     Route::get('/products/{item}/edit', ProductForm::class)->name('products.edit');
 
     Route::get('/business', BusinessEdit::class)->name('business');
+    Route::get('/business/logo', BusinessLogo::class)->name('logo');
+    Route::get('/business/logo/download', [PrintController::class, 'logo'])->name('logo.download');
     Route::get('/business/stationery', Stationery::class)->name('stationery');
     Route::get('/businesses', BusinessCompanies::class)->name('businesses');
     Route::get('/artisans', BusinessArtisans::class)->name('artisans');
