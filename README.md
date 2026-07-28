@@ -13,18 +13,33 @@ IndexedDB
 
 ## Status
 
-**Phase 0 in progress** — foundation and the dashboard shell are built. See [`docs/PLAN.md`](docs/PLAN.md) for
-the full roadmap.
+**Working application.** Every module in the navigation is built and tested; the
+core commercial loop runs end to end on a phone. See [`docs/PLAN.md`](docs/PLAN.md)
+for the roadmap and what remains.
 
-Built so far:
+**Built:**
 
-- Multi-company tenancy with row-level isolation, enforced by a global scope applied through a trait rather
-  than per model
-- Seven seeded roles with granular permissions and per-user overrides
-- Schema for identity, verification tokens, CRM, catalogue, sales documents, payments and receipts
-- Immutable issued documents with content hashing for tamper detection
-- Responsive dashboard matching the product design in light and dark themes
-- PWA manifest and installable app shell
+- **Identity** — company profile with encrypted tax identifiers, logo upload, public
+  business page, permanent business QR
+- **Stationery** — A4/A3 letterhead, double-sided business cards, email signature,
+  company stamp, all print-ready
+- **Sales** — seven document types, drafts, issuing with ledger-backed numbering,
+  quotation→invoice conversion, voiding
+- **Payments & receipts** — part-payments, allocation, numbered receipts, A4/A5 and
+  58/80mm thermal print
+- **Verification** — public `/v/{token}` pages for documents, receipts, businesses and
+  artisans, with QR generation, tamper detection and a built-in scanner
+- **CRM & catalogue** — contacts of four types with history and notes, products and
+  services with an append-only stock ledger
+- **Artisans** — public verified profiles with skills, testimonials and vCards
+- **Operations** — dashboard, reports with CSV export, payments ledger, due-date
+  calendar, settings, help
+- **Platform** — multi-company tenancy, seven roles, registration and onboarding,
+  PWA shell with offline page, light and dark themes
+
+**Not yet built:** the full offline engine (IndexedDB mirror, outbox, sync protocol —
+Phase 4), AI logo generation (Phase 2), the AR layer (Phase 8), and email
+verification / password reset / 2FA.
 
 ## Getting started
 
@@ -64,6 +79,14 @@ single hash comparison.
 
 **Stock is an append-only ledger.** `stock_movements` holds signed quantities; there is no mutable quantity
 column. Two devices selling the same item offline each append `-1` and both are correct.
+
+**One verification token, many renderers.** Every verifiable subject — company, artisan, document, receipt —
+gets a single immutable token. QR resolves it today and AR will resolve the same token in Phase 8, so the two
+can never disagree about whether something is valid.
+
+**Public pages cross the tenant boundary narrowly.** Verification and profile pages have no session, so they
+resolve *as* the subject's company via `CurrentCompany::as()` rather than dropping the scope. They render
+inside that closure — returning a View would defer rendering past the scope, and the scope fails closed.
 
 **Design tokens.** Colours are defined once in `resources/css/app.css` and re-pointed under `.dark`, so
 components need a `dark:` variant only where the *treatment* differs between themes, not merely the colour.
