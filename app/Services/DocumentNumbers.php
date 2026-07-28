@@ -23,14 +23,25 @@ class DocumentNumbers
 
     public function next(DocumentType $type, ?CarbonImmutable $date = null): string
     {
+        return $this->allocate($type->value, $type->prefix(), $date);
+    }
+
+    /** Receipts are not a DocumentType but share the same ledger and guarantees. */
+    public function nextReceipt(?CarbonImmutable $date = null): string
+    {
+        return $this->allocate('receipt', 'RCP', $date);
+    }
+
+    protected function allocate(string $typeKey, string $prefix, ?CarbonImmutable $date): string
+    {
         $date ??= CarbonImmutable::now();
         $year = (int) $date->format('Y');
 
         // The transaction + row lock make concurrent issuance safe: two requests
         // issuing at once must not read the same next_available.
-        $value = DB::transaction(function () use ($type, $year) {
+        $value = DB::transaction(function () use ($typeKey, $year) {
             $lease = NumberLease::query()
-                ->where('document_type', $type->value)
+                ->where('document_type', $typeKey)
                 ->where('year', $year)
                 ->where('status', 'active')
                 ->whereNull('device_id')
@@ -39,7 +50,7 @@ class DocumentNumbers
                 ->first();
 
             if ($lease === null) {
-                $lease = $this->openBlock($type, $year);
+                $lease = $this->openBlock($typeKey, $year);
             }
 
             $number = (int) $lease->next_available;
@@ -55,12 +66,7 @@ class DocumentNumbers
             return $number;
         });
 
-        return $this->format($type, $year, $value);
-    }
-
-    public function format(DocumentType $type, int $year, int $value): string
-    {
-        return sprintf('%s-%d-%05d', $type->prefix(), $year, $value);
+        return sprintf('%s-%d-%05d', $prefix, $year, $value);
     }
 
     /**
@@ -68,15 +74,15 @@ class DocumentNumbers
      * including device leases, so a server block can never overlap numbers a
      * device is consuming offline.
      */
-    protected function openBlock(DocumentType $type, int $year): NumberLease
+    protected function openBlock(string $typeKey, int $year): NumberLease
     {
         $highest = (int) NumberLease::query()
-            ->where('document_type', $type->value)
+            ->where('document_type', $typeKey)
             ->where('year', $year)
             ->max('range_end');
 
         return NumberLease::create([
-            'document_type' => $type->value,
+            'document_type' => $typeKey,
             'year' => $year,
             'range_start' => $highest + 1,
             'range_end' => $highest + self::BLOCK_SIZE,

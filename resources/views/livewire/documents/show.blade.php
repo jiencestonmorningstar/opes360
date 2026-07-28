@@ -108,12 +108,18 @@
             @if ($document->allocations->isNotEmpty())
                 <x-ui.panel title="Payments" body-class="-mx-1">
                     @foreach ($document->allocations as $allocation)
-                        <div class="flex items-center gap-3.5 px-1 py-3 {{ ! $loop->first ? 'border-t border-border' : '' }}">
+                        <div class="flex items-center gap-3.5 px-1 py-3 {{ ! $loop->first ? 'border-t border-border' : '' }}"
+                             wire:key="pay-{{ $allocation->id }}">
                             <span class="flex size-[38px] shrink-0 items-center justify-center rounded-full bg-tint-green">
                                 <x-icon name="banknotes" class="size-[19px] text-accent-green" />
                             </span>
                             <div class="min-w-0 flex-1">
-                                <p class="text-[14px] font-medium text-ink">{{ $allocation->payment->method->label() }}</p>
+                                <p class="text-[14px] font-medium text-ink">
+                                    {{ $allocation->payment->method->label() }}
+                                    @if ($allocation->payment->receipt)
+                                        <span class="text-muted">· {{ $allocation->payment->receipt->number }}</span>
+                                    @endif
+                                </p>
                                 <p class="text-[12.5px] text-muted">{{ $allocation->payment->received_at->format('M j, Y · g:ia') }}</p>
                             </div>
                             <p class="tnum shrink-0 text-[14.5px] font-semibold text-positive">
@@ -129,22 +135,75 @@
         <div class="space-y-4">
             <x-ui.panel title="Actions">
                 <div class="space-y-2.5">
-                    @foreach ([
-                        ['label' => 'Download PDF', 'icon' => 'document', 'primary' => true],
-                        ['label' => 'Record Payment', 'icon' => 'banknotes', 'primary' => false],
-                        ['label' => 'Share', 'icon' => 'qr-code', 'primary' => false],
-                    ] as $action)
-                        <button type="button"
-                                class="focusable flex h-11 w-full items-center justify-center gap-2 rounded-xl text-[14px] font-semibold transition-colors
-                                       {{ $action['primary']
-                                           ? 'bg-brand text-white hover:opacity-90'
-                                           : 'bg-surface-2 text-ink-2 hover:bg-tint-blue hover:text-brand' }}">
-                            <x-icon :name="$action['icon']" class="size-[18px]" stroke-width="2" />
-                            {{ $action['label'] }}
+                    <button type="button"
+                            class="focusable flex h-11 w-full items-center justify-center gap-2 rounded-xl bg-brand text-[14px] font-semibold text-white transition-opacity hover:opacity-90">
+                        <x-icon name="document" class="size-[18px]" stroke-width="2" />
+                        Download PDF
+                    </button>
+
+                    @if ((float) $document->balance > 0 && ! in_array($document->status->value, ['draft', 'void'], true))
+                        <button type="button" wire:click="openPayment"
+                                class="focusable flex h-11 w-full items-center justify-center gap-2 rounded-xl bg-surface-2 text-[14px] font-semibold text-ink-2 transition-colors hover:bg-tint-blue hover:text-brand">
+                            <x-icon name="banknotes" class="size-[18px]" stroke-width="2" />
+                            Record Payment
                         </button>
-                    @endforeach
+                    @endif
+
+                    <button type="button"
+                            class="focusable flex h-11 w-full items-center justify-center gap-2 rounded-xl bg-surface-2 text-[14px] font-semibold text-ink-2 transition-colors hover:bg-tint-blue hover:text-brand">
+                        <x-icon name="qr-code" class="size-[18px]" stroke-width="2" />
+                        Share
+                    </button>
                 </div>
             </x-ui.panel>
+
+            {{-- Record-payment panel, revealed in place --}}
+            @if ($payingOpen)
+                <x-ui.panel title="Record Payment">
+                    <x-slot:actions>
+                        <button type="button" wire:click="closePayment"
+                                class="focusable text-[14px] font-semibold text-muted hover:text-ink">
+                            Cancel
+                        </button>
+                    </x-slot:actions>
+
+                    <label class="block">
+                        <span class="mb-1.5 block text-[13px] font-semibold text-ink-2">Amount</span>
+                        <input type="number" step="any" min="0" inputmode="decimal" wire:model="amount"
+                               class="tnum h-12 w-full rounded-xl border border-border bg-surface px-3.5 text-[16px] font-semibold text-ink focus:border-brand focus:outline-none focus:ring-2 focus:ring-brand/20">
+                    </label>
+                    @error('amount')
+                        <p class="mt-2 text-[13px] font-medium text-warning">{{ $message }}</p>
+                    @enderror
+
+                    <div class="mt-4">
+                        <span class="mb-1.5 block text-[13px] font-semibold text-ink-2">Method</span>
+                        <div class="grid grid-cols-2 gap-2">
+                            @foreach (\App\Enums\PaymentMethod::cases() as $payMethod)
+                                <button type="button" wire:click="$set('method', '{{ $payMethod->value }}')"
+                                        class="focusable h-11 rounded-xl text-[13.5px] font-semibold transition-colors
+                                               {{ $method === $payMethod->value
+                                                   ? 'bg-tint-blue text-brand ring-1 ring-brand/40'
+                                                   : 'border border-border bg-surface text-ink-2 hover:bg-surface-2' }}">
+                                    {{ $payMethod->label() }}
+                                </button>
+                            @endforeach
+                        </div>
+                    </div>
+
+                    <label class="mt-4 block">
+                        <span class="mb-1.5 block text-[13px] font-semibold text-ink-2">Reference <span class="font-normal text-faint">(optional)</span></span>
+                        <input type="text" wire:model="reference" placeholder="Transfer ref, transaction id…"
+                               class="h-12 w-full rounded-xl border border-border bg-surface px-3.5 text-[14.5px] text-ink placeholder:text-faint focus:border-brand focus:outline-none focus:ring-2 focus:ring-brand/20">
+                    </label>
+
+                    <button type="button" wire:click="recordPayment" wire:loading.attr="disabled"
+                            class="focusable mt-5 flex h-12 w-full items-center justify-center rounded-xl bg-brand text-[14.5px] font-semibold text-white transition-opacity hover:opacity-90">
+                        <span wire:loading.remove wire:target="recordPayment">Confirm &amp; Issue Receipt</span>
+                        <span wire:loading wire:target="recordPayment">Recording…</span>
+                    </button>
+                </x-ui.panel>
+            @endif
 
             <x-ui.panel title="Verification">
                 @if ($document->verificationToken)
