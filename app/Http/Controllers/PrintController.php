@@ -2,8 +2,10 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Company;
 use App\Models\Document;
 use App\Models\Receipt;
+use App\Models\VerificationToken;
 use App\Services\QrCodes;
 use App\Support\CurrentCompany;
 use Illuminate\Http\Request;
@@ -29,6 +31,32 @@ class PrintController extends Controller
                 ? $qr->svg($document->verificationToken->publicUrl(), 132)
                 : null,
             'autoprint' => $request->boolean('print'),
+        ]);
+    }
+
+    public function stationery(Request $request, QrCodes $qr)
+    {
+        $company = app(CurrentCompany::class)->get();
+        abort_if($company === null, 404);
+
+        $token = VerificationToken::firstOrCreate(
+            ['subject_type' => Company::class, 'subject_id' => $company->id],
+            ['token' => VerificationToken::newToken(), 'company_id' => $company->id],
+        );
+
+        $asset = $request->string('asset')->toString();
+
+        return view('print.stationery', [
+            'company' => $company,
+            'asset' => in_array($asset, ['letterhead', 'card', 'stamp'], true) ? $asset : 'letterhead',
+            'size' => $request->string('size')->toString() === 'a3' ? 'a3' : 'a4',
+            'shape' => in_array($request->string('shape')->toString(), ['circular', 'square', 'oval'], true)
+                ? $request->string('shape')->toString()
+                : 'circular',
+            'name' => $request->string('name')->toString() ?: $request->user()->name,
+            'title' => $request->string('title')->toString() ?: 'Business Owner',
+            // Sized per asset: a card QR is physically small, a letterhead's larger.
+            'qrSvg' => $qr->svg($token->publicUrl(), $asset === 'letterhead' ? 150 : 110),
         ]);
     }
 

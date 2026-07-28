@@ -52,6 +52,7 @@ class PlatformPagesTest extends TestCase
             'products' => ['/products', 'Products'],
             'product create' => ['/products/create', 'New Product'],
             'business' => ['/business', 'Business QR'],
+            'stationery' => ['/business/stationery', 'Stationery'],
             'payments' => ['/payments', 'Payments'],
             'reports' => ['/reports', 'Reports'],
             'calendar' => ['/calendar', 'Calendar'],
@@ -140,6 +141,40 @@ class PlatformPagesTest extends TestCase
 
         $response->assertOk()->assertHeader('Content-Type', 'text/vcard; charset=utf-8');
         $this->assertStringContainsString('FN:Opesware Technologies', $response->getContent());
+    }
+
+    public function test_stationery_print_views_render_each_asset(): void
+    {
+        foreach (['letterhead', 'card', 'stamp'] as $asset) {
+            $this->actingAs($this->user)
+                ->get(route('stationery.print', ['asset' => $asset]))
+                ->assertOk()
+                ->assertSee('Opesware Technologies');
+        }
+    }
+
+    public function test_printed_stationery_carries_an_inlined_qr(): void
+    {
+        // Letterheads and cards carry the business QR, inlined rather than
+        // fetched so it is present when printing from an offline device. The
+        // stamp deliberately has none: rubber cannot hold that detail.
+        foreach (['letterhead' => true, 'card' => true, 'stamp' => false] as $asset => $expectsQr) {
+            $content = $this->actingAs($this->user)
+                ->get(route('stationery.print', ['asset' => $asset]))
+                ->getContent();
+
+            $expectsQr
+                ? $this->assertStringContainsString('<svg', $content, "{$asset} should carry a QR")
+                : $this->assertStringNotContainsString('<svg', $content, "{$asset} should not carry a QR");
+        }
+    }
+
+    public function test_an_unknown_stationery_asset_falls_back_to_the_letterhead(): void
+    {
+        $this->actingAs($this->user)
+            ->get(route('stationery.print', ['asset' => 'poster']))
+            ->assertOk()
+            ->assertSee('letterhead', false);
     }
 
     public function test_reports_export_streams_csv(): void

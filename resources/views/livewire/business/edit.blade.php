@@ -13,11 +13,18 @@
             <p class="mt-1 text-[14.5px] text-muted">Your identity on every document you issue.</p>
         </div>
 
-        <a href="{{ route('profile.business', $company) }}" target="_blank"
-           class="tap focusable flex shrink-0 items-center gap-2 rounded-full border border-border bg-surface px-5 text-[14px] font-semibold text-ink-2 hover:bg-surface-2">
-            View public page
-            <x-icon name="chevron-right" class="size-[15px]" stroke-width="2.4" />
-        </a>
+        <div class="flex shrink-0 gap-2">
+            <a href="{{ route('stationery') }}"
+               class="tap focusable flex items-center gap-2 rounded-full bg-brand px-5 text-[14px] font-semibold text-white hover:opacity-90">
+                <x-icon name="printer" class="size-[16px]" stroke-width="2" />
+                Stationery
+            </a>
+            <a href="{{ route('profile.business', $company) }}" target="_blank"
+               class="tap focusable hidden items-center gap-2 rounded-full border border-border bg-surface px-5 text-[14px] font-semibold text-ink-2 hover:bg-surface-2 min-[560px]:flex">
+                Public page
+                <x-icon name="chevron-right" class="size-[15px]" stroke-width="2.4" />
+            </a>
+        </div>
     </div>
 
     @if (session('status'))

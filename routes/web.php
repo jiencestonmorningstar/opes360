@@ -4,6 +4,7 @@ use App\Http\Controllers\PrintController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\VerificationController;
 use App\Livewire\Business\Edit as BusinessEdit;
+use App\Livewire\Business\Stationery;
 use App\Livewire\CalendarPage\Index as CalendarIndex;
 use App\Livewire\Customers\Form as CustomerForm;
 use App\Livewire\Customers\Index as CustomersIndex;
@@ -77,6 +78,8 @@ Route::middleware('auth')->group(function () {
     Route::get('/products/{item}/edit', ProductForm::class)->name('products.edit');
 
     Route::get('/business', BusinessEdit::class)->name('business');
+    Route::get('/business/stationery', Stationery::class)->name('stationery');
+    Route::get('/stationery/print', [PrintController::class, 'stationery'])->name('stationery.print');
     Route::get('/payments', PaymentsIndex::class)->name('payments');
     Route::get('/reports', ReportsIndex::class)->name('reports');
     Route::get('/calendar', CalendarIndex::class)->name('calendar');
