@@ -5,6 +5,7 @@ namespace Tests\Feature;
 use App\Livewire\Business\Artisans;
 use App\Livewire\Business\Companies;
 use App\Models\Artisan;
+use App\Models\ArtisanTestimonial;
 use App\Models\Company;
 use App\Models\Role;
 use App\Models\User;
@@ -96,6 +97,35 @@ class ArtisanAndCompanyTest extends TestCase
             ->assertSee('Verified artisan');
 
         $this->get("/v/{$token->token}")->assertOk()->assertSee('Verified authentic');
+    }
+
+    public function test_the_public_profile_renders_data_that_needs_the_company_scope(): void
+    {
+        Livewire::actingAs($this->user)
+            ->test(Artisans::class)
+            ->call('startCreating')
+            ->set('form.full_name', 'Emeka Nwosu')
+            ->call('save');
+
+        $artisan = Artisan::firstOrFail();
+
+        ArtisanTestimonial::create([
+            'artisan_id' => $artisan->id,
+            'author_name' => 'Chika A.',
+            'rating' => 5,
+            'body' => 'Neat work, fair price.',
+            'is_published' => true,
+        ]);
+
+        // Rendering must happen inside the company scope. If the controller
+        // returned a View instead of a rendered response, the scope would be
+        // restored before Blade ran and the testimonial would vanish.
+        app(CurrentCompany::class)->set(null);
+
+        $this->get(route('profile.artisan', $artisan))
+            ->assertOk()
+            ->assertSee('Neat work, fair price.')
+            ->assertSee('5 / 5');
     }
 
     public function test_an_unpublished_artisan_is_hidden_from_the_public_url(): void

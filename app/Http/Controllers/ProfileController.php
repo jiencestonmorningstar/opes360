@@ -19,18 +19,18 @@ class ProfileController extends Controller
 {
     public function business(Company $company)
     {
-        return app(CurrentCompany::class)->as($company, function () use ($company) {
-            $token = VerificationToken::query()
+        // response()->view() renders immediately, so every query the template
+        // runs still happens inside the company scope. Returning a View instance
+        // would defer rendering to after the scope is restored, and the tenant
+        // scope fails closed — the page would silently lose its data.
+        return app(CurrentCompany::class)->as($company, fn () => response()->view('profile.business', [
+            'company' => $company,
+            'businessToken' => VerificationToken::query()
                 ->where('subject_type', Company::class)
                 ->where('subject_id', $company->id)
-                ->first();
-
-            return view('profile.business', [
-                'company' => $company,
-                'businessToken' => $token,
-                'items' => Item::query()->active()->orderBy('name')->limit(8)->get(),
-            ]);
-        });
+                ->first(),
+            'items' => Item::query()->active()->orderBy('name')->limit(8)->get(),
+        ]));
     }
 
     /**
@@ -48,7 +48,8 @@ class ProfileController extends Controller
 
         $company = Company::findOrFail($artisan->company_id);
 
-        return app(CurrentCompany::class)->as($company, fn () => view('profile.artisan', [
+        // Rendered inside the scope for the same reason as the business profile.
+        return app(CurrentCompany::class)->as($company, fn () => response()->view('profile.artisan', [
             'artisan' => $artisan->load(['testimonials' => fn ($q) => $q->where('is_published', true)]),
             'company' => $company,
         ]));

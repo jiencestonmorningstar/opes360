@@ -82,9 +82,16 @@ class Artisan extends Model
         return $palette[crc32((string) $this->id) % count($palette)];
     }
 
+    /**
+     * Averages the already-loaded testimonials rather than re-querying, so the
+     * public profile does not fire an extra query per render — and so the value
+     * is correct even where the relation was loaded under a different scope.
+     */
     public function averageRating(): ?float
     {
-        $ratings = $this->testimonials()->whereNotNull('rating')->pluck('rating');
+        $ratings = $this->relationLoaded('testimonials')
+            ? $this->testimonials->whereNotNull('rating')->pluck('rating')
+            : $this->testimonials()->whereNotNull('rating')->pluck('rating');
 
         return $ratings->isEmpty() ? null : round($ratings->avg(), 1);
     }
