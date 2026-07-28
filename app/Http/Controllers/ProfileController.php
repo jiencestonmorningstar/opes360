@@ -2,8 +2,10 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Artisan;
 use App\Models\Company;
 use App\Models\Item;
+use App\Models\Scopes\CompanyScope;
 use App\Models\VerificationToken;
 use App\Support\CurrentCompany;
 use Illuminate\Routing\Controller;
@@ -29,6 +31,58 @@ class ProfileController extends Controller
                 'items' => Item::query()->active()->orderBy('name')->limit(8)->get(),
             ]);
         });
+    }
+
+    /**
+     * Artisan profiles are resolved without the tenant scope (there is no session
+     * on a public scan), then everything else runs as the artisan's own company.
+     */
+    public function artisan(string $slug)
+    {
+        $artisan = Artisan::query()
+            ->withoutGlobalScope(CompanyScope::class)
+            ->where('slug', $slug)
+            ->firstOrFail();
+
+        abort_unless($artisan->is_published, 404);
+
+        $company = Company::findOrFail($artisan->company_id);
+
+        return app(CurrentCompany::class)->as($company, fn () => view('profile.artisan', [
+            'artisan' => $artisan->load(['testimonials' => fn ($q) => $q->where('is_published', true)]),
+            'company' => $company,
+        ]));
+    }
+
+    public function artisanVcard(string $slug)
+    {
+        $artisan = Artisan::query()
+            ->withoutGlobalScope(CompanyScope::class)
+            ->where('slug', $slug)
+            ->firstOrFail();
+
+        abort_unless($artisan->is_published, 404);
+
+        $company = Company::find($artisan->company_id);
+
+        $lines = array_filter([
+            'BEGIN:VCARD',
+            'VERSION:3.0',
+            'FN:'.$artisan->full_name,
+            'N:'.$artisan->full_name.';;;;',
+            $artisan->occupation ? 'TITLE:'.$artisan->occupation : null,
+            $company ? 'ORG:'.$company->name : null,
+            $artisan->email ? 'EMAIL:'.$artisan->email : null,
+            ...collect($artisan->phones ?? [])->map(fn ($p) => 'TEL;TYPE=CELL:'.$p)->all(),
+            'URL:'.route('profile.artisan', $artisan),
+            'NOTE:Verified with OPES360',
+            'END:VCARD',
+        ]);
+
+        return response(implode("\r\n", $lines), 200, [
+            'Content-Type' => 'text/vcard; charset=utf-8',
+            'Content-Disposition' => 'attachment; filename="'.$artisan->slug.'.vcf"',
+        ]);
     }
 
     public function vcard(Company $company)

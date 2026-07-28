@@ -20,6 +20,8 @@
         </a>
     </div>
 
+    @include('partials.business-tabs')
+
     {{-- Asset switcher --}}
     <div class="no-scrollbar -mx-5 mt-5 flex gap-2 overflow-x-auto px-5 lg:mx-0 lg:px-0" role="tablist">
         @foreach (Stationery::ASSETS as $key => $label)

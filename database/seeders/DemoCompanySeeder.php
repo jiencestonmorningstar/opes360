@@ -4,6 +4,8 @@ namespace Database\Seeders;
 
 use App\Enums\DocumentStatus;
 use App\Enums\DocumentType;
+use App\Models\Artisan;
+use App\Models\ArtisanTestimonial;
 use App\Models\Company;
 use App\Models\Contact;
 use App\Models\Document;
@@ -125,7 +127,78 @@ class DemoCompanySeeder extends Seeder
         $this->seedToday($customers, $lease);
         $this->seedExpenses($customers);
 
+        $this->seedArtisans();
         $this->recomputeContactBalances();
+    }
+
+    /** Two artisans with public, verified profiles (Module 5). */
+    protected function seedArtisans(): void
+    {
+        $people = [
+            [
+                'full_name' => 'Emeka Nwosu',
+                'slug' => 'emeka-nwosu',
+                'occupation' => 'Master Electrician',
+                'trade_category' => 'Construction',
+                'skills' => ['Wiring', 'Solar installation', 'Fault diagnosis'],
+                'years' => 12,
+                'bio' => 'Twelve years wiring homes and small factories across Lagos. Solar-certified since 2021.',
+                'phone' => '+234 803 555 0101',
+                'testimonial' => ['Chika A.', 5, 'Rewired our whole shop in two days. Neat work, fair price.'],
+            ],
+            [
+                'full_name' => 'Amina Bello',
+                'slug' => 'amina-bello',
+                'occupation' => 'Carpenter & Joiner',
+                'trade_category' => 'Furniture',
+                'skills' => ['Cabinetry', 'Fitted wardrobes', 'Restoration'],
+                'years' => 8,
+                'bio' => 'Bespoke cabinetry and fitted furniture, built to measure in a Lagos workshop.',
+                'phone' => '+234 809 555 0202',
+                'testimonial' => ['Tunde O.', 5, 'The wardrobe fits perfectly and the finish is excellent.'],
+            ],
+        ];
+
+        foreach ($people as $person) {
+            $artisan = Artisan::create([
+                'slug' => $person['slug'],
+                'artisan_number' => 'ART-'.Str::upper(Str::random(6)),
+                'full_name' => $person['full_name'],
+                'occupation' => $person['occupation'],
+                'trade_category' => $person['trade_category'],
+                'skills' => $person['skills'],
+                'biography' => $person['bio'],
+                'years_experience' => $person['years'],
+                'phones' => [$person['phone']],
+                'whatsapp' => $person['phone'],
+                'email' => Str::slug($person['full_name']).'@opesware.com',
+                'address' => ['city' => 'Lagos'],
+                'coverage_area' => ['Lagos', 'Ikeja', 'Lekki'],
+                'languages' => ['English', 'Yoruba'],
+                'is_published' => true,
+            ]);
+
+            $token = VerificationToken::create([
+                'token' => VerificationToken::newToken(),
+                'subject_type' => Artisan::class,
+                'subject_id' => $artisan->id,
+            ]);
+
+            $artisan->forceFill([
+                'verification_token_id' => $token->id,
+                'is_verified' => true,
+            ])->save();
+
+            [$author, $rating, $body] = $person['testimonial'];
+
+            ArtisanTestimonial::create([
+                'artisan_id' => $artisan->id,
+                'author_name' => $author,
+                'rating' => $rating,
+                'body' => $body,
+                'is_published' => true,
+            ]);
+        }
     }
 
     /**
@@ -161,6 +234,8 @@ class DemoCompanySeeder extends Seeder
     /** Keeps re-running the seeder idempotent without touching other tenants. */
     protected function wipeExistingDemoData(): void
     {
+        ArtisanTestimonial::query()->delete();
+        Artisan::query()->forceDelete();
         PaymentAllocation::query()->delete();
         Receipt::query()->delete();
         Payment::query()->forceDelete();

@@ -1,5 +1,6 @@
 @php
     $user = auth()->user();
+    $currentCompany = app(\App\Support\CurrentCompany::class)->get();
 @endphp
 
 <header class="sticky top-0 z-20 bg-surface/95 backdrop-blur-sm dark:bg-canvas/95 lg:bg-transparent lg:backdrop-blur-none lg:dark:bg-transparent">
@@ -60,6 +61,20 @@
                     <p class="truncate text-[14.5px] font-semibold text-ink">{{ $user?->name ?? 'Guest' }}</p>
                     <p class="truncate text-[12.5px] text-muted">{{ $user?->email }}</p>
                 </div>
+
+                {{-- Which business you are acting as. Multi-company owners need
+                     this visible at all times, not buried in settings. --}}
+                @if ($currentCompany)
+                    <a href="{{ route('businesses') }}" role="menuitem"
+                       class="flex w-full items-center gap-3 rounded-lg border-b border-border px-3 py-2.5 hover:bg-surface-2">
+                        <x-icon name="briefcase" class="size-5 shrink-0 text-muted" />
+                        <span class="min-w-0 flex-1">
+                            <span class="block truncate text-[14px] font-semibold text-ink">{{ $currentCompany->name }}</span>
+                            <span class="block text-[11.5px] text-muted">Switch business</span>
+                        </span>
+                        <x-icon name="chevron-right" class="size-4 shrink-0 text-faint" stroke-width="2.2" />
+                    </a>
+                @endif
 
                 {{--
                     The theme switch lives here rather than in the header so the top

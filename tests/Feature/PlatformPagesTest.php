@@ -53,6 +53,8 @@ class PlatformPagesTest extends TestCase
             'product create' => ['/products/create', 'New Product'],
             'business' => ['/business', 'Business QR'],
             'stationery' => ['/business/stationery', 'Stationery'],
+            'artisans' => ['/artisans', 'Artisans'],
+            'businesses' => ['/businesses', 'Businesses'],
             'payments' => ['/payments', 'Payments'],
             'reports' => ['/reports', 'Reports'],
             'calendar' => ['/calendar', 'Calendar'],

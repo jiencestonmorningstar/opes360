@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Artisan;
 use App\Models\Company;
 use App\Models\Document;
 use App\Models\Receipt;
@@ -80,6 +81,9 @@ class VerificationController extends Controller
 
     /**
      * @return array{0: string, 1: ?string, 2: ?Document, 3: ?Receipt}
+     *
+     * Every subject type resolves to one of four verdicts, so the page never has
+     * to know what kind of thing it is verifying.
      */
     protected function resolveSubject(VerificationToken $verification): array
     {
@@ -97,6 +101,16 @@ class VerificationController extends Controller
             return [$document->isTampered() ? 'tampered' : 'valid', 'document', $document, null];
         }
 
+        if ($verification->subject_type === Artisan::class) {
+            $artisan = Artisan::find($verification->subject_id);
+
+            if ($artisan === null || ! $artisan->is_published) {
+                return ['voided', 'artisan', null, null];
+            }
+
+            return ['valid', 'artisan', null, null];
+        }
+
         if ($verification->subject_type === Receipt::class) {
             $receipt = Receipt::with(['contact', 'payment'])->find($verification->subject_id);
 
@@ -107,7 +121,7 @@ class VerificationController extends Controller
             return [$receipt->isTampered() ? 'tampered' : 'valid', 'receipt', null, $receipt];
         }
 
-        // Company and (later) artisan tokens verify the business itself.
+        // A company token verifies the business itself.
         return ['valid', 'company', null, null];
     }
 

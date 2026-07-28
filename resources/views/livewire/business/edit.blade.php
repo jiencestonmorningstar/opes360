@@ -33,6 +33,8 @@
         </div>
     @endif
 
+    @include('partials.business-tabs')
+
     <div class="mt-5 grid gap-4 lg:grid-cols-3">
         <div class="space-y-4 lg:col-span-2">
 

@@ -3,6 +3,8 @@
 use App\Http\Controllers\PrintController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\VerificationController;
+use App\Livewire\Business\Artisans as BusinessArtisans;
+use App\Livewire\Business\Companies as BusinessCompanies;
 use App\Livewire\Business\Edit as BusinessEdit;
 use App\Livewire\Business\Stationery;
 use App\Livewire\CalendarPage\Index as CalendarIndex;
@@ -79,6 +81,8 @@ Route::middleware('auth')->group(function () {
 
     Route::get('/business', BusinessEdit::class)->name('business');
     Route::get('/business/stationery', Stationery::class)->name('stationery');
+    Route::get('/businesses', BusinessCompanies::class)->name('businesses');
+    Route::get('/artisans', BusinessArtisans::class)->name('artisans');
     Route::get('/stationery/print', [PrintController::class, 'stationery'])->name('stationery.print');
     Route::get('/payments', PaymentsIndex::class)->name('payments');
     Route::get('/reports', ReportsIndex::class)->name('reports');
@@ -94,6 +98,8 @@ Route::middleware('auth')->group(function () {
 Route::middleware('throttle:60,1')->group(function () {
     Route::get('/business/{company}', [ProfileController::class, 'business'])->name('profile.business');
     Route::get('/business/{company}/vcard', [ProfileController::class, 'vcard'])->name('profile.vcard');
+    Route::get('/artisan/{artisan}', [ProfileController::class, 'artisan'])->name('profile.artisan');
+    Route::get('/artisan/{artisan}/vcard', [ProfileController::class, 'artisanVcard'])->name('profile.artisan.vcard');
 });
 
 /*
