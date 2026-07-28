@@ -7,9 +7,30 @@ use App\Models\Role;
 use App\Models\User;
 use Database\Seeders\RolePermissionSeeder;
 use Illuminate\Foundation\Testing\TestCase as BaseTestCase;
+use Livewire\Features\SupportTesting\Testable;
 
 abstract class TestCase extends BaseTestCase
 {
+    /**
+     * The value a Livewire action returned.
+     *
+     * Livewire exposes returned values only through assertReturned, but a
+     * component whose actions answer the *client* — as the offline-capable forms
+     * do — needs its answer inspected, not just asserted against.
+     */
+    protected function returned(Testable $component): mixed
+    {
+        $captured = null;
+
+        $component->assertReturned(function ($value) use (&$captured) {
+            $captured = $value;
+
+            return true;
+        });
+
+        return $captured;
+    }
+
     /**
      * Give a user a real membership in a company at the named role.
      *

@@ -4,6 +4,7 @@ namespace App\Models;
 
 use App\Enums\PaymentMethod;
 use App\Models\Concerns\BelongsToCompany;
+use App\Models\Concerns\Syncable;
 use Illuminate\Database\Eloquent\Concerns\HasUlids;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -18,6 +19,7 @@ class Payment extends Model
     use HasFactory;
     use HasUlids;
     use SoftDeletes;
+    use Syncable;
 
     protected $guarded = ['id'];
 

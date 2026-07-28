@@ -105,6 +105,7 @@ Route::middleware('auth')->group(function () {
 Route::middleware(['auth', 'throttle:120,1'])->prefix('api/sync/v1')->group(function () {
     Route::post('/push', [SyncController::class, 'push'])->name('sync.push');
     Route::get('/pull', [SyncController::class, 'pull'])->name('sync.pull');
+    Route::post('/lease', [SyncController::class, 'lease'])->name('sync.lease');
 });
 
 /*

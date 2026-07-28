@@ -4,6 +4,7 @@ namespace App\Services;
 
 use App\Enums\DocumentStatus;
 use App\Models\Contact;
+use App\Models\Device;
 use App\Models\Document;
 use App\Models\DocumentLine;
 use App\Models\Item;
@@ -13,6 +14,7 @@ use App\Models\User;
 use App\Support\CurrentCompany;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\DB;
+use RuntimeException;
 use Throwable;
 
 /**
@@ -40,7 +42,10 @@ class SyncEngine
         'payment' => Payment::class,
     ];
 
-    public function __construct(protected DocumentIssuer $issuer) {}
+    public function __construct(
+        protected DocumentIssuer $issuer,
+        protected DocumentNumbers $numbers,
+    ) {}
 
     /**
      * Applies a batch of envelopes, returning one result per envelope in the
@@ -49,16 +54,18 @@ class SyncEngine
      * @param  array<int, array<string, mixed>>  $envelopes
      * @return array<int, array<string, mixed>>
      */
-    public function push(array $envelopes, User $user, ?string $deviceId = null): array
+    public function push(array $envelopes, User $user, ?Device $device = null): array
     {
         return collect($envelopes)
-            ->map(fn (array $envelope) => $this->applyOne($envelope, $user, $deviceId))
+            ->map(fn (array $envelope) => $this->applyOne($envelope, $user, $device))
             ->all();
     }
 
     /** @return array<string, mixed> */
-    protected function applyOne(array $envelope, User $user, ?string $deviceId): array
+    protected function applyOne(array $envelope, User $user, ?Device $device): array
     {
+        $deviceId = $device?->id;
+
         $id = (string) ($envelope['id'] ?? '');
 
         if ($id === '') {
@@ -83,7 +90,7 @@ class SyncEngine
         }
 
         try {
-            return DB::transaction(fn () => $this->write($id, $envelope, $type, $user, $deviceId));
+            return DB::transaction(fn () => $this->write($id, $envelope, $type, $user, $device));
         } catch (Throwable $e) {
             // A rejected envelope is still recorded, so the device stops retrying
             // something that will never succeed and can show the user why.
@@ -92,8 +99,9 @@ class SyncEngine
     }
 
     /** @return array<string, mixed> */
-    protected function write(string $id, array $envelope, string $type, User $user, ?string $deviceId): array
+    protected function write(string $id, array $envelope, string $type, User $user, ?Device $device): array
     {
+        $deviceId = $device?->id;
         /** @var class-string<Model> $modelClass */
         $modelClass = self::ENTITIES[$type];
         $entityId = (string) ($envelope['entity_id'] ?? '');
@@ -133,23 +141,55 @@ class SyncEngine
 
         $model->device_id = $deviceId;
         $model->synced_at = now();
-        $model->sync_sequence = $this->nextSequence();
+        // The sequence stamp comes from the Syncable trait, the same way it does
+        // for a record saved through a web form — one source, so a device can
+        // never pull a record the server forgot to number.
         $model->save();
 
         if ($model instanceof Document) {
             $this->syncLines($model, (array) ($envelope['lines'] ?? []));
 
-            // A document created offline as issued needs its permanent number,
-            // hash and token assigned server-side.
+            // A document created offline as issued still needs its hash and
+            // verification token assigned server-side.
             if (($payload['status'] ?? null) === DocumentStatus::Issued->value && blank($model->number)) {
                 $model->status = DocumentStatus::Draft;
                 $model->save();
 
-                $number = $this->issuer->issue($model, $user)->number;
+                // A device that numbered the document offline keeps that number:
+                // the customer is already holding paper with it printed on. It
+                // is honoured only after being checked against that device's
+                // lease, so a client cannot invent its own sequence.
+                $claimed = $this->claimedNumber($envelope, $model, $device);
+
+                $number = $this->issuer->issue($model, $user, $claimed)->number;
             }
         }
 
         return $this->record($id, $envelope, $user, $deviceId, 'applied', assignedNumber: $number);
+    }
+
+    /**
+     * Verifies and consumes the number an offline device assigned, if any.
+     *
+     * Throwing here rejects the whole envelope, which is deliberate: renumbering
+     * would leave the server and the customer's copy disagreeing, and that is a
+     * far worse outcome than a visible failure the user can act on.
+     */
+    protected function claimedNumber(array $envelope, Document $document, ?Device $device): ?string
+    {
+        $number = trim((string) ($envelope['assigned_number'] ?? ''));
+
+        if ($number === '') {
+            return null;
+        }
+
+        if ($device === null) {
+            throw new RuntimeException('A document number was supplied without an identified device.');
+        }
+
+        $this->numbers->claim($number, $document->type->value, $device);
+
+        return $number;
     }
 
     protected function syncLines(Document $document, array $lines): void
@@ -197,17 +237,6 @@ class SyncEngine
             ->only($columns)
             ->except($serverOwned)
             ->all();
-    }
-
-    /** Monotonic per-company cursor; wall-clock time skews between devices. */
-    protected function nextSequence(): int
-    {
-        $companyId = app(CurrentCompany::class)->id();
-
-        DB::table('sync_sequences')->updateOrInsert(['company_id' => $companyId], []);
-        DB::table('sync_sequences')->where('company_id', $companyId)->increment('value');
-
-        return (int) DB::table('sync_sequences')->where('company_id', $companyId)->value('value');
     }
 
     /** @return array<string, mixed> */

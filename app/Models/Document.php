@@ -5,6 +5,7 @@ namespace App\Models;
 use App\Enums\DocumentStatus;
 use App\Enums\DocumentType;
 use App\Models\Concerns\BelongsToCompany;
+use App\Models\Concerns\Syncable;
 use Carbon\CarbonImmutable;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Concerns\HasUlids;
@@ -21,6 +22,7 @@ class Document extends Model
     use HasFactory;
     use HasUlids;
     use SoftDeletes;
+    use Syncable;
 
     protected $guarded = ['id'];
 
@@ -61,9 +63,18 @@ class Document extends Model
                 return;
             }
 
+            /*
+             * The permitted set is bookkeeping, not content: payment state, and
+             * the replication metadata that says where this row sits in the
+             * change stream. `sync_sequence` in particular has to be here — a
+             * paid invoice must still reach the devices that need to know it was
+             * paid, and that means its position in the stream moves even though
+             * nothing about the document itself has.
+             */
             $mutable = [
                 'status', 'amount_paid', 'balance', 'pdf_path', 'synced_at',
                 'updated_at', 'deleted_at', 'verification_token_id', 'signature_path',
+                'sync_sequence', 'device_id',
             ];
 
             $illegal = array_diff(array_keys($document->getDirty()), $mutable);

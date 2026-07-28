@@ -130,17 +130,28 @@ class DocumentCreationTest extends TestCase
         app(DocumentIssuer::class)->issue($document, $this->user);
     }
 
+    /** @return array<string, mixed> */
+    protected function payload(array $lines, array $overrides = []): array
+    {
+        return array_merge([
+            'contact_id' => $this->contact->id,
+            'issue_date' => now()->toDateString(),
+            'due_date' => null,
+            'notes' => '',
+            'lines' => $lines,
+        ], $overrides);
+    }
+
     public function test_the_form_saves_a_draft_without_a_number(): void
     {
-        Livewire::actingAs($this->user)
+        $result = $this->returned(Livewire::actingAs($this->user)
             ->test(Create::class, ['type' => 'invoice'])
-            ->call('selectContact', $this->contact->id)
-            ->set('lines.0.description', 'Web design')
-            ->set('lines.0.quantity', '2')
-            ->set('lines.0.unit_price', '150')
-            ->call('saveDraft')
-            ->assertHasNoErrors()
-            ->assertRedirect();
+            ->call('save', $this->payload([
+                ['description' => 'Web design', 'quantity' => '2', 'unit_price' => '150'],
+            ]), false)
+        );
+
+        $this->assertTrue($result['ok']);
 
         $document = Document::firstOrFail();
 
@@ -154,15 +165,14 @@ class DocumentCreationTest extends TestCase
     {
         $year = now()->format('Y');
 
-        Livewire::actingAs($this->user)
+        $result = $this->returned(Livewire::actingAs($this->user)
             ->test(Create::class, ['type' => 'invoice'])
-            ->call('selectContact', $this->contact->id)
-            ->set('lines.0.description', 'Web design')
-            ->set('lines.0.quantity', '1')
-            ->set('lines.0.unit_price', '500')
-            ->call('saveAndIssue')
-            ->assertHasNoErrors()
-            ->assertRedirect();
+            ->call('save', $this->payload([
+                ['description' => 'Web design', 'quantity' => '1', 'unit_price' => '500'],
+            ]), true)
+        );
+
+        $this->assertTrue($result['ok']);
 
         $document = Document::firstOrFail();
 
@@ -174,11 +184,19 @@ class DocumentCreationTest extends TestCase
 
     public function test_the_form_rejects_a_missing_customer_and_empty_lines(): void
     {
-        Livewire::actingAs($this->user)
+        $result = $this->returned(Livewire::actingAs($this->user)
             ->test(Create::class, ['type' => 'invoice'])
-            ->set('lines.0.description', '')
-            ->call('saveAndIssue')
-            ->assertHasErrors(['contactId', 'lines.0.description']);
+            ->call('save', $this->payload(
+                [['description' => '', 'quantity' => '1', 'unit_price' => '10']],
+                ['contact_id' => ''],
+            ), true)
+        );
+
+        // Errors come back to the client to render, so the same messages appear
+        // whether the save happened online or on the device.
+        $this->assertFalse($result['ok']);
+        $this->assertArrayHasKey('contact_id', $result['errors']);
+        $this->assertArrayHasKey('lines.0.description', $result['errors']);
 
         $this->assertSame(0, Document::count());
     }
@@ -193,10 +211,35 @@ class DocumentCreationTest extends TestCase
             fn () => Contact::create(['name' => 'Foreign Customer'])
         );
 
-        // The picker method refuses ids the tenant scope cannot see.
-        Livewire::actingAs($this->user)
+        $result = $this->returned(Livewire::actingAs($this->user)
             ->test(Create::class, ['type' => 'invoice'])
-            ->call('selectContact', $foreign->id)
-            ->assertSet('contactId', null);
+            ->call('save', $this->payload(
+                [['description' => 'Work', 'quantity' => '1', 'unit_price' => '10']],
+                ['contact_id' => $foreign->id],
+            ), false)
+        );
+
+        // The tenant scope makes the foreign id simply not exist.
+        $this->assertFalse($result['ok']);
+        $this->assertSame(0, Document::count());
+    }
+
+    public function test_the_customer_search_is_scoped_to_the_company(): void
+    {
+        $otherOwner = User::factory()->create();
+        $other = Company::create(['slug' => 'other', 'name' => 'Other Ltd', 'owner_id' => $otherOwner->id]);
+
+        app(CurrentCompany::class)->as(
+            $other,
+            fn () => Contact::create(['name' => 'A Customer From Elsewhere'])
+        );
+
+        $results = $this->returned(Livewire::actingAs($this->user)
+            ->test(Create::class, ['type' => 'invoice'])
+            ->call('searchContacts', 'Customer')
+        );
+
+        $this->assertCount(1, $results);
+        $this->assertSame($this->contact->id, $results[0]['id']);
     }
 }

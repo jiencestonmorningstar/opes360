@@ -21,7 +21,14 @@ class DocumentIssuer
 {
     public function __construct(protected DocumentNumbers $numbers) {}
 
-    public function issue(Document $document, User $user): Document
+    /**
+     * @param  string|null  $number  A number already put on paper by an offline
+     *                               device. The caller is responsible for having
+     *                               verified it against that device's lease; the
+     *                               unique index on (company, type, number) is
+     *                               the last line of defence if it has not.
+     */
+    public function issue(Document $document, User $user, ?string $number = null): Document
     {
         if ($document->status !== DocumentStatus::Draft) {
             throw new RuntimeException(sprintf(
@@ -31,9 +38,9 @@ class DocumentIssuer
             ));
         }
 
-        return DB::transaction(function () use ($document, $user) {
+        return DB::transaction(function () use ($document, $user, $number) {
             $document->issue_date ??= now()->toDateString();
-            $document->number ??= $this->numbers->next($document->type);
+            $document->number ??= $number ?? $this->numbers->next($document->type);
             $document->status = DocumentStatus::Issued;
             $document->issued_at = now();
             $document->issued_by = $user->id;

@@ -1,6 +1,7 @@
 import './bootstrap';
 import '@fontsource-variable/inter/index.css';
 import { SyncEngine } from './offline/sync.js';
+import documentForm from './forms/document.js';
 
 /*
  * Register the service worker so the app shell is installable and survives a lost
@@ -32,6 +33,9 @@ if (companyId) {
 }
 
 document.addEventListener('alpine:init', () => {
+    /* Forms that own their own state so they keep working with no connection. */
+    window.Alpine.data('opesDocumentForm', documentForm);
+
     window.Alpine.data('opesShell', () => ({
         drawer: false,
         collapsed: false,

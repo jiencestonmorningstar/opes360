@@ -196,6 +196,38 @@ class SyncEngineTest extends TestCase
         $this->assertSame('100.00', $document->fresh()->total);
     }
 
+    public function test_a_record_created_in_the_web_app_reaches_devices(): void
+    {
+        // Devices pull "everything after cursor N". A record saved through a
+        // form rather than through sync used to carry no sequence at all, which
+        // made it invisible to that query forever — the phone would only ever
+        // see what other phones had created.
+        $contact = Contact::create(['name' => 'Walk-in customer']);
+
+        $this->assertNotNull($contact->sync_sequence);
+
+        $response = $this->actingAs($this->user)->getJson('/api/sync/v1/pull');
+
+        $response->assertOk();
+
+        $this->assertContains(
+            $contact->id,
+            collect($response->json('changes.contact'))->pluck('id')->all(),
+        );
+    }
+
+    public function test_an_untouched_save_does_not_reshuffle_the_change_stream(): void
+    {
+        $contact = Contact::create(['name' => 'Walk-in customer']);
+        $before = $contact->sync_sequence;
+
+        $contact->save();
+
+        // Saving a model nobody changed must not push it to the front of every
+        // device's next pull.
+        $this->assertSame($before, $contact->fresh()->sync_sequence);
+    }
+
     public function test_pull_returns_changes_after_a_cursor(): void
     {
         $first = (string) Str::ulid();

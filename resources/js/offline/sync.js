@@ -1,4 +1,6 @@
 import { OfflineStore } from './store.js';
+import { NumberLeases } from './numbers.js';
+import { OfflineWriter, ulid } from './writes.js';
 
 /**
  * Client half of the sync protocol.
@@ -12,6 +14,8 @@ import { OfflineStore } from './store.js';
 export class SyncEngine {
     constructor(companyId) {
         this.store = new OfflineStore(companyId);
+        this.leases = new NumberLeases(this.store);
+        this.writer = new OfflineWriter(this);
         this.running = false;
         this.listeners = new Set();
     }
@@ -25,16 +29,17 @@ export class SyncEngine {
     async announce() {
         const pending = await this.store.pendingCount();
         const failed = (await this.store.failed())?.length ?? 0;
+        const numbersLeft = await this.leases.remaining('invoice');
 
         this.listeners.forEach((listener) =>
-            listener({ pending, failed, online: navigator.onLine, running: this.running })
+            listener({ pending, failed, numbersLeft, online: navigator.onLine, running: this.running })
         );
     }
 
     /** Queues a mutation locally and attempts an immediate push if online. */
     async record(entityType, entityId, operation, payload, extra = {}) {
         await this.store.enqueue({
-            id: crypto.randomUUID(),
+            id: ulid(),
             entity_type: entityType,
             entity_id: entityId,
             operation,
@@ -58,6 +63,11 @@ export class SyncEngine {
         try {
             await this.push();
             await this.pull();
+
+            // Top up while the connection is good. A lease is only useful if it
+            // is already in hand when the signal goes.
+            await this.leases.refresh(['invoice', 'receipt'], await this.store.meta('device_id'));
+
             await this.store.setMeta('last_synced_at', new Date().toISOString());
         } catch (e) {
             // Network failures are expected, not exceptional — leave the outbox
@@ -96,10 +106,18 @@ export class SyncEngine {
             throw new Error(`push failed: ${response.status}`);
         }
 
-        const { results = [] } = await response.json();
+        const body = await response.json();
+        const { results = [] } = body;
+
+        if (body.device_id) {
+            await this.store.setMeta('device_id', body.device_id);
+        }
+
+        const byId = new Map(batch.map((envelope) => [envelope.id, envelope]));
 
         for (const result of results) {
             if (result.status === 'applied' || result.status === 'duplicate') {
+                await this.acknowledge(byId.get(result.id), result);
                 await this.store.markDone(result.id);
                 continue;
             }
@@ -108,6 +126,26 @@ export class SyncEngine {
             // help, and the user needs to see why.
             await this.store.markFailed(result.id, result.error ?? result.status);
         }
+    }
+
+    /**
+     * Clears the local record's pending flag once the server has it.
+     *
+     * The mirror is updated rather than deleted: the following pull will replace
+     * it with the authoritative row, and until then the user should still see
+     * what they saved — just no longer flagged as unsent.
+     */
+    async acknowledge(envelope, result) {
+        if (! envelope) return;
+
+        const record = await this.store.find(envelope.entity_type, envelope.entity_id);
+        if (! record) return;
+
+        await this.store.putEntity(envelope.entity_type, {
+            ...record,
+            _pending: false,
+            number: result.assigned_number ?? record.number ?? null,
+        });
     }
 
     async pull() {

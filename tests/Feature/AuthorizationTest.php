@@ -120,26 +120,38 @@ class AuthorizationTest extends TestCase
         $this->get(route('customers'))->assertOk();
     }
 
+    /** @return array<string, mixed> */
+    protected function documentPayload(): array
+    {
+        return [
+            'contact_id' => $this->contact->id,
+            'issue_date' => now()->toDateString(),
+            'due_date' => null,
+            'notes' => '',
+            'lines' => [['description' => 'Consulting', 'quantity' => '1', 'unit_price' => '250']],
+        ];
+    }
+
     public function test_a_sales_officer_may_draft_but_may_not_issue(): void
     {
         $this->actingAsRole(Role::SALES_OFFICER);
 
-        $component = Livewire::test(Create::class)
-            ->set('contactId', $this->contact->id)
-            ->set('lines', [['description' => 'Consulting', 'quantity' => '1', 'unit_price' => '250']]);
-
         // Drafting is within their remit.
-        $component->call('saveDraft');
+        $draft = $this->returned(
+            Livewire::test(Create::class)->call('save', $this->documentPayload(), false)
+        );
+
+        $this->assertTrue($draft['ok']);
         $this->assertDatabaseCount('documents', 1);
         $this->assertSame(DocumentStatus::Draft, Document::first()->status);
 
         // Committing a permanent numbered document is not.
-        Livewire::test(Create::class)
-            ->set('contactId', $this->contact->id)
-            ->set('lines', [['description' => 'Consulting', 'quantity' => '1', 'unit_price' => '250']])
-            ->call('saveAndIssue')
-            ->assertForbidden();
+        $issue = $this->returned(
+            Livewire::test(Create::class)->call('save', $this->documentPayload(), true)
+        );
 
+        $this->assertFalse($issue['ok']);
+        $this->assertArrayHasKey('form', $issue['errors']);
         $this->assertDatabaseCount('documents', 1);
     }
 
@@ -147,10 +159,11 @@ class AuthorizationTest extends TestCase
     {
         $this->actingAsRole(Role::ACCOUNTANT);
 
-        Livewire::test(Create::class)
-            ->set('contactId', $this->contact->id)
-            ->set('lines', [['description' => 'Consulting', 'quantity' => '1', 'unit_price' => '250']])
-            ->call('saveAndIssue');
+        $result = $this->returned(
+            Livewire::test(Create::class)->call('save', $this->documentPayload(), true)
+        );
+
+        $this->assertTrue($result['ok']);
 
         $document = Document::first();
 
