@@ -24,8 +24,8 @@ return [
      */
     'navigation' => [
         ['key' => 'home', 'label' => 'Home', 'icon' => 'home', 'route' => 'dashboard', 'primary' => true],
-        ['key' => 'sales', 'label' => 'Sales', 'icon' => 'sales', 'route' => null, 'primary' => true],
-        ['key' => 'customers', 'label' => 'Customers', 'icon' => 'user', 'route' => null, 'primary' => true],
+        ['key' => 'sales', 'label' => 'Sales', 'icon' => 'sales', 'route' => 'sales', 'primary' => true],
+        ['key' => 'customers', 'label' => 'Customers', 'icon' => 'user', 'route' => 'customers', 'primary' => true],
         ['key' => 'business', 'label' => 'Business', 'icon' => 'briefcase', 'route' => null, 'primary' => true],
         ['key' => 'products', 'label' => 'Products', 'icon' => 'cube', 'route' => null],
         ['key' => 'reports', 'label' => 'Reports', 'icon' => 'chart-bar', 'route' => null],
@@ -36,10 +36,10 @@ return [
     ],
 
     'quick_actions' => [
-        ['label' => 'New Invoice', 'icon' => 'document-plus', 'accent' => 'blue', 'route' => null],
-        ['label' => 'New Quotation', 'icon' => 'document', 'accent' => 'green', 'route' => null],
+        ['label' => 'New Invoice', 'icon' => 'document-plus', 'accent' => 'blue', 'route' => 'sales'],
+        ['label' => 'New Quotation', 'icon' => 'document', 'accent' => 'green', 'route' => 'sales'],
         ['label' => 'New Receipt', 'icon' => 'printer', 'accent' => 'orange', 'route' => null],
-        ['label' => 'Add Customer', 'icon' => 'user-plus', 'accent' => 'purple', 'route' => null],
+        ['label' => 'Add Customer', 'icon' => 'user-plus', 'accent' => 'purple', 'route' => 'customers'],
         ['label' => 'Add Product', 'icon' => 'cube', 'accent' => 'blue', 'route' => null],
         ['label' => 'Record Payment', 'icon' => 'banknotes', 'accent' => 'teal', 'route' => null],
         ['label' => 'Scan QR', 'icon' => 'qr-code', 'accent' => 'pink', 'route' => null],

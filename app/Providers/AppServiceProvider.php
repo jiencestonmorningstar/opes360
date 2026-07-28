@@ -4,6 +4,7 @@ namespace App\Providers;
 
 use App\Support\CurrentCompany;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Pagination\Paginator;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Date;
 use Illuminate\Support\Facades\Vite;
@@ -26,5 +27,10 @@ class AppServiceProvider extends ServiceProvider
         Vite::prefetch(concurrency: 3);
 
         Date::use(Carbon::class);
+
+        // Token-styled pagination; the framework default hardcodes grays that
+        // break in dark mode.
+        Paginator::defaultView('pagination.opes');
+        Paginator::defaultSimpleView('pagination.opes');
     }
 }

@@ -7,6 +7,7 @@ use App\Models\User;
 use Database\Seeders\DemoCompanySeeder;
 use Database\Seeders\RolePermissionSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Carbon;
 use Livewire\Livewire;
 use Tests\TestCase;
 
@@ -24,6 +25,11 @@ class DashboardTest extends TestCase
     protected function setUp(): void
     {
         parent::setUp();
+
+        // Frozen to a Monday morning BEFORE seeding: the greeting is
+        // time-of-day dependent and the seeded week is anchored to "today", so
+        // an unfrozen clock makes these tests fail after noon and mid-week.
+        $this->travelTo(Carbon::parse('2026-07-27 09:30:00', 'UTC'));
 
         $this->seed(RolePermissionSeeder::class);
         $this->seed(DemoCompanySeeder::class);

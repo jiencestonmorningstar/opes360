@@ -122,13 +122,13 @@
         {{-- Recent invoices · Counters --}}
         <div class="mt-4 grid gap-4 lg:grid-cols-2">
 
-            <x-ui.panel title="Recent Invoices" action="See All" body-class="-mx-1.5">
+            <x-ui.panel title="Recent Invoices" action="See All" :action-href="route('sales')" body-class="-mx-1.5">
                 @forelse ($recentInvoices as $index => $invoice)
                     @php
                         $accent = Accent::byIndex($index);
                         $state = $invoice->paymentState();
                     @endphp
-                    <a href="#"
+                    <a href="{{ route('documents.show', $invoice) }}"
                        class="focusable flex items-center gap-3.5 rounded-lg px-1.5 py-3 hover:bg-surface-2 {{ $index > 0 ? 'border-t border-border' : '' }}">
                         <span class="flex size-[46px] shrink-0 items-center justify-center rounded-xl {{ Accent::tint($accent) }}">
                             <x-icon name="document" class="size-[23px] {{ Accent::text($accent) }}" />

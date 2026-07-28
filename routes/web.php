@@ -1,6 +1,9 @@
 <?php
 
+use App\Livewire\Customers\Index as CustomersIndex;
 use App\Livewire\Dashboard;
+use App\Livewire\Documents\Show as DocumentShow;
+use App\Livewire\Sales\Index as SalesIndex;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Route;
@@ -41,6 +44,9 @@ Route::post('/logout', function (Request $request) {
 
 Route::middleware('auth')->group(function () {
     Route::get('/', Dashboard::class)->name('dashboard');
+    Route::get('/sales', SalesIndex::class)->name('sales');
+    Route::get('/customers', CustomersIndex::class)->name('customers');
+    Route::get('/documents/{document}', DocumentShow::class)->name('documents.show');
 });
 
 /*

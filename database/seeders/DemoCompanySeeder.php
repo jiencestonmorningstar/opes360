@@ -124,6 +124,26 @@ class DemoCompanySeeder extends Seeder
         $this->seedYesterday();
         $this->seedToday($customers, $lease);
         $this->seedExpenses($customers);
+
+        $this->recomputeContactBalances();
+    }
+
+    /**
+     * contacts.balance is a cached rollup of outstanding document balances; the
+     * customer list sorts and displays it, so it must reflect the seeded rows.
+     */
+    protected function recomputeContactBalances(): void
+    {
+        $owed = Document::query()
+            ->invoices()
+            ->outstanding()
+            ->selectRaw('contact_id, SUM(balance) as owed')
+            ->groupBy('contact_id')
+            ->pluck('owed', 'contact_id');
+
+        foreach ($owed as $contactId => $balance) {
+            Contact::query()->whereKey($contactId)->update(['balance' => $balance]);
+        }
     }
 
     /** @return Collection<int, Contact> */
@@ -285,30 +305,30 @@ class DemoCompanySeeder extends Seeder
      */
     protected function seedRestOfWeek(): void
     {
-        // [day offset from Monday => [invoice amounts for that day]]
-        $byOffset = [
-            1 => [280, 280],
-            2 => [280, 280],
-            3 => [260, 260, 260],
-            4 => [210, 210],
-            5 => [250, 250, 250],
-            6 => [240, 240, 240, 240, 240, 240],
+        // Six day-groups summing to 4,510; with today's 1,250 the week is always
+        // exactly 5,760 whichever weekday the seeder runs on.
+        $dayGroups = [
+            [280, 280],
+            [280, 280],
+            [260, 260, 260],
+            [210, 210],
+            [250, 250, 250],
+            [240, 240, 240, 240, 240, 240],
         ];
 
-        $startOfWeek = $this->today->startOfWeek();
+        // seedToday() owns today, so the groups go to the other six days of the
+        // week in order. On a Monday run this reproduces the design's Tue–Sun
+        // shape with Sunday the peak.
+        $days = collect(range(0, 6))
+            ->map(fn (int $offset) => $this->today->startOfWeek()->addDays($offset))
+            ->reject(fn (CarbonImmutable $date) => $date->isSameDay($this->today))
+            ->values();
+
         $fillers = $this->fillerPool(self::POOL_WEEK, 18);
         $cursor = 0;
 
-        foreach ($byOffset as $offset => $amounts) {
-            $date = $startOfWeek->addDays($offset);
-
-            // seedToday() owns today; skipping keeps the week's shape intact
-            // whichever weekday the seeder happens to run on.
-            if ($date->isSameDay($this->today)) {
-                continue;
-            }
-
-            foreach ($amounts as $amount) {
+        foreach ($days as $index => $date) {
+            foreach ($dayGroups[$index] as $amount) {
                 $invoice = $this->makeInvoice(
                     contact: $fillers[$cursor++ % $fillers->count()],
                     total: $amount,
@@ -479,7 +499,10 @@ class DemoCompanySeeder extends Seeder
             'line_total' => $total,
         ]);
 
-        $invoice->setRelation('lines', collect([$invoice->lines()->first()]));
+        // Refresh before hashing: a just-created model still holds raw PHP values
+        // (250), while verification recomputes from database-cast ones ("250.00").
+        // Hashing the raw form would flag every document as tampered.
+        $invoice->refresh()->load('lines');
 
         // Frozen at issue — the hash the verification page compares against.
         $invoice->forceFill(['content_hash' => hash('sha256', $invoice->canonicalPayload())])->saveQuietly();
