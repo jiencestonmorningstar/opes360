@@ -63,33 +63,33 @@ Route::post('/logout', function (Request $request) {
 Route::middleware('auth')->group(function () {
     Route::get('/', Dashboard::class)->name('dashboard');
 
-    Route::get('/sales', SalesIndex::class)->name('sales');
+    Route::get('/sales', SalesIndex::class)->middleware('can:sales.view')->name('sales');
 
-    Route::get('/customers', CustomersIndex::class)->name('customers');
-    Route::get('/customers/create', CustomerForm::class)->name('customers.create');
-    Route::get('/customers/{contact}', CustomerShow::class)->name('customers.show');
-    Route::get('/customers/{contact}/edit', CustomerForm::class)->name('customers.edit');
+    Route::get('/customers', CustomersIndex::class)->middleware('can:customers.view')->name('customers');
+    Route::get('/customers/create', CustomerForm::class)->middleware('can:customers.create')->name('customers.create');
+    Route::get('/customers/{contact}', CustomerShow::class)->middleware('can:view,contact')->name('customers.show');
+    Route::get('/customers/{contact}/edit', CustomerForm::class)->middleware('can:update,contact')->name('customers.edit');
 
     // "create" is registered before the wildcard so it is never read as an id.
-    Route::get('/documents/create', DocumentCreate::class)->name('documents.create');
-    Route::get('/documents/{document}', DocumentShow::class)->name('documents.show');
-    Route::get('/documents/{document}/print', [PrintController::class, 'document'])->name('documents.print');
-    Route::get('/receipts/{receipt}/print', [PrintController::class, 'receipt'])->name('receipts.print');
+    Route::get('/documents/create', DocumentCreate::class)->middleware('can:sales.create')->name('documents.create');
+    Route::get('/documents/{document}', DocumentShow::class)->middleware('can:view,document')->name('documents.show');
+    Route::get('/documents/{document}/print', [PrintController::class, 'document'])->middleware('can:view,document')->name('documents.print');
+    Route::get('/receipts/{receipt}/print', [PrintController::class, 'receipt'])->middleware('can:view,receipt')->name('receipts.print');
 
-    Route::get('/products', ProductsIndex::class)->name('products');
-    Route::get('/products/create', ProductForm::class)->name('products.create');
-    Route::get('/products/{item}/edit', ProductForm::class)->name('products.edit');
+    Route::get('/products', ProductsIndex::class)->middleware('can:products.view')->name('products');
+    Route::get('/products/create', ProductForm::class)->middleware('can:products.create')->name('products.create');
+    Route::get('/products/{item}/edit', ProductForm::class)->middleware('can:update,item')->name('products.edit');
 
-    Route::get('/business', BusinessEdit::class)->name('business');
-    Route::get('/business/logo', BusinessLogo::class)->name('logo');
-    Route::get('/business/logo/download', [PrintController::class, 'logo'])->name('logo.download');
-    Route::get('/business/stationery', Stationery::class)->name('stationery');
+    Route::get('/business', BusinessEdit::class)->middleware('can:business.view')->name('business');
+    Route::get('/business/logo', BusinessLogo::class)->middleware('can:business.manage-branding')->name('logo');
+    Route::get('/business/logo/download', [PrintController::class, 'logo'])->middleware('can:business.manage-branding')->name('logo.download');
+    Route::get('/business/stationery', Stationery::class)->middleware('can:business.manage-stationery')->name('stationery');
     Route::get('/businesses', BusinessCompanies::class)->name('businesses');
-    Route::get('/artisans', BusinessArtisans::class)->name('artisans');
-    Route::get('/stationery/print', [PrintController::class, 'stationery'])->name('stationery.print');
-    Route::get('/payments', PaymentsIndex::class)->name('payments');
-    Route::get('/reports', ReportsIndex::class)->name('reports');
-    Route::get('/calendar', CalendarIndex::class)->name('calendar');
+    Route::get('/artisans', BusinessArtisans::class)->middleware('can:business.view')->name('artisans');
+    Route::get('/stationery/print', [PrintController::class, 'stationery'])->middleware('can:business.manage-stationery')->name('stationery.print');
+    Route::get('/payments', PaymentsIndex::class)->middleware('can:payments.view')->name('payments');
+    Route::get('/reports', ReportsIndex::class)->middleware('can:reports.view')->name('reports');
+    Route::get('/calendar', CalendarIndex::class)->middleware('can:sales.view')->name('calendar');
     Route::get('/settings', SettingsIndex::class)->name('settings');
     Route::get('/scan', Scan::class)->name('scan');
     Route::get('/two-factor/qr.svg', [AuthController::class, 'twoFactorQr'])->name('two-factor.qr');

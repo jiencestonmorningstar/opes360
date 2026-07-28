@@ -5,6 +5,7 @@ namespace App\Livewire\Products;
 use App\Models\Item;
 use App\Models\StockMovement;
 use Illuminate\Contracts\View\View;
+use Illuminate\Foundation\Auth\Access\AuthorizesRequests;
 use Illuminate\Support\Facades\DB;
 use Livewire\Attributes\Url;
 use Livewire\Component;
@@ -12,6 +13,8 @@ use Livewire\Component;
 /** One form for create and edit; edit is entered with an Item route binding. */
 class Form extends Component
 {
+    use AuthorizesRequests;
+
     public ?Item $item = null;
 
     #[Url]
@@ -60,6 +63,10 @@ class Form extends Component
 
     public function save(): void
     {
+        $this->item
+            ? $this->authorize('update', $this->item)
+            : $this->authorize('products.create');
+
         $this->validate([
             'form.name' => ['required', 'string', 'max:160'],
             'form.sku' => ['nullable', 'string', 'max:60'],

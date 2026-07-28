@@ -21,16 +21,20 @@ return [
      * Full navigation. `primary` marks the five entries that appear in the mobile
      * bottom bar; everything else is reachable from the sidebar on desktop and the
      * "More" sheet on mobile.
+     *
+     * `ability` is the gate that must pass for the entry to be rendered at all —
+     * the same one the route enforces, so the nav can never offer a link that
+     * answers 403. Entries with no `ability` are open to every member.
      */
     'navigation' => [
         ['key' => 'home', 'label' => 'Home', 'icon' => 'home', 'route' => 'dashboard', 'primary' => true],
-        ['key' => 'sales', 'label' => 'Sales', 'icon' => 'sales', 'route' => 'sales', 'primary' => true],
-        ['key' => 'customers', 'label' => 'Customers', 'icon' => 'user', 'route' => 'customers', 'primary' => true],
-        ['key' => 'business', 'label' => 'Business', 'icon' => 'briefcase', 'route' => 'business', 'primary' => true],
-        ['key' => 'products', 'label' => 'Products', 'icon' => 'cube', 'route' => 'products'],
-        ['key' => 'reports', 'label' => 'Reports', 'icon' => 'chart-bar', 'route' => 'reports'],
-        ['key' => 'payments', 'label' => 'Payments', 'icon' => 'credit-card', 'route' => 'payments'],
-        ['key' => 'calendar', 'label' => 'Calendar', 'icon' => 'calendar', 'route' => 'calendar'],
+        ['key' => 'sales', 'label' => 'Sales', 'icon' => 'sales', 'route' => 'sales', 'primary' => true, 'ability' => 'sales.view'],
+        ['key' => 'customers', 'label' => 'Customers', 'icon' => 'user', 'route' => 'customers', 'primary' => true, 'ability' => 'customers.view'],
+        ['key' => 'business', 'label' => 'Business', 'icon' => 'briefcase', 'route' => 'business', 'primary' => true, 'ability' => 'business.view'],
+        ['key' => 'products', 'label' => 'Products', 'icon' => 'cube', 'route' => 'products', 'ability' => 'products.view'],
+        ['key' => 'reports', 'label' => 'Reports', 'icon' => 'chart-bar', 'route' => 'reports', 'ability' => 'reports.view'],
+        ['key' => 'payments', 'label' => 'Payments', 'icon' => 'credit-card', 'route' => 'payments', 'ability' => 'payments.view'],
+        ['key' => 'calendar', 'label' => 'Calendar', 'icon' => 'calendar', 'route' => 'calendar', 'ability' => 'sales.view'],
         ['key' => 'settings', 'label' => 'Settings', 'icon' => 'cog', 'route' => 'settings'],
         ['key' => 'help', 'label' => 'Help & Support', 'icon' => 'help', 'route' => 'help'],
     ],
@@ -45,12 +49,12 @@ return [
     'currencies' => ['USD', 'EUR', 'GBP', 'NGN', 'GHS', 'KES', 'ZAR', 'XOF'],
 
     'quick_actions' => [
-        ['label' => 'New Invoice', 'icon' => 'document-plus', 'accent' => 'blue', 'route' => 'documents.create', 'params' => ['type' => 'invoice']],
-        ['label' => 'New Quotation', 'icon' => 'document', 'accent' => 'green', 'route' => 'documents.create', 'params' => ['type' => 'quotation']],
-        ['label' => 'New Receipt', 'icon' => 'printer', 'accent' => 'orange', 'route' => 'payments'],
-        ['label' => 'Add Customer', 'icon' => 'user-plus', 'accent' => 'purple', 'route' => 'customers.create'],
-        ['label' => 'Add Product', 'icon' => 'cube', 'accent' => 'blue', 'route' => 'products.create'],
-        ['label' => 'Record Payment', 'icon' => 'banknotes', 'accent' => 'teal', 'route' => 'sales', 'params' => ['state' => 'pending']],
+        ['label' => 'New Invoice', 'icon' => 'document-plus', 'accent' => 'blue', 'route' => 'documents.create', 'params' => ['type' => 'invoice'], 'ability' => 'sales.create'],
+        ['label' => 'New Quotation', 'icon' => 'document', 'accent' => 'green', 'route' => 'documents.create', 'params' => ['type' => 'quotation'], 'ability' => 'sales.create'],
+        ['label' => 'New Receipt', 'icon' => 'printer', 'accent' => 'orange', 'route' => 'payments', 'ability' => 'receipts.create'],
+        ['label' => 'Add Customer', 'icon' => 'user-plus', 'accent' => 'purple', 'route' => 'customers.create', 'ability' => 'customers.create'],
+        ['label' => 'Add Product', 'icon' => 'cube', 'accent' => 'blue', 'route' => 'products.create', 'ability' => 'products.create'],
+        ['label' => 'Record Payment', 'icon' => 'banknotes', 'accent' => 'teal', 'route' => 'sales', 'params' => ['state' => 'pending'], 'ability' => 'payments.record'],
         ['label' => 'Scan QR', 'icon' => 'qr-code', 'accent' => 'pink', 'route' => 'scan'],
         ['label' => 'More', 'icon' => 'ellipsis', 'accent' => 'slate', 'route' => 'help'],
     ],

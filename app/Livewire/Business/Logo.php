@@ -5,6 +5,7 @@ namespace App\Livewire\Business;
 use App\Services\LogoComposer;
 use App\Support\CurrentCompany;
 use Illuminate\Contracts\View\View;
+use Illuminate\Foundation\Auth\Access\AuthorizesRequests;
 use Illuminate\Support\Facades\Storage;
 use Livewire\Component;
 
@@ -15,6 +16,8 @@ use Livewire\Component;
  */
 class Logo extends Component
 {
+    use AuthorizesRequests;
+
     public string $palette = 'ocean';
 
     public string $mark = 'orbit';
@@ -45,6 +48,8 @@ class Logo extends Component
 
     public function save(LogoComposer $composer): void
     {
+        $this->authorize('business.manage-branding');
+
         $company = app(CurrentCompany::class)->get();
 
         $svg = $composer->render($company->name, $this->tagline, [

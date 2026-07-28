@@ -36,7 +36,7 @@
     {{-- Navigation --}}
     <nav class="no-scrollbar flex-1 overflow-y-auto px-4 py-4">
         <ul class="space-y-1">
-            @foreach (config('opes.navigation') as $item)
+            @foreach (\App\Support\Navigation::items() as $item)
                 @php
                     $isActive = $active === $item['key'];
                     $href = $item['route'] ? route($item['route']) : '#';

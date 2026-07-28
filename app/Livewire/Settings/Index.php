@@ -8,12 +8,15 @@ use App\Models\User;
 use App\Services\TwoFactor;
 use App\Support\CurrentCompany;
 use Illuminate\Contracts\View\View;
+use Illuminate\Foundation\Auth\Access\AuthorizesRequests;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Validation\Rule;
 use Livewire\Component;
 
 class Index extends Component
 {
+    use AuthorizesRequests;
+
     public string $name = '';
 
     public string $email = '';
@@ -121,6 +124,8 @@ class Index extends Component
 
     public function revokeDevice(string $deviceId): void
     {
+        $this->authorize('devices.revoke');
+
         // Scoped query: a device id from another company simply is not found.
         Device::query()->whereKey($deviceId)->update(['revoked_at' => now()]);
 

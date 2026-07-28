@@ -6,6 +6,7 @@ use App\Models\Artisan;
 use App\Models\VerificationToken;
 use App\Support\CurrentCompany;
 use Illuminate\Contracts\View\View;
+use Illuminate\Foundation\Auth\Access\AuthorizesRequests;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 use Livewire\Component;
@@ -19,6 +20,7 @@ use Livewire\WithFileUploads;
  */
 class Artisans extends Component
 {
+    use AuthorizesRequests;
     use WithFileUploads;
 
     public bool $editing = false;
@@ -80,6 +82,8 @@ class Artisans extends Component
 
     public function save(): void
     {
+        $this->authorize($this->editingId ? 'update' : 'create', Artisan::class);
+
         $this->validate([
             'form.full_name' => ['required', 'string', 'max:120'],
             'form.occupation' => ['nullable', 'string', 'max:80'],

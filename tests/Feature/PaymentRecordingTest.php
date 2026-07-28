@@ -38,6 +38,7 @@ class PaymentRecordingTest extends TestCase
             'owner_id' => $this->user->id,
         ]);
 
+        $this->joinCompany($company, $this->user);
         $this->user->forceFill(['current_company_id' => $company->id])->save();
         app(CurrentCompany::class)->set($company);
 

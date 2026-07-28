@@ -4,11 +4,14 @@ namespace App\Livewire\Customers;
 
 use App\Models\Contact;
 use Illuminate\Contracts\View\View;
+use Illuminate\Foundation\Auth\Access\AuthorizesRequests;
 use Livewire\Attributes\Url;
 use Livewire\Component;
 
 class Form extends Component
 {
+    use AuthorizesRequests;
+
     public ?Contact $contact = null;
 
     #[Url]
@@ -57,6 +60,10 @@ class Form extends Component
 
     public function save(): void
     {
+        $this->contact
+            ? $this->authorize('update', $this->contact)
+            : $this->authorize('customers.create');
+
         $this->validate([
             'form.name' => ['required', 'string', 'max:160'],
             'form.email' => ['nullable', 'email', 'max:160'],

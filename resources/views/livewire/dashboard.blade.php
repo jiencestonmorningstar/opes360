@@ -55,7 +55,7 @@
 
             <x-ui.panel title="Quick Actions" action="See All" :action-href="route('sales')" class="lg:col-span-5">
                 <div class="grid grid-cols-4 gap-x-2 gap-y-5">
-                    @foreach (config('opes.quick_actions') as $action)
+                    @foreach (\App\Support\Navigation::quickActions() as $action)
                         <x-ui.quick-action
                             :label="$action['label']"
                             :icon="$action['icon']"
@@ -81,11 +81,13 @@
 
                     <x-ui.bar-chart :series="$chart->all()" class="mt-5" />
 
-                    <a href="{{ route('reports', ['range' => 'week']) }}"
-                       class="focusable mt-5 flex h-11 w-full items-center justify-center gap-2 rounded-xl bg-surface-2 text-[14px] font-semibold text-brand transition-colors hover:bg-tint-blue">
-                        <x-icon name="trending-up" class="size-[18px]" stroke-width="2" />
-                        View Report
-                    </a>
+                    @can('reports.view')
+                        <a href="{{ route('reports', ['range' => 'week']) }}"
+                           class="focusable mt-5 flex h-11 w-full items-center justify-center gap-2 rounded-xl bg-surface-2 text-[14px] font-semibold text-brand transition-colors hover:bg-tint-blue">
+                            <x-icon name="trending-up" class="size-[18px]" stroke-width="2" />
+                            View Report
+                        </a>
+                    @endcan
                 </x-ui.panel>
 
                 <x-ui.panel title="Top Customers" class="lg:col-span-3">

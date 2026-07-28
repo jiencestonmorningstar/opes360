@@ -1,5 +1,5 @@
 @php
-    $primary = collect(config('opes.navigation'))->where('primary', true)->take(4)->values();
+    $primary = \App\Support\Navigation::primary();
 @endphp
 
 {{--
@@ -9,7 +9,9 @@
 <nav class="fixed inset-x-0 bottom-0 z-30 border-t border-border bg-surface lg:hidden"
      style="padding-bottom: env(safe-area-inset-bottom)"
      aria-label="Primary">
-    <ul class="grid grid-cols-5">
+    {{-- The column count follows the permitted entries, so a restricted role
+         gets an evenly spaced bar rather than a gap where a link used to be. --}}
+    <ul class="grid" style="grid-template-columns: repeat({{ $primary->count() + 1 }}, minmax(0, 1fr))">
         @foreach ($primary as $item)
             @php
                 $isActive = $active === $item['key'];

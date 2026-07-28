@@ -4,14 +4,18 @@ namespace App\Livewire\Documents;
 
 use App\Enums\PaymentMethod;
 use App\Models\Document;
+use App\Models\Payment;
 use App\Services\DocumentConverter;
 use App\Services\PaymentRecorder;
 use Illuminate\Contracts\View\View;
+use Illuminate\Foundation\Auth\Access\AuthorizesRequests;
 use Livewire\Component;
 use RuntimeException;
 
 class Show extends Component
 {
+    use AuthorizesRequests;
+
     public Document $document;
 
     public bool $payingOpen = false;
@@ -49,6 +53,10 @@ class Show extends Component
 
     public function recordPayment(): void
     {
+        // Route middleware only gates opening the page; each action re-checks,
+        // so a crafted Livewire call cannot bypass the permission.
+        $this->authorize('record', Payment::class);
+
         $this->validate([
             'amount' => ['required', 'numeric', 'gt:0'],
             'method' => ['required', 'in:cash,bank_transfer,mobile_money,card'],
@@ -79,6 +87,8 @@ class Show extends Component
 
     public function convert(): void
     {
+        $this->authorize('convert', $this->document);
+
         try {
             $created = app(DocumentConverter::class)->convert($this->document, auth()->user());
         } catch (RuntimeException $e) {
@@ -103,6 +113,8 @@ class Show extends Component
 
     public function voidDocument(): void
     {
+        $this->authorize('void', $this->document);
+
         try {
             app(DocumentConverter::class)->void(
                 $this->document,

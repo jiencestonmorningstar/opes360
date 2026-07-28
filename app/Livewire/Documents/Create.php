@@ -10,12 +10,15 @@ use App\Models\DocumentLine;
 use App\Services\DocumentIssuer;
 use App\Support\CurrentCompany;
 use Illuminate\Contracts\View\View;
+use Illuminate\Foundation\Auth\Access\AuthorizesRequests;
 use Illuminate\Support\Facades\DB;
 use Livewire\Attributes\Url;
 use Livewire\Component;
 
 class Create extends Component
 {
+    use AuthorizesRequests;
+
     #[Url]
     public string $type = 'invoice';
 
@@ -89,6 +92,10 @@ class Create extends Component
 
     protected function persist(bool $issue): void
     {
+        // Drafting and issuing are separate rights: a Sales Officer may prepare
+        // a quotation without being able to commit a permanent numbered document.
+        $this->authorize($issue ? 'sales.issue' : 'sales.create');
+
         $this->validate([
             'contactId' => ['required'],
             'issueDate' => ['required', 'date'],

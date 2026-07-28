@@ -4,24 +4,14 @@ namespace Database\Seeders;
 
 use App\Models\Permission;
 use App\Models\Role;
+use App\Support\Permissions;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Str;
 
 class RolePermissionSeeder extends Seeder
 {
-    /** group => [action, ...] */
-    protected array $permissions = [
-        'Business' => ['view', 'update', 'manage-branding', 'manage-stationery'],
-        'Sales' => ['view', 'create', 'update', 'issue', 'void', 'approve'],
-        'Receipts' => ['view', 'create', 'void'],
-        'Payments' => ['view', 'record', 'refund'],
-        'Customers' => ['view', 'create', 'update', 'delete'],
-        'Products' => ['view', 'create', 'update', 'delete', 'adjust-stock'],
-        'Reports' => ['view', 'export'],
-        'Users' => ['view', 'invite', 'update-role', 'remove'],
-        'Devices' => ['view', 'revoke'],
-        'Settings' => ['view', 'update'],
-    ];
+    /** group => [action, ...] — shared with the gate definitions, never forked. */
+    protected array $permissions = Permissions::CATALOGUE;
 
     /**
      * The seven roles from Module 15. `*` grants everything in a group; an empty
@@ -86,7 +76,7 @@ class RolePermissionSeeder extends Seeder
 
         foreach ($this->permissions as $group => $actions) {
             foreach ($actions as $action) {
-                $slug = Str::slug($group).'.'.$action;
+                $slug = Permissions::slug($group, $action);
 
                 $permission = Permission::updateOrCreate(
                     ['slug' => $slug],

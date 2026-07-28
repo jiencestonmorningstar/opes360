@@ -6,11 +6,13 @@ use App\Models\Company;
 use App\Models\VerificationToken;
 use App\Support\CurrentCompany;
 use Illuminate\Contracts\View\View;
+use Illuminate\Foundation\Auth\Access\AuthorizesRequests;
 use Livewire\Component;
 use Livewire\WithFileUploads;
 
 class Edit extends Component
 {
+    use AuthorizesRequests;
     use WithFileUploads;
 
     /** @var array<string, mixed> */
@@ -49,6 +51,8 @@ class Edit extends Component
 
     public function save(): void
     {
+        $this->authorize('business.update');
+
         $this->validate([
             'form.name' => ['required', 'string', 'max:120'],
             'form.motto' => ['nullable', 'string', 'max:160'],

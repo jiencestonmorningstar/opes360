@@ -42,6 +42,7 @@ class DocumentLifecycleTest extends TestCase
             'currency' => 'USD',
         ]);
 
+        $this->joinCompany($company, $this->user);
         $this->user->forceFill(['current_company_id' => $company->id])->save();
         app(CurrentCompany::class)->set($company);
 

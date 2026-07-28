@@ -147,7 +147,7 @@
                         Print / PDF
                     </a>
 
-                    @if ((float) $document->balance > 0 && ! in_array($document->status->value, ['draft', 'void'], true))
+                    @if ((float) $document->balance > 0 && ! in_array($document->status->value, ['draft', 'void'], true) && auth()->user()->can('record', \App\Models\Payment::class))
                         <button type="button" wire:click="openPayment"
                                 class="focusable flex h-11 w-full items-center justify-center gap-2 rounded-xl bg-surface-2 text-[14px] font-semibold text-ink-2 transition-colors hover:bg-tint-blue hover:text-brand">
                             <x-icon name="banknotes" class="size-[18px]" stroke-width="2" />
@@ -155,7 +155,7 @@
                         </button>
                     @endif
 
-                    @if ($canConvert && $convertTarget)
+                    @if ($canConvert && $convertTarget && auth()->user()->can('convert', $document))
                         <button type="button" wire:click="convert" wire:loading.attr="disabled"
                                 class="focusable flex h-11 w-full items-center justify-center gap-2 rounded-xl bg-surface-2 text-[14px] font-semibold text-ink-2 transition-colors hover:bg-tint-blue hover:text-brand">
                             <x-icon name="document-plus" class="size-[18px]" stroke-width="2" />
@@ -171,7 +171,7 @@
                         </a>
                     @endif
 
-                    @if ($document->status->value !== 'void')
+                    @if ($document->status->value !== 'void' && auth()->user()->can('void', $document))
                         <button type="button" wire:click="openVoid"
                                 class="focusable flex h-11 w-full items-center justify-center gap-2 rounded-xl text-[14px] font-semibold text-negative transition-colors hover:bg-tint-orange">
                             <x-icon name="alert" class="size-[18px]" stroke-width="2" />
