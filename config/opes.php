@@ -47,11 +47,11 @@ return [
     'quick_actions' => [
         ['label' => 'New Invoice', 'icon' => 'document-plus', 'accent' => 'blue', 'route' => 'documents.create', 'params' => ['type' => 'invoice']],
         ['label' => 'New Quotation', 'icon' => 'document', 'accent' => 'green', 'route' => 'documents.create', 'params' => ['type' => 'quotation']],
-        ['label' => 'New Receipt', 'icon' => 'printer', 'accent' => 'orange', 'route' => null],
-        ['label' => 'Add Customer', 'icon' => 'user-plus', 'accent' => 'purple', 'route' => 'customers'],
-        ['label' => 'Add Product', 'icon' => 'cube', 'accent' => 'blue', 'route' => null],
-        ['label' => 'Record Payment', 'icon' => 'banknotes', 'accent' => 'teal', 'route' => null],
-        ['label' => 'Scan QR', 'icon' => 'qr-code', 'accent' => 'pink', 'route' => null],
-        ['label' => 'More', 'icon' => 'ellipsis', 'accent' => 'slate', 'route' => null],
+        ['label' => 'New Receipt', 'icon' => 'printer', 'accent' => 'orange', 'route' => 'payments'],
+        ['label' => 'Add Customer', 'icon' => 'user-plus', 'accent' => 'purple', 'route' => 'customers.create'],
+        ['label' => 'Add Product', 'icon' => 'cube', 'accent' => 'blue', 'route' => 'products.create'],
+        ['label' => 'Record Payment', 'icon' => 'banknotes', 'accent' => 'teal', 'route' => 'sales', 'params' => ['state' => 'pending']],
+        ['label' => 'Scan QR', 'icon' => 'qr-code', 'accent' => 'pink', 'route' => 'scan'],
+        ['label' => 'More', 'icon' => 'ellipsis', 'accent' => 'slate', 'route' => 'help'],
     ],
 ];

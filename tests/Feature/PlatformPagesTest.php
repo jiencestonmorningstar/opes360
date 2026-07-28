@@ -2,17 +2,21 @@
 
 namespace Tests\Feature;
 
+use App\Livewire\Scan;
 use App\Models\Company;
 use App\Models\Contact;
 use App\Models\Document;
 use App\Models\Item;
 use App\Models\Receipt;
 use App\Models\User;
+use App\Models\VerificationToken;
 use App\Support\CurrentCompany;
 use Database\Seeders\DemoCompanySeeder;
 use Database\Seeders\RolePermissionSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Carbon;
+use Illuminate\Support\Facades\Route;
+use Livewire\Livewire;
 use Tests\TestCase;
 
 /**
@@ -61,6 +65,8 @@ class PlatformPagesTest extends TestCase
             'settings' => ['/settings', 'Your Profile'],
             'help' => ['/help', 'Help &amp; Support'],
             'new document' => ['/documents/create?type=invoice', 'New Invoice'],
+            'new customer' => ['/customers/create', 'New Customer'],
+            'scan' => ['/scan', 'Scan a code'],
         ];
     }
 
@@ -177,6 +183,47 @@ class PlatformPagesTest extends TestCase
             ->get(route('stationery.print', ['asset' => 'poster']))
             ->assertOk()
             ->assertSee('letterhead', false);
+    }
+
+    public function test_every_navigation_and_quick_action_target_resolves(): void
+    {
+        // Guards the whole config-driven navigation: a route name that does not
+        // exist, or a page that 500s, fails here rather than as a dead tile.
+        $targets = collect(config('opes.navigation'))
+            ->merge(config('opes.quick_actions'))
+            ->pluck('route')
+            ->filter()
+            ->unique();
+
+        $this->assertGreaterThan(10, $targets->count());
+
+        foreach ($targets as $name) {
+            $this->assertTrue(
+                Route::has($name),
+                "Navigation points at undefined route [{$name}]."
+            );
+        }
+    }
+
+    public function test_the_scan_page_rejects_an_unknown_code(): void
+    {
+        Livewire::actingAs($this->user)
+            ->test(Scan::class)
+            ->set('code', 'NOPENOPENOPENOPENOPENO')
+            ->call('lookup')
+            ->assertHasErrors(['code']);
+    }
+
+    public function test_the_scan_page_accepts_a_pasted_verification_url(): void
+    {
+        $token = VerificationToken::query()->firstOrFail();
+
+        Livewire::actingAs($this->user)
+            ->test(Scan::class)
+            ->set('code', url('/v/'.$token->token))
+            ->call('lookup')
+            ->assertHasNoErrors()
+            ->assertRedirect(route('verification.show', $token->token));
     }
 
     public function test_reports_export_streams_csv(): void

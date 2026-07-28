@@ -1,7 +1,7 @@
 @props([
     'title' => null,
     'action' => null,
-    'actionHref' => '#',
+    'actionHref' => null,
     'bodyClass' => '',
 ])
 
@@ -19,7 +19,7 @@
 
             @isset($actions)
                 {{ $actions }}
-            @elseif ($action)
+            @elseif ($action && $actionHref)
                 <a href="{{ $actionHref }}"
                    class="focusable shrink-0 text-[14px] font-semibold text-brand hover:underline">
                     {{ $action }}

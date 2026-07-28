@@ -20,6 +20,7 @@ use App\Livewire\Products\Form as ProductForm;
 use App\Livewire\Products\Index as ProductsIndex;
 use App\Livewire\Reports\Index as ReportsIndex;
 use App\Livewire\Sales\Index as SalesIndex;
+use App\Livewire\Scan;
 use App\Livewire\Settings\Index as SettingsIndex;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -88,6 +89,7 @@ Route::middleware('auth')->group(function () {
     Route::get('/reports', ReportsIndex::class)->name('reports');
     Route::get('/calendar', CalendarIndex::class)->name('calendar');
     Route::get('/settings', SettingsIndex::class)->name('settings');
+    Route::get('/scan', Scan::class)->name('scan');
     Route::view('/help', 'help.index')->name('help');
 });
 

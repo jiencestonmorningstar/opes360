@@ -53,7 +53,7 @@
         {{-- Quick actions · Sales overview · Top customers --}}
         <div class="mt-4 space-y-4 lg:mt-4 lg:grid lg:grid-cols-11 lg:gap-4 lg:space-y-0">
 
-            <x-ui.panel title="Quick Actions" action="See All" class="lg:col-span-5">
+            <x-ui.panel title="Quick Actions" action="See All" :action-href="route('sales')" class="lg:col-span-5">
                 <div class="grid grid-cols-4 gap-x-2 gap-y-5">
                     @foreach (config('opes.quick_actions') as $action)
                         <x-ui.quick-action
@@ -81,7 +81,7 @@
 
                     <x-ui.bar-chart :series="$chart->all()" class="mt-5" />
 
-                    <a href="#"
+                    <a href="{{ route('reports', ['range' => 'week']) }}"
                        class="focusable mt-5 flex h-11 w-full items-center justify-center gap-2 rounded-xl bg-surface-2 text-[14px] font-semibold text-brand transition-colors hover:bg-tint-blue">
                         <x-icon name="trending-up" class="size-[18px]" stroke-width="2" />
                         View Report
@@ -95,7 +95,8 @@
 
                     @forelse ($topCustomers as $row)
                         @php $accent = $row['contact']->accent(); @endphp
-                        <a href="#" class="focusable -mx-1.5 flex items-center gap-3 rounded-lg px-1.5 py-[9px] hover:bg-surface-2">
+                        <a href="{{ route('customers.show', $row['contact']) }}"
+                           class="focusable -mx-1.5 flex items-center gap-3 rounded-lg px-1.5 py-[9px] hover:bg-surface-2">
                             <span class="flex size-[38px] shrink-0 items-center justify-center rounded-full {{ Accent::tint($accent) }} text-[12.5px] font-bold {{ Accent::text($accent) }}">
                                 {{ $row['contact']->initials() }}
                             </span>
@@ -110,7 +111,7 @@
                         <p class="py-6 text-center text-[13.5px] text-muted">No sales this month yet.</p>
                     @endforelse
 
-                    <a href="#"
+                    <a href="{{ route('customers') }}"
                        class="focusable mt-3 flex items-center justify-center gap-1 text-[14px] font-semibold text-brand hover:underline">
                         View All
                         <x-icon name="chevron-right" class="size-[15px]" stroke-width="2.4" />
