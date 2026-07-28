@@ -95,13 +95,7 @@ class PaymentRecorder
             // holds, not the raw pre-cast values.
             $receipt->refresh();
             $receipt->forceFill([
-                'content_hash' => hash('sha256', json_encode([
-                    'number' => $receipt->number,
-                    'payment_id' => $receipt->payment_id,
-                    'total' => (string) $receipt->total,
-                    'currency' => $receipt->currency,
-                    'issued_at' => $receipt->issued_at->toIso8601String(),
-                ], JSON_THROW_ON_ERROR)),
+                'content_hash' => hash('sha256', $receipt->canonicalPayload()),
                 'verification_token_id' => VerificationToken::create([
                     'token' => VerificationToken::newToken(),
                     'subject_type' => Receipt::class,

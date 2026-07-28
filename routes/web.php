@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\VerificationController;
 use App\Livewire\Customers\Index as CustomersIndex;
 use App\Livewire\Dashboard;
 use App\Livewire\Documents\Create as DocumentCreate;
@@ -50,6 +51,16 @@ Route::middleware('auth')->group(function () {
     // Registered before the wildcard so "create" is never captured as an id.
     Route::get('/documents/create', DocumentCreate::class)->name('documents.create');
     Route::get('/documents/{document}', DocumentShow::class)->name('documents.show');
+});
+
+/*
+ * Public verification — the destination behind every printed QR. No auth: the
+ * person scanning is a customer, not a user. Throttled because tokens are
+ * unguessable but endpoints are still enumerable.
+ */
+Route::middleware('throttle:60,1')->group(function () {
+    Route::get('/v/{token}', [VerificationController::class, 'show'])->name('verification.show');
+    Route::get('/v/{token}/qr.svg', [VerificationController::class, 'qr'])->name('verification.qr');
 });
 
 /*

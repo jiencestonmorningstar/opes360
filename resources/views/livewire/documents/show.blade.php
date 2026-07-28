@@ -216,7 +216,25 @@
                             <p class="text-[14px] font-semibold {{ $document->isTampered() ? 'text-warning' : 'text-positive' }}">
                                 {{ $document->isTampered() ? 'Content mismatch' : 'Verified authentic' }}
                             </p>
-                            <p class="truncate text-[12px] text-muted">Scan the QR on the printed copy to confirm.</p>
+                            <p class="truncate text-[12px] text-muted">Anyone scanning this code sees the live verdict.</p>
+                        </div>
+                    </div>
+
+                    <div class="mt-4 flex items-center gap-4 rounded-xl border border-border p-3.5">
+                        {{-- White plate behind the QR in both themes: scanners need contrast. --}}
+                        <img src="{{ route('verification.qr', $document->verificationToken->token) }}"
+                             alt="Verification QR code"
+                             class="size-[92px] shrink-0 rounded-lg bg-white p-1.5">
+                        <div class="min-w-0">
+                            <p class="text-[12.5px] font-medium text-muted">Public verification link</p>
+                            <p class="mt-0.5 break-all text-[12.5px] font-semibold text-ink">
+                                {{ $document->verificationToken->publicUrl() }}
+                            </p>
+                            <a href="{{ route('verification.show', $document->verificationToken->token) }}" target="_blank"
+                               class="focusable mt-2 inline-flex items-center gap-1 text-[13px] font-semibold text-brand hover:underline">
+                                Open verification page
+                                <x-icon name="chevron-right" class="size-[14px]" stroke-width="2.4" />
+                            </a>
                         </div>
                     </div>
                 @else
