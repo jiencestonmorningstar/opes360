@@ -1,7 +1,8 @@
 # OPES360 — Production Readiness Assessment
 
-**Assessed:** 28 July 2026 · 154 tests, 55 routes, 16 commits
-**Verdict:** ready for a **supervised pilot**, not for open public launch.
+**Assessed:** 28 July 2026 · 200 tests, 61 routes, 21 commits
+**Verdict:** ready for a **supervised pilot**. The launch blockers are closed;
+what remains before an open launch is operational, not structural.
 
 This document is deliberately blunt about what would break first. Everything in
 §3 is real work that has not been done, not polish.
@@ -28,7 +29,10 @@ Verified by the automated suite plus a browser sweep of every page.
 | Artisans | **Good** | Public verified profiles, testimonials, vCards |
 | Reports | **Good** | Revenue/collected/outstanding/average, trend chart, method breakdown, CSV export |
 | Audit trail | **Good** | Attribute-level diffs on the models that matter, secrets redacted |
-| Offline sync | **Foundational** | Idempotent push/pull API, IndexedDB store, ordered outbox — **but not yet wired into the write paths** (see §3.1) |
+| Offline sync | **Solid** | Wired end to end: invoices, contacts and items compose and save with no connection, device number leasing so an offline invoice keeps the number printed on the customer's copy, verified in a real browser with the network disabled |
+| Document generator | **Good** | Eight templates on the company letterhead, frozen and verifiable at issue, with a review notice printed into anything that creates an obligation |
+| Security headers | **Good** | Nonce-based CSP enforced, zero violations across every page (see §4 for the one directive that cannot be tightened) |
+| Deployment tooling | **Good** | `opes:doctor` pre-flight check, CI on SQLite *and* MySQL 8.4, scheduled lease expiry and receipt pruning, DEPLOYMENT.md |
 | PWA | **Good** | Installable, app-shell precache, offline page, live sync-status indicator |
 | Design system | **Solid** | One token set drives light and dark; no page has a dead link or console error |
 
@@ -71,52 +75,53 @@ rebuilt server-side rather than from a request parameter.
 
 ## 3. What would break first — blocking items
 
-### 3.1 The offline engine is not connected to the UI — **highest risk**
+### 3.1 No mail credentials — **highest remaining risk**
 
-The sync protocol is built and tested (idempotency, conflict rules, cursors,
-device revocation), and the client store and outbox exist. But the app's forms
-still write directly through Livewire to the server. Nothing currently calls
-`opesSync.record(...)`, so **creating an invoice with no connection still fails.**
+The two account emails are implemented, branded, queued and tested, and
+`opes:doctor` refuses to pass an environment without a transport. But
+`MAIL_MAILER` is still `log` because there are no credentials to set. Until a
+real transport (SES, Postmark, Resend) is configured with SPF and DKIM on the
+sending domain, **a locked-out user cannot recover their account** — reset links
+go to `storage/logs/laravel.log`.
 
-This is now the largest gap between what the product does and what the
-specification promises, because "offline-first" is a headline claim.
+This is configuration, not code. About a day including DNS propagation, and
+`php artisan opes:doctor --mail=you@yourdomain.com` confirms it end to end.
 
-What remains: route each write path through the outbox, read lists from IndexedDB
-when offline, and implement device-side number leasing so an offline receipt gets
-a final number. The design for all of it is in
-`docs/architecture/offline-sync.md`; roughly a two-to-three week piece.
+### 3.2 Payments cannot yet be taken offline
 
-### 3.2 No email delivery is configured
+Invoices, contacts and items all compose and save with no connection. Recording a
+*payment* offline does not, because a receipt needs its own leased number and the
+allocation logic has to survive being replayed out of order against an invoice
+the device may not have seen paid.
 
-Password reset and email verification are implemented and tested with a fake
-mailer. `MAIL_MAILER` still points at `log`. Reset links currently go to
-`storage/logs/laravel.log`, not to users. Needs a real transport (SES, Postmark,
-Resend) plus SPF/DKIM before anyone outside the pilot can recover an account.
+The lease machinery already supports receipt blocks, so this is the smaller
+remaining half of the offline work — roughly a week — but a market trader taking
+cash with no signal still cannot issue a receipt on the spot.
 
-### 3.3 Untested against MySQL
+### 3.3 No error tracking or monitoring
 
-Every migration and query is written for MySQL 8.4 and nothing MySQL-specific was
-avoided, but **the suite has only ever run on SQLite.** Two known risk areas:
-strict mode on zero-dates, and the `orderByRaw`/`selectRaw` fragments in the
-sales list and reports. Running the suite against MySQL is a half-day and must
-happen before any deploy.
+A 500 in production is visible only in `storage/logs`. Sentry (or equivalent),
+uptime monitoring and log aggregation are all unconfigured. Nothing here is hard;
+all of it needs a host that does not exist yet.
 
-### 3.4 No production infrastructure
+### 3.4 Backups are documented, not automated
 
-None of this exists yet: queue worker (Horizon) despite Redis being assumed,
-scheduler, backup automation and a rehearsed restore, error tracking, uptime
-monitoring, log aggregation, CI pipeline, deployment process.
-
-`docs/PLAN.md` Phase 13 covers this; it has not been started.
+`docs/DEPLOYMENT.md` §5 states exactly what must be backed up and — more
+importantly — that the restore must be *rehearsed* before launch. Neither is
+automated, because both depend on the hosting choice.
 
 ---
 
 ## 4. Known limitations worth stating plainly
 
-**No Content-Security-Policy.** Baseline headers are set, but a real CSP needs
-nonce-based handling of Livewire's inline bootstrap and the inline SVG in print
-views. A permissive `unsafe-inline` policy would have looked like protection
-while providing none, so none was shipped.
+**The CSP still needs `unsafe-eval`.** Everything else is locked down —
+script/connect/form-action/base-uri/frame-ancestors/object-src are all restricted
+to this origin, and inline scripts carry a per-request nonce. But Alpine
+evaluates the expressions inside `x-data` and `x-show` with `new Function()`, and
+Livewire 3 ships Alpine, so that one directive cannot be dropped without
+rewriting every interactive view against the CSP-safe Alpine build. Inline
+*styles* also stay allowed, for the iOS safe-area insets and print geometry.
+Both are stated in `App\Support\Csp` rather than left to be discovered.
 
 **Thermal printing is Android-only.** Web Bluetooth and WebUSB do not exist in
 iOS Safari. Receipts render and print through the browser dialog everywhere;
@@ -127,9 +132,11 @@ driving a 58/80mm printer directly works only on Android. The iOS path
 `docs/architecture/qr-ar.md` this needs a feasibility spike before scope is
 committed.
 
-**AI assistant not built.** The logo generator's suggestion engine is
-deterministic, not a model. Modules 12 and 13 (AI copy, document generator) are
-untouched.
+**AI assistant not built (Module 12).** The logo generator's suggestion engine
+and the document templates are both deterministic, not model-driven. Nothing in
+the product calls a language model. The document generator (Module 13) is built
+and works, but its templates are fixed text with merge fields — there is no
+AI-assisted drafting or rewriting.
 
 **Sequence gaps and tax law.** Number leasing produces auditable gaps. This has
 not been checked against any specific jurisdiction, and it is a genuine go/no-go
@@ -138,29 +145,38 @@ question for invoicing compliance in some countries.
 **Single-currency per company.** The schema carries currency and exchange rate
 per document, but there is no FX handling or multi-currency reporting.
 
+**Editing offline is deliberately not supported.** New records can be created
+with no connection; editing an existing one cannot. Two devices editing the same
+customer while both offline is a merge problem this product does not need to
+solve today, and last-writer-wins on someone's bank details is a bad answer.
+
+**Contract templates are drafting aids, not legal advice.** They are generic and
+have not been reviewed against any jurisdiction. Every template that creates an
+obligation prints that notice into the document itself.
+
 ---
 
 ## 5. Recommended path to launch
 
 | Step | Work | Rough size |
 |---|---|---|
-| ~~0~~ | ~~**Enforce permissions**~~ — *done: policies, route middleware, per-action checks, UI gating* | — |
-| 1 | **Run the suite against MySQL 8.4** and fix what surfaces | 0.5 day |
-| 2 | **Configure mail** and verify reset/verification end to end | 1 day |
-| 3 | **Infrastructure** — queue worker, scheduler, backups + restore rehearsal, error tracking, CI | 1 sprint |
-| 4 | → **Supervised pilot** with 5–10 friendly businesses | — |
-| 5 | **Wire the offline engine** into the write paths, including device number leasing | 2–3 weeks |
-| 6 | **Security review / pen test**, add a real CSP | 1 week |
-| 7 | → **Open launch** | — |
+| ~~—~~ | ~~Enforce permissions~~ · ~~Run against MySQL~~ · ~~Wire the offline engine~~ · ~~Ship a CSP~~ · ~~CI~~ — *done* | — |
+| 1 | **Configure mail** and confirm with `opes:doctor --mail=…` | 1 day |
+| 2 | **Provision the host** — queue worker, cron, error tracking, backups + a rehearsed restore | 3–4 days |
+| 3 | → **Supervised pilot** with 5–10 friendly businesses | — |
+| 4 | **Offline payments and receipts** — the remaining half of the offline work | ~1 week |
+| 5 | **Security review / pen test** | 1 week |
+| 6 | → **Open launch** | — |
 
-Steps 1–3 are the gate to letting anyone outside the room use it. Step 5 is the
-gate to honestly calling the product offline-first in marketing.
+Steps 1–2 are the gate to letting anyone outside the room use it. Step 4 is the
+gate to calling the product fully offline-first without qualification.
 
 ---
 
 ## 6. Test coverage summary
 
-154 tests, 596 assertions. What they actually protect:
+200 tests, 754 assertions, run against **both SQLite and MySQL 8.4 in strict
+mode**. What they actually protect:
 
 - **Tenancy** — cross-company reads, fail-closed behaviour, the model/table pairing
 - **Financial correctness** — immutability, tamper detection, overpayment refusal,
@@ -177,6 +193,16 @@ gate to honestly calling the product offline-first in marketing.
   read-only user refused a payment, a non-member refused everything, fail-closed
   when no company is current, the Owner never locked out, and a check that every
   seeded permission has a matching gate so the two cannot drift
+- **Offline numbering** — a leased number honoured, one outside the lease refused
+  rather than renumbered, two devices never sharing a number, the server pool
+  never walking into a device's block, out-of-order claims never rewinding, and
+  an abandoned lease closed with its gap recorded
+- **Document generation** — no template leaves an unfilled placeholder, optional
+  clauses vanish cleanly, user text cannot smuggle markup onto the page, an
+  issued document is frozen and tamper-evident
+- **Content Security Policy** — the directives that stop an injected script, a
+  per-request nonce that is never reused, and no un-nonced inline script on the
+  page
 
 **Not covered:** load and performance, browser compatibility beyond Chromium,
 and an accessibility audit.
