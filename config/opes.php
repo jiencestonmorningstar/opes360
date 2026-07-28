@@ -26,14 +26,23 @@ return [
         ['key' => 'home', 'label' => 'Home', 'icon' => 'home', 'route' => 'dashboard', 'primary' => true],
         ['key' => 'sales', 'label' => 'Sales', 'icon' => 'sales', 'route' => 'sales', 'primary' => true],
         ['key' => 'customers', 'label' => 'Customers', 'icon' => 'user', 'route' => 'customers', 'primary' => true],
-        ['key' => 'business', 'label' => 'Business', 'icon' => 'briefcase', 'route' => null, 'primary' => true],
-        ['key' => 'products', 'label' => 'Products', 'icon' => 'cube', 'route' => null],
-        ['key' => 'reports', 'label' => 'Reports', 'icon' => 'chart-bar', 'route' => null],
-        ['key' => 'payments', 'label' => 'Payments', 'icon' => 'credit-card', 'route' => null],
-        ['key' => 'calendar', 'label' => 'Calendar', 'icon' => 'calendar', 'route' => null],
-        ['key' => 'settings', 'label' => 'Settings', 'icon' => 'cog', 'route' => null],
-        ['key' => 'help', 'label' => 'Help & Support', 'icon' => 'help', 'route' => null],
+        ['key' => 'business', 'label' => 'Business', 'icon' => 'briefcase', 'route' => 'business', 'primary' => true],
+        ['key' => 'products', 'label' => 'Products', 'icon' => 'cube', 'route' => 'products'],
+        ['key' => 'reports', 'label' => 'Reports', 'icon' => 'chart-bar', 'route' => 'reports'],
+        ['key' => 'payments', 'label' => 'Payments', 'icon' => 'credit-card', 'route' => 'payments'],
+        ['key' => 'calendar', 'label' => 'Calendar', 'icon' => 'calendar', 'route' => 'calendar'],
+        ['key' => 'settings', 'label' => 'Settings', 'icon' => 'cog', 'route' => 'settings'],
+        ['key' => 'help', 'label' => 'Help & Support', 'icon' => 'help', 'route' => 'help'],
     ],
+
+    'industries' => [
+        'Technology', 'Healthcare', 'Construction', 'Retail', 'Agriculture',
+        'Hospitality', 'Education', 'Fashion', 'Manufacturing', 'Consulting',
+        'Transport & Logistics', 'Beauty & Wellness', 'Food & Beverage',
+        'Professional Services', 'Other',
+    ],
+
+    'currencies' => ['USD', 'EUR', 'GBP', 'NGN', 'GHS', 'KES', 'ZAR', 'XOF'],
 
     'quick_actions' => [
         ['label' => 'New Invoice', 'icon' => 'document-plus', 'accent' => 'blue', 'route' => 'documents.create', 'params' => ['type' => 'invoice']],

@@ -135,11 +135,11 @@
         <div class="space-y-4">
             <x-ui.panel title="Actions">
                 <div class="space-y-2.5">
-                    <button type="button"
-                            class="focusable flex h-11 w-full items-center justify-center gap-2 rounded-xl bg-brand text-[14px] font-semibold text-white transition-opacity hover:opacity-90">
+                    <a href="{{ route('documents.print', $document) }}" target="_blank"
+                       class="focusable flex h-11 w-full items-center justify-center gap-2 rounded-xl bg-brand text-[14px] font-semibold text-white transition-opacity hover:opacity-90">
                         <x-icon name="document" class="size-[18px]" stroke-width="2" />
-                        Download PDF
-                    </button>
+                        Print / PDF
+                    </a>
 
                     @if ((float) $document->balance > 0 && ! in_array($document->status->value, ['draft', 'void'], true))
                         <button type="button" wire:click="openPayment"

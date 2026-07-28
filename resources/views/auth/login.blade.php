@@ -69,6 +69,11 @@
                 Sign in
             </button>
         </form>
+
+        <p class="mt-5 text-center text-[13.5px] text-muted">
+            New to {{ config('opes.brand.name') }}?
+            <a href="{{ route('register') }}" class="font-semibold text-brand hover:underline">Create your business</a>
+        </p>
     </div>
 
     <p class="mt-6 text-center text-[12.5px] text-muted">

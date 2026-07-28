@@ -1,22 +1,33 @@
 <?php
 
+use App\Http\Controllers\PrintController;
+use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\VerificationController;
+use App\Livewire\Business\Edit as BusinessEdit;
+use App\Livewire\CalendarPage\Index as CalendarIndex;
 use App\Livewire\Customers\Index as CustomersIndex;
+use App\Livewire\Customers\Show as CustomerShow;
 use App\Livewire\Dashboard;
 use App\Livewire\Documents\Create as DocumentCreate;
 use App\Livewire\Documents\Show as DocumentShow;
+use App\Livewire\Onboarding\Register;
+use App\Livewire\Payments\Index as PaymentsIndex;
+use App\Livewire\Products\Form as ProductForm;
+use App\Livewire\Products\Index as ProductsIndex;
+use App\Livewire\Reports\Index as ReportsIndex;
 use App\Livewire\Sales\Index as SalesIndex;
+use App\Livewire\Settings\Index as SettingsIndex;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Route;
 
 /*
- * Authentication here is intentionally minimal — enough to gate the app and drive
- * the shell. Phase 0 replaces it with the full flow (registration, email
- * verification, password reset, TOTP two-factor).
+ * Sign-in and sign-up. Email verification, password reset and TOTP two-factor
+ * complete this flow in Phase 0's hardening pass.
  */
 Route::middleware('guest')->group(function () {
     Route::view('/login', 'auth.login')->name('login');
+    Route::get('/register', Register::class)->name('register');
 
     Route::post('/login', function (Request $request) {
         $credentials = $request->validate([
@@ -46,11 +57,37 @@ Route::post('/logout', function (Request $request) {
 
 Route::middleware('auth')->group(function () {
     Route::get('/', Dashboard::class)->name('dashboard');
+
     Route::get('/sales', SalesIndex::class)->name('sales');
+
     Route::get('/customers', CustomersIndex::class)->name('customers');
-    // Registered before the wildcard so "create" is never captured as an id.
+    Route::get('/customers/{contact}', CustomerShow::class)->name('customers.show');
+
+    // "create" is registered before the wildcard so it is never read as an id.
     Route::get('/documents/create', DocumentCreate::class)->name('documents.create');
     Route::get('/documents/{document}', DocumentShow::class)->name('documents.show');
+    Route::get('/documents/{document}/print', [PrintController::class, 'document'])->name('documents.print');
+    Route::get('/receipts/{receipt}/print', [PrintController::class, 'receipt'])->name('receipts.print');
+
+    Route::get('/products', ProductsIndex::class)->name('products');
+    Route::get('/products/create', ProductForm::class)->name('products.create');
+    Route::get('/products/{item}/edit', ProductForm::class)->name('products.edit');
+
+    Route::get('/business', BusinessEdit::class)->name('business');
+    Route::get('/payments', PaymentsIndex::class)->name('payments');
+    Route::get('/reports', ReportsIndex::class)->name('reports');
+    Route::get('/calendar', CalendarIndex::class)->name('calendar');
+    Route::get('/settings', SettingsIndex::class)->name('settings');
+    Route::view('/help', 'help.index')->name('help');
+});
+
+/*
+ * Public business profiles — what a business QR opens. Like verification, these
+ * are read by customers with no account, and resolved as the profile's company.
+ */
+Route::middleware('throttle:60,1')->group(function () {
+    Route::get('/business/{company}', [ProfileController::class, 'business'])->name('profile.business');
+    Route::get('/business/{company}/vcard', [ProfileController::class, 'vcard'])->name('profile.vcard');
 });
 
 /*
