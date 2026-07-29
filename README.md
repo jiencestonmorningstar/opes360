@@ -13,9 +13,14 @@ IndexedDB
 
 ## Status
 
-**Working application.** Every module in the navigation is built and tested; the
-core commercial loop runs end to end on a phone. See [`docs/PLAN.md`](docs/PLAN.md)
-for the roadmap and what remains.
+**Working application, ready for a supervised pilot.** Every module in the
+navigation is built and tested, the core commercial loop runs end to end on a
+phone, and it does so with the network switched off. See
+[`docs/PRODUCTION-READINESS.md`](docs/PRODUCTION-READINESS.md) for a blunt
+assessment of what would break first, and [`docs/PLAN.md`](docs/PLAN.md) for the
+roadmap.
+
+203 tests, run against both SQLite and MySQL 8.4 in strict mode.
 
 **Built:**
 
@@ -34,12 +39,19 @@ for the roadmap and what remains.
 - **Artisans** — public verified profiles with skills, testimonials and vCards
 - **Operations** — dashboard, reports with CSV export, payments ledger, due-date
   calendar, settings, help
-- **Platform** — multi-company tenancy, seven roles, registration and onboarding,
-  PWA shell with offline page, light and dark themes
+- **Documents** — eight business-document templates (agreements, letters,
+  certificates, minutes) on the company letterhead, frozen and verifiable at issue
+- **Offline** — invoices, contacts, items and payments all compose and save with
+  no connection, with device number leasing so an offline invoice or receipt keeps
+  the number printed on the customer's copy
+- **Platform** — multi-company tenancy, seven roles enforced end to end, 2FA,
+  registration and onboarding, installable PWA, light and dark themes
 
-**Not yet built:** the full offline engine (IndexedDB mirror, outbox, sync protocol —
-Phase 4), AI logo generation (Phase 2), the AR layer (Phase 8), and email
-verification / password reset / 2FA.
+**Not built:** the AR layer (Phase 8 — every token is AR-ready by design, but
+nothing renders AR), and the AI assistant (Phase 11 — nothing in the product
+calls a language model; the logo suggestions and document templates are
+deterministic). Editing an existing record offline is deliberately unsupported;
+see the readiness document for why.
 
 ## Getting started
 
@@ -66,6 +78,22 @@ php artisan test        # feature + unit suite
 vendor/bin/pint         # code style
 ```
 
+CI runs the suite twice — SQLite for fast feedback, MySQL 8.4 for the answer
+that counts — plus a migrate-and-seed from scratch, since migrations and seeders
+are shipped artefacts too.
+
+### Deploying
+
+```bash
+php artisan opes:doctor --mail=you@yourdomain.com
+```
+
+Checks the things that look fine in a browser and are discovered at the worst
+possible moment: mail still pointed at the log file, a queue with no worker so
+reset links are never sent, debug mode left on, a missing storage link. It exits
+non-zero on anything blocking. Full instructions in
+[`docs/DEPLOYMENT.md`](docs/DEPLOYMENT.md).
+
 ## Architecture at a glance
 
 **Tenancy.** Every business table carries `company_id`. Models pick it up through `BelongsToCompany`, which
@@ -88,6 +116,19 @@ can never disagree about whether something is valid.
 resolve *as* the subject's company via `CurrentCompany::as()` rather than dropping the scope. They render
 inside that closure — returning a View would defer rendering past the scope, and the scope fails closed.
 
+**Numbers are leased, not assigned.** A document issued offline is printed and
+handed over immediately, so it needs its final number *then* — a provisional one
+the server later replaces would leave the customer holding paper that refers to
+nothing. Devices lease a block while they still have signal; the server honours a
+number only if it falls inside a lease that device holds, and refuses anything
+else rather than renumbering. Every gap in the sequence has a dated row
+explaining it.
+
+**Forms own their state.** The document composer and the record-payment panel
+hold their state in Alpine and submit once, rather than round-tripping per
+keystroke. That is what makes them work at zero bars, and it is a real
+improvement at two bars as well — which is this product's actual market.
+
 **Design tokens.** Colours are defined once in `resources/css/app.css` and re-pointed under `.dark`, so
 components need a `dark:` variant only where the *treatment* differs between themes, not merely the colour.
 
@@ -95,6 +136,8 @@ components need a `dark:` variant only where the *treatment* differs between the
 
 | Document | What it covers |
 |---|---|
+| [`docs/PRODUCTION-READINESS.md`](docs/PRODUCTION-READINESS.md) | What is production-grade, what would break first, and the path to launch |
+| [`docs/DEPLOYMENT.md`](docs/DEPLOYMENT.md) | What must exist before the first deploy, and what to verify after it |
 | [`docs/PLAN.md`](docs/PLAN.md) | 13 phases across 4 releases, dependencies, risks, open questions |
 | [`docs/architecture/decisions.md`](docs/architecture/decisions.md) | Key technical decisions and their trade-offs |
 | [`docs/architecture/data-model.md`](docs/architecture/data-model.md) | Core schema, phase by phase |

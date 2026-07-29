@@ -1,6 +1,6 @@
 # OPES360 — Production Readiness Assessment
 
-**Assessed:** 28 July 2026 · 200 tests, 61 routes, 21 commits
+**Assessed:** 29 July 2026 · 203 tests, 61 routes, 23 commits
 **Verdict:** ready for a **supervised pilot**. The launch blockers are closed;
 what remains before an open launch is operational, not structural.
 
@@ -29,7 +29,7 @@ Verified by the automated suite plus a browser sweep of every page.
 | Artisans | **Good** | Public verified profiles, testimonials, vCards |
 | Reports | **Good** | Revenue/collected/outstanding/average, trend chart, method breakdown, CSV export |
 | Audit trail | **Good** | Attribute-level diffs on the models that matter, secrets redacted |
-| Offline sync | **Solid** | Wired end to end: invoices, contacts and items compose and save with no connection, device number leasing so an offline invoice keeps the number printed on the customer's copy, verified in a real browser with the network disabled |
+| Offline sync | **Solid** | Wired end to end: invoices, contacts, items *and payments* compose and save with no connection, with device number leasing so an offline invoice or receipt keeps the number printed on the customer's copy. Verified in a real browser with the network disabled |
 | Document generator | **Good** | Eight templates on the company letterhead, frozen and verifiable at issue, with a review notice printed into anything that creates an obligation |
 | Security headers | **Good** | Nonce-based CSP enforced, zero violations across every page (see §4 for the one directive that cannot be tightened) |
 | Deployment tooling | **Good** | `opes:doctor` pre-flight check, CI on SQLite *and* MySQL 8.4, scheduled lease expiry and receipt pruning, DEPLOYMENT.md |
@@ -51,8 +51,11 @@ pages — resolves *as* the subject's company and renders inside that scope.
 the rule holds for sync writes and console commands, not just forms. Payments
 re-read the document under a row lock inside the transaction, so two cashiers
 cannot both pass the balance check on stale data. Overpayment is refused rather
-than absorbed. Numbers come from an auditable lease ledger; voided numbers are
-retired, never reused.
+than absorbed — including when it arrives from a device that was offline while
+someone else settled the invoice, where it surfaces as a conflict for a person
+to resolve. Numbers come from an auditable lease ledger; voided numbers are
+retired, never reused, and abandoned leases are closed hourly with their unused
+range recorded, so every gap in the sequence has a dated explanation.
 
 **Verification.** One immutable token per subject, tamper detection by content
 hash, and a verdict page that distinguishes *voided* from *invalid* from
@@ -87,24 +90,13 @@ go to `storage/logs/laravel.log`.
 This is configuration, not code. About a day including DNS propagation, and
 `php artisan opes:doctor --mail=you@yourdomain.com` confirms it end to end.
 
-### 3.2 Payments cannot yet be taken offline
-
-Invoices, contacts and items all compose and save with no connection. Recording a
-*payment* offline does not, because a receipt needs its own leased number and the
-allocation logic has to survive being replayed out of order against an invoice
-the device may not have seen paid.
-
-The lease machinery already supports receipt blocks, so this is the smaller
-remaining half of the offline work — roughly a week — but a market trader taking
-cash with no signal still cannot issue a receipt on the spot.
-
-### 3.3 No error tracking or monitoring
+### 3.2 No error tracking or monitoring
 
 A 500 in production is visible only in `storage/logs`. Sentry (or equivalent),
 uptime monitoring and log aggregation are all unconfigured. Nothing here is hard;
 all of it needs a host that does not exist yet.
 
-### 3.4 Backups are documented, not automated
+### 3.3 Backups are documented, not automated
 
 `docs/DEPLOYMENT.md` §5 states exactly what must be backed up and — more
 importantly — that the restore must be *rehearsed* before launch. Neither is
@@ -164,18 +156,17 @@ obligation prints that notice into the document itself.
 | 1 | **Configure mail** and confirm with `opes:doctor --mail=…` | 1 day |
 | 2 | **Provision the host** — queue worker, cron, error tracking, backups + a rehearsed restore | 3–4 days |
 | 3 | → **Supervised pilot** with 5–10 friendly businesses | — |
-| 4 | **Offline payments and receipts** — the remaining half of the offline work | ~1 week |
-| 5 | **Security review / pen test** | 1 week |
-| 6 | → **Open launch** | — |
+| 4 | **Security review / pen test** | 1 week |
+| 5 | → **Open launch** | — |
 
-Steps 1–2 are the gate to letting anyone outside the room use it. Step 4 is the
-gate to calling the product fully offline-first without qualification.
+Steps 1–2 are the gate to letting anyone outside the room use it. Nothing else
+on this list blocks a pilot.
 
 ---
 
 ## 6. Test coverage summary
 
-200 tests, 754 assertions, run against **both SQLite and MySQL 8.4 in strict
+203 tests, 770 assertions, run against **both SQLite and MySQL 8.4 in strict
 mode**. What they actually protect:
 
 - **Tenancy** — cross-company reads, fail-closed behaviour, the model/table pairing
@@ -197,6 +188,9 @@ mode**. What they actually protect:
   rather than renumbered, two devices never sharing a number, the server pool
   never walking into a device's block, out-of-order claims never rewinding, and
   an abandoned lease closed with its gap recorded
+- **Offline payments** — an invoice actually settles rather than the row merely
+  landing, a replayed envelope not charging twice, and an invoice someone else
+  settled first reported as a conflict instead of forced into a negative balance
 - **Document generation** — no template leaves an unfilled placeholder, optional
   clauses vanish cleanly, user text cannot smuggle markup onto the page, an
   issued document is frozen and tamper-evident

@@ -1,0 +1,127 @@
+# OPES360 — single-node deployment.
+#
+# Sized for the shape this product actually launches at: one application server
+# and a database. Everything here is one `docker compose up -d` away from
+# running; the values that must not be guessed are read from .env and the
+# container refuses to start without them.
+#
+# Scaling past one node means moving cache and sessions to Redis (already
+# below, just not the default) and pointing FILESYSTEM_DISK at object storage —
+# uploaded logos live on a local volume here.
+
+services:
+  app:
+    build:
+      context: .
+      target: app
+    restart: unless-stopped
+    depends_on:
+      mysql:
+        condition: service_healthy
+    environment:
+      APP_ENV: production
+      APP_DEBUG: "false"
+      APP_KEY: ${APP_KEY:?set APP_KEY in .env}
+      APP_URL: ${APP_URL:?set APP_URL in .env — https, or sessions and the PWA break}
+      DB_CONNECTION: mysql
+      DB_HOST: mysql
+      DB_DATABASE: ${DB_DATABASE:-opes360}
+      DB_USERNAME: ${DB_USERNAME:-opes360}
+      DB_PASSWORD: ${DB_PASSWORD:?set DB_PASSWORD in .env}
+      QUEUE_CONNECTION: database
+      SESSION_DRIVER: database
+      CACHE_STORE: database
+      MAIL_MAILER: ${MAIL_MAILER:-log}
+      MAIL_HOST: ${MAIL_HOST:-}
+      MAIL_PORT: ${MAIL_PORT:-587}
+      MAIL_USERNAME: ${MAIL_USERNAME:-}
+      MAIL_PASSWORD: ${MAIL_PASSWORD:-}
+      MAIL_FROM_ADDRESS: ${MAIL_FROM_ADDRESS:-}
+      MAIL_FROM_NAME: ${MAIL_FROM_NAME:-OPES360}
+      # One instance owns the schema; the queue and scheduler never migrate.
+      RUN_MIGRATIONS: "true"
+    volumes:
+      - storage:/var/www/html/storage/app/public
+    ports:
+      - "${APP_PORT:-8080}:8080"
+
+  # Account mail is queued, so without this running nobody can reset a password
+  # — and nothing anywhere reports an error. `opes:doctor` warns on the backlog.
+  queue:
+    build:
+      context: .
+      target: app
+    restart: unless-stopped
+    depends_on:
+      app:
+        condition: service_started
+    environment:
+      APP_ENV: production
+      APP_DEBUG: "false"
+      APP_KEY: ${APP_KEY:?set APP_KEY in .env}
+      APP_URL: ${APP_URL:?set APP_URL in .env}
+      DB_CONNECTION: mysql
+      DB_HOST: mysql
+      DB_DATABASE: ${DB_DATABASE:-opes360}
+      DB_USERNAME: ${DB_USERNAME:-opes360}
+      DB_PASSWORD: ${DB_PASSWORD:?set DB_PASSWORD in .env}
+      QUEUE_CONNECTION: database
+      MAIL_MAILER: ${MAIL_MAILER:-log}
+      MAIL_HOST: ${MAIL_HOST:-}
+      MAIL_PORT: ${MAIL_PORT:-587}
+      MAIL_USERNAME: ${MAIL_USERNAME:-}
+      MAIL_PASSWORD: ${MAIL_PASSWORD:-}
+      MAIL_FROM_ADDRESS: ${MAIL_FROM_ADDRESS:-}
+    volumes:
+      - storage:/var/www/html/storage/app/public
+    # --max-time recycles the worker hourly so a long-lived process cannot hold
+    # stale code or leak memory across a deploy.
+    command: php artisan queue:work --tries=3 --max-time=3600
+
+  # Closes abandoned number leases hourly, so every gap in the invoice sequence
+  # has a dated explanation, and prunes sync receipts nightly.
+  scheduler:
+    build:
+      context: .
+      target: app
+    restart: unless-stopped
+    depends_on:
+      app:
+        condition: service_started
+    environment:
+      APP_ENV: production
+      APP_DEBUG: "false"
+      APP_KEY: ${APP_KEY:?set APP_KEY in .env}
+      APP_URL: ${APP_URL:?set APP_URL in .env}
+      DB_CONNECTION: mysql
+      DB_HOST: mysql
+      DB_DATABASE: ${DB_DATABASE:-opes360}
+      DB_USERNAME: ${DB_USERNAME:-opes360}
+      DB_PASSWORD: ${DB_PASSWORD:?set DB_PASSWORD in .env}
+    volumes:
+      - storage:/var/www/html/storage/app/public
+    command: php artisan schedule:work
+
+  mysql:
+    image: mysql:8.4
+    restart: unless-stopped
+    environment:
+      MYSQL_DATABASE: ${DB_DATABASE:-opes360}
+      MYSQL_USER: ${DB_USERNAME:-opes360}
+      MYSQL_PASSWORD: ${DB_PASSWORD:?set DB_PASSWORD in .env}
+      MYSQL_ROOT_PASSWORD: ${DB_ROOT_PASSWORD:?set DB_ROOT_PASSWORD in .env}
+    # utf8mb4 throughout: business names and addresses in the launch markets
+    # contain characters the older three-byte set cannot hold.
+    command: --character-set-server=utf8mb4 --collation-server=utf8mb4_0900_ai_ci
+    volumes:
+      - mysql:/var/lib/mysql
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "127.0.0.1", "--silent"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 30s
+
+volumes:
+  mysql:
+  storage:

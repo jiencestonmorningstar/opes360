@@ -18,6 +18,8 @@ has been exercised except the hosting itself.
 | A queue worker | Account mail is queued. No worker means no mail, with no error anywhere. |
 | A cron entry | Number leases expire on a schedule; without it, gaps in the invoice sequence go unexplained. |
 
+Docker covers everything in this table except TLS and the mail account — see §3.
+
 ---
 
 ## 2. Environment
@@ -49,7 +51,37 @@ silently destroys them.
 
 ---
 
-## 3. Deploy
+## 3. Deploy with Docker (recommended)
+
+The repository ships a production image and a single-node compose file. Set the
+values in `.env` first — the containers refuse to start without `APP_KEY`,
+`APP_URL`, `DB_PASSWORD` and `DB_ROOT_PASSWORD`, rather than booting into a
+broken state:
+
+```bash
+cp .env.example .env
+docker compose run --rm app php artisan key:generate --show   # paste into .env
+docker compose up -d --build
+docker compose exec app php artisan opes:doctor --mail=you@yourdomain.com
+```
+
+That brings up four services: the web container (nginx + php-fpm), a queue
+worker, the scheduler, and MySQL 8.4. They are separate on purpose — a web
+container that also runs cron cannot be restarted independently, and the queue
+is what delivers password resets, so its health has to be visible on its own.
+
+Put a TLS-terminating proxy in front on port `8080`. `APP_URL` must be the
+`https://` address: Laravel builds every QR code and service-worker URL from it,
+so a mismatch prints codes that resolve to nothing.
+
+> **Not yet verified end to end.** The image and compose file are written and
+> statically checked, but no Docker daemon was available in the environment they
+> were authored in, so `docker compose up` has not been run. Expect to iterate on
+> the first build.
+
+---
+
+## 3b. Deploy without Docker
 
 ```bash
 composer install --no-dev --optimize-autoloader
