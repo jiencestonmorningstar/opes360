@@ -4,6 +4,7 @@ namespace App\Services;
 
 use App\Enums\DocumentStatus;
 use App\Enums\PaymentMethod;
+use App\Models\Device;
 use App\Models\Document;
 use App\Models\Payment;
 use App\Models\PaymentAllocation;
@@ -23,6 +24,16 @@ class PaymentRecorder
 {
     public function __construct(protected DocumentNumbers $numbers) {}
 
+    /**
+     * @param  string|null  $receiptNumber  A receipt number a device already
+     *                                      printed offline. Honoured only after
+     *                                      being checked against that device's
+     *                                      lease — see $device.
+     * @param  Device|null  $device  The device that assigned $receiptNumber.
+     * @param  string|null  $paymentId  The id the device generated, so a replay
+     *                                  of the same envelope is recognised
+     *                                  rather than taking the money twice.
+     */
     public function record(
         Document $document,
         User $cashier,
@@ -30,12 +41,15 @@ class PaymentRecorder
         PaymentMethod $method,
         ?string $reference = null,
         string $receiptFormat = 'thermal80',
+        ?string $receiptNumber = null,
+        ?Device $device = null,
+        ?string $paymentId = null,
     ): Payment {
         if ($amount <= 0) {
             throw new RuntimeException('Payment amount must be greater than zero.');
         }
 
-        return DB::transaction(function () use ($document, $cashier, $amount, $method, $reference, $receiptFormat) {
+        return DB::transaction(function () use ($document, $cashier, $amount, $method, $reference, $receiptFormat, $receiptNumber, $device, $paymentId) {
             // Re-read under a row lock: two cashiers recording against the same
             // invoice at once must not both pass the balance check on stale data.
             $document = Document::query()->lockForUpdate()->findOrFail($document->getKey());
@@ -54,7 +68,18 @@ class PaymentRecorder
                     (float) $document->balance,
                 ));
             }
-            $payment = Payment::create([
+
+            $payment = new Payment;
+
+            // A payment created offline keeps the id the device gave it, so a
+            // replayed envelope is recognised as the same payment rather than
+            // taking the money a second time. Assigned on the instance because
+            // the key is guarded against mass assignment, as it should be.
+            if ($paymentId !== null && $paymentId !== '') {
+                $payment->id = $paymentId;
+            }
+
+            $payment->forceFill([
                 'contact_id' => $document->contact_id,
                 'method' => $method,
                 'amount' => $amount,
@@ -62,7 +87,8 @@ class PaymentRecorder
                 'reference' => $reference,
                 'received_at' => now(),
                 'received_by' => $cashier->id,
-            ]);
+                'device_id' => $device?->id,
+            ])->save();
 
             PaymentAllocation::create([
                 'payment_id' => $payment->id,
@@ -82,7 +108,11 @@ class PaymentRecorder
             $receipt = Receipt::create([
                 'payment_id' => $payment->id,
                 'contact_id' => $document->contact_id,
-                'number' => $this->numbers->nextReceipt(),
+                // A receipt printed offline keeps the number on the customer's
+                // copy. Claiming verifies it against the device's own lease and
+                // throws if it is not there, which rejects the whole payment
+                // rather than issuing a second receipt with a different number.
+                'number' => $this->receiptNumber($receiptNumber, $device),
                 'format' => $receiptFormat,
                 'total' => $amount,
                 'currency' => $document->currency,
@@ -108,5 +138,20 @@ class PaymentRecorder
 
             return $payment;
         });
+    }
+
+    protected function receiptNumber(?string $supplied, ?Device $device): string
+    {
+        if ($supplied === null || $supplied === '') {
+            return $this->numbers->nextReceipt();
+        }
+
+        if ($device === null) {
+            throw new RuntimeException('A receipt number was supplied without an identified device.');
+        }
+
+        $this->numbers->claim($supplied, 'receipt', $device);
+
+        return $supplied;
     }
 }

@@ -192,12 +192,12 @@ class AuthorizationTest extends TestCase
 
         $this->actingAsRole(Role::READ_ONLY);
 
-        Livewire::test(Show::class, ['document' => $invoice])
-            ->set('amount', '400')
-            ->set('method', 'cash')
-            ->call('recordPayment')
-            ->assertForbidden();
+        $result = $this->returned(
+            Livewire::test(Show::class, ['document' => $invoice])
+                ->call('recordPayment', ['amount' => '400', 'method' => 'cash', 'reference' => null])
+        );
 
+        $this->assertFalse($result['ok']);
         $this->assertDatabaseCount('payments', 0);
         $this->assertSame(0.0, (float) $invoice->fresh()->amount_paid);
     }

@@ -3,6 +3,7 @@ import '@fontsource-variable/inter/index.css';
 import { SyncEngine } from './offline/sync.js';
 import documentForm from './forms/document.js';
 import recordForm from './forms/record.js';
+import paymentPanel from './forms/payment.js';
 
 /*
  * Register the service worker so the app shell is installable and survives a lost
@@ -37,6 +38,7 @@ document.addEventListener('alpine:init', () => {
     /* Forms that own their own state so they keep working with no connection. */
     window.Alpine.data('opesDocumentForm', documentForm);
     window.Alpine.data('opesRecordForm', recordForm);
+    window.Alpine.data('opesPaymentPanel', paymentPanel);
 
     window.Alpine.data('opesShell', () => ({
         drawer: false,

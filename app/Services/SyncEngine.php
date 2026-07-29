@@ -3,6 +3,7 @@
 namespace App\Services;
 
 use App\Enums\DocumentStatus;
+use App\Enums\PaymentMethod;
 use App\Models\Contact;
 use App\Models\Device;
 use App\Models\Document;
@@ -45,6 +46,7 @@ class SyncEngine
     public function __construct(
         protected DocumentIssuer $issuer,
         protected DocumentNumbers $numbers,
+        protected PaymentRecorder $payments,
     ) {}
 
     /**
@@ -108,6 +110,14 @@ class SyncEngine
         $operation = (string) ($envelope['operation'] ?? 'create');
         $payload = (array) ($envelope['payload'] ?? []);
 
+        // A payment is not a row to write, it is a transaction to perform:
+        // it moves an invoice's balance, issues a numbered receipt and updates
+        // the customer's account. Writing the row alone would take the money
+        // and leave the invoice still showing as owing.
+        if ($type === 'payment' && $operation === 'create') {
+            return $this->applyPayment($id, $envelope, $user, $device);
+        }
+
         $existing = $modelClass::query()->find($entityId);
 
         if ($operation === 'create' && $existing !== null) {
@@ -163,6 +173,65 @@ class SyncEngine
 
                 $number = $this->issuer->issue($model, $user, $claimed)->number;
             }
+        }
+
+        return $this->record($id, $envelope, $user, $deviceId, 'applied', assignedNumber: $number);
+    }
+
+    /**
+     * Replays a payment taken with no connection.
+     *
+     * Routed through PaymentRecorder so an offline payment gets exactly what an
+     * online one gets — allocation, balance, status, numbered receipt, hash,
+     * token, customer rollup — rather than a Payment row nobody reconciled.
+     *
+     * The guards are the point of failure here and they are meant to fire: if
+     * another device already settled the invoice, this payment is an
+     * overpayment and is refused. That is a conflict a person has to resolve
+     * (refund, or allocate as credit), not something to force through.
+     *
+     * @return array<string, mixed>
+     */
+    protected function applyPayment(string $id, array $envelope, User $user, ?Device $device): array
+    {
+        $deviceId = $device?->id;
+        $entityId = (string) ($envelope['entity_id'] ?? '');
+        $payload = (array) ($envelope['payload'] ?? []);
+
+        if (Payment::query()->whereKey($entityId)->exists()) {
+            // The payment landed on an earlier attempt whose response was lost.
+            return $this->record($id, $envelope, $user, $deviceId, 'duplicate');
+        }
+
+        $document = Document::query()->find($payload['document_id'] ?? null);
+
+        if ($document === null) {
+            return $this->record($id, $envelope, $user, $deviceId, 'rejected', error: 'document_not_found');
+        }
+
+        $method = PaymentMethod::tryFrom((string) ($payload['method'] ?? ''));
+
+        if ($method === null) {
+            return $this->record($id, $envelope, $user, $deviceId, 'rejected', error: 'unknown_payment_method');
+        }
+
+        $number = trim((string) ($envelope['assigned_number'] ?? '')) ?: null;
+
+        try {
+            $this->payments->record(
+                document: $document,
+                cashier: $user,
+                amount: (float) ($payload['amount'] ?? 0),
+                method: $method,
+                reference: $payload['reference'] ?? null,
+                receiptNumber: $number,
+                device: $device,
+                paymentId: $entityId,
+            );
+        } catch (RuntimeException $e) {
+            // A guard firing is a conflict, not a malformed envelope: the device
+            // did nothing wrong, the world moved underneath it.
+            return $this->record($id, $envelope, $user, $deviceId, 'conflict', error: $e->getMessage());
         }
 
         return $this->record($id, $envelope, $user, $deviceId, 'applied', assignedNumber: $number);

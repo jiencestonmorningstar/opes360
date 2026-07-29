@@ -6,7 +6,15 @@
     $accent = $document->contact?->accent() ?? 'blue';
 @endphp
 
-<div class="px-5 pb-8 lg:px-6 lg:pt-6">
+{{-- The payment panel owns its state in Alpine so cash can be taken with no
+     connection — see resources/js/forms/payment.js. --}}
+<div class="px-5 pb-8 lg:px-6 lg:pt-6"
+     x-data="opesPaymentPanel({
+        documentId: @js($document->id),
+        contactId: @js($document->contact_id),
+        currency: @js($document->currency),
+        balance: @js((float) $document->balance),
+     })">
 
     {{-- Back + header --}}
     <div class="flex items-center gap-3">
@@ -148,7 +156,7 @@
                     </a>
 
                     @if ((float) $document->balance > 0 && ! in_array($document->status->value, ['draft', 'void'], true) && auth()->user()->can('record', \App\Models\Payment::class))
-                        <button type="button" wire:click="openPayment"
+                        <button type="button" @click="openPanel()" x-show="! savedOffline"
                                 class="focusable flex h-11 w-full items-center justify-center gap-2 rounded-xl bg-surface-2 text-[14px] font-semibold text-ink-2 transition-colors hover:bg-tint-blue hover:text-brand">
                             <x-icon name="banknotes" class="size-[18px]" stroke-width="2" />
                             Record Payment
@@ -212,53 +220,88 @@
                 </x-ui.panel>
             @endif
 
-            {{-- Record-payment panel, revealed in place --}}
-            @if ($payingOpen)
-                <x-ui.panel title="Record Payment">
-                    <x-slot:actions>
-                        <button type="button" wire:click="closePayment"
-                                class="focusable text-[14px] font-semibold text-muted hover:text-ink">
-                            Cancel
-                        </button>
-                    </x-slot:actions>
+            @can('record', \App\Models\Payment::class)
+                {{-- Receipt taken on the device: the number is what the customer
+                     is handed, so it is the one thing that must be shown. --}}
+                <template x-if="savedOffline">
+                    <div class="card p-6 text-center">
+                        <span class="mx-auto flex size-[48px] items-center justify-center rounded-full bg-tint-green">
+                            <x-icon name="check-circle" class="size-[24px] text-accent-green" stroke-width="2.2" />
+                        </span>
+                        <h3 class="mt-3.5 text-[17px] font-bold tracking-[-0.02em] text-ink">Payment recorded</h3>
+                        <p class="mt-1.5 text-[13.5px] text-muted">Saved on this device and will sync when you're back online.</p>
 
-                    <label class="block">
-                        <span class="mb-1.5 block text-[13px] font-semibold text-ink-2">Amount</span>
-                        <input type="number" step="any" min="0" inputmode="decimal" wire:model="amount"
-                               class="tnum h-12 w-full rounded-xl border border-border bg-surface px-3.5 text-[16px] font-semibold text-ink focus:border-brand focus:outline-none focus:ring-2 focus:ring-brand/20">
-                    </label>
-                    @error('amount')
-                        <p class="mt-2 text-[13px] font-medium text-warning">{{ $message }}</p>
-                    @enderror
-
-                    <div class="mt-4">
-                        <span class="mb-1.5 block text-[13px] font-semibold text-ink-2">Method</span>
-                        <div class="grid grid-cols-2 gap-2">
-                            @foreach (\App\Enums\PaymentMethod::cases() as $payMethod)
-                                <button type="button" wire:click="$set('method', '{{ $payMethod->value }}')"
-                                        class="focusable h-11 rounded-xl text-[13.5px] font-semibold transition-colors
-                                               {{ $method === $payMethod->value
-                                                   ? 'bg-tint-blue text-brand ring-1 ring-brand/40'
-                                                   : 'border border-border bg-surface text-ink-2 hover:bg-surface-2' }}">
-                                    {{ $payMethod->label() }}
-                                </button>
-                            @endforeach
+                        <div class="mt-4 space-y-2 rounded-xl bg-surface-2 px-4 py-3 text-left">
+                            <div class="flex items-center justify-between">
+                                <span class="text-[13.5px] text-muted">Receipt</span>
+                                <span class="tnum text-[14.5px] font-bold text-ink" x-text="savedOffline.number"></span>
+                            </div>
+                            <div class="flex items-center justify-between">
+                                <span class="text-[13.5px] text-muted">Amount</span>
+                                <span class="tnum text-[14.5px] font-bold text-brand" x-text="savedOffline.amount"></span>
+                            </div>
                         </div>
                     </div>
+                </template>
 
-                    <label class="mt-4 block">
-                        <span class="mb-1.5 block text-[13px] font-semibold text-ink-2">Reference <span class="font-normal text-faint">(optional)</span></span>
-                        <input type="text" wire:model="reference" placeholder="Transfer ref, transaction id…"
-                               class="h-12 w-full rounded-xl border border-border bg-surface px-3.5 text-[14.5px] text-ink placeholder:text-faint focus:border-brand focus:outline-none focus:ring-2 focus:ring-brand/20">
-                    </label>
+                {{-- Record-payment panel, revealed in place --}}
+                <div x-show="open" x-cloak>
+                    <x-ui.panel title="Record Payment">
+                        <x-slot:actions>
+                            <button type="button" @click="close()"
+                                    class="focusable text-[14px] font-semibold text-muted hover:text-ink">
+                                Cancel
+                            </button>
+                        </x-slot:actions>
 
-                    <button type="button" wire:click="recordPayment" wire:loading.attr="disabled"
-                            class="focusable mt-5 flex h-12 w-full items-center justify-center rounded-xl bg-brand text-[14.5px] font-semibold text-white transition-opacity hover:opacity-90">
-                        <span wire:loading.remove wire:target="recordPayment">Confirm &amp; Issue Receipt</span>
-                        <span wire:loading wire:target="recordPayment">Recording…</span>
-                    </button>
-                </x-ui.panel>
-            @endif
+                        <p class="mb-4 rounded-lg bg-tint-orange px-3 py-2 text-[12.5px] font-medium text-warning"
+                           x-show="! online" x-cloak>
+                            <span x-show="receiptsLeft > 0">
+                                Offline — the receipt will use one of the
+                                <span x-text="receiptsLeft"></span> numbers held on this device.
+                            </span>
+                            <span x-show="receiptsLeft === 0">
+                                Offline and out of receipt numbers. Reconnect before taking this payment.
+                            </span>
+                        </p>
+
+                        <label class="block">
+                            <span class="mb-1.5 block text-[13px] font-semibold text-ink-2">Amount</span>
+                            <input type="number" step="any" min="0" inputmode="decimal" x-model="amount"
+                                   class="tnum h-12 w-full rounded-xl border border-border bg-surface px-3.5 text-[16px] font-semibold text-ink focus:border-brand focus:outline-none focus:ring-2 focus:ring-brand/20">
+                        </label>
+                        <p class="mt-2 text-[13px] font-medium text-warning" x-cloak
+                           x-show="error('amount')" x-text="error('amount')"></p>
+
+                        <div class="mt-4">
+                            <span class="mb-1.5 block text-[13px] font-semibold text-ink-2">Method</span>
+                            <div class="grid grid-cols-2 gap-2">
+                                @foreach (\App\Enums\PaymentMethod::cases() as $payMethod)
+                                    <button type="button" @click="method = @js($payMethod->value)"
+                                            class="focusable h-11 rounded-xl text-[13.5px] font-semibold transition-colors"
+                                            :class="method === @js($payMethod->value)
+                                                ? 'bg-tint-blue text-brand ring-1 ring-brand/40'
+                                                : 'border border-border bg-surface text-ink-2 hover:bg-surface-2'">
+                                        {{ $payMethod->label() }}
+                                    </button>
+                                @endforeach
+                            </div>
+                        </div>
+
+                        <label class="mt-4 block">
+                            <span class="mb-1.5 block text-[13px] font-semibold text-ink-2">Reference <span class="font-normal text-faint">(optional)</span></span>
+                            <input type="text" x-model="reference" placeholder="Transfer ref, transaction id…"
+                                   class="h-12 w-full rounded-xl border border-border bg-surface px-3.5 text-[14.5px] text-ink placeholder:text-faint focus:border-brand focus:outline-none focus:ring-2 focus:ring-brand/20">
+                        </label>
+
+                        <button type="button" @click="submit()" :disabled="saving"
+                                class="focusable mt-5 flex h-12 w-full items-center justify-center rounded-xl bg-brand text-[14.5px] font-semibold text-white transition-opacity hover:opacity-90 disabled:opacity-60">
+                            <span x-show="! saving">Confirm &amp; Issue Receipt</span>
+                            <span x-show="saving" x-cloak>Recording…</span>
+                        </button>
+                    </x-ui.panel>
+                </div>
+            @endcan
 
             <x-ui.panel title="Verification">
                 @if ($document->verificationToken)

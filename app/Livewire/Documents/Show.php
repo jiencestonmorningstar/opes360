@@ -7,6 +7,7 @@ use App\Models\Document;
 use App\Models\Payment;
 use App\Services\DocumentConverter;
 use App\Services\PaymentRecorder;
+use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Contracts\View\View;
 use Illuminate\Foundation\Auth\Access\AuthorizesRequests;
 use Livewire\Component;
@@ -17,14 +18,6 @@ class Show extends Component
     use AuthorizesRequests;
 
     public Document $document;
-
-    public bool $payingOpen = false;
-
-    public string $amount = '';
-
-    public string $method = 'cash';
-
-    public string $reference = '';
 
     public bool $voidingOpen = false;
 
@@ -37,27 +30,28 @@ class Show extends Component
         $this->document = $this->loaded($document);
     }
 
-    public function openPayment(): void
+    /**
+     * Records a payment.
+     *
+     * The panel owns its own state so it can also complete with no connection
+     * (see resources/js/forms/payment.js), which means errors are returned for
+     * the client to render rather than thrown — the offline path has no server
+     * to ask, and the two must not show different messages.
+     *
+     * @param  array<string, mixed>  $form
+     * @return array<string, mixed>
+     */
+    public function recordPayment(array $form): array
     {
-        $this->payingOpen = true;
-        // Prefill with the outstanding balance — settling in full is the common
-        // case; part-payment means editing down, not typing from scratch.
-        $this->amount = (string) $this->document->balance;
-        $this->resetErrorBag();
-    }
+        try {
+            // Route middleware only gates opening the page; each action
+            // re-checks, so a crafted Livewire call cannot bypass the right.
+            $this->authorize('record', Payment::class);
+        } catch (AuthorizationException) {
+            return ['ok' => false, 'errors' => ['amount' => ['You do not have permission to record payments.']]];
+        }
 
-    public function closePayment(): void
-    {
-        $this->payingOpen = false;
-    }
-
-    public function recordPayment(): void
-    {
-        // Route middleware only gates opening the page; each action re-checks,
-        // so a crafted Livewire call cannot bypass the permission.
-        $this->authorize('record', Payment::class);
-
-        $this->validate([
+        $validator = validator($form, [
             'amount' => ['required', 'numeric', 'gt:0'],
             'method' => ['required', 'in:cash,bank_transfer,mobile_money,card'],
             'reference' => ['nullable', 'string', 'max:120'],
@@ -65,24 +59,27 @@ class Show extends Component
             'amount.gt' => 'Enter an amount greater than zero.',
         ]);
 
+        if ($validator->fails()) {
+            return ['ok' => false, 'errors' => $validator->errors()->toArray()];
+        }
+
         try {
             app(PaymentRecorder::class)->record(
                 document: $this->document,
                 cashier: auth()->user(),
-                amount: (float) $this->amount,
-                method: PaymentMethod::from($this->method),
-                reference: $this->reference !== '' ? $this->reference : null,
+                amount: (float) $form['amount'],
+                method: PaymentMethod::from($form['method']),
+                reference: filled($form['reference'] ?? null) ? $form['reference'] : null,
             );
         } catch (RuntimeException $e) {
-            // Service guards (overpayment, wrong status) surface as field errors
-            // rather than a 500 — the user can correct and retry in place.
-            $this->addError('amount', $e->getMessage());
-
-            return;
+            // Service guards (overpayment, wrong status) come back as a field
+            // error so the user can correct and retry in place.
+            return ['ok' => false, 'errors' => ['amount' => [$e->getMessage()]]];
         }
 
-        $this->reset('payingOpen', 'amount', 'reference');
         $this->document = $this->loaded($this->document->fresh());
+
+        return ['ok' => true];
     }
 
     public function convert(): void

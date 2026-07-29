@@ -140,16 +140,16 @@ class PaymentRecordingTest extends TestCase
     {
         $invoice = $this->makeInvoice(500);
 
-        Livewire::actingAs($this->user)
-            ->test(Show::class, ['document' => $invoice])
-            ->call('openPayment')
-            ->assertSet('amount', '500.00')   // prefilled with the balance
-            ->set('amount', '500')
-            ->set('method', 'mobile_money')
-            ->call('recordPayment')
-            ->assertHasNoErrors()
-            ->assertSee('Paid')
-            ->assertSee('RCP-');
+        $component = Livewire::actingAs($this->user)->test(Show::class, ['document' => $invoice]);
+
+        $result = $this->returned($component->call('recordPayment', [
+            'amount' => '500',
+            'method' => 'mobile_money',
+            'reference' => null,
+        ]));
+
+        $this->assertTrue($result['ok']);
+        $component->assertSee('Paid')->assertSee('RCP-');
 
         $this->assertSame(DocumentStatus::Paid, $invoice->fresh()->status);
     }
@@ -158,12 +158,16 @@ class PaymentRecordingTest extends TestCase
     {
         $invoice = $this->makeInvoice(100);
 
-        Livewire::actingAs($this->user)
-            ->test(Show::class, ['document' => $invoice])
-            ->call('openPayment')
-            ->set('amount', '999')
-            ->call('recordPayment')
-            ->assertHasErrors(['amount']);
+        $result = $this->returned(
+            Livewire::actingAs($this->user)
+                ->test(Show::class, ['document' => $invoice])
+                ->call('recordPayment', ['amount' => '999', 'method' => 'cash', 'reference' => null])
+        );
+
+        // The overpayment guard comes back as a field error for the client to
+        // render, not as a 500.
+        $this->assertFalse($result['ok']);
+        $this->assertArrayHasKey('amount', $result['errors']);
 
         $this->assertSame(DocumentStatus::Issued, $invoice->fresh()->status);
         $this->assertSame(0, Receipt::count());

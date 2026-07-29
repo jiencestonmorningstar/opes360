@@ -9,6 +9,8 @@ use App\Models\Contact;
 use App\Models\Device;
 use App\Models\Document;
 use App\Models\NumberLease;
+use App\Models\Payment;
+use App\Models\Receipt;
 use App\Models\Role;
 use App\Models\User;
 use App\Services\DocumentNumbers;
@@ -306,6 +308,138 @@ class NumberLeaseTest extends TestCase
         $this->assertNotNull($document->content_hash);
         $this->assertNotNull($document->verification_token_id);
         $this->assertFalse($document->isTampered());
+    }
+
+    public function test_a_payment_taken_offline_settles_the_invoice_and_keeps_its_receipt_number(): void
+    {
+        $device = $this->device();
+        $lease = $this->numbers()->leaseFor($device, 'receipt', 25);
+        $printed = $this->numbers()->format('receipt', (int) $lease->year, (int) $lease->range_start);
+
+        $invoice = Document::create([
+            'type' => DocumentType::Invoice,
+            'number' => 'INV-TEST-1',
+            'contact_id' => $this->contact->id,
+            'status' => DocumentStatus::Issued,
+            'issue_date' => now()->toDateString(),
+            'currency' => 'USD',
+            'subtotal' => 300,
+            'total' => 300,
+            'amount_paid' => 0,
+            'balance' => 300,
+        ]);
+
+        $paymentId = (string) Str::ulid();
+
+        $response = $this->actingAs($this->user)->postJson('/api/sync/v1/push', [
+            'device_id' => $device->id,
+            'envelopes' => [[
+                'id' => (string) Str::ulid(),
+                'entity_type' => 'payment',
+                'entity_id' => $paymentId,
+                'operation' => 'create',
+                'assigned_number' => $printed,
+                'payload' => [
+                    'document_id' => $invoice->id,
+                    'amount' => 300,
+                    'method' => 'cash',
+                    'reference' => 'Market stall',
+                ],
+            ]],
+        ]);
+
+        $response->assertOk();
+        $this->assertSame('applied', $response->json('results.0.status'));
+
+        // A payment is a transaction, not a row: the invoice must actually move.
+        $invoice->refresh();
+        $this->assertSame(DocumentStatus::Paid, $invoice->status);
+        $this->assertSame('300.00', $invoice->amount_paid);
+        $this->assertSame('0.00', $invoice->balance);
+
+        $receipt = Receipt::firstOrFail();
+
+        $this->assertSame($printed, $receipt->number);
+        $this->assertNotNull($receipt->verification_token_id);
+        $this->assertFalse($receipt->isTampered());
+    }
+
+    public function test_a_payment_the_world_has_overtaken_is_reported_as_a_conflict(): void
+    {
+        $device = $this->device();
+        $lease = $this->numbers()->leaseFor($device, 'receipt', 25);
+
+        $invoice = Document::create([
+            'type' => DocumentType::Invoice,
+            'number' => 'INV-TEST-2',
+            'contact_id' => $this->contact->id,
+            'status' => DocumentStatus::Paid,
+            'issue_date' => now()->toDateString(),
+            'currency' => 'USD',
+            'subtotal' => 100,
+            'total' => 100,
+            // Another device already settled it while this one was offline.
+            'amount_paid' => 100,
+            'balance' => 0,
+        ]);
+
+        $response = $this->actingAs($this->user)->postJson('/api/sync/v1/push', [
+            'device_id' => $device->id,
+            'envelopes' => [[
+                'id' => (string) Str::ulid(),
+                'entity_type' => 'payment',
+                'entity_id' => (string) Str::ulid(),
+                'operation' => 'create',
+                'assigned_number' => $this->numbers()->format('receipt', (int) $lease->year, (int) $lease->range_start),
+                'payload' => ['document_id' => $invoice->id, 'amount' => 100, 'method' => 'cash'],
+            ]],
+        ]);
+
+        $response->assertOk();
+
+        // Surfaced for a person to resolve — refund or credit — never forced
+        // through into a negative balance.
+        $this->assertSame('conflict', $response->json('results.0.status'));
+        $this->assertSame('100.00', $invoice->fresh()->amount_paid);
+    }
+
+    public function test_replaying_a_payment_does_not_take_the_money_twice(): void
+    {
+        $device = $this->device();
+        $this->numbers()->leaseFor($device, 'receipt', 25);
+
+        $invoice = Document::create([
+            'type' => DocumentType::Invoice,
+            'number' => 'INV-TEST-3',
+            'contact_id' => $this->contact->id,
+            'status' => DocumentStatus::Issued,
+            'issue_date' => now()->toDateString(),
+            'currency' => 'USD',
+            'subtotal' => 200,
+            'total' => 200,
+            'amount_paid' => 0,
+            'balance' => 200,
+        ]);
+
+        $envelope = [
+            'id' => (string) Str::ulid(),
+            'entity_type' => 'payment',
+            'entity_id' => (string) Str::ulid(),
+            'operation' => 'create',
+            'payload' => ['document_id' => $invoice->id, 'amount' => 120, 'method' => 'cash'],
+        ];
+
+        $this->actingAs($this->user)
+            ->postJson('/api/sync/v1/push', ['device_id' => $device->id, 'envelopes' => [$envelope]])
+            ->assertOk();
+
+        // The same envelope again, as a device retrying after a lost response.
+        $second = $this->actingAs($this->user)
+            ->postJson('/api/sync/v1/push', ['device_id' => $device->id, 'envelopes' => [$envelope]]);
+
+        $this->assertSame('duplicate', $second->json('results.0.status'));
+        $this->assertSame('120.00', $invoice->fresh()->amount_paid);
+        $this->assertSame(1, Payment::count());
     }
 
     public function test_a_number_the_device_never_leased_is_rejected_not_renumbered(): void
