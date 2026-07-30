@@ -85,14 +85,16 @@ are shipped artefacts too.
 ### Deploying
 
 ```bash
-php artisan opes:doctor --mail=you@yourdomain.com
+./scripts/build-release.sh                              # upload-ready archive
+php artisan opes:doctor --mail=you@yourdomain.com       # pre-flight check
 ```
 
 Checks the things that look fine in a browser and are discovered at the worst
 possible moment: mail still pointed at the log file, a queue with no worker so
 reset links are never sent, debug mode left on, a missing storage link. It exits
 non-zero on anything blocking. Full instructions in
-[`docs/DEPLOYMENT.md`](docs/DEPLOYMENT.md).
+[`docs/DEPLOYMENT.md`](docs/DEPLOYMENT.md), or
+[`docs/DEPLOY-NAMECHEAP.md`](docs/DEPLOY-NAMECHEAP.md) for cPanel shared hosting.
 
 ## Architecture at a glance
 
@@ -138,6 +140,7 @@ components need a `dark:` variant only where the *treatment* differs between the
 |---|---|
 | [`docs/PRODUCTION-READINESS.md`](docs/PRODUCTION-READINESS.md) | What is production-grade, what would break first, and the path to launch |
 | [`docs/DEPLOYMENT.md`](docs/DEPLOYMENT.md) | What must exist before the first deploy, and what to verify after it |
+| [`docs/DEPLOY-NAMECHEAP.md`](docs/DEPLOY-NAMECHEAP.md) | cPanel shared hosting, step by step — cron-driven queue, document root, SMTP |
 | [`docs/PLAN.md`](docs/PLAN.md) | 13 phases across 4 releases, dependencies, risks, open questions |
 | [`docs/architecture/decisions.md`](docs/architecture/decisions.md) | Key technical decisions and their trade-offs |
 | [`docs/architecture/data-model.md`](docs/architecture/data-model.md) | Core schema, phase by phase |

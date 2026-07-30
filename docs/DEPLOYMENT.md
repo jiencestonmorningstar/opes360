@@ -1,8 +1,13 @@
 # Deploying OPES360
 
 Written for a single application server plus a managed MySQL instance, which is
-the right shape until the product has enough load to need more. Everything here
-has been exercised except the hosting itself.
+the right shape until the product has enough load to need more.
+
+**Deploying to cPanel shared hosting instead?** Use
+[`DEPLOY-NAMECHEAP.md`](DEPLOY-NAMECHEAP.md) — no Docker, no daemons, and the
+queue runs from cron.
+
+The suite passes on **MariaDB 10.11 as well as MySQL 8**, so either is fine.
 
 ---
 
