@@ -3,7 +3,56 @@
 For getting the app onto your own machine with a real `.test` domain and HTTPS —
 the same arrangement it was verified under, just on Windows.
 
-Pick **one** of the three routes below. Herd is the shortest.
+---
+
+## Start here: see it running in two minutes, no domain at all
+
+A `.test` domain needs a tool that creates it. Getting the app *running* needs
+none — and `localhost` is treated as a secure context by browsers, so even the
+PWA and the offline features work. Do this first; add the domain later if you
+still want it.
+
+You need **PHP 8.2+** and **MySQL or MariaDB**. If you have neither, install
+[Laragon Full](https://laragon.org/download/) — it brings both — then use its
+terminal for the commands below.
+
+```powershell
+# Extract the release zip anywhere, then in that folder:
+copy .env.example .env
+php artisan key:generate
+```
+
+Edit `.env` — only these lines matter:
+
+```dotenv
+APP_URL=http://localhost:8000
+DB_CONNECTION=mysql
+DB_HOST=127.0.0.1
+DB_DATABASE=opes360
+DB_USERNAME=root
+DB_PASSWORD=your-mysql-password
+MAIL_MAILER=log
+```
+
+Create the database, then:
+
+```powershell
+php artisan migrate --seed
+php artisan storage:link
+php artisan serve
+```
+
+Open **http://localhost:8000** and sign in with
+`john@opesware.com` / `password`.
+
+That is the whole application, with the demo dataset. Nothing below is required
+unless you specifically want the `opes360.test` hostname.
+
+---
+
+## Want the .test domain? Pick one of these three.
+
+Herd is the shortest.
 
 ---
 
