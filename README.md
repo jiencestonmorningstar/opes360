@@ -141,6 +141,7 @@ components need a `dark:` variant only where the *treatment* differs between the
 | [`docs/PRODUCTION-READINESS.md`](docs/PRODUCTION-READINESS.md) | What is production-grade, what would break first, and the path to launch |
 | [`docs/DEPLOYMENT.md`](docs/DEPLOYMENT.md) | What must exist before the first deploy, and what to verify after it |
 | [`docs/DEPLOY-NAMECHEAP.md`](docs/DEPLOY-NAMECHEAP.md) | cPanel shared hosting, step by step — cron-driven queue, document root, SMTP |
+| [`docs/DEPLOY-WINDOWS.md`](docs/DEPLOY-WINDOWS.md) | Running it on your own Windows machine at `https://opes360.test` |
 | [`docs/PLAN.md`](docs/PLAN.md) | 13 phases across 4 releases, dependencies, risks, open questions |
 | [`docs/architecture/decisions.md`](docs/architecture/decisions.md) | Key technical decisions and their trade-offs |
 | [`docs/architecture/data-model.md`](docs/architecture/data-model.md) | Core schema, phase by phase |
