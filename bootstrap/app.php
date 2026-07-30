@@ -24,6 +24,22 @@ return Application::configure(basePath: dirname(__DIR__))
         health: '/up',
     )
     ->withMiddleware(function (Middleware $middleware): void {
+        /*
+         * Every realistic deployment of this app sits behind something that
+         * terminates TLS — nginx, a load balancer, cPanel's proxy. Without
+         * trusting its forwarded headers Laravel builds http:// URLs for an
+         * https site, which breaks the service worker (no secure context) and
+         * prints QR codes pointing at a scheme the site does not answer on.
+         *
+         * The proxy list is configurable rather than fixed: on shared hosting
+         * the terminator is on the same host, behind a load balancer it is not.
+         */
+        $middleware->trustProxies(
+            at: env('TRUSTED_PROXIES', '127.0.0.1,::1') === '*'
+                ? '*'
+                : explode(',', (string) env('TRUSTED_PROXIES', '127.0.0.1,::1')),
+        );
+
         // Runs on every web request so tenant scoping is never opt-in.
         $middleware->web(append: [
             SetCurrentCompany::class,
