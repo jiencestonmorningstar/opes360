@@ -42,7 +42,7 @@ mkdir -p "$STAGE/$RELEASE"
 # Everything the application needs to run, and nothing it does not. Tests, the
 # node toolchain and the local database are deliberately absent.
 for path in \
-    app bootstrap config database public resources routes storage vendor \
+    app bootstrap config database public resources routes scripts storage vendor \
     artisan composer.json composer.lock
 do
     cp -R "$path" "$STAGE/$RELEASE/"
@@ -86,6 +86,7 @@ test -f "$STAGE/$RELEASE/vendor/autoload.php"       || { echo "FAIL: vendor miss
 test -f "$STAGE/$RELEASE/public/build/manifest.json" || { echo "FAIL: assets not built"; exit 1; }
 test ! -e "$STAGE/$RELEASE/.env"                     || { echo "FAIL: .env must never ship"; exit 1; }
 test ! -d "$STAGE/$RELEASE/node_modules"             || { echo "FAIL: node_modules must never ship"; exit 1; }
+test -f "$STAGE/$RELEASE/scripts/windows/install.ps1" || { echo "FAIL: Windows installer missing"; exit 1; }
 
 mkdir -p "$OUT"
 ARCHIVE="$OUT/$RELEASE.zip"

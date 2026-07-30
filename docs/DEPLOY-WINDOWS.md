@@ -5,7 +5,42 @@ the same arrangement it was verified under, just on Windows.
 
 ---
 
-## Start here: see it running in two minutes, no domain at all
+## The one-command way
+
+From an **Administrator PowerShell**, in the extracted release folder:
+
+```powershell
+.\scripts\windows\install.ps1
+```
+
+It does everything: checks PHP and its extensions, adds the hosts entry,
+downloads Caddy, creates the database, writes `.env`, generates the app key,
+migrates, seeds the demo business, builds the caches, writes the web-server
+config, starts both processes, waits for the site to answer, and opens it.
+
+Windows will ask once to trust Caddy's certificate authority. **Say yes** — the
+service worker will not register on an untrusted origin, so declining leaves the
+offline half of the product silently doing nothing.
+
+```powershell
+.\scripts\windows\stop.ps1     # stop
+.\scripts\windows\start.ps1    # start again after a reboot
+```
+
+Neither process installs as a service, so they stop when the machine does.
+
+You still need **PHP 8.2+** and **MySQL or MariaDB** on the machine first. If you
+have neither, install [Laragon Full](https://laragon.org/download/) — it brings
+both — then run the script from Laragon's terminal.
+
+> The script was written against the arrangement verified on Linux — Caddy with
+> its own CA in front of PHP — but PowerShell could not be executed in the
+> environment it was authored in. Expect to fix a small thing on the first run;
+> paste any error and it can be corrected.
+
+---
+
+## Or do it by hand: no domain at all
 
 A `.test` domain needs a tool that creates it. Getting the app *running* needs
 none — and `localhost` is treated as a secure context by browsers, so even the
