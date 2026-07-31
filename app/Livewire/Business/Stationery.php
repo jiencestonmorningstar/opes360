@@ -26,6 +26,8 @@ class Stationery extends Component
 
     public string $size = 'a4';
 
+    public string $letterheadDesign = 'rule';
+
     public string $cardName = '';
 
     public string $cardTitle = '';
@@ -41,6 +43,14 @@ class Stationery extends Component
         'stamp' => 'Company Stamp',
     ];
 
+    /** The letterhead designs a business can print on. Null column = 'rule'. */
+    public const LETTERHEAD_DESIGNS = [
+        'rule' => 'Rule',
+        'banner' => 'Banner',
+        'sidebar' => 'Sidebar',
+        'crest' => 'Crest',
+    ];
+
     public function mount(): void
     {
         if (! array_key_exists($this->asset, self::ASSETS)) {
@@ -50,6 +60,26 @@ class Stationery extends Component
         $this->cardName = auth()->user()->name;
         $this->cardTitle = 'Business Owner';
         $this->cardDesign = app(CurrentCompany::class)->get()?->cardDesign() ?? 'classic';
+
+        $design = app(CurrentCompany::class)->get()?->letterhead_design;
+        $this->letterheadDesign = array_key_exists((string) $design, self::LETTERHEAD_DESIGNS) ? $design : 'rule';
+    }
+
+    /**
+     * Saves immediately rather than behind a button: the choice applies to the
+     * printed sheet and every generated document, so the preview, the print
+     * route and the record must never disagree.
+     */
+    public function setLetterheadDesign(string $design): void
+    {
+        if (! array_key_exists($design, self::LETTERHEAD_DESIGNS)) {
+            return;
+        }
+
+        $this->authorize('business.manage-stationery');
+
+        app(CurrentCompany::class)->get()->forceFill(['letterhead_design' => $design])->save();
+        $this->letterheadDesign = $design;
     }
 
     public function setAsset(string $asset): void
