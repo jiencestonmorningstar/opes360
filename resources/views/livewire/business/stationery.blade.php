@@ -62,6 +62,65 @@
                         <span class="{{ $labelClass }}">Position</span>
                         <input type="text" wire:model.live.debounce.300ms="cardTitle" class="{{ $inputClass }}">
                     </label>
+
+                    {{-- Card design — saved on the company, so the print link picks it up. --}}
+                    <div class="mt-4">
+                        <span class="{{ $labelClass }}">Card design</span>
+                        <div class="grid grid-cols-2 gap-2">
+                            @foreach (\App\Models\Company::CARD_DESIGNS as $design)
+                                <button type="button" wire:click="setCardDesign('{{ $design }}')"
+                                        aria-pressed="{{ $cardDesign === $design ? 'true' : 'false' }}"
+                                        class="focusable rounded-xl border p-2 text-left transition-colors
+                                               {{ $cardDesign === $design ? 'border-brand bg-tint-blue ring-1 ring-brand/40' : 'border-border bg-surface hover:bg-surface-2' }}">
+                                    <div class="aspect-[85/55] w-full overflow-hidden rounded-md border border-slate-200 bg-white">
+                                        @if ($design === 'bold')
+                                            <div class="flex h-full flex-col justify-between bg-blue-700 p-1.5">
+                                                <div class="h-1.5 w-3/5 rounded-sm bg-white/90"></div>
+                                                <div class="flex items-end justify-between">
+                                                    <div class="space-y-1"><div class="h-1 w-8 rounded-sm bg-white/60"></div><div class="h-1 w-6 rounded-sm bg-white/60"></div></div>
+                                                    <div class="size-4 rounded-sm bg-white"></div>
+                                                </div>
+                                            </div>
+                                        @elseif ($design === 'minimal')
+                                            <div class="flex h-full flex-col justify-between p-1.5">
+                                                <div class="h-px w-full bg-slate-300"></div>
+                                                <div class="h-1.5 w-1/2 rounded-sm bg-slate-400"></div>
+                                                <div class="flex items-end justify-between">
+                                                    <div class="h-1 w-10 rounded-sm bg-slate-200"></div>
+                                                    <div class="size-3 rounded-sm bg-slate-800"></div>
+                                                </div>
+                                                <div class="h-px w-full bg-slate-300"></div>
+                                            </div>
+                                        @elseif ($design === 'split')
+                                            <div class="flex h-full">
+                                                <div class="flex w-1/3 items-center justify-center bg-blue-700">
+                                                    <div class="size-3 rounded-full border border-white/70"></div>
+                                                </div>
+                                                <div class="flex flex-1 flex-col justify-between p-1.5">
+                                                    <div class="h-1.5 w-4/5 rounded-sm bg-slate-800"></div>
+                                                    <div class="flex items-end justify-between">
+                                                        <div class="h-1 w-7 rounded-sm bg-slate-300"></div>
+                                                        <div class="size-3.5 rounded-sm bg-slate-800"></div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        @else
+                                            <div class="flex h-full flex-col justify-between p-1.5">
+                                                <div class="h-1.5 w-3/5 rounded-sm bg-slate-800"></div>
+                                                <div class="flex items-end justify-between">
+                                                    <div class="space-y-1"><div class="h-1 w-8 rounded-sm bg-slate-300"></div><div class="h-1 w-6 rounded-sm bg-slate-300"></div></div>
+                                                    <div class="size-4 rounded-sm bg-slate-800"></div>
+                                                </div>
+                                            </div>
+                                        @endif
+                                    </div>
+                                    <p class="mt-1.5 text-[12px] font-semibold {{ $cardDesign === $design ? 'text-brand' : 'text-ink-2' }}">{{ ucfirst($design) }}</p>
+                                </button>
+                            @endforeach
+                        </div>
+                    </div>
+                    {{-- /Card design --}}
+
                     <p class="mt-3 text-[12.5px] text-muted">Standard 85 × 55&nbsp;mm. Both sides shown.</p>
                 @elseif ($asset === 'stamp')
                     <span class="{{ $labelClass }}">Shape</span>

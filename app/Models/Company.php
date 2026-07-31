@@ -16,6 +16,9 @@ class Company extends Model
     use HasUlids;
     use SoftDeletes;
 
+    /** Business-card designs the stationery module can print. */
+    public const CARD_DESIGNS = ['classic', 'bold', 'minimal', 'split'];
+
     protected $guarded = ['id'];
 
     protected function casts(): array
@@ -87,6 +90,15 @@ class Company extends Model
     public function brandToken(string $key, mixed $default = null): mixed
     {
         return data_get($this->brand_tokens, $key, $default);
+    }
+
+    /**
+     * The chosen card design, guarded so an unset or unknown value prints the
+     * classic card rather than an empty template.
+     */
+    public function cardDesign(): string
+    {
+        return in_array($this->card_design, self::CARD_DESIGNS, true) ? $this->card_design : 'classic';
     }
 
     public function initials(): string
