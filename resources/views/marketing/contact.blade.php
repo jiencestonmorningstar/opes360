@@ -23,13 +23,59 @@
 @include('marketing.partials.nav')
 
 <main>
-    <section class="mx-auto max-w-xl px-5 py-16 sm:py-20">
+    <section class="mx-auto max-w-5xl px-5 py-16 sm:py-20">
         <div class="text-center">
             <h1 class="text-[30px] font-bold tracking-[-0.02em] text-ink sm:text-[36px]">Get in touch</h1>
-            <p class="mt-3 text-[15px] text-muted">Questions about a plan, a feature, or anything else — send us a note.</p>
+            <p class="mt-3 text-[15px] text-muted">Questions about a plan, a feature, or anything else — send us a note, or reach us directly.</p>
         </div>
 
-        <div class="card mt-8 p-6">
+        <div class="mt-10 grid gap-6 lg:grid-cols-5">
+        {{-- Direct contact details --}}
+        <div class="space-y-3 lg:col-span-2 lg:order-2">
+            <div class="card p-5">
+                <span class="flex size-10 items-center justify-center rounded-lg bg-tint-blue">
+                    <x-icon name="bell" class="size-[18px] text-brand" stroke-width="1.9" />
+                </span>
+                <p class="mt-3 text-[13px] font-semibold uppercase tracking-wide text-faint">Support</p>
+                <a href="mailto:{{ config('opes.contact.support_email') }}" class="mt-1 block text-[14.5px] font-semibold text-ink hover:text-brand">
+                    {{ config('opes.contact.support_email') }}
+                </a>
+            </div>
+
+            <div class="card p-5">
+                <span class="flex size-10 items-center justify-center rounded-lg bg-tint-green">
+                    <x-icon name="banknotes" class="size-[18px] text-positive" stroke-width="1.9" />
+                </span>
+                <p class="mt-3 text-[13px] font-semibold uppercase tracking-wide text-faint">Sales</p>
+                <a href="mailto:{{ config('opes.contact.sales_email') }}" class="mt-1 block text-[14.5px] font-semibold text-ink hover:text-brand">
+                    {{ config('opes.contact.sales_email') }}
+                </a>
+            </div>
+
+            <div class="card p-5">
+                <span class="flex size-10 items-center justify-center rounded-lg bg-tint-orange">
+                    <x-icon name="user" class="size-[18px] text-warning" stroke-width="1.9" />
+                </span>
+                <p class="mt-3 text-[13px] font-semibold uppercase tracking-wide text-faint">Call or WhatsApp</p>
+                <a href="tel:{{ config('opes.contact.whatsapp') }}" class="mt-1 block text-[14.5px] font-semibold text-ink hover:text-brand">
+                    {{ config('opes.contact.phone') }}
+                </a>
+                <a href="https://wa.me/{{ ltrim(config('opes.contact.whatsapp'), '+') }}" target="_blank" rel="noopener"
+                   class="mt-0.5 block text-[13px] font-medium text-positive hover:underline">
+                    Chat on WhatsApp
+                </a>
+            </div>
+
+            <div class="card p-5">
+                <span class="flex size-10 items-center justify-center rounded-lg bg-tint-purple">
+                    <x-icon name="briefcase" class="size-[18px] text-accent-purple" stroke-width="1.9" />
+                </span>
+                <p class="mt-3 text-[13px] font-semibold uppercase tracking-wide text-faint">Office</p>
+                <p class="mt-1 text-[14.5px] font-semibold leading-snug text-ink">{{ config('opes.contact.address') }}</p>
+            </div>
+        </div>
+
+        <div class="card p-6 lg:col-span-3 lg:order-1">
             @if (session('status'))
                 <div class="mb-5 rounded-xl bg-tint-green px-4 py-3 text-[13.5px] font-medium text-positive">
                     {{ session('status') }}
@@ -78,10 +124,11 @@
                 </button>
             </form>
         </div>
+        </div>
 
         <p class="mt-6 text-center text-[13.5px] text-muted">
             Ready to get started?
-            <a href="{{ route('register') }}" class="font-semibold text-brand hover:underline">Create your business</a>
+            <a href="{{ route('demo.request') }}" class="font-semibold text-brand hover:underline">Try a demo</a>
         </p>
     </section>
 </main>

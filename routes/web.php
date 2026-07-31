@@ -87,6 +87,8 @@ Route::middleware('throttle:10,1')->group(function () {
 Route::get('/about', [MarketingController::class, 'about'])->name('marketing.about');
 Route::get('/features', [MarketingController::class, 'features'])->name('marketing.features');
 Route::get('/pricing', [MarketingController::class, 'pricing'])->name('marketing.pricing');
+Route::get('/blog', [MarketingController::class, 'blog'])->name('marketing.blog');
+Route::get('/blog/{slug}', [MarketingController::class, 'blogShow'])->name('marketing.blog.show');
 Route::get('/privacy', [MarketingController::class, 'privacy'])->name('marketing.privacy');
 Route::get('/terms', [MarketingController::class, 'terms'])->name('marketing.terms');
 Route::middleware('throttle:10,1')->group(function () {

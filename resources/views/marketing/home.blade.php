@@ -55,10 +55,10 @@
     @endphp
 
     <section class="mx-auto max-w-6xl px-5 pb-16 pt-16 sm:pb-24 sm:pt-24">
-        <div class="grid items-center gap-10 lg:grid-cols-3 lg:gap-8">
+        <div class="grid items-center gap-10 lg:grid-cols-12 lg:gap-10">
             {{-- Text --}}
-            <div class="text-center lg:col-span-1 lg:text-left">
-                <h1 class="text-[34px] font-bold leading-[1.1] tracking-[-0.02em] text-ink sm:text-[46px] lg:text-[38px]">
+            <div class="text-center lg:col-span-5 lg:text-left">
+                <h1 class="text-[34px] font-bold leading-[1.1] tracking-[-0.02em] text-ink sm:text-[46px] lg:text-[40px]">
                     Run your business on
                     <span class="text-brand">{{ config('opes.brand.name') }}</span>
                 </h1>
@@ -83,7 +83,7 @@
             {{-- Slider: 4 slides of 3 feature cards, to the right of the text on
                  desktop. Pure Alpine — no carousel library — auto-advances and
                  pauses on hover/focus so it never fights someone reading a card. --}}
-            <div class="lg:col-span-2"
+            <div class="lg:col-span-7"
                  x-data="{
                     slide: 0,
                     total: {{ count($heroSlides) }},

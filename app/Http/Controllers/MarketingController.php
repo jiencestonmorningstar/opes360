@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Notifications\ContactMessageNotification;
+use App\Support\BlogPosts;
 use Illuminate\Http\Request;
 use Illuminate\Routing\Controller;
 use Illuminate\Support\Facades\Notification;
@@ -37,6 +38,26 @@ class MarketingController extends Controller
     public function contact()
     {
         return view('marketing.contact');
+    }
+
+    public function blog()
+    {
+        return view('marketing.blog.index', [
+            'posts' => BlogPosts::all(),
+        ]);
+    }
+
+    public function blogShow(string $slug)
+    {
+        $post = BlogPosts::find($slug);
+
+        abort_if($post === null, 404);
+
+        return view('marketing.blog.show', [
+            'slug' => $slug,
+            'post' => $post,
+            'bodyHtml' => BlogPosts::toHtml($post['body']),
+        ]);
     }
 
     public function privacy()

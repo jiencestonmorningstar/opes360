@@ -101,6 +101,48 @@ class LandingPageTest extends TestCase
         $this->get(route('marketing.contact'))->assertOk();
     }
 
+    public function test_the_contact_page_shows_direct_contact_details(): void
+    {
+        $response = $this->get(route('marketing.contact'))->assertOk();
+
+        $response->assertSee('360@opes360.com')
+            ->assertSee('nshomejude@gmail.com')
+            ->assertSee('+237 670 41 62 38', false)
+            ->assertSee('Petite Terrain', false)
+            ->assertSee('wa.me/237670416238', false);
+    }
+
+    public function test_the_blog_index_lists_posts(): void
+    {
+        $response = $this->get(route('marketing.blog'))->assertOk();
+
+        $response->assertSee("Why offline-first isn&#039;t a nice-to-have here", false)
+            ->assertSee('What a QR code on your invoice is actually proving');
+    }
+
+    public function test_a_blog_post_renders(): void
+    {
+        $this->get(route('marketing.blog.show', 'qr-verification-explained'))
+            ->assertOk()
+            ->assertSee('What a QR code on your invoice is actually proving')
+            ->assertSee('How it works');
+    }
+
+    public function test_an_unknown_blog_slug_404s(): void
+    {
+        $this->get(route('marketing.blog.show', 'does-not-exist'))->assertNotFound();
+    }
+
+    public function test_the_mobile_menu_reaches_every_marketing_page(): void
+    {
+        $response = $this->get('/')->assertOk();
+
+        // The mobile drawer duplicates the desktop nav's links, so both
+        // must resolve — a real gap before this: nav links vanished below lg.
+        $response->assertSee(route('marketing.blog'), false)
+            ->assertSee('aria-label="Open menu"', false);
+    }
+
     public function test_the_privacy_page_renders(): void
     {
         $this->get(route('marketing.privacy'))

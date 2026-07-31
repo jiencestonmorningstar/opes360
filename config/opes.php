@@ -72,7 +72,12 @@ return [
      * "from" address so a fresh install works without extra configuration.
      */
     'contact' => [
-        'recipient' => env('CONTACT_RECIPIENT', env('MAIL_FROM_ADDRESS', 'hello@example.com')),
+        'recipient' => env('CONTACT_RECIPIENT', env('MAIL_FROM_ADDRESS', 'support@opes360.com')),
+        'support_email' => '360@opes360.com',
+        'sales_email' => 'nshomejude@gmail.com',
+        'phone' => '+237 670 41 62 38',
+        'whatsapp' => '+237670416238',
+        'address' => 'Petite Terrain, Bonamoussadi, Douala, Cameroon',
     ],
 
     'quick_actions' => [
