@@ -4,6 +4,7 @@ namespace Database\Seeders;
 
 use App\Enums\DocumentStatus;
 use App\Enums\DocumentType;
+use App\Enums\PaymentMethod;
 use App\Models\Artisan;
 use App\Models\ArtisanTestimonial;
 use App\Models\Company;
@@ -24,6 +25,8 @@ use App\Models\Ticket;
 use App\Models\TicketType;
 use App\Models\User;
 use App\Models\VerificationToken;
+use App\Services\DocumentIssuer;
+use App\Services\PaymentRecorder;
 use App\Services\TicketSeller;
 use App\Support\CurrentCompany;
 use Carbon\CarbonImmutable;
@@ -160,6 +163,7 @@ class DemoCompanySeeder extends Seeder
         $this->seedReviews();
         $this->seedForms();
         $this->seedEvent();
+        $this->seedJudeNshomeAccount();
         $this->recomputeContactBalances();
     }
 
@@ -272,6 +276,82 @@ class DemoCompanySeeder extends Seeder
         // Jude's ticket is paid but not yet checked in — he is coming to the
         // showcase, the verification page just hasn't seen him at the door.
         $judeTicket->forceFill(['paid_at' => now()->subHours(3)])->save();
+    }
+
+    /**
+     * The same named client as seedForms()/seedEvent()/seedReviews() above,
+     * now with an actual account: a contact, an issued annual invoice, a
+     * full payment, and the receipt that payment produces. Every commerce
+     * module (contacts, sales documents, payments, receipts) touches this
+     * same record instead of a generic placeholder, so the product's own
+     * demo can be pointed at as a working example end to end.
+     */
+    protected function seedJudeNshomeAccount(): void
+    {
+        // Dated a couple of months back, and in XAF rather than the company's
+        // USD: a real client outside the crafted today/week/month figures the
+        // rest of this seeder targets, so it adds a genuine account without
+        // shifting any of those numbers out from under the dashboard tests.
+        $signedUp = $this->today->subMonths(2);
+
+        $contact = Contact::create([
+            'type' => 'customer',
+            'name' => 'Jude Nshome',
+            'company_name' => 'OPESWARE llc.',
+            'email' => 'nshomejude@gmail.com',
+            'phones' => ['+237670416238'],
+            'whatsapp' => '+237670416238',
+            'address' => [
+                'street' => 'Rue Tokoto, Bonapriso',
+                'city' => 'Douala',
+                'country' => 'Cameroon',
+            ],
+            'notes' => 'Company website: https://opesware.com',
+            'created_at' => $signedUp,
+            'updated_at' => $signedUp,
+        ]);
+
+        $invoice = Document::create([
+            'type' => DocumentType::Invoice,
+            'contact_id' => $contact->id,
+            'status' => DocumentStatus::Draft,
+            'issue_date' => $signedUp->toDateString(),
+            'due_date' => $signedUp->addDays(14)->toDateString(),
+            'currency' => 'XAF',
+            'subtotal' => 30000,
+            'total' => 30000,
+            'amount_paid' => 0,
+            'balance' => 30000,
+            'notes' => 'Annual subscription — OPES 360 (Opes Business 360).',
+            'created_by' => $this->owner->id,
+        ]);
+
+        DocumentLine::create([
+            'document_id' => $invoice->id,
+            'description' => 'OPES 360 (Opes Business 360) — Annual Subscription',
+            'quantity' => 1,
+            'unit' => 'unit',
+            'unit_price' => 30000,
+            'line_total' => 30000,
+            'sort_order' => 0,
+        ]);
+
+        // Real issuing flow: leases the final INV- number, freezes the content
+        // hash and mints the public verification token — the same path the
+        // Documents UI uses, not a hand-rolled shortcut.
+        $invoice = app(DocumentIssuer::class)->issue($invoice, $this->owner);
+
+        // Full payment through the real recorder, so the invoice is marked
+        // Paid, the contact balance is decremented, and a real numbered,
+        // hashed, verifiable receipt is issued alongside it.
+        app(PaymentRecorder::class)->record(
+            document: $invoice,
+            cashier: $this->owner,
+            amount: 30000,
+            method: PaymentMethod::MobileMoney,
+            reference: 'Annual plan — OPES 360 subscription',
+            receiptFormat: 'a4',
+        );
     }
 
     /** Three published reviews on the public business profile. */

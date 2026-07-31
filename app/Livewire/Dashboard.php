@@ -50,8 +50,8 @@ class Dashboard extends Component
         [$from, $to] = $this->window($now);
         [$prevFrom, $prevTo] = $this->previousWindow($now);
 
-        $current = $this->metrics($from, $to);
-        $previous = $this->metrics($prevFrom, $prevTo);
+        $current = $this->metrics($from, $to, $currency);
+        $previous = $this->metrics($prevFrom, $prevTo, $currency);
 
         return view('livewire.dashboard', [
             'company' => $company,
@@ -59,9 +59,9 @@ class Dashboard extends Component
             'greeting' => $this->greeting($now),
             'rangeLabel' => $this->rangeLabel(),
             'stats' => $this->stats($current, $previous, $currency),
-            'chart' => $this->chart($now),
-            'chartTotal' => Money::format($this->chart($now)->sum('value'), $currency),
-            'topCustomers' => $this->topCustomers($now),
+            'chart' => $this->chart($now, $currency),
+            'chartTotal' => Money::format($this->chart($now, $currency)->sum('value'), $currency),
+            'topCustomers' => $this->topCustomers($now, $currency),
             'recentInvoices' => $this->recentInvoices(),
             'counters' => $this->counters($now, $currency),
         ])->layout('components.layouts.app', ['title' => 'Dashboard', 'active' => 'home']);
@@ -108,14 +108,24 @@ class Dashboard extends Component
     /**
      * @return array{sales: float, paid: float, invoices: int}
      */
-    protected function metrics(CarbonImmutable $from, CarbonImmutable $to): array
+    /**
+     * Every sum here is scoped to the company's own currency: a document or
+     * payment recorded in a different currency (a foreign-currency invoice,
+     * say) is real money but not a number that can be added to a USD total
+     * without a conversion this dashboard doesn't do — mixing them in would
+     * silently inflate the figures rather than report them correctly.
+     */
+    protected function metrics(CarbonImmutable $from, CarbonImmutable $to, string $currency): array
     {
-        $invoices = Document::query()->invoices()->issuedBetween($from, $to);
+        $invoices = Document::query()->invoices()->issuedBetween($from, $to)->where('currency', $currency);
 
         return [
             'sales' => (float) (clone $invoices)->sum('total'),
             'invoices' => (int) (clone $invoices)->count(),
-            'paid' => (float) Payment::query()->whereBetween('received_at', [$from, $to])->sum('amount'),
+            'paid' => (float) Payment::query()
+                ->whereBetween('received_at', [$from, $to])
+                ->where('currency', $currency)
+                ->sum('amount'),
         ];
     }
 
@@ -123,7 +133,7 @@ class Dashboard extends Component
     {
         // Outstanding is a running balance, not a windowed figure — it answers
         // "what am I owed right now", which never resets with the date filter.
-        $outstanding = (float) Document::query()->invoices()->outstanding()->sum('balance');
+        $outstanding = (float) Document::query()->invoices()->outstanding()->where('currency', $currency)->sum('balance');
 
         $caption = $this->deltaCaption();
 
@@ -181,13 +191,14 @@ class Dashboard extends Component
     }
 
     /** Seven days of issued invoice value, Monday through Sunday. */
-    protected function chart(CarbonImmutable $now): Collection
+    protected function chart(CarbonImmutable $now, string $currency): Collection
     {
         $start = $now->startOfWeek();
 
         $totals = Document::query()
             ->invoices()
             ->issuedBetween($start, $start->addDays(6))
+            ->where('currency', $currency)
             ->get(['issue_date', 'total'])
             ->groupBy(fn (Document $d) => $d->issue_date->toDateString())
             ->map(fn (Collection $group) => (float) $group->sum('total'));
@@ -210,11 +221,12 @@ class Dashboard extends Component
         ]);
     }
 
-    protected function topCustomers(CarbonImmutable $now): Collection
+    protected function topCustomers(CarbonImmutable $now, string $currency): Collection
     {
         $totals = Document::query()
             ->invoices()
             ->issuedBetween($now->startOfMonth(), $now->endOfMonth())
+            ->where('currency', $currency)
             ->selectRaw('contact_id, SUM(total) as revenue')
             ->whereNotNull('contact_id')
             ->groupBy('contact_id')
