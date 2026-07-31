@@ -185,6 +185,26 @@
                 </div>
             </x-ui.panel>
 
+            {{-- Public reviews: moderation entry (gated like the screen itself) --}}
+            @can('business.update')
+                <x-ui.panel title="Reviews">
+                    <a href="{{ route('business.reviews') }}"
+                       class="focusable flex items-center justify-between gap-3 rounded-xl bg-surface-2 px-4 py-3 hover:opacity-90">
+                        <span>
+                            <span class="block text-[14px] font-semibold text-ink">Moderate reviews</span>
+                            <span class="block text-[12px] text-muted">Approve what shows on your public page.</span>
+                        </span>
+                        @if ($pendingReviews > 0)
+                            <span class="tnum shrink-0 rounded-full bg-tint-orange px-3 py-1 text-[12.5px] font-bold text-warning">
+                                {{ $pendingReviews }} pending
+                            </span>
+                        @else
+                            <x-icon name="chevron-right" class="size-[16px] shrink-0 text-muted" stroke-width="2.2" />
+                        @endif
+                    </a>
+                </x-ui.panel>
+            @endcan
+
             <x-ui.panel title="Verification">
                 <div class="flex items-center gap-3">
                     <span class="flex size-[42px] shrink-0 items-center justify-center rounded-xl bg-tint-green">
