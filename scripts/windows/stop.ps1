@@ -4,6 +4,11 @@
 #>
 $Root = Split-Path (Split-Path $PSScriptRoot -Parent) -Parent
 
+if (-not (Test-Path (Join-Path $Root 'Caddyfile'))) {
+    Write-Host "This install used Laragon — stop it from its own tray icon, not this script." -ForegroundColor Yellow
+    exit
+}
+
 Get-Process caddy -ErrorAction SilentlyContinue | Stop-Process -Force
 Get-CimInstance Win32_Process -Filter "Name = 'php.exe'" |
     Where-Object { $_.CommandLine -like '*-S 127.0.0.1:9001*' } |

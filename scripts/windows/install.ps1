@@ -99,49 +99,69 @@ if (-not (Test-Path (Join-Path $Root 'public\build\manifest.json'))) {
 }
 Ok "Application files in place"
 
-# ---- hosts file --------------------------------------------------------------
+# ---- laragon -------------------------------------------------------------
 
-Step "Pointing $Domain at this machine"
+# Laragon runs its own Apache/nginx on 80/443 and its own DNS resolver for
+# every *.test hostname derived from a folder name under laragon\www — that
+# is exactly what this script would otherwise install Caddy to do, and two
+# servers cannot both bind port 443. Detect it and hand off instead of
+# fighting it. Laragon also auto-detects a Laravel project (the presence of
+# `artisan`) and points the vhost at public/ on its own.
+$UseLaragon = (Test-Path 'C:\laragon\laragon.exe') -or (Get-Process laragon -ErrorAction SilentlyContinue)
 
-$hostsPath = "$env:SystemRoot\System32\drivers\etc\hosts"
-$hosts     = Get-Content $hostsPath -Raw
-
-if ($hosts -match "(?m)^\s*127\.0\.0\.1\s+$([regex]::Escape($Domain))\s*$") {
-    Ok "hosts entry already present"
-} else {
-    Add-Content -Path $hostsPath -Value "`r`n127.0.0.1`t$Domain"
-    Ok "Added '127.0.0.1 $Domain' to the hosts file"
+if ($UseLaragon) {
+    Ok "Laragon detected — it will serve the site instead of Caddy"
 }
 
-ipconfig /flushdns | Out-Null
+# ---- hosts file --------------------------------------------------------------
 
-if (-not (Resolve-DnsName $Domain -ErrorAction SilentlyContinue)) {
-    Warn "$Domain still does not resolve. Some VPN and security tools override the hosts file."
+if ($UseLaragon) {
+    Step "Skipping the hosts file — Laragon resolves *.test itself"
+} else {
+    Step "Pointing $Domain at this machine"
+
+    $hostsPath = "$env:SystemRoot\System32\drivers\etc\hosts"
+    $hosts     = Get-Content $hostsPath -Raw
+
+    if ($hosts -match "(?m)^\s*127\.0\.0\.1\s+$([regex]::Escape($Domain))\s*$") {
+        Ok "hosts entry already present"
+    } else {
+        Add-Content -Path $hostsPath -Value "`r`n127.0.0.1`t$Domain"
+        Ok "Added '127.0.0.1 $Domain' to the hosts file"
+    }
+
+    ipconfig /flushdns | Out-Null
+
+    if (-not (Resolve-DnsName $Domain -ErrorAction SilentlyContinue)) {
+        Warn "$Domain still does not resolve. Some VPN and security tools override the hosts file."
+    }
 }
 
 # ---- caddy -------------------------------------------------------------------
 
-Step "Getting Caddy (web server + certificate authority)"
+if (-not $UseLaragon) {
+    Step "Getting Caddy (web server + certificate authority)"
 
-$caddyDir = Join-Path $Root 'scripts\windows\bin'
-$caddyExe = Join-Path $caddyDir 'caddy.exe'
+    $caddyDir = Join-Path $Root 'scripts\windows\bin'
+    $caddyExe = Join-Path $caddyDir 'caddy.exe'
 
-if (Test-Path $caddyExe) {
-    Ok "Already downloaded"
-} else {
-    New-Item -ItemType Directory -Force -Path $caddyDir | Out-Null
-    $zip = Join-Path $env:TEMP 'caddy.zip'
-    $url = 'https://github.com/caddyserver/caddy/releases/download/v2.8.4/caddy_2.8.4_windows_amd64.zip'
+    if (Test-Path $caddyExe) {
+        Ok "Already downloaded"
+    } else {
+        New-Item -ItemType Directory -Force -Path $caddyDir | Out-Null
+        $zip = Join-Path $env:TEMP 'caddy.zip'
+        $url = 'https://github.com/caddyserver/caddy/releases/download/v2.8.4/caddy_2.8.4_windows_amd64.zip'
 
-    try {
-        Invoke-WebRequest -Uri $url -OutFile $zip -UseBasicParsing
-    } catch {
-        Die "Could not download Caddy. Get caddy_windows_amd64.zip from https://caddyserver.com/download, and put caddy.exe in $caddyDir"
+        try {
+            Invoke-WebRequest -Uri $url -OutFile $zip -UseBasicParsing
+        } catch {
+            Die "Could not download Caddy. Get caddy_windows_amd64.zip from https://caddyserver.com/download, and put caddy.exe in $caddyDir"
+        }
+
+        Expand-Archive -Path $zip -DestinationPath $caddyDir -Force
+        Remove-Item $zip -Force
+        Ok "Downloaded"
     }
-
-    Expand-Archive -Path $zip -DestinationPath $caddyDir -Force
-    Remove-Item $zip -Force
-    Ok "Downloaded"
 }
 
 # ---- database ----------------------------------------------------------------
@@ -198,9 +218,10 @@ Set-EnvValue 'DB_PASSWORD' $DbPassword
 # Mail is written to storage/logs/laravel.log rather than sent. Reset links are
 # still generated and still work — you read them out of the log.
 Set-EnvValue 'MAIL_MAILER' 'log'
-# Caddy terminates TLS in front of PHP. Without this Laravel decides the request
-# is plain http and builds every URL that way, which breaks the service worker
-# and points printed QR codes at a scheme the site does not answer on.
+# Caddy (or Laragon's own Apache/nginx) terminates TLS in front of PHP.
+# Without this Laravel decides the request is plain http and builds every URL
+# that way, which breaks the service worker and points printed QR codes at a
+# scheme the site does not answer on.
 Set-EnvValue 'TRUSTED_PROXIES' '*'
 
 Ok "Configured for https://$Domain"
@@ -237,13 +258,60 @@ Step "Caching configuration"
 & php artisan view:cache   | Out-Null
 Ok "Cached"
 
-# ---- caddy config ------------------------------------------------------------
+if ($UseLaragon) {
 
-Step "Writing the web server configuration"
+    # ---- laragon handoff -------------------------------------------------
 
-$publicPath = (Join-Path $Root 'public') -replace '\\', '/'
+    Step "Handing off to Laragon"
+    Warn "Laragon needs two clicks it cannot be scripted into (no PowerShell hook"
+    Warn "for its tray menu):"
+    Write-Host ""
+    Write-Host "    1. Right-click the Laragon tray icon -> Apache/Nginx -> SSL ->" -ForegroundColor Yellow
+    Write-Host "       Create certificate for *.test" -ForegroundColor Yellow
+    Write-Host "    2. Right-click the Laragon tray icon -> Apache/Nginx -> Reload" -ForegroundColor Yellow
+    Write-Host ""
+    Write-Host "    Laragon serves the folder name as the domain, so" -ForegroundColor Gray
+    Write-Host "    C:\laragon\www\$(Split-Path $Root -Leaf) becomes https://$(Split-Path $Root -Leaf).test" -ForegroundColor Gray
+    Write-Host "    It detects the 'artisan' file and points the vhost at public/ itself." -ForegroundColor Gray
+    Write-Host ""
+    Read-Host "Press Enter once both are done"
 
-@"
+    Step "Waiting for the site"
+
+    $ready = $false
+    foreach ($i in 1..40) {
+        Start-Sleep -Seconds 2
+        try {
+            $r = Invoke-WebRequest "https://$Domain/up" -UseBasicParsing -TimeoutSec 5
+            if ($r.StatusCode -eq 200) { $ready = $true; break }
+        } catch { }
+    }
+
+    Write-Host ""
+    if ($ready) {
+        Write-Host "  https://$Domain is up." -ForegroundColor Green
+        Write-Host "  Sign in: john@opesware.com / password" -ForegroundColor Green
+        Start-Process "https://$Domain"
+    } else {
+        Warn "The site did not answer within 80 seconds."
+        Warn "Check the domain matches the folder name (Laragon derives it, -Domain is ignored by Laragon's own vhost)."
+        Warn "Check Laragon's tray icon shows Apache/Nginx and MySQL running."
+        Warn "PHP errors appear in storage\logs\laravel.log"
+    }
+
+    Write-Host ""
+    Write-Host "  Nothing else to start or stop — Laragon manages the web server." -ForegroundColor Gray
+    Write-Host ""
+
+} else {
+
+    # ---- caddy config ------------------------------------------------------------
+
+    Step "Writing the web server configuration"
+
+    $publicPath = (Join-Path $Root 'public') -replace '\\', '/'
+
+    @"
 # Generated by scripts/windows/install.ps1
 {
 	local_certs
@@ -278,51 +346,52 @@ $Domain {
 }
 "@ | Set-Content -Path (Join-Path $Root 'Caddyfile') -Encoding UTF8
 
-Ok "Caddyfile written"
+    Ok "Caddyfile written"
 
-# ---- run ---------------------------------------------------------------------
+    # ---- run ---------------------------------------------------------------------
 
-Step "Starting"
+    Step "Starting"
 
-Get-Process php, caddy -ErrorAction SilentlyContinue |
-    Where-Object { $_.Path -like "$Root*" -or $_.ProcessName -eq 'caddy' } |
-    Stop-Process -Force -ErrorAction SilentlyContinue
+    Get-Process php, caddy -ErrorAction SilentlyContinue |
+        Where-Object { $_.Path -like "$Root*" -or $_.ProcessName -eq 'caddy' } |
+        Stop-Process -Force -ErrorAction SilentlyContinue
 
-$env:PHP_CLI_SERVER_WORKERS = '8'
-Start-Process -FilePath 'php' `
-    -ArgumentList @('-S', "127.0.0.1:$PhpPort", '-t', 'public', 'public/index.php') `
-    -WorkingDirectory $Root -WindowStyle Hidden
-Ok "PHP workers started on 127.0.0.1:$PhpPort"
+    $env:PHP_CLI_SERVER_WORKERS = '8'
+    Start-Process -FilePath 'php' `
+        -ArgumentList @('-S', "127.0.0.1:$PhpPort", '-t', 'public', 'public/index.php') `
+        -WorkingDirectory $Root -WindowStyle Hidden
+    Ok "PHP workers started on 127.0.0.1:$PhpPort"
 
-Start-Process -FilePath $caddyExe `
-    -ArgumentList @('run', '--config', (Join-Path $Root 'Caddyfile')) `
-    -WorkingDirectory $Root -WindowStyle Hidden
-Ok "Caddy started — it will ask to trust its certificate the first time"
+    Start-Process -FilePath $caddyExe `
+        -ArgumentList @('run', '--config', (Join-Path $Root 'Caddyfile')) `
+        -WorkingDirectory $Root -WindowStyle Hidden
+    Ok "Caddy started — it will ask to trust its certificate the first time"
 
-Step "Waiting for the site"
+    Step "Waiting for the site"
 
-$ready = $false
-foreach ($i in 1..40) {
-    Start-Sleep -Seconds 2
-    try {
-        $r = Invoke-WebRequest "https://$Domain/up" -UseBasicParsing -TimeoutSec 5
-        if ($r.StatusCode -eq 200) { $ready = $true; break }
-    } catch { }
+    $ready = $false
+    foreach ($i in 1..40) {
+        Start-Sleep -Seconds 2
+        try {
+            $r = Invoke-WebRequest "https://$Domain/up" -UseBasicParsing -TimeoutSec 5
+            if ($r.StatusCode -eq 200) { $ready = $true; break }
+        } catch { }
+    }
+
+    Write-Host ""
+    if ($ready) {
+        Write-Host "  https://$Domain is up." -ForegroundColor Green
+        Write-Host "  Sign in: john@opesware.com / password" -ForegroundColor Green
+        Start-Process "https://$Domain"
+    } else {
+        Warn "The site did not answer within 80 seconds."
+        Warn "Check: is another program using port 443 (IIS, Skype, Docker Desktop)?"
+        Warn "Run 'netstat -ano | findstr :443' to see."
+        Warn "PHP errors appear in storage\logs\laravel.log"
+    }
+
+    Write-Host ""
+    Write-Host "  To stop:    .\scripts\windows\stop.ps1" -ForegroundColor Gray
+    Write-Host "  To restart: .\scripts\windows\start.ps1" -ForegroundColor Gray
+    Write-Host ""
 }
-
-Write-Host ""
-if ($ready) {
-    Write-Host "  https://$Domain is up." -ForegroundColor Green
-    Write-Host "  Sign in: john@opesware.com / password" -ForegroundColor Green
-    Start-Process "https://$Domain"
-} else {
-    Warn "The site did not answer within 80 seconds."
-    Warn "Check: is another program using port 443 (IIS, Skype, Docker Desktop)?"
-    Warn "Run 'netstat -ano | findstr :443' to see."
-    Warn "PHP errors appear in storage\logs\laravel.log"
-}
-
-Write-Host ""
-Write-Host "  To stop:    .\scripts\windows\stop.ps1" -ForegroundColor Gray
-Write-Host "  To restart: .\scripts\windows\start.ps1" -ForegroundColor Gray
-Write-Host ""
