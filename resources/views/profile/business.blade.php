@@ -5,6 +5,10 @@
 
     $phones = collect($company->phones ?? []);
     $whatsapp = data_get($company->socials, 'whatsapp');
+    $reviewAverage = $reviews->isNotEmpty() ? number_format($reviews->avg('rating'), 1) : null;
+
+    $inputClass = 'h-12 w-full rounded-xl border border-border bg-surface px-3.5 text-[14.5px] text-ink placeholder:text-faint focus:border-brand focus:outline-none focus:ring-2 focus:ring-brand/20';
+    $labelClass = 'mb-1.5 block text-[13px] font-semibold text-ink-2 text-left';
 @endphp
 
 <!DOCTYPE html>
@@ -48,11 +52,18 @@
             <p class="mt-1 text-[14.5px] text-muted">{{ $company->motto }}</p>
         @endif
 
-        <div class="mt-3 flex items-center gap-1.5 rounded-full bg-tint-green px-3.5 py-1.5">
-            <x-icon name="check-circle" class="size-[16px] text-positive" stroke-width="2.2" />
-            <span class="text-[12.5px] font-semibold text-positive">Verified business</span>
-            @if ($businessToken)
-                <a href="{{ route('verification.show', $businessToken->token) }}" class="sr-only">Verification details</a>
+        <div class="mt-3 flex flex-wrap items-center justify-center gap-2">
+            <span class="flex items-center gap-1.5 rounded-full bg-tint-green px-3.5 py-1.5">
+                <x-icon name="check-circle" class="size-[16px] text-positive" stroke-width="2.2" />
+                <span class="text-[12.5px] font-semibold text-positive">Verified business</span>
+                @if ($businessToken)
+                    <a href="{{ route('verification.show', $businessToken->token) }}" class="sr-only">Verification details</a>
+                @endif
+            </span>
+            @if ($reviewAverage)
+                <a href="#reviews" class="focusable rounded-full bg-tint-orange px-3.5 py-1.5 text-[12.5px] font-semibold text-warning">
+                    ★ {{ $reviewAverage }} / 5 · {{ $reviews->count() }} {{ str('review')->plural($reviews->count()) }}
+                </a>
             @endif
         </div>
 

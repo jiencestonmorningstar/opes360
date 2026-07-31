@@ -9,6 +9,7 @@ use App\Livewire\Business\Artisans as BusinessArtisans;
 use App\Livewire\Business\Companies as BusinessCompanies;
 use App\Livewire\Business\Edit as BusinessEdit;
 use App\Livewire\Business\Logo as BusinessLogo;
+use App\Livewire\Business\Reviews as BusinessReviews;
 use App\Livewire\Business\Stationery;
 use App\Livewire\CalendarPage\Index as CalendarIndex;
 use App\Livewire\Customers\Form as CustomerForm;
@@ -84,6 +85,9 @@ Route::middleware('auth')->group(function () {
     Route::get('/products/{item}/edit', ProductForm::class)->middleware('can:update,item')->name('products.edit');
 
     Route::get('/business', BusinessEdit::class)->middleware('can:business.view')->name('business');
+    // Registered inside the auth group, so it wins over the public
+    // /business/{company} wildcard declared further down.
+    Route::get('/business/reviews', BusinessReviews::class)->middleware('can:business.update')->name('business.reviews');
     Route::get('/business/logo', BusinessLogo::class)->middleware('can:business.manage-branding')->name('logo');
     Route::get('/business/logo/download', [PrintController::class, 'logo'])->middleware('can:business.manage-branding')->name('logo.download');
     Route::get('/business/stationery', Stationery::class)->middleware('can:business.manage-stationery')->name('stationery');
@@ -132,6 +136,11 @@ Route::middleware('throttle:60,1')->group(function () {
     Route::get('/artisan/{artisan}', [ProfileController::class, 'artisan'])->name('profile.artisan');
     Route::get('/artisan/{artisan}/vcard', [ProfileController::class, 'artisanVcard'])->name('profile.artisan.vcard');
 });
+
+// Review submissions get a tighter limit than profile reads: one visitor has no
+// business posting more than a handful of reviews a minute.
+Route::post('/business/{company}/reviews', [ProfileController::class, 'submitReview'])
+    ->middleware('throttle:10,1')->name('profile.business.review');
 
 /*
  * Public verification — the destination behind every printed QR. No auth: the
