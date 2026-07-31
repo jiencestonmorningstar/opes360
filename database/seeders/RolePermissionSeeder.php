@@ -30,6 +30,7 @@ class RolePermissionSeeder extends Seeder
             'Papers' => ['view', 'create', 'issue'],
             'Forms' => ['view', 'create', 'update', 'delete', 'responses'],
             'Events' => ['view', 'create', 'update', 'void', 'check-in'],
+            'Loyalty' => ['view', 'manage', 'redeem'],
             'Reports' => ['view', 'export'],
             'Users' => ['view'],
             'Devices' => ['view'],
@@ -45,6 +46,7 @@ class RolePermissionSeeder extends Seeder
             'Papers' => ['view', 'create'],
             'Forms' => ['view', 'responses'],
             'Events' => ['view'],
+            'Loyalty' => ['view'],
             'Reports' => ['view', 'export'],
             'Settings' => ['view'],
         ]],
@@ -58,6 +60,7 @@ class RolePermissionSeeder extends Seeder
             'Papers' => ['view', 'create'],
             'Forms' => ['view', 'create', 'update', 'responses'],
             'Events' => ['view', 'create', 'update', 'check-in'],
+            'Loyalty' => ['view', 'redeem'],
             'Reports' => ['view'],
         ]],
         // No Papers for a Cashier: a till operator has no reason to read the
@@ -73,6 +76,7 @@ class RolePermissionSeeder extends Seeder
             'Customers' => ['view', 'create'],
             'Products' => ['view'],
             'Events' => ['view', 'check-in'],
+            'Loyalty' => ['view', 'redeem'],
         ]],
         'read-only' => ['name' => 'Read Only', 'level' => 7, 'grants' => [
             'Business' => ['view'],
@@ -84,6 +88,7 @@ class RolePermissionSeeder extends Seeder
             'Papers' => ['view'],
             'Forms' => ['view', 'responses'],
             'Events' => ['view'],
+            'Loyalty' => ['view'],
             'Reports' => ['view'],
         ]],
     ];

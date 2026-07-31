@@ -144,6 +144,25 @@ class PrintController extends Controller
         ]);
     }
 
+    /** A customer's physical loyalty card — issued lazily if it doesn't exist yet. */
+    public function loyaltyCard(Contact $contact, QrCodes $qr, \App\Services\LoyaltyLedger $loyalty)
+    {
+        $company = app(CurrentCompany::class)->get();
+        abort_if($company === null, 404);
+
+        if (! $contact->hasLoyaltyCard()) {
+            $contact = $loyalty->issueCard($contact);
+        }
+
+        $contact->loadMissing('loyaltyVerificationToken');
+
+        return view('print.loyalty-card', [
+            'company' => $company,
+            'contact' => $contact,
+            'qrSvg' => $qr->svg($contact->loyaltyVerificationToken->publicUrl(), 110),
+        ]);
+    }
+
     public function stationery(Request $request, QrCodes $qr)
     {
         $company = app(CurrentCompany::class)->get();

@@ -107,6 +107,9 @@ class DemoCompanySeeder extends Seeder
                 'currency' => 'USD',
                 'timezone' => 'UTC',
                 'owner_id' => $this->owner->id,
+                'loyalty_enabled' => true,
+                'loyalty_points_per_amount' => 100,
+                'loyalty_point_value' => 1,
             ],
         );
 
@@ -352,6 +355,11 @@ class DemoCompanySeeder extends Seeder
             reference: 'Annual plan — OPES 360 subscription',
             receiptFormat: 'a4',
         );
+
+        // Points were already earned automatically by the payment above
+        // (PaymentRecorder calls LoyaltyLedger::earn); a real client with an
+        // account naturally has a physical card too.
+        app(\App\Services\LoyaltyLedger::class)->issueCard($contact->fresh());
     }
 
     /** Three published reviews on the public business profile. */

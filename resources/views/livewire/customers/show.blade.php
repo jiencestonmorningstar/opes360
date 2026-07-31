@@ -112,6 +112,67 @@
             @endif
         </div>
 
+        {{-- Loyalty (start) --}}
+        <div>
+            @if ($loyaltyEnabled || $contact->hasLoyaltyCard())
+                <x-ui.panel title="Loyalty">
+                    <div class="flex items-center justify-between gap-3">
+                        <div>
+                            <p class="tnum text-[24px] font-bold tracking-[-0.02em] text-ink">{{ $contact->loyalty_points }}</p>
+                            <p class="text-[12.5px] text-muted">points balance</p>
+                        </div>
+                        @if ($contact->hasLoyaltyCard())
+                            <a href="{{ route('customers.loyalty-card.print', $contact) }}" target="_blank" rel="noopener"
+                               class="focusable flex h-10 items-center gap-1.5 rounded-xl border border-border bg-surface px-3.5 text-[13px] font-semibold text-ink-2 hover:bg-surface-2">
+                                <x-icon name="printer" class="size-[16px]" stroke-width="1.9" />
+                                Print card
+                            </a>
+                        @else
+                            @can('loyalty.manage')
+                                <button type="button" wire:click="issueLoyaltyCard"
+                                        class="tap focusable flex h-10 items-center gap-1.5 rounded-xl bg-brand px-3.5 text-[13px] font-semibold text-white transition-opacity hover:opacity-90">
+                                    Issue card
+                                </button>
+                            @endcan
+                        @endif
+                    </div>
+
+                    @if ($contact->hasLoyaltyCard())
+                        <p class="mt-1.5 text-[11.5px] text-faint">Card {{ $contact->loyalty_card_number }} · issued {{ $contact->loyalty_card_issued_at?->format('M j, Y') }}</p>
+                    @endif
+
+                    @can('loyalty.redeem')
+                        <form wire:submit="redeemLoyaltyPoints" class="mt-4 flex items-end gap-2 border-t border-border pt-4">
+                            <div class="min-w-0 flex-1">
+                                <label class="mb-1 block text-[12px] font-semibold text-ink-2">Redeem points</label>
+                                <input type="number" min="1" wire:model="redeemPoints" placeholder="e.g. 50"
+                                       class="h-10 w-full rounded-lg border border-border bg-surface px-3 text-[13.5px] text-ink placeholder:text-faint focus:border-brand focus:outline-none focus:ring-1 focus:ring-brand/20">
+                            </div>
+                            <button type="submit"
+                                    class="tap focusable h-10 shrink-0 rounded-lg border border-border bg-surface px-3.5 text-[13px] font-semibold text-ink-2 hover:bg-surface-2">
+                                Redeem
+                            </button>
+                        </form>
+                        @error('redeemPoints') <p class="mt-2 text-[12.5px] font-medium text-warning">{{ $message }}</p> @enderror
+                    @endcan
+
+                    @if ($loyaltyTransactions->isNotEmpty())
+                        <div class="mt-4 space-y-2 border-t border-border pt-4">
+                            @foreach ($loyaltyTransactions as $tx)
+                                <div wire:key="ltx-{{ $tx->id }}" class="flex items-center justify-between gap-3 text-[12.5px]">
+                                    <span class="text-muted">{{ $tx->note ?? ucfirst($tx->type) }} · {{ $tx->created_at->format('M j') }}</span>
+                                    <span class="tnum shrink-0 font-semibold {{ $tx->points > 0 ? 'text-positive' : 'text-warning' }}">
+                                        {{ $tx->points > 0 ? '+' : '' }}{{ $tx->points }}
+                                    </span>
+                                </div>
+                            @endforeach
+                        </div>
+                    @endif
+                </x-ui.panel>
+            @endif
+        </div>
+        {{-- Loyalty (end) --}}
+
         {{-- Notes --}}
         <div>
             <x-ui.panel title="Notes">

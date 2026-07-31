@@ -205,6 +205,47 @@
                 </x-ui.panel>
             @endcan
 
+            {{-- Loyalty (start) --}}
+            @can('loyalty.manage')
+                <x-ui.panel title="Loyalty program">
+                    @if (session('loyaltyStatus'))
+                        <div class="mb-4 rounded-xl bg-tint-green px-4 py-2.5 text-[13px] font-semibold text-positive">
+                            {{ session('loyaltyStatus') }}
+                        </div>
+                    @endif
+
+                    <label class="flex items-center justify-between gap-3">
+                        <span>
+                            <span class="block text-[14px] font-semibold text-ink">Points on every payment</span>
+                            <span class="block text-[12px] text-muted">Customers earn points automatically when a payment is recorded against them.</span>
+                        </span>
+                        <input type="checkbox" wire:model="loyaltyEnabled"
+                               class="size-[20px] shrink-0 rounded border-border-strong text-brand focus:ring-brand/30">
+                    </label>
+
+                    <div class="mt-4 grid grid-cols-2 gap-3">
+                        <div>
+                            <label class="mb-1 block text-[12.5px] font-semibold text-ink-2">Spend per point</label>
+                            <input type="number" step="0.01" min="0.01" wire:model="loyaltyPointsPerAmount"
+                                   class="h-11 w-full rounded-lg border border-border bg-surface px-3 text-[14px] text-ink focus:border-brand focus:outline-none focus:ring-1 focus:ring-brand/20">
+                            @error('loyaltyPointsPerAmount')<p class="mt-1 text-[12px] font-medium text-warning">{{ $message }}</p>@enderror
+                        </div>
+                        <div>
+                            <label class="mb-1 block text-[12.5px] font-semibold text-ink-2">Value per point</label>
+                            <input type="number" step="0.01" min="0" wire:model="loyaltyPointValue"
+                                   class="h-11 w-full rounded-lg border border-border bg-surface px-3 text-[14px] text-ink focus:border-brand focus:outline-none focus:ring-1 focus:ring-brand/20">
+                            @error('loyaltyPointValue')<p class="mt-1 text-[12px] font-medium text-warning">{{ $message }}</p>@enderror
+                        </div>
+                    </div>
+
+                    <button type="button" wire:click="saveLoyaltySettings"
+                            class="tap focusable mt-4 flex h-11 w-full items-center justify-center rounded-xl bg-brand text-[14px] font-semibold text-white transition-opacity hover:opacity-90">
+                        Save loyalty settings
+                    </button>
+                </x-ui.panel>
+            @endcan
+            {{-- Loyalty (end) --}}
+
             <x-ui.panel title="Verification">
                 <div class="flex items-center gap-3">
                     <span class="flex size-[42px] shrink-0 items-center justify-center rounded-xl bg-tint-green">

@@ -8,6 +8,7 @@ use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Concerns\HasUlids;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
@@ -31,7 +32,23 @@ class Contact extends Model
             'credit_limit' => 'decimal:2',
             'tax_id' => 'encrypted',
             'synced_at' => 'datetime',
+            'loyalty_card_issued_at' => 'datetime',
         ];
+    }
+
+    public function loyaltyTransactions(): HasMany
+    {
+        return $this->hasMany(LoyaltyTransaction::class);
+    }
+
+    public function loyaltyVerificationToken(): BelongsTo
+    {
+        return $this->belongsTo(VerificationToken::class, 'loyalty_verification_token_id');
+    }
+
+    public function hasLoyaltyCard(): bool
+    {
+        return $this->loyalty_card_number !== null;
     }
 
     public function documents(): HasMany

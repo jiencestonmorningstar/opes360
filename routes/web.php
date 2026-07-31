@@ -5,6 +5,7 @@ use App\Http\Controllers\DemoRequestController;
 use App\Http\Controllers\EventPublicController;
 use App\Http\Controllers\FormExportController;
 use App\Http\Controllers\FormPublicController;
+use App\Http\Controllers\LoyaltyController;
 use App\Http\Controllers\MarketingController;
 use App\Http\Controllers\PrintController;
 use App\Http\Controllers\ProfileController;
@@ -118,6 +119,10 @@ Route::middleware('auth')->group(function () {
     Route::get('/customers/{contact}', CustomerShow::class)->middleware('can:view,contact')->name('customers.show');
     Route::get('/customers/{contact}/statement', [PrintController::class, 'statement'])->middleware('can:view,contact')->name('customers.statement');
     Route::get('/customers/{contact}/edit', CustomerForm::class)->middleware('can:update,contact')->name('customers.edit');
+    Route::get('/customers/{contact}/loyalty-card/print', [PrintController::class, 'loyaltyCard'])->middleware('can:view,contact')->name('customers.loyalty-card.print');
+    Route::post('/customers/{contact}/loyalty-card/issue', [LoyaltyController::class, 'issueCard'])->name('loyalty.issue');
+    Route::post('/customers/{contact}/loyalty/redeem', [LoyaltyController::class, 'redeem'])->name('loyalty.redeem');
+    Route::post('/customers/{contact}/loyalty/adjust', [LoyaltyController::class, 'adjust'])->name('loyalty.adjust');
 
     // "create" is registered before the wildcard so it is never read as an id.
     Route::get('/documents/create', DocumentCreate::class)->middleware('can:sales.create')->name('documents.create');

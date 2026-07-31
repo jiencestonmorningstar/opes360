@@ -24,7 +24,7 @@ use RuntimeException;
  */
 class PaymentRecorder
 {
-    public function __construct(protected DocumentNumbers $numbers) {}
+    public function __construct(protected DocumentNumbers $numbers, protected LoyaltyLedger $loyalty) {}
 
     /**
      * @param  string|null  $receiptNumber  A receipt number a device already
@@ -103,6 +103,12 @@ class PaymentRecorder
             try {
                 NotifyCompany::about($document->company, 'payments.view', new PaymentReceivedNotification($payment));
             } catch (\Throwable) {
+            }
+
+            // Earning is a no-op when the program is off or there is no
+            // contact to credit (a walk-in sale with no customer record).
+            if ($document->contact) {
+                $this->loyalty->earn($document->contact, $document->company, $amount, Payment::class, $payment->id, $cashier);
             }
 
             $paid = round((float) $document->amount_paid + $amount, 2);

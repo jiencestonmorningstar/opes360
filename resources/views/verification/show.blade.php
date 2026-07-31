@@ -69,6 +69,11 @@
             {{ $errors->first('ticket') }}
         </div>
     @endif
+    @if ($errors->has('points'))
+        <div class="card mt-4 border-warning/40 bg-tint-orange px-5 py-4 text-[13.5px] font-semibold text-warning">
+            {{ $errors->first('points') }}
+        </div>
+    @endif
 
     {{-- Record details --}}
     @if ($document)
@@ -194,6 +199,43 @@
                         </form>
                     @endcan
                 @endif
+            @endauth
+        </div>
+    @endif
+
+    @if ($loyaltyCard ?? null)
+        <div class="card mt-4 p-6">
+            <div class="flex items-baseline justify-between gap-3">
+                <h2 class="text-[16px] font-bold text-ink">Loyalty card</h2>
+                <span class="tnum text-[14px] font-semibold text-muted">{{ $loyaltyCard->loyalty_card_number }}</span>
+            </div>
+
+            <dl class="mt-4 space-y-3">
+                <div class="flex items-center justify-between gap-4">
+                    <dt class="text-[13.5px] text-muted">Member</dt>
+                    <dd class="text-right text-[13.5px] font-semibold text-ink-2">{{ $loyaltyCard->displayName() }}</dd>
+                </div>
+                <div class="flex items-center justify-between gap-4">
+                    <dt class="text-[13.5px] text-muted">Points balance</dt>
+                    <dd class="tnum text-[16px] font-bold text-ink">{{ $loyaltyCard->loyalty_points }}</dd>
+                </div>
+            </dl>
+
+            @auth
+                @can('loyalty.redeem')
+                    <form method="POST" action="{{ route('loyalty.redeem', $loyaltyCard) }}" class="mt-5 flex items-end gap-2 border-t border-border pt-4">
+                        @csrf
+                        <div class="min-w-0 flex-1">
+                            <label class="mb-1 block text-[12px] font-semibold text-ink-2">Redeem points</label>
+                            <input type="number" name="points" min="1" max="{{ $loyaltyCard->loyalty_points }}" required
+                                   class="h-11 w-full rounded-lg border border-border bg-surface px-3 text-[14px] text-ink focus:border-brand focus:outline-none focus:ring-1 focus:ring-brand/20">
+                        </div>
+                        <button type="submit"
+                                class="tap focusable h-11 shrink-0 rounded-lg bg-brand px-4 text-[13.5px] font-semibold text-white transition-opacity hover:opacity-90">
+                            Redeem
+                        </button>
+                    </form>
+                @endcan
             @endauth
         </div>
     @endif

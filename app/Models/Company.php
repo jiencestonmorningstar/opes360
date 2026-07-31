@@ -62,6 +62,21 @@ class Company extends Model
         $this->forceFill(['account_type' => 'trial', 'demo_expires_at' => null])->save();
     }
 
+    /** Points earned for a given spend, rounded down — no fractional points. */
+    public function loyaltyPointsFor(float $amountSpent): int
+    {
+        if ((float) $this->loyalty_points_per_amount <= 0) {
+            return 0;
+        }
+
+        return (int) floor($amountSpent / (float) $this->loyalty_points_per_amount);
+    }
+
+    public function loyaltyPointValue(): float
+    {
+        return (float) $this->loyalty_point_value;
+    }
+
     public function getRouteKeyName(): string
     {
         return 'slug';

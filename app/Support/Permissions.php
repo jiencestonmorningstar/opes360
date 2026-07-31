@@ -25,6 +25,7 @@ class Permissions
         'Papers' => ['view', 'create', 'issue', 'void'],
         'Forms' => ['view', 'create', 'update', 'delete', 'responses'],
         'Events' => ['view', 'create', 'update', 'void', 'check-in'],
+        'Loyalty' => ['view', 'manage', 'redeem'],
         'Reports' => ['view', 'export'],
         'Users' => ['view', 'invite', 'update-role', 'remove'],
         'Devices' => ['view', 'revoke'],

@@ -21,9 +21,40 @@ class Edit extends Component
 
     public $logoUpload = null;
 
+    // Loyalty (start) — kept separate from $form/save() so toggling the
+    // program on or off never risks the rest of the business profile form.
+    public bool $loyaltyEnabled = false;
+
+    public string $loyaltyPointsPerAmount = '100';
+
+    public string $loyaltyPointValue = '1';
+
+    public function saveLoyaltySettings(): void
+    {
+        $this->authorize('loyalty.manage');
+
+        $this->validate([
+            'loyaltyPointsPerAmount' => ['required', 'numeric', 'min:0.01'],
+            'loyaltyPointValue' => ['required', 'numeric', 'min:0'],
+        ]);
+
+        app(CurrentCompany::class)->get()->update([
+            'loyalty_enabled' => $this->loyaltyEnabled,
+            'loyalty_points_per_amount' => $this->loyaltyPointsPerAmount,
+            'loyalty_point_value' => $this->loyaltyPointValue,
+        ]);
+
+        session()->flash('loyaltyStatus', 'Loyalty settings saved.');
+    }
+    // Loyalty (end)
+
     public function mount(): void
     {
         $company = app(CurrentCompany::class)->get();
+
+        $this->loyaltyEnabled = (bool) $company->loyalty_enabled;
+        $this->loyaltyPointsPerAmount = (string) $company->loyalty_points_per_amount;
+        $this->loyaltyPointValue = (string) $company->loyalty_point_value;
 
         $this->form = [
             'name' => $company->name,
