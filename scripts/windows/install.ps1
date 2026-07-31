@@ -38,8 +38,11 @@ $identity  = [Security.Principal.WindowsIdentity]::GetCurrent()
 $principal = New-Object Security.Principal.WindowsPrincipal($identity)
 
 if (-not $principal.IsInRole([Security.Principal.WindowsBuiltInRole]::Administrator)) {
-    Write-Host "Re-launching as Administrator..." -ForegroundColor Yellow
-    $argList = @('-NoProfile', '-ExecutionPolicy', 'Bypass', '-File', "`"$PSCommandPath`"")
+    Write-Host "Re-launching as Administrator - a new window will open and STAY OPEN." -ForegroundColor Yellow
+    Write-Host "If Windows asks for permission, click Yes." -ForegroundColor Yellow
+    # -NoExit: without it the elevated window runs the script and closes itself
+    # immediately - including on error - before there is anything to read.
+    $argList = @('-NoExit', '-NoProfile', '-ExecutionPolicy', 'Bypass', '-File', "`"$PSCommandPath`"")
     $PSBoundParameters.GetEnumerator() | ForEach-Object {
         $argList += if ($_.Value -is [switch]) { "-$($_.Key)" } else { "-$($_.Key)", "`"$($_.Value)`"" }
     }
