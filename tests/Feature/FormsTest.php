@@ -156,6 +156,31 @@ class FormsTest extends TestCase
         $this->assertSame($this->company->id, $response->company_id);
     }
 
+    /**
+     * FormFields::submissionRules() used to build the "in:" rule by joining
+     * options with commas, which silently split any option containing a
+     * comma into two — an answer no one could ever pick would validate as
+     * legitimate. Rule::in() must be used instead.
+     */
+    public function test_an_option_containing_a_comma_still_validates_correctly(): void
+    {
+        $form = $this->makeForm(fields: [
+            ['id' => 'f-topics', 'type' => 'checkboxes', 'label' => 'Topics', 'required' => true, 'options' => ['Invoicing, Inventory', 'Offline mode']],
+        ]);
+
+        $this->post('/f/'.$form->share_token, [
+            'answers' => ['f-topics' => ['Invoicing, Inventory']],
+        ])->assertRedirect('/f/'.$form->share_token.'/thanks');
+
+        $this->assertSame(['Invoicing, Inventory'], FormResponse::sole()->answers['f-topics']);
+
+        // A value matching only half of the comma-containing option must
+        // still be rejected.
+        $this->post('/f/'.$form->share_token, [
+            'answers' => ['f-topics' => ['Invoicing']],
+        ])->assertSessionHasErrors();
+    }
+
     public function test_a_closed_form_rejects_submissions(): void
     {
         $form = $this->makeForm(status: 'closed');

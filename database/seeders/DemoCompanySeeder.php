@@ -187,6 +187,10 @@ class DemoCompanySeeder extends Seeder
             ['Chiamaka Eze', 'chiamaka@example.com', 'Morning (9am)', ['Invoicing', 'Offline mode'], ''],
             ['Tunde Bakare', 'tunde@example.com', 'Afternoon (2pm)', ['Inventory'], 'Will there be a recording?'],
             ['Ngozi Ade', 'ngozi@example.com', 'Morning (9am)', ['Invoicing', 'Verification QR'], ''],
+            // Jude Nshome (OPESWARE llc.) — a real named client also seeded
+            // into the commerce side, registered here for the same workshop
+            // so Forms is not the only module without his activity.
+            ['Jude Nshome', 'nshomejude@gmail.com', 'Afternoon (2pm)', ['Invoicing', 'Inventory', 'Offline mode'], "Running OPESWARE llc. out of Douala — mostly interested in offline mode for spotty connections and the invoicing workflow."],
         ] as [$name, $email, $session, $topics, $notes]) {
             FormResponse::create([
                 'form_id' => $form->id,
@@ -239,6 +243,17 @@ class DemoCompanySeeder extends Seeder
             ...$seller->sell($event, [$vip->id => 1], 'Ngozi Ade', 'ngozi@example.com', null),
         ];
 
+        // Jude Nshome (OPESWARE llc.) buys a VIP ticket through the real
+        // TicketSeller, exactly the way the public /e/{token} page would —
+        // his own row, his own price snapshot, his own verification token.
+        $judeTicket = $seller->sell(
+            $event,
+            [$vip->id => 1],
+            'Jude Nshome',
+            'nshomejude@gmail.com',
+            '+237670416238',
+        )[0];
+
         // Most have paid; one VIP is through the door already so the check-in
         // counter on the event page has something to say.
         foreach ($tickets as $index => $ticket) {
@@ -253,6 +268,10 @@ class DemoCompanySeeder extends Seeder
             'checked_in_by' => $this->owner->id,
             'paid_at' => now()->subDays(2),
         ])->save();
+
+        // Jude's ticket is paid but not yet checked in — he is coming to the
+        // showcase, the verification page just hasn't seen him at the door.
+        $judeTicket->forceFill(['paid_at' => now()->subHours(3)])->save();
     }
 
     /** Three published reviews on the public business profile. */
@@ -262,6 +281,10 @@ class DemoCompanySeeder extends Seeder
             ['Adaeze Okafor', 5, 'They set up our invoicing and receipts in one afternoon. Support on WhatsApp actually replies.', 12],
             ['Ibrahim Musa', 4, 'Solid work on our branding and stationery. Delivery slipped by a day but the quality made up for it.', 7],
             ['Funke Adeyemi', 5, 'Professional team. The verified profile page has already brought us two new corporate clients.', 2],
+            // Jude Nshome (OPESWARE llc., opesware.com) — a real named client,
+            // also seeded with a paid invoice and a ticket, leaving a review
+            // in his own name.
+            ['Jude Nshome', 5, "OPES360 runs the day-to-day at OPESWARE llc. now — invoicing, receipts, the works. Set up took an afternoon and our clients in Douala get a verified invoice they can check themselves. Exactly what a small outfit like ours needed.", 1],
         ];
 
         foreach ($reviews as [$author, $rating, $body, $daysAgo]) {

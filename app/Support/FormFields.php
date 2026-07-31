@@ -3,6 +3,7 @@
 namespace App\Support;
 
 use Illuminate\Support\Str;
+use Illuminate\Validation\Rule;
 
 /**
  * The Opes Forms field-type catalogue.
@@ -95,10 +96,13 @@ class FormFields
                 default => 'string',
             };
 
+            // Rule::in(), not a comma-joined "in:" string — an option label
+            // containing a comma (e.g. "Yes, please") would otherwise split
+            // into two options and never validate again.
             if ($field['type'] === 'checkboxes') {
-                $rules[$key.'.*'] = ['string', 'in:'.implode(',', $field['options'])];
+                $rules[$key.'.*'] = ['string', Rule::in($field['options'])];
             } elseif (in_array($field['type'], ['choice', 'dropdown'], true)) {
-                $rule[] = 'in:'.implode(',', $field['options']);
+                $rule[] = Rule::in($field['options']);
             } elseif (in_array($field['type'], ['short_text', 'phone'], true)) {
                 $rule[] = 'max:255';
             } elseif ($field['type'] === 'long_text') {

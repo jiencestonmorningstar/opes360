@@ -99,9 +99,19 @@ class TicketSeller
                 $type->increment('sold', $wanted);
             }
 
+            // Recipients are resolved once and reused for every ticket in this
+            // order — looping NotifyCompany::about() per ticket would re-run
+            // the company-membership and permission query once per ticket for
+            // an order that is, from the door's point of view, one sale.
+            try {
+                $recipients = NotifyCompany::recipients($event->company, 'events.view');
+            } catch (\Throwable) {
+                $recipients = collect();
+            }
+
             foreach ($tickets as $ticket) {
                 try {
-                    NotifyCompany::about($event->company, 'events.view', new TicketSoldNotification($ticket));
+                    $recipients->each->notify(new TicketSoldNotification($ticket));
                 } catch (\Throwable) {
                 }
             }

@@ -111,6 +111,38 @@ class NotificationsTest extends TestCase
         Notification::assertSentTo($this->owner, TicketSoldNotification::class);
     }
 
+    /**
+     * A multi-ticket order used to resolve "who should hear about this"
+     * once per ticket (looping NotifyCompany::about()) instead of once per
+     * order — an N+1 that also meant a five-ticket order fired the
+     * company-membership query five times. One notification per ticket is
+     * still correct (door staff want a line per ticket), but the recipient
+     * lookup itself must happen once.
+     */
+    public function test_a_multi_ticket_order_notifies_once_per_ticket_without_repeating_the_lookup(): void
+    {
+        Notification::fake();
+
+        $event = Event::create([
+            'title' => 'Launch Night',
+            'starts_at' => now()->addWeek(),
+            'status' => 'published',
+            'share_token' => Event::newShareToken(),
+        ]);
+
+        $type = $event->ticketTypes()->create([
+            'company_id' => $this->company->id,
+            'name' => 'General',
+            'price' => 10,
+            'quantity' => 10,
+        ]);
+
+        app(TicketSeller::class)->sell($event, [$type->id => 3], 'Ada Obi', 'ada@example.com', null);
+
+        // One notification per ticket sold, all to the same recipient.
+        Notification::assertSentToTimes($this->owner, TicketSoldNotification::class, 3);
+    }
+
     public function test_a_form_response_notifies_users_with_the_responses_permission(): void
     {
         Notification::fake();
