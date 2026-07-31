@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\AuthController;
+use App\Http\Controllers\MarketingController;
 use App\Http\Controllers\PrintController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\SyncController;
@@ -55,6 +56,18 @@ Route::middleware('guest')->group(function () {
     Route::post('/two-factor', [AuthController::class, 'challenge'])->name('two-factor.verify');
 });
 
+/*
+ * Public marketing pages. No auth, no throttle beyond the contact POST — these
+ * are read by anyone, signed in or not, and the whole point is zero friction.
+ */
+Route::get('/about', [MarketingController::class, 'about'])->name('marketing.about');
+Route::get('/features', [MarketingController::class, 'features'])->name('marketing.features');
+Route::get('/pricing', [MarketingController::class, 'pricing'])->name('marketing.pricing');
+Route::middleware('throttle:10,1')->group(function () {
+    Route::get('/contact', [MarketingController::class, 'contact'])->name('marketing.contact');
+    Route::post('/contact', [MarketingController::class, 'storeContact'])->name('marketing.contact.store');
+});
+
 Route::post('/logout', function (Request $request) {
     Auth::logout();
     $request->session()->invalidate();
@@ -63,9 +76,18 @@ Route::post('/logout', function (Request $request) {
     return redirect()->route('login');
 })->name('logout');
 
-Route::middleware('auth')->group(function () {
-    Route::get('/', Dashboard::class)->name('dashboard');
+/*
+ * '/' is shared between the marketing home and the authenticated dashboard.
+ * A route collection keys by method+URI, so two separate Route::get('/', ...)
+ * registrations do not coexist — the second silently replaces the first
+ * regardless of middleware. One route, branching on auth state, is the only
+ * way both audiences land on the same URL.
+ */
+Route::get('/', function () {
+    return Auth::check() ? app(Dashboard::class)() : app(MarketingController::class)->home();
+})->name('dashboard');
 
+Route::middleware('auth')->group(function () {
     Route::get('/sales', SalesIndex::class)->middleware('can:sales.view')->name('sales');
 
     Route::get('/customers', CustomersIndex::class)->middleware('can:customers.view')->name('customers');

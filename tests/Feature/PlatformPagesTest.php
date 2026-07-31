@@ -82,6 +82,12 @@ class PlatformPagesTest extends TestCase
     public function test_every_page_redirects_guests_to_login(): void
     {
         foreach (array_column(self::pageProvider(), 0) as $path) {
+            // '/' is the one exception: a guest hitting it sees the public
+            // marketing home (see LandingPageTest), not a login redirect.
+            if ($path === '/') {
+                continue;
+            }
+
             $this->get($path)->assertRedirect('/login');
         }
     }

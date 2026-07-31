@@ -37,9 +37,11 @@ class DashboardTest extends TestCase
         $this->user = User::where('email', 'john@opesware.com')->firstOrFail();
     }
 
-    public function test_guests_are_redirected_to_login(): void
+    public function test_guests_see_the_marketing_home_instead_of_the_dashboard(): void
     {
-        $this->get('/')->assertRedirect('/login');
+        // '/' is shared: a guest sees the public marketing page (LandingPageTest),
+        // not a login redirect — the dashboard itself stays behind auth.
+        $this->get('/')->assertOk()->assertDontSee('Good morning');
     }
 
     public function test_the_dashboard_renders_the_designed_figures(): void
