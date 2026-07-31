@@ -445,7 +445,8 @@ $Domain {
     }
 
     Write-Host ""
-    Write-Host "  To stop:    .\scripts\windows\stop.ps1" -ForegroundColor Gray
-    Write-Host "  To restart: .\scripts\windows\start.ps1" -ForegroundColor Gray
+    Write-Host "  To stop:              .\scripts\windows\stop.ps1" -ForegroundColor Gray
+    Write-Host "  To restart:           .\scripts\windows\start.ps1" -ForegroundColor Gray
+    Write-Host "  To open on your WiFi: .\scripts\windows\lan-access.ps1" -ForegroundColor Gray
     Write-Host ""
 }
