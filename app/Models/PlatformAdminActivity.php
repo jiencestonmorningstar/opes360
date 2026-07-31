@@ -30,13 +30,18 @@ class PlatformAdminActivity extends Model
         return $this->belongsTo(PlatformAdmin::class, 'platform_admin_id');
     }
 
-    public static function log(PlatformAdmin $admin, string $action, ?Company $company = null, array $meta = []): void
+    /**
+     * $subject is typically a Company, but not always — inviting or revoking
+     * another platform admin logs against that PlatformAdmin instead. The
+     * subject_type/subject_id columns are generic on purpose.
+     */
+    public static function log(PlatformAdmin $admin, string $action, ?Model $subject = null, array $meta = []): void
     {
         static::create([
             'platform_admin_id' => $admin->id,
             'action' => $action,
-            'subject_type' => $company ? Company::class : null,
-            'subject_id' => $company?->id,
+            'subject_type' => $subject ? get_class($subject) : null,
+            'subject_id' => $subject?->getKey(),
             'meta' => $meta,
             // Captured here rather than passed in by every caller, so no
             // future admin action can accidentally ship without it.

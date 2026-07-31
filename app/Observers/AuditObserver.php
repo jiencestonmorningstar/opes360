@@ -57,11 +57,26 @@ class AuditObserver
     {
         $request = request();
 
+        // Deliberately auth('web')->id(), not the bare auth()->id(): a
+        // platform admin acting on the 'admin' guard has no 'web' identity,
+        // and user_id must never resolve to whichever guard happens to be
+        // "default" for the request — that either FK-violates against a
+        // platform_admins id that isn't a users row, or, worse, silently
+        // misattributes the change to an unrelated business session open in
+        // the same browser. PlatformAdminActivity is the real record of who
+        // a platform admin action was; note it here too so this table
+        // doesn't just go quiet on those rows.
+        $webUserId = auth('web')->id();
+
+        if ($webUserId === null && auth('admin')->check()) {
+            $properties['platform_admin'] = auth('admin')->user()->email;
+        }
+
         ActivityLog::create([
             // The model's own company where it has one, falling back to the
             // acting company — company creation itself has no current company yet.
             'company_id' => $model->getAttribute('company_id') ?? app(CurrentCompany::class)->id(),
-            'user_id' => auth()->id(),
+            'user_id' => $webUserId,
             'event' => $event,
             'subject_type' => $model::class,
             'subject_id' => (string) $model->getKey(),

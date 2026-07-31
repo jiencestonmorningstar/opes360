@@ -5,14 +5,22 @@
 
         <form method="GET" class="mt-5 flex flex-wrap gap-2.5">
             <div class="relative min-w-[220px] flex-1">
+                <label for="search" class="sr-only">Search by name or email</label>
                 <x-icon name="search" class="pointer-events-none absolute left-3.5 top-1/2 size-[18px] -translate-y-1/2 text-faint" stroke-width="2" />
-                <input type="search" name="search" value="{{ $search }}" placeholder="Search by name or email…"
+                <input id="search" type="search" name="search" value="{{ $search }}" placeholder="Search by name or email…"
                        class="h-11 w-full rounded-xl border border-border bg-surface pl-10 pr-4 text-[14px] text-ink placeholder:text-faint focus:border-brand focus:outline-none focus:ring-2 focus:ring-brand/20">
             </div>
-            <select name="status" class="h-11 rounded-xl border border-border bg-surface px-3.5 text-[14px] text-ink">
+            <label for="status" class="sr-only">Filter by status</label>
+            <select id="status" name="status" class="h-11 rounded-xl border border-border bg-surface px-3.5 text-[14px] text-ink">
                 <option value="">All statuses</option>
                 @foreach (['demo' => 'Demo', 'trial' => 'Trial', 'active' => 'Active', 'deleted' => 'Deleted'] as $key => $label)
                     <option value="{{ $key }}" @selected($status === $key)>{{ $label }}</option>
+                @endforeach
+            </select>
+            <label for="sort" class="sr-only">Sort by</label>
+            <select id="sort" name="sort" class="h-11 rounded-xl border border-border bg-surface px-3.5 text-[14px] text-ink">
+                @foreach (['newest' => 'Newest first', 'oldest' => 'Oldest first', 'name' => 'Name', 'plan' => 'Plan'] as $key => $label)
+                    <option value="{{ $key }}" @selected($sort === $key)>{{ $label }}</option>
                 @endforeach
             </select>
             <button type="submit" class="tap focusable h-11 rounded-xl bg-ink px-5 text-[14px] font-semibold text-white">Search</button>

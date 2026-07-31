@@ -1,8 +1,10 @@
 <?php
 
+use App\Http\Controllers\Admin\ActivityController as AdminActivityController;
 use App\Http\Controllers\Admin\AuthController as AdminAuthController;
 use App\Http\Controllers\Admin\CompanyController as AdminCompanyController;
 use App\Http\Controllers\Admin\DashboardController as AdminDashboardController;
+use App\Http\Controllers\Admin\PlatformAdminsController;
 use Illuminate\Support\Facades\Route;
 
 /*
@@ -38,5 +40,13 @@ Route::prefix('admin')->name('admin.')->group(function () {
         Route::post('/companies/{company}/suspend', [AdminCompanyController::class, 'suspend'])->name('companies.suspend');
         Route::post('/companies/{company}/activate', [AdminCompanyController::class, 'activate'])->name('companies.activate');
         Route::post('/companies/{company}/plan', [AdminCompanyController::class, 'updatePlan'])->name('companies.plan');
+        Route::post('/companies/{company}/members/{member}/remove', [AdminCompanyController::class, 'removeMember'])->name('companies.members.remove');
+        Route::post('/companies/{company}/members/{member}/reset-password', [AdminCompanyController::class, 'resetMemberPassword'])->name('companies.members.reset-password');
+
+        Route::get('/admins', [PlatformAdminsController::class, 'index'])->name('admins');
+        Route::post('/admins', [PlatformAdminsController::class, 'store'])->name('admins.store');
+        Route::delete('/admins/{admin}', [PlatformAdminsController::class, 'destroy'])->name('admins.destroy');
+
+        Route::get('/activity', [AdminActivityController::class, 'index'])->name('activity');
     });
 });

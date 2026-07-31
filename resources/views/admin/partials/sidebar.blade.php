@@ -1,9 +1,8 @@
 {{--
-    Deliberately two items — Dashboard and Companies are the whole of the
-    admin surface today. Modelled on partials/sidebar.blade.php so it uses
-    the same opesShell() drawer/collapsed state, but with a static list
-    instead of Support\Navigation since there's nothing here that varies
-    by permission — every platform admin sees everything.
+    Modelled on partials/sidebar.blade.php so it uses the same opesShell()
+    drawer/collapsed state, but with a static list instead of
+    Support\Navigation since there's nothing here that varies by permission
+    — every platform admin sees everything.
 --}}
 <aside x-cloak
        class="fixed inset-y-0 left-0 z-40 flex w-[280px] shrink-0 flex-col bg-surface transition-transform duration-200 ease-out
@@ -44,6 +43,8 @@
             @foreach ([
                 ['key' => 'dashboard', 'label' => 'Dashboard', 'icon' => 'chart-bar', 'route' => 'admin.dashboard'],
                 ['key' => 'companies', 'label' => 'Companies', 'icon' => 'briefcase', 'route' => 'admin.companies'],
+                ['key' => 'activity', 'label' => 'Activity', 'icon' => 'clock', 'route' => 'admin.activity'],
+                ['key' => 'admins', 'label' => 'Admins', 'icon' => 'users', 'route' => 'admin.admins'],
             ] as $item)
                 @php $isActive = $active === $item['key']; @endphp
                 <li>

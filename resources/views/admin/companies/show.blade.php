@@ -34,10 +34,12 @@
             </div>
         </div>
 
-        <div class="mt-6 grid grid-cols-3 gap-4">
+        <div class="mt-6 grid grid-cols-2 gap-4 sm:grid-cols-5">
             @foreach ([
                 ['label' => 'Users', 'value' => $company->users_count, 'icon' => 'users'],
-                ['label' => 'Documents issued', 'value' => $documentCount, 'icon' => 'document'],
+                ['label' => 'Documents', 'value' => $documentCount, 'icon' => 'document'],
+                ['label' => 'Forms', 'value' => $formCount, 'icon' => 'clipboard'],
+                ['label' => 'Events', 'value' => $eventCount, 'icon' => 'ticket'],
                 ['label' => 'Currency', 'value' => $company->currency, 'icon' => 'banknotes'],
             ] as $tile)
                 <div class="card p-4">
@@ -55,7 +57,8 @@
                     <x-icon name="credit-card" class="size-[18px] text-faint" stroke-width="1.8" />
                     Plan
                 </p>
-                <form method="POST" action="{{ route('admin.companies.plan', $company) }}" class="mt-3 flex gap-2">
+                <form method="POST" action="{{ route('admin.companies.plan', $company) }}" class="mt-3 flex gap-2"
+                      onsubmit="return confirm('Change {{ $company->name }}\'s plan?')">
                     @csrf
                     <select name="plan" class="h-11 flex-1 rounded-lg border border-border bg-surface px-3 text-[14px] text-ink">
                         @foreach ($plans as $plan)
@@ -72,13 +75,25 @@
                     <x-icon name="alert" class="size-[18px] text-faint" stroke-width="1.8" />
                     Access
                 </p>
-                <form method="POST" action="{{ route($company->isSuspended() ? 'admin.companies.activate' : 'admin.companies.suspend', $company) }}" class="mt-3">
-                    @csrf
-                    <button type="submit"
-                            class="tap focusable flex h-11 w-full items-center justify-center rounded-lg text-[13.5px] font-semibold {{ $company->isSuspended() ? 'bg-brand text-white' : 'border border-warning/40 bg-tint-orange text-warning' }}">
-                        {{ $company->isSuspended() ? 'Reactivate this business' : 'Suspend this business' }}
-                    </button>
-                </form>
+                @if ($company->isSuspended())
+                    <form method="POST" action="{{ route('admin.companies.activate', $company) }}" class="mt-3"
+                          onsubmit="return confirm('Reactivate {{ $company->name }}?')">
+                        @csrf
+                        <button type="submit" class="tap focusable flex h-11 w-full items-center justify-center rounded-lg bg-brand text-[13.5px] font-semibold text-white">
+                            Reactivate this business
+                        </button>
+                    </form>
+                @else
+                    <form method="POST" action="{{ route('admin.companies.suspend', $company) }}" class="mt-3 space-y-2"
+                          onsubmit="return confirm('Suspend {{ $company->name }}? Every user there will be locked out immediately.')">
+                        @csrf
+                        <textarea name="reason" rows="2" placeholder="Reason (optional, for other admins — not shown to the business)"
+                                  class="w-full rounded-lg border border-border bg-surface px-3 py-2 text-[13px] text-ink placeholder:text-faint focus:border-brand focus:outline-none focus:ring-2 focus:ring-brand/20"></textarea>
+                        <button type="submit" class="tap focusable flex h-11 w-full items-center justify-center rounded-lg border border-warning/40 bg-tint-orange text-[13.5px] font-semibold text-warning">
+                            Suspend this business
+                        </button>
+                    </form>
+                @endif
                 <p class="mt-2 text-[12px] text-faint">Suspending locks every user out immediately; nothing is deleted.</p>
             </div>
         </div>
@@ -96,14 +111,69 @@
                             {{ strtoupper(substr($member->name, 0, 1)) }}
                         </span>
                         <span class="min-w-0 flex-1">
-                            <span class="block truncate text-[14px] font-semibold text-ink">{{ $member->name }}</span>
+                            <span class="block truncate text-[14px] font-semibold text-ink">
+                                {{ $member->name }}
+                                @if ($member->id === $company->owner_id)
+                                    <span class="ml-1 text-[11px] font-bold uppercase tracking-wide text-faint">Owner</span>
+                                @endif
+                            </span>
                             <span class="block text-[12.5px] text-muted">{{ $member->email }} · {{ $member->pivot->job_title ?? '—' }}</span>
                         </span>
                         <span class="shrink-0 text-[12px] font-semibold uppercase tracking-wide text-faint">{{ $member->pivot->status }}</span>
+
+                        @unless ($company->trashed())
+                            <div class="relative shrink-0" x-data="{ menu: false }" @click.outside="menu = false">
+                                <button type="button" @click="menu = ! menu" class="focusable flex size-8 items-center justify-center rounded-lg text-faint hover:bg-surface-2 hover:text-ink-2" aria-label="Member actions">
+                                    <x-icon name="ellipsis" class="size-[18px]" stroke-width="2" />
+                                </button>
+                                <div x-cloak x-show="menu" x-transition.origin.top.right
+                                     class="card absolute right-0 top-[calc(100%+0.25rem)] z-20 w-52 overflow-hidden p-1.5 shadow-[var(--shadow-raised)]">
+                                    <form method="POST" action="{{ route('admin.companies.members.reset-password', [$company, $member]) }}"
+                                          onsubmit="return confirm('Send a password reset link to {{ $member->email }}?')">
+                                        @csrf
+                                        <button type="submit" class="flex w-full items-center gap-2.5 rounded-lg px-3 py-2 text-left text-[13.5px] font-medium text-ink-2 hover:bg-surface-2">
+                                            <x-icon name="cog" class="size-4 text-muted" />
+                                            Send password reset
+                                        </button>
+                                    </form>
+                                    @if ($member->id !== $company->owner_id)
+                                        <form method="POST" action="{{ route('admin.companies.members.remove', [$company, $member]) }}"
+                                              onsubmit="return confirm('Remove {{ $member->name }} from {{ $company->name }}?')">
+                                            @csrf
+                                            <button type="submit" class="flex w-full items-center gap-2.5 rounded-lg px-3 py-2 text-left text-[13.5px] font-medium text-warning hover:bg-tint-orange">
+                                                <x-icon name="alert" class="size-4" />
+                                                Remove from business
+                                            </button>
+                                        </form>
+                                    @endif
+                                </div>
+                            </div>
+                        @endunless
                     </div>
                 @endforeach
             </div>
         </div>
+
+        @if ($recentDocuments->isNotEmpty())
+            <div class="mt-5 card overflow-hidden p-0">
+                <p class="flex items-center gap-2 border-b border-border px-5 py-3.5 text-[15px] font-bold text-ink">
+                    <x-icon name="document" class="size-[18px] text-faint" stroke-width="1.8" />
+                    Recent documents
+                </p>
+                <div class="divide-y divide-border">
+                    @foreach ($recentDocuments as $document)
+                        <div class="flex items-center gap-3 px-5 py-3">
+                            <span class="min-w-0 flex-1">
+                                <span class="block truncate text-[14px] font-semibold text-ink">{{ $document->number }} · {{ \Illuminate\Support\Str::headline($document->type->value) }}</span>
+                                <span class="block text-[12.5px] text-muted">{{ $document->contact?->displayName() ?? 'No customer' }} · {{ $document->issue_date?->format('M j, Y') }}</span>
+                            </span>
+                            <span class="tnum shrink-0 text-[13.5px] font-semibold text-ink">{{ \App\Support\Money::format($document->total, $document->currency) }}</span>
+                            <span class="shrink-0 text-[11px] font-bold uppercase tracking-wide text-faint">{{ \Illuminate\Support\Str::headline($document->status->value) }}</span>
+                        </div>
+                    @endforeach
+                </div>
+            </div>
+        @endif
 
         @if ($recentActivity->isNotEmpty())
             <div class="mt-5 card overflow-hidden p-0">
@@ -119,6 +189,9 @@
                             <span class="text-faint">· {{ $entry->created_at->diffForHumans() }}</span>
                             @if ($entry->ip_address)
                                 <span class="text-faint">· {{ $entry->ip_address }}</span>
+                            @endif
+                            @if (! empty($entry->meta['reason']))
+                                <span class="mt-1 block text-[12.5px] text-muted">"{{ $entry->meta['reason'] }}"</span>
                             @endif
                         </div>
                     @endforeach
