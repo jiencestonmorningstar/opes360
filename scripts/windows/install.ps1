@@ -8,7 +8,7 @@
 
     Certificates come from Caddy, which runs its own certificate authority and
     installs it into the Windows trust store. That matters for more than the
-    padlock — the service worker will not register on an untrusted origin, so
+    padlock - the service worker will not register on an untrusted origin, so
     without it the offline half of the product silently does nothing.
 
     Run from an ADMINISTRATOR PowerShell. Editing the hosts file and adding a
@@ -55,13 +55,25 @@ function Ok($text)   { Write-Host "    $text" -ForegroundColor Green }
 function Warn($text) { Write-Host "    $text" -ForegroundColor Yellow }
 function Die($text)  { Write-Host "`nFAILED: $text" -ForegroundColor Red; exit 1 }
 
-Write-Host "OPES360 — local setup at https://$Domain" -ForegroundColor White
+Write-Host "OPES360 - local setup at https://$Domain" -ForegroundColor White
 
 # ---- prerequisites -----------------------------------------------------------
 
 Step "Checking PHP"
 
+# Laragon only puts its bundled PHP and MySQL on PATH inside its own terminal.
+# A fresh Administrator PowerShell has neither, so find them on disk instead
+# of telling the user to go fetch them.
 $php = Get-Command php -ErrorAction SilentlyContinue
+if (-not $php) {
+    $laragonPhp = Get-ChildItem -Path 'C:\laragon\bin\php' -Recurse -Filter php.exe -ErrorAction SilentlyContinue |
+        Sort-Object FullName -Descending | Select-Object -First 1
+    if ($laragonPhp) {
+        $env:Path = "$($laragonPhp.DirectoryName);$env:Path"
+        Ok "Using Laragon's PHP at $($laragonPhp.DirectoryName)"
+        $php = Get-Command php -ErrorAction SilentlyContinue
+    }
+}
 if (-not $php) {
     Die "PHP is not on PATH. Install PHP 8.2+ (or Laragon Full, which bundles it) and reopen this terminal."
 }
@@ -95,12 +107,30 @@ if (-not (Test-Path (Join-Path $Root 'vendor\autoload.php'))) {
     Die "vendor/ is missing. Use the release archive (it includes vendor), or run 'composer install'."
 }
 if (-not (Test-Path (Join-Path $Root 'public\build\manifest.json'))) {
-    Warn "public/build is missing — the site will render unstyled. Run 'npm ci; npm run build' if you cloned from git."
+    Warn "public/build is missing - the site will render unstyled. Run 'npm ci; npm run build' if you cloned from git."
 }
 Ok "Application files in place"
 
+# ---- laragon -------------------------------------------------------------
+
+# Laragon runs its own Apache/nginx on 80/443 and its own DNS resolver for
+# every *.test hostname derived from a folder name under laragon\www - that
+# is exactly what this script would otherwise install Caddy to do, and two
+# servers cannot both bind port 443. Detect it and hand off instead of
+# fighting it. Laragon also auto-detects a Laravel project (the presence of
+# `artisan`) and points the vhost at public/ on its own.
+$UseLaragon = (Test-Path 'C:\laragon\laragon.exe') -or (Get-Process laragon -ErrorAction SilentlyContinue)
+
+if ($UseLaragon) {
+    Ok "Laragon detected - it will serve the site instead of Caddy"
+}
+
 # ---- hosts file --------------------------------------------------------------
 
+# Written even when Laragon is present. Laragon can resolve *.test through its
+# own auto-vhost mechanism, but only after a Reload, and not at all if it is
+# not running - which surfaced as DNS_PROBE_FINISHED_NXDOMAIN in practice. A
+# hosts entry costs nothing and does not depend on any of that.
 Step "Pointing $Domain at this machine"
 
 $hostsPath = "$env:SystemRoot\System32\drivers\etc\hosts"
@@ -121,27 +151,29 @@ if (-not (Resolve-DnsName $Domain -ErrorAction SilentlyContinue)) {
 
 # ---- caddy -------------------------------------------------------------------
 
-Step "Getting Caddy (web server + certificate authority)"
+if (-not $UseLaragon) {
+    Step "Getting Caddy (web server + certificate authority)"
 
-$caddyDir = Join-Path $Root 'scripts\windows\bin'
-$caddyExe = Join-Path $caddyDir 'caddy.exe'
+    $caddyDir = Join-Path $Root 'scripts\windows\bin'
+    $caddyExe = Join-Path $caddyDir 'caddy.exe'
 
-if (Test-Path $caddyExe) {
-    Ok "Already downloaded"
-} else {
-    New-Item -ItemType Directory -Force -Path $caddyDir | Out-Null
-    $zip = Join-Path $env:TEMP 'caddy.zip'
-    $url = 'https://github.com/caddyserver/caddy/releases/download/v2.8.4/caddy_2.8.4_windows_amd64.zip'
+    if (Test-Path $caddyExe) {
+        Ok "Already downloaded"
+    } else {
+        New-Item -ItemType Directory -Force -Path $caddyDir | Out-Null
+        $zip = Join-Path $env:TEMP 'caddy.zip'
+        $url = 'https://github.com/caddyserver/caddy/releases/download/v2.8.4/caddy_2.8.4_windows_amd64.zip'
 
-    try {
-        Invoke-WebRequest -Uri $url -OutFile $zip -UseBasicParsing
-    } catch {
-        Die "Could not download Caddy. Get caddy_windows_amd64.zip from https://caddyserver.com/download, and put caddy.exe in $caddyDir"
+        try {
+            Invoke-WebRequest -Uri $url -OutFile $zip -UseBasicParsing
+        } catch {
+            Die "Could not download Caddy. Get caddy_windows_amd64.zip from https://caddyserver.com/download, and put caddy.exe in $caddyDir"
+        }
+
+        Expand-Archive -Path $zip -DestinationPath $caddyDir -Force
+        Remove-Item $zip -Force
+        Ok "Downloaded"
     }
-
-    Expand-Archive -Path $zip -DestinationPath $caddyDir -Force
-    Remove-Item $zip -Force
-    Ok "Downloaded"
 }
 
 # ---- database ----------------------------------------------------------------
@@ -149,6 +181,30 @@ if (Test-Path $caddyExe) {
 Step "Preparing the database"
 
 $mysql = Get-Command mysql -ErrorAction SilentlyContinue
+if (-not $mysql) {
+    $laragonMysql = Get-ChildItem -Path 'C:\laragon\bin\mysql' -Recurse -Filter mysql.exe -ErrorAction SilentlyContinue |
+        Where-Object { $_.DirectoryName -like '*\bin' } |
+        Sort-Object FullName -Descending | Select-Object -First 1
+    if ($laragonMysql) {
+        $env:Path = "$($laragonMysql.DirectoryName);$env:Path"
+        Ok "Using Laragon's MySQL client at $($laragonMysql.DirectoryName)"
+        $mysql = Get-Command mysql -ErrorAction SilentlyContinue
+    }
+}
+
+# The client is no use if the server is down. Laragon starts MySQL when its
+# main window starts services, not merely by being installed.
+if ($mysql -and -not (Get-NetTCPConnection -LocalPort 3306 -State Listen -ErrorAction SilentlyContinue)) {
+    if ($UseLaragon) {
+        Warn "Nothing is listening on port 3306 - MySQL is not running."
+        Warn "Open Laragon and click 'Start All', then come back here."
+        Read-Host "Press Enter once Laragon shows MySQL running"
+    } else {
+        Warn "Nothing is listening on port 3306 - start MySQL/MariaDB first."
+        Read-Host "Press Enter once it is running"
+    }
+}
+
 $pwArg = if ($DbPassword) { "-p$DbPassword" } else { '' }
 
 if ($mysql) {
@@ -160,7 +216,7 @@ if ($mysql) {
     }
     Ok "Database '$DbName' ready"
 } else {
-    Warn "The mysql client is not on PATH — create the database yourself:"
+    Warn "The mysql client is not on PATH - create the database yourself:"
     Warn "  CREATE DATABASE $DbName CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;"
     Read-Host "Press Enter once the database exists"
 }
@@ -196,11 +252,12 @@ Set-EnvValue 'DB_DATABASE' $DbName
 Set-EnvValue 'DB_USERNAME' $DbUser
 Set-EnvValue 'DB_PASSWORD' $DbPassword
 # Mail is written to storage/logs/laravel.log rather than sent. Reset links are
-# still generated and still work — you read them out of the log.
+# still generated and still work - you read them out of the log.
 Set-EnvValue 'MAIL_MAILER' 'log'
-# Caddy terminates TLS in front of PHP. Without this Laravel decides the request
-# is plain http and builds every URL that way, which breaks the service worker
-# and points printed QR codes at a scheme the site does not answer on.
+# Caddy (or Laragon's own Apache/nginx) terminates TLS in front of PHP.
+# Without this Laravel decides the request is plain http and builds every URL
+# that way, which breaks the service worker and points printed QR codes at a
+# scheme the site does not answer on.
 Set-EnvValue 'TRUSTED_PROXIES' '*'
 
 Ok "Configured for https://$Domain"
@@ -217,7 +274,7 @@ if (-not (Select-String -Path $envPath -Pattern '^APP_KEY=base64:' -Quiet)) {
 Step "Setting up the schema"
 
 & php artisan migrate --force
-if ($LASTEXITCODE -ne 0) { Die "Migration failed — check the database credentials above." }
+if ($LASTEXITCODE -ne 0) { Die "Migration failed - check the database credentials above." }
 
 if (-not $SkipSeed) {
     $hasData = (& php artisan tinker --execute="echo App\Models\Company::withoutGlobalScopes()->count();" 2>$null | Select-Object -Last 1)
@@ -225,7 +282,7 @@ if (-not $SkipSeed) {
         & php artisan db:seed --force
         Ok "Demo business seeded"
     } else {
-        Ok "Existing data found — not seeding over it"
+        Ok "Existing data found - not seeding over it"
     }
 }
 
@@ -237,13 +294,78 @@ Step "Caching configuration"
 & php artisan view:cache   | Out-Null
 Ok "Cached"
 
-# ---- caddy config ------------------------------------------------------------
+if ($UseLaragon) {
 
-Step "Writing the web server configuration"
+    # ---- laragon handoff -------------------------------------------------
 
-$publicPath = (Join-Path $Root 'public') -replace '\\', '/'
+    Step "Handing off to Laragon"
 
-@"
+    if (-not (Get-Process laragon -ErrorAction SilentlyContinue)) {
+        Warn "Laragon is installed but not running - starting it."
+        Start-Process 'C:\laragon\laragon.exe'
+        Start-Sleep -Seconds 5
+    }
+
+    Warn "Laragon needs three clicks it cannot be scripted into (no PowerShell hook"
+    Warn "for its tray menu):"
+    Write-Host ""
+    Write-Host "    1. In the Laragon window, click 'Start All' (if Apache/Nginx and" -ForegroundColor Yellow
+    Write-Host "       MySQL are not already green/running)" -ForegroundColor Yellow
+    Write-Host "    2. Right-click the Laragon tray icon -> Apache/Nginx -> SSL ->" -ForegroundColor Yellow
+    Write-Host "       Create certificate for *.test" -ForegroundColor Yellow
+    Write-Host "    3. Right-click the Laragon tray icon -> Apache/Nginx -> Reload" -ForegroundColor Yellow
+    Write-Host ""
+    Write-Host "    Laragon serves the folder name as the domain, so" -ForegroundColor Gray
+    Write-Host "    C:\laragon\www\$(Split-Path $Root -Leaf) becomes https://$(Split-Path $Root -Leaf).test" -ForegroundColor Gray
+    Write-Host "    It detects the 'artisan' file and points the vhost at public/ itself." -ForegroundColor Gray
+    Write-Host ""
+    Read-Host "Press Enter once all three are done"
+
+    Step "Waiting for the site"
+
+    $liveUrl = $null
+    foreach ($i in 1..20) {
+        Start-Sleep -Seconds 2
+        foreach ($scheme in 'https', 'http') {
+            try {
+                $r = Invoke-WebRequest "${scheme}://$Domain/up" -UseBasicParsing -TimeoutSec 5
+                if ($r.StatusCode -eq 200) { $liveUrl = "${scheme}://$Domain"; break }
+            } catch { }
+        }
+        if ($liveUrl) { break }
+    }
+
+    Write-Host ""
+    if ($liveUrl -like 'https:*') {
+        Write-Host "  $liveUrl is up." -ForegroundColor Green
+        Write-Host "  Sign in: john@opesware.com / password" -ForegroundColor Green
+        Start-Process $liveUrl
+    } elseif ($liveUrl) {
+        Warn "The site answers on http but not https - the SSL certificate step"
+        Warn "was skipped or needs a Reload. The offline features need https;"
+        Warn "redo tray icon -> Apache/Nginx -> SSL -> Create certificate, then Reload."
+        Write-Host "  Opening $liveUrl for now. Sign in: john@opesware.com / password" -ForegroundColor Green
+        Start-Process $liveUrl
+    } else {
+        Warn "The site did not answer within 40 seconds."
+        Warn "Check the domain matches the folder name (Laragon derives it, -Domain is ignored by Laragon's own vhost)."
+        Warn "Check Laragon's window shows Apache/Nginx and MySQL running."
+        Warn "PHP errors appear in storage\logs\laravel.log"
+    }
+
+    Write-Host ""
+    Write-Host "  Nothing else to start or stop - Laragon manages the web server." -ForegroundColor Gray
+    Write-Host ""
+
+} else {
+
+    # ---- caddy config ------------------------------------------------------------
+
+    Step "Writing the web server configuration"
+
+    $publicPath = (Join-Path $Root 'public') -replace '\\', '/'
+
+    @"
 # Generated by scripts/windows/install.ps1
 {
 	local_certs
@@ -254,7 +376,7 @@ $Domain {
 	tls internal
 
 	# Static files come off disk. Without this every asset is proxied to PHP,
-	# which routes it through Laravel and returns an HTML 404 — the stylesheet
+	# which routes it through Laravel and returns an HTML 404 - the stylesheet
 	# then fails MIME checking and the page renders unstyled.
 	root * $publicPath
 
@@ -278,51 +400,52 @@ $Domain {
 }
 "@ | Set-Content -Path (Join-Path $Root 'Caddyfile') -Encoding UTF8
 
-Ok "Caddyfile written"
+    Ok "Caddyfile written"
 
-# ---- run ---------------------------------------------------------------------
+    # ---- run ---------------------------------------------------------------------
 
-Step "Starting"
+    Step "Starting"
 
-Get-Process php, caddy -ErrorAction SilentlyContinue |
-    Where-Object { $_.Path -like "$Root*" -or $_.ProcessName -eq 'caddy' } |
-    Stop-Process -Force -ErrorAction SilentlyContinue
+    Get-Process php, caddy -ErrorAction SilentlyContinue |
+        Where-Object { $_.Path -like "$Root*" -or $_.ProcessName -eq 'caddy' } |
+        Stop-Process -Force -ErrorAction SilentlyContinue
 
-$env:PHP_CLI_SERVER_WORKERS = '8'
-Start-Process -FilePath 'php' `
-    -ArgumentList @('-S', "127.0.0.1:$PhpPort", '-t', 'public', 'public/index.php') `
-    -WorkingDirectory $Root -WindowStyle Hidden
-Ok "PHP workers started on 127.0.0.1:$PhpPort"
+    $env:PHP_CLI_SERVER_WORKERS = '8'
+    Start-Process -FilePath 'php' `
+        -ArgumentList @('-S', "127.0.0.1:$PhpPort", '-t', 'public', 'public/index.php') `
+        -WorkingDirectory $Root -WindowStyle Hidden
+    Ok "PHP workers started on 127.0.0.1:$PhpPort"
 
-Start-Process -FilePath $caddyExe `
-    -ArgumentList @('run', '--config', (Join-Path $Root 'Caddyfile')) `
-    -WorkingDirectory $Root -WindowStyle Hidden
-Ok "Caddy started — it will ask to trust its certificate the first time"
+    Start-Process -FilePath $caddyExe `
+        -ArgumentList @('run', '--config', (Join-Path $Root 'Caddyfile')) `
+        -WorkingDirectory $Root -WindowStyle Hidden
+    Ok "Caddy started - it will ask to trust its certificate the first time"
 
-Step "Waiting for the site"
+    Step "Waiting for the site"
 
-$ready = $false
-foreach ($i in 1..40) {
-    Start-Sleep -Seconds 2
-    try {
-        $r = Invoke-WebRequest "https://$Domain/up" -UseBasicParsing -TimeoutSec 5
-        if ($r.StatusCode -eq 200) { $ready = $true; break }
-    } catch { }
+    $ready = $false
+    foreach ($i in 1..40) {
+        Start-Sleep -Seconds 2
+        try {
+            $r = Invoke-WebRequest "https://$Domain/up" -UseBasicParsing -TimeoutSec 5
+            if ($r.StatusCode -eq 200) { $ready = $true; break }
+        } catch { }
+    }
+
+    Write-Host ""
+    if ($ready) {
+        Write-Host "  https://$Domain is up." -ForegroundColor Green
+        Write-Host "  Sign in: john@opesware.com / password" -ForegroundColor Green
+        Start-Process "https://$Domain"
+    } else {
+        Warn "The site did not answer within 80 seconds."
+        Warn "Check: is another program using port 443 (IIS, Skype, Docker Desktop)?"
+        Warn "Run 'netstat -ano | findstr :443' to see."
+        Warn "PHP errors appear in storage\logs\laravel.log"
+    }
+
+    Write-Host ""
+    Write-Host "  To stop:    .\scripts\windows\stop.ps1" -ForegroundColor Gray
+    Write-Host "  To restart: .\scripts\windows\start.ps1" -ForegroundColor Gray
+    Write-Host ""
 }
-
-Write-Host ""
-if ($ready) {
-    Write-Host "  https://$Domain is up." -ForegroundColor Green
-    Write-Host "  Sign in: john@opesware.com / password" -ForegroundColor Green
-    Start-Process "https://$Domain"
-} else {
-    Warn "The site did not answer within 80 seconds."
-    Warn "Check: is another program using port 443 (IIS, Skype, Docker Desktop)?"
-    Warn "Run 'netstat -ano | findstr :443' to see."
-    Warn "PHP errors appear in storage\logs\laravel.log"
-}
-
-Write-Host ""
-Write-Host "  To stop:    .\scripts\windows\stop.ps1" -ForegroundColor Gray
-Write-Host "  To restart: .\scripts\windows\start.ps1" -ForegroundColor Gray
-Write-Host ""

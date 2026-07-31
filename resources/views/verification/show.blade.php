@@ -58,6 +58,18 @@
         @endif
     </div>
 
+    {{-- Feedback from a staff action (ticket check-in) --}}
+    @if (session('status'))
+        <div class="card mt-4 border-positive/40 bg-tint-green px-5 py-4 text-[13.5px] font-semibold text-positive">
+            {{ session('status') }}
+        </div>
+    @endif
+    @if ($errors->has('ticket'))
+        <div class="card mt-4 border-warning/40 bg-tint-orange px-5 py-4 text-[13.5px] font-semibold text-warning">
+            {{ $errors->first('ticket') }}
+        </div>
+    @endif
+
     {{-- Record details --}}
     @if ($document)
         <div class="card mt-4 p-6">
@@ -136,6 +148,53 @@
                 This confirms the document was issued by {{ $company?->name }} and has not been altered since.
                 It does not confirm that either party has signed it.
             </p>
+        </div>
+    @endif
+
+    @if ($ticket ?? null)
+        <div class="card mt-4 p-6">
+            <div class="flex items-baseline justify-between gap-3">
+                <h2 class="text-[16px] font-bold text-ink">{{ $ticket->event?->title ?? 'Event ticket' }}</h2>
+                <span class="tnum text-[14px] font-semibold text-muted">{{ $ticket->serial }}</span>
+            </div>
+
+            {{-- The second scan of the same ticket must not look like the
+                 first: door staff act on this line, not the verdict above. --}}
+            @if ($ticket->isCheckedIn())
+                <div class="mt-4 rounded-xl bg-tint-orange px-4 py-3 text-[13.5px] font-semibold text-warning">
+                    Already checked in {{ $ticket->checked_in_at?->format('M j · g:ia') }}
+                </div>
+            @endif
+
+            <dl class="mt-4 space-y-3">
+                @foreach (array_filter([
+                    'Ticket' => $ticket->ticketType?->name,
+                    'Holder' => $ticket->buyer_name,
+                    'When' => $ticket->event?->starts_at?->format('D, F j, Y · g:ia'),
+                    'Venue' => $ticket->event?->venue,
+                    'Price' => (float) $ticket->price > 0 ? Money::format($ticket->price, $company?->currency) : 'Free',
+                ]) as $label => $value)
+                    <div class="flex items-center justify-between gap-4">
+                        <dt class="text-[13.5px] text-muted">{{ $label }}</dt>
+                        <dd class="text-right text-[13.5px] font-semibold text-ink-2">{{ $value }}</dd>
+                    </div>
+                @endforeach
+            </dl>
+
+            @auth
+                @if (! $ticket->isCheckedIn() && ! $ticket->isVoid())
+                    @can('checkIn', $ticket)
+                        <form method="POST" action="{{ route('tickets.check-in', $ticket) }}" class="mt-5">
+                            @csrf
+                            <button type="submit"
+                                    class="tap focusable flex h-12 w-full items-center justify-center gap-2 rounded-xl bg-brand text-[15px] font-semibold text-white transition-opacity hover:opacity-90">
+                                <x-icon name="check-circle" class="size-[20px]" stroke-width="2" />
+                                Check in
+                            </button>
+                        </form>
+                    @endcan
+                @endif
+            @endauth
         </div>
     @endif
 

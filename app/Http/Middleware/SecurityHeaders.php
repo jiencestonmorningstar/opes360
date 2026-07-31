@@ -26,9 +26,18 @@ class SecurityHeaders
         $response = $next($request);
 
         $response->headers->set('X-Content-Type-Options', 'nosniff');
-        // Superseded by the policy's frame-ancestors, kept for browsers that
-        // predate CSP level 2.
-        $response->headers->set('X-Frame-Options', 'SAMEORIGIN');
+
+        // The /embed variants of public forms and event pages exist to be
+        // iframed into other websites, so they alone skip the anti-framing
+        // headers. Everything else stays locked to this origin.
+        $embeddable = $request->routeIs('form.embed', 'form.embed.submit', 'event.embed');
+
+        if (! $embeddable) {
+            // Superseded by the policy's frame-ancestors, kept for browsers
+            // that predate CSP level 2.
+            $response->headers->set('X-Frame-Options', 'SAMEORIGIN');
+        }
+
         $response->headers->set('Referrer-Policy', 'strict-origin-when-cross-origin');
 
         // The app asks for the camera (QR scanning) and nothing else.
@@ -42,7 +51,7 @@ class SecurityHeaders
                 config('security.csp.report_only')
                     ? 'Content-Security-Policy-Report-Only'
                     : 'Content-Security-Policy',
-                $this->csp->header(),
+                $this->csp->header(embeddable: $embeddable),
             );
         }
 

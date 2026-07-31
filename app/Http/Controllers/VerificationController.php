@@ -8,6 +8,7 @@ use App\Models\Company;
 use App\Models\Document;
 use App\Models\Receipt;
 use App\Models\Scopes\CompanyScope;
+use App\Models\Ticket;
 use App\Models\VerificationToken;
 use App\Services\QrCodes;
 use App\Support\CurrentCompany;
@@ -39,6 +40,7 @@ class VerificationController extends Controller
                 'document' => null,
                 'receipt' => null,
                 'paper' => null,
+                'ticket' => null,
             ], 404);
         }
 
@@ -47,7 +49,7 @@ class VerificationController extends Controller
         return app(CurrentCompany::class)->as($company, function () use ($request, $verification, $company) {
             $this->recordScan($request, $verification);
 
-            [$verdict, $subjectKind, $document, $receipt, $paper] = $this->resolveSubject($verification);
+            [$verdict, $subjectKind, $document, $receipt, $paper, $ticket] = $this->resolveSubject($verification);
 
             return response()->view('verification.show', [
                 'verdict' => $verdict,
@@ -56,6 +58,7 @@ class VerificationController extends Controller
                 'document' => $document,
                 'receipt' => $receipt,
                 'paper' => $paper,
+                'ticket' => $ticket,
             ]);
         });
     }
@@ -83,7 +86,7 @@ class VerificationController extends Controller
     }
 
     /**
-     * @return array{0: string, 1: ?string, 2: ?Document, 3: ?Receipt, 4: ?BusinessDocument}
+     * @return array{0: string, 1: ?string, 2: ?Document, 3: ?Receipt, 4: ?BusinessDocument, 5: ?Ticket}
      *
      * Every subject type resolves to one of four verdicts, so the page never has
      * to know what kind of thing it is verifying.
@@ -91,37 +94,37 @@ class VerificationController extends Controller
     protected function resolveSubject(VerificationToken $verification): array
     {
         if ($verification->isRevoked()) {
-            return ['voided', null, null, null, null];
+            return ['voided', null, null, null, null, null];
         }
 
         if ($verification->subject_type === Document::class) {
             $document = Document::with(['contact', 'lines'])->find($verification->subject_id);
 
             if ($document === null || $document->status->value === 'void') {
-                return ['voided', 'document', $document, null, null];
+                return ['voided', 'document', $document, null, null, null];
             }
 
-            return [$document->isTampered() ? 'tampered' : 'valid', 'document', $document, null, null];
+            return [$document->isTampered() ? 'tampered' : 'valid', 'document', $document, null, null, null];
         }
 
         if ($verification->subject_type === Artisan::class) {
             $artisan = Artisan::find($verification->subject_id);
 
             if ($artisan === null || ! $artisan->is_published) {
-                return ['voided', 'artisan', null, null, null];
+                return ['voided', 'artisan', null, null, null, null];
             }
 
-            return ['valid', 'artisan', null, null, null];
+            return ['valid', 'artisan', null, null, null, null];
         }
 
         if ($verification->subject_type === Receipt::class) {
             $receipt = Receipt::with(['contact', 'payment'])->find($verification->subject_id);
 
             if ($receipt === null || $receipt->status === 'void') {
-                return ['voided', 'receipt', null, $receipt, null];
+                return ['voided', 'receipt', null, $receipt, null, null];
             }
 
-            return [$receipt->isTampered() ? 'tampered' : 'valid', 'receipt', null, $receipt, null];
+            return [$receipt->isTampered() ? 'tampered' : 'valid', 'receipt', null, $receipt, null, null];
         }
 
         // A generated contract or letter. Whoever was handed one needs the same
@@ -130,14 +133,27 @@ class VerificationController extends Controller
             $paper = BusinessDocument::find($verification->subject_id);
 
             if ($paper === null || $paper->status === 'void') {
-                return ['voided', 'paper', null, null, $paper];
+                return ['voided', 'paper', null, null, $paper, null];
             }
 
-            return [$paper->isTampered() ? 'tampered' : 'valid', 'paper', null, null, $paper];
+            return [$paper->isTampered() ? 'tampered' : 'valid', 'paper', null, null, $paper, null];
+        }
+
+        // An event ticket. The distinction door staff need most is not
+        // genuine-vs-fake but fresh-vs-already-used, so a checked-in ticket
+        // still reads as valid and the card below carries the check-in state.
+        if ($verification->subject_type === Ticket::class) {
+            $ticket = Ticket::with(['event', 'ticketType'])->find($verification->subject_id);
+
+            if ($ticket === null || $ticket->isVoid()) {
+                return ['voided', 'ticket', null, null, null, $ticket];
+            }
+
+            return ['valid', 'ticket', null, null, null, $ticket];
         }
 
         // A company token verifies the business itself.
-        return ['valid', 'company', null, null, null];
+        return ['valid', 'company', null, null, null, null];
     }
 
     protected function recordScan(Request $request, VerificationToken $verification): void

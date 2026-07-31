@@ -62,6 +62,12 @@
                         </div>
                     @endforeach
                 </div>
+
+                <a href="{{ route('customers.statement', $contact) }}" target="_blank" rel="noopener"
+                   class="focusable mt-4 flex h-11 w-full items-center justify-center gap-2 rounded-xl border border-border bg-surface text-[13.5px] font-semibold text-ink-2 transition-colors hover:bg-surface-2">
+                    <x-icon name="printer" class="size-[18px]" stroke-width="1.9" />
+                    Statement of account
+                </a>
             </section>
 
             {{-- Documents --}}

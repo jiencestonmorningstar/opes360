@@ -357,6 +357,616 @@ class DocumentTemplates
                 {{ company.email }}[ · {{ company.phone }}]
                 TXT,
             ],
+
+            'offer_letter' => [
+                'name' => 'Offer Letter',
+                'summary' => 'Offer a role, salary and start date to a candidate.',
+                'icon' => 'user-plus',
+                'accent' => 'green',
+                'binding' => true,
+                'fields' => [
+                    ['key' => 'candidate_name', 'label' => 'Candidate name', 'required' => true],
+                    ['key' => 'position', 'label' => 'Position offered', 'required' => true],
+                    ['key' => 'salary', 'label' => 'Salary', 'required' => true, 'placeholder' => 'e.g. $2,000 per month'],
+                    ['key' => 'start_date', 'label' => 'Start date', 'type' => 'date', 'required' => true],
+                    ['key' => 'probation_period', 'label' => 'Probation period', 'default' => '3 months'],
+                    ['key' => 'reports_to', 'label' => 'Reports to'],
+                    ['key' => 'respond_by', 'label' => 'Respond by', 'type' => 'date'],
+                ],
+                'body' => <<<'TXT'
+                Dear {{ candidate_name }},
+
+                ## Offer of employment: {{ position }}
+
+                Following your interview, {{ company.name }} is pleased to offer you the position of **{{ position }}**[, reporting to {{ reports_to }}].
+
+                Your salary will be {{ salary }}. Your employment will begin on {{ start_date }}, with a probation period of {{ probation_period }} during which either side may end the engagement with one week's notice.
+
+                A full contract of employment, setting out working hours, leave and other conditions, will be provided for signature on or before your start date. This offer is conditional on any references and documents we have requested proving satisfactory.
+
+                [Please confirm your acceptance in writing by {{ respond_by }}. ]We look forward to working with you.
+
+                Yours sincerely,
+
+                For and on behalf of {{ company.name }}
+                {{ company.email }}[ · {{ company.phone }}]
+                TXT,
+            ],
+
+            'promotion_letter' => [
+                'name' => 'Promotion Letter',
+                'summary' => 'Confirm a new role and pay for an existing employee.',
+                'icon' => 'trending-up',
+                'accent' => 'teal',
+                'binding' => false,
+                'fields' => [
+                    ['key' => 'employee_name', 'label' => 'Employee name', 'required' => true],
+                    ['key' => 'current_position', 'label' => 'Current position', 'required' => true],
+                    ['key' => 'new_position', 'label' => 'New position', 'required' => true],
+                    ['key' => 'new_salary', 'label' => 'New salary'],
+                    ['key' => 'effective_date', 'label' => 'Effective from', 'type' => 'date', 'required' => true],
+                ],
+                'body' => <<<'TXT'
+                Dear {{ employee_name }},
+
+                ## Promotion to {{ new_position }}
+
+                In recognition of your performance as {{ current_position }}, we are pleased to promote you to **{{ new_position }}**, effective {{ effective_date }}.
+
+                [Your salary will be revised to {{ new_salary }} from the same date. ]All other terms of your employment remain unchanged.
+
+                Congratulations — this promotion reflects the confidence {{ company.name }} has in you.
+
+                Yours sincerely,
+
+                For and on behalf of {{ company.name }}
+                TXT,
+            ],
+
+            'salary_review_letter' => [
+                'name' => 'Salary Review Letter',
+                'summary' => 'Notify an employee of a change in pay.',
+                'icon' => 'banknotes',
+                'accent' => 'green',
+                'binding' => false,
+                'fields' => [
+                    ['key' => 'employee_name', 'label' => 'Employee name', 'required' => true],
+                    ['key' => 'position', 'label' => 'Position', 'required' => true],
+                    ['key' => 'new_salary', 'label' => 'New salary', 'required' => true],
+                    ['key' => 'effective_date', 'label' => 'Effective from', 'type' => 'date', 'required' => true],
+                    ['key' => 'reason', 'label' => 'Reason', 'default' => 'your performance and our annual review'],
+                ],
+                'body' => <<<'TXT'
+                Dear {{ employee_name }},
+
+                ## Salary review
+
+                Following {{ reason }}, your salary as {{ position }} will be revised to **{{ new_salary }}**, effective {{ effective_date }}.
+
+                All other terms of your employment remain unchanged. Thank you for your continued contribution to {{ company.name }}.
+
+                Yours sincerely,
+
+                For and on behalf of {{ company.name }}
+                TXT,
+            ],
+
+            'warning_letter' => [
+                'name' => 'Warning Letter',
+                'summary' => 'A formal, dated record of a conduct or performance issue.',
+                'icon' => 'alert',
+                'accent' => 'orange',
+                'binding' => false,
+                'fields' => [
+                    ['key' => 'employee_name', 'label' => 'Employee name', 'required' => true],
+                    ['key' => 'position', 'label' => 'Position', 'required' => true],
+                    ['key' => 'incident', 'label' => 'What happened', 'type' => 'textarea', 'required' => true,
+                        'placeholder' => 'Describe the conduct or performance issue, with dates.'],
+                    ['key' => 'expectation', 'label' => 'What must change', 'type' => 'textarea', 'required' => true],
+                    ['key' => 'warning_level', 'label' => 'Warning level', 'default' => 'first written warning'],
+                ],
+                'body' => <<<'TXT'
+                Dear {{ employee_name }},
+
+                ## Formal warning
+
+                This letter is a {{ warning_level }} regarding your conduct as {{ position }} at {{ company.name }}.
+
+                ## What happened
+
+                {{ incident }}
+
+                ## What we expect
+
+                {{ expectation }}
+
+                A copy of this letter will be kept on your file. Further issues of this kind may lead to further disciplinary action, up to and including termination of employment. If you believe this warning is unfair, you may respond in writing within five working days.
+
+                Yours sincerely,
+
+                For and on behalf of {{ company.name }}
+                TXT,
+            ],
+
+            'termination_letter' => [
+                'name' => 'Termination Letter',
+                'summary' => 'End an employment formally, with dates and final pay.',
+                'icon' => 'document',
+                'accent' => 'slate',
+                'binding' => true,
+                'fields' => [
+                    ['key' => 'employee_name', 'label' => 'Employee name', 'required' => true],
+                    ['key' => 'position', 'label' => 'Position', 'required' => true],
+                    ['key' => 'reason', 'label' => 'Reason', 'required' => true, 'placeholder' => 'e.g. redundancy, conduct, end of contract'],
+                    ['key' => 'last_working_day', 'label' => 'Last working day', 'type' => 'date', 'required' => true],
+                    ['key' => 'final_pay_details', 'label' => 'Final pay details', 'type' => 'textarea',
+                        'placeholder' => 'Salary to date, unused leave, any deductions.'],
+                ],
+                'body' => <<<'TXT'
+                Dear {{ employee_name }},
+
+                ## Termination of employment
+
+                We write to confirm that your employment with {{ company.name }} as {{ position }} will end on **{{ last_working_day }}**. The reason for this decision is {{ reason }}.
+
+                [## Final pay
+
+                {{ final_pay_details }}
+
+                ]Please return any company property in your possession on or before your last working day. We will provide a reference on request and thank you for your service.
+
+                Yours sincerely,
+
+                For and on behalf of {{ company.name }}
+                TXT,
+            ],
+
+            'reference_letter' => [
+                'name' => 'Reference Letter',
+                'summary' => 'Vouch for a former employee or a business partner.',
+                'icon' => 'user',
+                'accent' => 'blue',
+                'binding' => false,
+                'fields' => [
+                    ['key' => 'subject_name', 'label' => 'Who it is about', 'required' => true],
+                    ['key' => 'relationship', 'label' => 'Relationship', 'required' => true,
+                        'placeholder' => 'e.g. employed here as Sales Officer from 2023 to 2026'],
+                    ['key' => 'assessment', 'label' => 'Your assessment', 'type' => 'textarea', 'required' => true,
+                        'placeholder' => 'Work quality, reliability, character.'],
+                    ['key' => 'addressee', 'label' => 'Addressed to', 'default' => 'To whom it may concern'],
+                ],
+                'body' => <<<'TXT'
+                {{ addressee }},
+
+                ## Reference for {{ subject_name }}
+
+                This letter confirms that {{ subject_name }} is known to {{ company.name }}: {{ relationship }}.
+
+                {{ assessment }}
+
+                We are happy to answer any further questions about this reference.
+
+                Yours faithfully,
+
+                For and on behalf of {{ company.name }}
+                {{ company.email }}[ · {{ company.phone }}]
+                TXT,
+            ],
+
+            'introduction_letter' => [
+                'name' => 'Introduction Letter',
+                'summary' => 'Introduce your business to a bank, client or institution.',
+                'icon' => 'briefcase',
+                'accent' => 'purple',
+                'binding' => false,
+                'fields' => [
+                    ['key' => 'recipient_name', 'label' => 'Addressed to', 'required' => true,
+                        'placeholder' => 'e.g. The Branch Manager, First Bank'],
+                    ['key' => 'purpose', 'label' => 'Purpose', 'required' => true,
+                        'placeholder' => 'e.g. to open a corporate account'],
+                    ['key' => 'about_us', 'label' => 'About the business', 'type' => 'textarea', 'required' => true],
+                    ['key' => 'representative_name', 'label' => 'Representative being introduced'],
+                    ['key' => 'representative_role', 'label' => 'Their role'],
+                ],
+                'body' => <<<'TXT'
+                {{ recipient_name }},
+
+                ## Introduction of {{ company.name }}
+
+                We write to introduce {{ company.name }}[, of {{ company.address }},] {{ purpose }}.
+
+                {{ about_us }}
+
+                [We hereby introduce **{{ representative_name }}**[, our {{ representative_role }},] who is authorised to act on our behalf in this matter.
+
+                ]We would be glad to provide any further information you require.
+
+                Yours faithfully,
+
+                For and on behalf of {{ company.name }}
+                {{ company.email }}[ · {{ company.phone }}]
+                TXT,
+            ],
+
+            'leave_approval' => [
+                'name' => 'Leave Approval',
+                'summary' => 'Approve leave with dates and return expectations.',
+                'icon' => 'calendar',
+                'accent' => 'teal',
+                'binding' => false,
+                'fields' => [
+                    ['key' => 'employee_name', 'label' => 'Employee name', 'required' => true],
+                    ['key' => 'leave_type', 'label' => 'Type of leave', 'default' => 'annual leave'],
+                    ['key' => 'from_date', 'label' => 'From', 'type' => 'date', 'required' => true],
+                    ['key' => 'to_date', 'label' => 'To', 'type' => 'date', 'required' => true],
+                    ['key' => 'resumption_date', 'label' => 'Resumption date', 'type' => 'date', 'required' => true],
+                    ['key' => 'handover_to', 'label' => 'Duties handed over to'],
+                ],
+                'body' => <<<'TXT'
+                Dear {{ employee_name }},
+
+                ## Leave approved
+
+                Your request for {{ leave_type }} has been approved, from **{{ from_date }}** to **{{ to_date }}**. You are expected to resume work on **{{ resumption_date }}**.
+
+                [Your duties will be covered by {{ handover_to }} while you are away; please complete a handover before your leave begins.
+
+                ]Enjoy your time off.
+
+                Yours sincerely,
+
+                For and on behalf of {{ company.name }}
+                TXT,
+            ],
+
+            'internship_letter' => [
+                'name' => 'Internship Acceptance',
+                'summary' => 'Accept an intern or industrial-attachment student.',
+                'icon' => 'user-plus',
+                'accent' => 'pink',
+                'binding' => false,
+                'fields' => [
+                    ['key' => 'intern_name', 'label' => 'Intern name', 'required' => true],
+                    ['key' => 'institution', 'label' => 'School / institution'],
+                    ['key' => 'department', 'label' => 'Department / area of work', 'required' => true],
+                    ['key' => 'from_date', 'label' => 'From', 'type' => 'date', 'required' => true],
+                    ['key' => 'to_date', 'label' => 'To', 'type' => 'date', 'required' => true],
+                    ['key' => 'stipend', 'label' => 'Stipend', 'default' => 'This position is unpaid'],
+                ],
+                'body' => <<<'TXT'
+                Dear {{ intern_name }},
+
+                ## Internship acceptance
+
+                {{ company.name }} is pleased to accept you for an internship in our {{ department }} area, from **{{ from_date }}** to **{{ to_date }}**.[ This placement is undertaken in connection with {{ institution }}.]
+
+                {{ stipend }}. During the placement you will be expected to observe the company's working hours, conduct standards and confidentiality requirements.
+
+                We look forward to having you with us.
+
+                Yours sincerely,
+
+                For and on behalf of {{ company.name }}
+                {{ company.email }}[ · {{ company.phone }}]
+                TXT,
+            ],
+
+            'payslip' => [
+                'name' => 'Payslip',
+                'summary' => 'A salary breakdown for one pay period.',
+                'icon' => 'banknotes',
+                'accent' => 'green',
+                'binding' => false,
+                'fields' => [
+                    ['key' => 'employee_name', 'label' => 'Employee name', 'required' => true],
+                    ['key' => 'position', 'label' => 'Position', 'required' => true],
+                    ['key' => 'pay_period', 'label' => 'Pay period', 'required' => true, 'placeholder' => 'e.g. July 2026'],
+                    ['key' => 'gross_pay', 'label' => 'Gross pay', 'required' => true],
+                    ['key' => 'allowances', 'label' => 'Allowances', 'type' => 'textarea',
+                        'placeholder' => 'e.g. Transport: $50, Housing: $100'],
+                    ['key' => 'deductions', 'label' => 'Deductions', 'type' => 'textarea',
+                        'placeholder' => 'e.g. Tax: $80, Pension: $40'],
+                    ['key' => 'net_pay', 'label' => 'Net pay', 'required' => true],
+                    ['key' => 'payment_method', 'label' => 'Paid by', 'default' => 'bank transfer'],
+                ],
+                'body' => <<<'TXT'
+                ## Payslip — {{ pay_period }}
+
+                **Employee:** {{ employee_name }} · {{ position }}
+
+                **Gross pay:** {{ gross_pay }}
+
+                [## Allowances
+
+                {{ allowances }}
+
+                ][## Deductions
+
+                {{ deductions }}
+
+                ]## Net pay
+
+                **{{ net_pay }}**, paid by {{ payment_method }}.
+
+                This payslip is a record of salary paid by {{ company.name }} for the period shown. Queries should reach {{ company.email }} within 30 days.
+                TXT,
+            ],
+
+            'payment_voucher' => [
+                'name' => 'Payment Voucher',
+                'summary' => 'Authorise and record money the business pays out.',
+                'icon' => 'wallet',
+                'accent' => 'orange',
+                'binding' => false,
+                'fields' => [
+                    ['key' => 'payee_name', 'label' => 'Paid to', 'required' => true],
+                    ['key' => 'amount', 'label' => 'Amount', 'required' => true],
+                    ['key' => 'amount_words', 'label' => 'Amount in words', 'required' => true],
+                    ['key' => 'purpose', 'label' => 'Purpose of payment', 'type' => 'textarea', 'required' => true],
+                    ['key' => 'payment_method', 'label' => 'Paid by', 'default' => 'bank transfer'],
+                    ['key' => 'reference', 'label' => 'Cheque / transfer reference'],
+                    ['key' => 'prepared_by', 'label' => 'Prepared by', 'required' => true],
+                    ['key' => 'approved_by', 'label' => 'Approved by', 'required' => true],
+                ],
+                'body' => <<<'TXT'
+                ## Payment Voucher
+
+                **Payee:** {{ payee_name }}
+
+                **Amount:** {{ amount }} ({{ amount_words }})
+
+                **Method:** {{ payment_method }}[ · Reference: {{ reference }}]
+
+                ## Purpose
+
+                {{ purpose }}
+
+                Prepared by {{ prepared_by }} and approved by {{ approved_by }} on {{ today }}. Payment received in full by the payee, whose signature below acknowledges it.
+                TXT,
+            ],
+
+            'mou' => [
+                'name' => 'Memorandum of Understanding',
+                'summary' => 'Record an intended collaboration before a full contract.',
+                'icon' => 'users',
+                'accent' => 'blue',
+                'binding' => true,
+                'fields' => [
+                    ['key' => 'partner_name', 'label' => 'Other party', 'required' => true],
+                    ['key' => 'purpose', 'label' => 'Purpose of the collaboration', 'type' => 'textarea', 'required' => true],
+                    ['key' => 'our_responsibilities', 'label' => 'Our responsibilities', 'type' => 'textarea', 'required' => true],
+                    ['key' => 'their_responsibilities', 'label' => 'Their responsibilities', 'type' => 'textarea', 'required' => true],
+                    ['key' => 'duration', 'label' => 'Duration', 'default' => '12 months from the date of signing'],
+                ],
+                'body' => <<<'TXT'
+                ## Memorandum of Understanding
+
+                This memorandum is made on {{ today }} between **{{ company.name }}**[ of {{ company.address }}] and **{{ partner_name }}** (together, "the Parties").
+
+                ## Purpose
+
+                {{ purpose }}
+
+                ## Responsibilities of {{ company.name }}
+
+                {{ our_responsibilities }}
+
+                ## Responsibilities of {{ partner_name }}
+
+                {{ their_responsibilities }}
+
+                ## Term and nature
+
+                This memorandum takes effect on signing and continues for {{ duration }}. It records the Parties' intentions in good faith; except for this clause and the confidentiality obligation below, it does not create legally binding obligations. Any binding arrangement will be set out in a subsequent written agreement.
+
+                Each Party shall keep confidential the non-public information it learns from the other under this memorandum.
+                TXT,
+            ],
+
+            'partnership_agreement' => [
+                'name' => 'Partnership Agreement',
+                'summary' => 'Shares, duties and exits between business partners.',
+                'icon' => 'users',
+                'accent' => 'purple',
+                'binding' => true,
+                'fields' => [
+                    ['key' => 'partner_name', 'label' => 'Partner name', 'required' => true],
+                    ['key' => 'business_purpose', 'label' => 'Business purpose', 'type' => 'textarea', 'required' => true],
+                    ['key' => 'our_share', 'label' => 'Our share', 'required' => true, 'placeholder' => 'e.g. 60%'],
+                    ['key' => 'their_share', 'label' => 'Their share', 'required' => true, 'placeholder' => 'e.g. 40%'],
+                    ['key' => 'capital_contributions', 'label' => 'Capital contributions', 'type' => 'textarea', 'required' => true],
+                    ['key' => 'profit_sharing', 'label' => 'Profit sharing', 'default' => 'in proportion to the shares above, after agreed expenses'],
+                    ['key' => 'exit_notice', 'label' => 'Exit notice period', 'default' => '90 days'],
+                ],
+                'body' => <<<'TXT'
+                ## Partnership Agreement
+
+                This agreement is made on {{ today }} between **{{ company.name }}** and **{{ partner_name }}** (together, "the Partners").
+
+                ## 1. Purpose
+
+                The Partners agree to carry on the following business together: {{ business_purpose }}
+
+                ## 2. Shares and capital
+
+                Ownership is divided {{ our_share }} to {{ company.name }} and {{ their_share }} to {{ partner_name }}.
+
+                {{ capital_contributions }}
+
+                ## 3. Profits and losses
+
+                Profits and losses are shared {{ profit_sharing }}.
+
+                ## 4. Decisions
+
+                Decisions outside the ordinary course of business — borrowing, admitting a partner, disposing of significant assets — require the agreement of all Partners.
+
+                ## 5. Leaving the partnership
+
+                A Partner may withdraw by giving {{ exit_notice }} written notice. The remaining Partners may buy out the leaving Partner's share at a fair value agreed between them or determined by an independent valuer.
+                TXT,
+            ],
+
+            'tenancy_agreement' => [
+                'name' => 'Tenancy Agreement',
+                'summary' => 'Let a property or premises for a fixed term and rent.',
+                'icon' => 'home',
+                'accent' => 'teal',
+                'binding' => true,
+                'fields' => [
+                    ['key' => 'tenant_name', 'label' => 'Tenant name', 'required' => true],
+                    ['key' => 'property_address', 'label' => 'Property address', 'required' => true],
+                    ['key' => 'term', 'label' => 'Term', 'required' => true, 'placeholder' => 'e.g. 12 months'],
+                    ['key' => 'start_date', 'label' => 'Start date', 'type' => 'date', 'required' => true],
+                    ['key' => 'rent', 'label' => 'Rent', 'required' => true, 'placeholder' => 'e.g. $500 per month, payable annually in advance'],
+                    ['key' => 'deposit', 'label' => 'Security deposit'],
+                    ['key' => 'permitted_use', 'label' => 'Permitted use', 'default' => 'residential purposes only'],
+                ],
+                'body' => <<<'TXT'
+                ## Tenancy Agreement
+
+                This agreement is made on {{ today }} between **{{ company.name }}** ("the Landlord") and **{{ tenant_name }}** ("the Tenant") for the premises at **{{ property_address }}**.
+
+                ## 1. Term and rent
+
+                The tenancy runs for {{ term }} from {{ start_date }}. The rent is {{ rent }}.[ A security deposit of {{ deposit }} is payable before the tenancy begins, refundable at its end less the cost of any damage beyond fair wear and tear.]
+
+                ## 2. Use
+
+                The premises are let for {{ permitted_use }}. The Tenant shall not sublet or part with possession without the Landlord's written consent.
+
+                ## 3. Obligations
+
+                The Tenant shall pay rent when due, keep the interior in good condition, and report defects promptly. The Landlord shall keep the structure and installations for water and electricity in repair and allow the Tenant quiet enjoyment of the premises.
+
+                ## 4. Ending the tenancy
+
+                Either party may end the tenancy at the end of the term by prior written notice in accordance with applicable law. The Landlord may end it earlier if rent is materially in arrears or the premises are used unlawfully.
+                TXT,
+            ],
+
+            'loan_agreement' => [
+                'name' => 'Loan Agreement',
+                'summary' => 'Lend or borrow with amounts, schedule and default terms.',
+                'icon' => 'banknotes',
+                'accent' => 'orange',
+                'binding' => true,
+                'fields' => [
+                    ['key' => 'borrower_name', 'label' => 'Borrower', 'required' => true],
+                    ['key' => 'principal', 'label' => 'Amount lent', 'required' => true],
+                    ['key' => 'principal_words', 'label' => 'Amount in words', 'required' => true],
+                    ['key' => 'interest', 'label' => 'Interest', 'default' => 'interest-free'],
+                    ['key' => 'repayment_schedule', 'label' => 'Repayment schedule', 'type' => 'textarea', 'required' => true,
+                        'placeholder' => 'e.g. Six monthly instalments of $200, starting 1 September 2026.'],
+                    ['key' => 'purpose', 'label' => 'Purpose of the loan'],
+                ],
+                'body' => <<<'TXT'
+                ## Loan Agreement
+
+                This agreement is made on {{ today }} between **{{ company.name }}** ("the Lender") and **{{ borrower_name }}** ("the Borrower").
+
+                ## 1. The loan
+
+                The Lender lends the Borrower **{{ principal }}** ({{ principal_words }}), {{ interest }}.[ The loan is made for the purpose of {{ purpose }}.]
+
+                ## 2. Repayment
+
+                {{ repayment_schedule }}
+
+                The Borrower may repay early, in whole or in part, without penalty.
+
+                ## 3. Default
+
+                If an instalment is more than 14 days late, the outstanding balance becomes immediately due on written demand. The Borrower bears the reasonable costs of recovering overdue amounts.
+                TXT,
+            ],
+
+            'completion_certificate' => [
+                'name' => 'Job Completion Certificate',
+                'summary' => 'Certify that contracted work is finished and accepted.',
+                'icon' => 'check-circle',
+                'accent' => 'green',
+                'binding' => false,
+                'fields' => [
+                    ['key' => 'client_name', 'label' => 'Client name', 'required' => true],
+                    ['key' => 'project_description', 'label' => 'Work completed', 'type' => 'textarea', 'required' => true],
+                    ['key' => 'completion_date', 'label' => 'Completed on', 'type' => 'date', 'required' => true],
+                    ['key' => 'site_location', 'label' => 'Site / location'],
+                    ['key' => 'defects_period', 'label' => 'Defects liability period', 'default' => '90 days'],
+                ],
+                'body' => <<<'TXT'
+                ## Certificate of Job Completion
+
+                {{ company.name }} certifies that the following work, carried out for **{{ client_name }}**[ at {{ site_location }}], was completed on **{{ completion_date }}**:
+
+                {{ project_description }}
+
+                The work has been inspected and handed over. Defects attributable to workmanship reported within {{ defects_period }} of the completion date will be made good at no charge.
+
+                Signed for {{ company.name }} on {{ today }}.
+                TXT,
+            ],
+
+            'warranty_certificate' => [
+                'name' => 'Warranty Certificate',
+                'summary' => 'A dated warranty for goods sold or work done.',
+                'icon' => 'check-circle',
+                'accent' => 'blue',
+                'binding' => true,
+                'fields' => [
+                    ['key' => 'customer_name', 'label' => 'Customer name', 'required' => true],
+                    ['key' => 'item_description', 'label' => 'Goods or work covered', 'type' => 'textarea', 'required' => true],
+                    ['key' => 'purchase_date', 'label' => 'Date of purchase', 'type' => 'date', 'required' => true],
+                    ['key' => 'warranty_period', 'label' => 'Warranty period', 'required' => true, 'placeholder' => 'e.g. 12 months'],
+                    ['key' => 'exclusions', 'label' => 'Not covered', 'type' => 'textarea',
+                        'default' => 'Damage from misuse, accident, unauthorised repair or normal wear.'],
+                ],
+                'body' => <<<'TXT'
+                ## Warranty Certificate
+
+                {{ company.name }} warrants to **{{ customer_name }}** the following, supplied on {{ purchase_date }}:
+
+                {{ item_description }}
+
+                ## Cover
+
+                For {{ warranty_period }} from the date of purchase, defects in materials or workmanship will be repaired or replaced at no charge, on presentation of this certificate.
+
+                ## Not covered
+
+                {{ exclusions }}
+
+                This warranty is in addition to, and does not limit, any rights the customer has under applicable consumer law.
+                TXT,
+            ],
+
+            'gate_pass' => [
+                'name' => 'Gate Pass',
+                'summary' => 'Authorise goods or equipment to leave the premises.',
+                'icon' => 'cube',
+                'accent' => 'slate',
+                'binding' => false,
+                'fields' => [
+                    ['key' => 'carried_by', 'label' => 'Carried by', 'required' => true],
+                    ['key' => 'items', 'label' => 'Items leaving', 'type' => 'textarea', 'required' => true,
+                        'placeholder' => 'One line per item, with quantities and serial numbers where they exist.'],
+                    ['key' => 'destination', 'label' => 'Destination', 'required' => true],
+                    ['key' => 'reason', 'label' => 'Reason', 'default' => 'delivery to customer'],
+                    ['key' => 'returnable', 'label' => 'Returnable?', 'default' => 'Not returnable'],
+                    ['key' => 'authorised_by', 'label' => 'Authorised by', 'required' => true],
+                ],
+                'body' => <<<'TXT'
+                ## Gate Pass
+
+                The items listed below are authorised to leave the premises of {{ company.name }} on {{ today }}, carried by **{{ carried_by }}**, destined for **{{ destination }}**. Reason: {{ reason }}. {{ returnable }}.
+
+                ## Items
+
+                {{ items }}
+
+                Authorised by {{ authorised_by }}. Security should verify the items against this list at the gate and retain a copy.
+                TXT,
+            ],
         ];
     }
 

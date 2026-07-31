@@ -2,11 +2,15 @@
 
 namespace App\Http\Controllers;
 
+use App\Enums\DocumentType;
 use App\Models\BusinessDocument;
 use App\Models\Company;
+use App\Models\Contact;
 use App\Models\Document;
+use App\Models\Payment;
 use App\Models\Receipt;
 use App\Models\VerificationToken;
+use Carbon\CarbonImmutable;
 use App\Services\DocumentComposer;
 use App\Services\LogoComposer;
 use App\Services\QrCodes;
@@ -34,6 +38,71 @@ class PrintController extends Controller
             'qrSvg' => $document->verificationToken
                 ? $qr->svg($document->verificationToken->publicUrl(), 132)
                 : null,
+            'autoprint' => $request->boolean('print'),
+        ]);
+    }
+
+    /**
+     * A customer's statement of account: what was billed, what was paid, and
+     * the running balance over a period. A report, not a numbered document —
+     * regenerating it always reflects the ledger as it stands, which is
+     * exactly what the customer asking "what do I owe you" wants.
+     */
+    public function statement(Request $request, Contact $contact)
+    {
+        $from = CarbonImmutable::make($request->query('from')) ?? now()->startOfYear()->toImmutable();
+        $to = (CarbonImmutable::make($request->query('to')) ?? now()->toImmutable())->endOfDay();
+
+        // Charges: issued receivable documents. Credits: payments received and
+        // credit notes. Everything else (quotations, proformas, delivery
+        // notes) informs no balance and has no place on a statement.
+        $documents = $contact->documents()
+            ->issued()
+            ->whereBetween('issue_date', [$from->toDateString(), $to->toDateString()])
+            ->whereIn('type', [DocumentType::Invoice, DocumentType::DebitNote, DocumentType::CreditNote])
+            ->get(['id', 'type', 'number', 'issue_date', 'total']);
+
+        // Voided payments are soft-deleted, so the default scope already
+        // keeps them off the statement.
+        $payments = $contact->payments()
+            ->whereBetween('received_at', [$from, $to])
+            ->get(['id', 'reference', 'received_at', 'amount']);
+
+        $lines = collect()
+            ->concat($documents->map(fn (Document $document) => [
+                'date' => $document->issue_date,
+                'reference' => $document->number,
+                'description' => $document->type->label(),
+                'debit' => $document->type === DocumentType::CreditNote ? 0.0 : (float) $document->total,
+                'credit' => $document->type === DocumentType::CreditNote ? (float) $document->total : 0.0,
+            ]))
+            ->concat($payments->map(fn (Payment $payment) => [
+                'date' => $payment->received_at,
+                'reference' => $payment->reference ?? '—',
+                'description' => 'Payment received',
+                'debit' => 0.0,
+                'credit' => (float) $payment->amount,
+            ]))
+            ->sortBy('date')
+            ->values();
+
+        $running = 0.0;
+        $lines = $lines->map(function (array $line) use (&$running) {
+            $running += $line['debit'] - $line['credit'];
+            $line['balance'] = $running;
+
+            return $line;
+        });
+
+        return view('print.statement', [
+            'contact' => $contact,
+            'company' => app(CurrentCompany::class)->get(),
+            'from' => $from,
+            'to' => $to,
+            'lines' => $lines,
+            'totalDebits' => $lines->sum('debit'),
+            'totalCredits' => $lines->sum('credit'),
+            'closing' => $running,
             'autoprint' => $request->boolean('print'),
         ]);
     }
