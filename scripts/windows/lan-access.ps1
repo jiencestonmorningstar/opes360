@@ -4,24 +4,27 @@
     WiFi - phones included - over trusted HTTPS.
 
 .DESCRIPTION
-    install.ps1 already runs Caddy with `tls internal`, which stands up its own
-    certificate authority and trusts it on this PC. That CA is the reason
-    https://opes360.test has a padlock with no manual cert wrangling. Two
-    things stop a phone on the same network from sharing that:
+    The first version of this script tried to get the LAN IP served on port
+    443 - either by adding it to the repo's own Caddyfile, or (for a Laragon
+    install) just pointing the phone at https://<lan-ip> and hoping. That
+    second part was wrong: Laragon's Apache/Nginx picks which project to
+    serve by matching the Host header against each vhost's ServerName - a
+    request addressed to a bare IP matches none of them, so it falls through
+    to whatever vhost happens to be first, which can easily be a *different*
+    project on the same machine. That is the "shows a different platform"
+    symptom.
 
-      1. The Caddyfile only lists the domain, so Caddy has nothing to serve
-         for a request that arrives addressed to the LAN IP instead.
-      2. The phone has never seen this PC's CA, so even a request that does
-         reach the site shows "not secure."
+    This version sidesteps vhost matching, and any fight over who owns port
+    443, entirely: it runs its own tiny, independent pair of processes - a
+    PHP built-in server plus a Caddy instance in front of it for TLS - bound
+    to a dedicated port that nothing else on the machine is using. Works
+    identically whether the desktop install uses Laragon or this repo's own
+    Caddy setup, because it does not touch either of them.
 
-    This script fixes both: it adds the LAN IP as a second site address in the
-    Caddyfile (Caddy then issues/serves a local cert for it too), opens the
-    firewall for 443 on the private profile, and locates the CA root cert so
-    you can copy it to the phone once.
-
-    Only handles the Caddy install (the one this repo's own installer sets
-    up). If Laragon is serving the site instead, its SSL is *.test-only and
-    does not extend to a bare LAN IP the same way - see the printed notes.
+    Caddy's `tls internal` mode is what makes the padlock work without a
+    manually-bought certificate: it runs its own certificate authority and
+    trusts it on this PC automatically. The phone has never seen that CA
+    though, so the last step is copying its root certificate over once.
 
 .EXAMPLE
     .\lan-access.ps1
@@ -29,7 +32,8 @@
 
 [CmdletBinding()]
 param(
-    [string] $Domain = 'opes360.test'
+    [int] $LanPort = 8443,
+    [int] $PhpPort = 9091
 )
 
 $ErrorActionPreference = 'Stop'
@@ -41,7 +45,7 @@ if (-not $principal.IsInRole([Security.Principal.WindowsBuiltInRole]::Administra
     Write-Host "If Windows asks for permission, click Yes." -ForegroundColor Yellow
     # -NoExit: without it the elevated window runs the script and closes itself
     # immediately - including on error - before there is anything to read.
-    Start-Process powershell -Verb RunAs -ArgumentList @('-NoExit', '-NoProfile', '-ExecutionPolicy', 'Bypass', '-File', "`"$PSCommandPath`"", '-Domain', "`"$Domain`"")
+    Start-Process powershell -Verb RunAs -ArgumentList @('-NoExit', '-NoProfile', '-ExecutionPolicy', 'Bypass', '-File', "`"$PSCommandPath`"", '-LanPort', $LanPort, '-PhpPort', $PhpPort)
     exit
 }
 
@@ -55,7 +59,11 @@ function Die($text)  { Write-Host "`nFAILED: $text" -ForegroundColor Red; exit 1
 
 Write-Host "OPES360 - LAN / phone access" -ForegroundColor White
 
-# ---- find the LAN IP ----------------------------------------------------------
+if (-not (Test-Path (Join-Path $Root 'artisan'))) {
+    Die "artisan not found in $Root - run this from inside the project (or run install.ps1 first)."
+}
+
+# ---- find the LAN IP ------------------------------------------------------
 
 Step "Finding this machine's LAN IP"
 
@@ -67,78 +75,129 @@ $lanIp = Get-NetIPAddress -AddressFamily IPv4 |
     Sort-Object -Property @{ Expression = { $_.InterfaceAlias -match 'Wi-?Fi' }; Descending = $true } |
     Select-Object -First 1 -ExpandProperty IPAddress
 
-if (-not $lanIp) { Die "Could not find a LAN IP. Run 'ipconfig' and pass one manually via -Domain / edit the Caddyfile yourself." }
+if (-not $lanIp) { Die "Could not find a LAN IP. Run 'ipconfig', find the IPv4 Address, and share that with me so the script can be fixed." }
 Ok "$lanIp"
 
-# ---- Caddy or Laragon? ---------------------------------------------------------
+# ---- PHP -------------------------------------------------------------------
 
-$caddyfilePath = Join-Path $Root 'Caddyfile'
-$UseLaragon    = -not (Test-Path $caddyfilePath)
+Step "Checking PHP"
 
-if ($UseLaragon) {
-    Step "Laragon install detected"
-    Warn "This script only automates the Caddy path (what install.ps1 uses when"
-    Warn "Laragon isn't present). Laragon's own *.test certificate does not cover"
-    Warn "a bare LAN IP, so the padlock won't extend to the phone automatically."
-    Write-Host ""
-    Write-Host "  What still works right now, no changes needed:" -ForegroundColor Gray
-    Write-Host "    Add '$lanIp `t$Domain' to the PHONE's hosts file if it supports one," -ForegroundColor Gray
-    Write-Host "    or just browse to https://$lanIp directly and accept the" -ForegroundColor Gray
-    Write-Host "    certificate warning - the app itself works, only the padlock is red." -ForegroundColor Gray
-    Write-Host ""
-    Write-Host "  For a real padlock on the phone, use mkcert against Laragon's vhost" -ForegroundColor Gray
-    Write-Host "  instead - ask for that walkthrough if you want it." -ForegroundColor Gray
+$php = Get-Command php -ErrorAction SilentlyContinue
+if (-not $php) {
+    $laragonPhp = Get-ChildItem -Path 'C:\laragon\bin\php' -Recurse -Filter php.exe -ErrorAction SilentlyContinue |
+        Sort-Object FullName -Descending | Select-Object -First 1
+    if ($laragonPhp) {
+        $env:Path = "$($laragonPhp.DirectoryName);$env:Path"
+        Ok "Using Laragon's PHP at $($laragonPhp.DirectoryName)"
+        $php = Get-Command php -ErrorAction SilentlyContinue
+    }
+}
+if (-not $php) { Die "PHP is not on PATH and not found under C:\laragon\bin\php." }
+Ok "PHP found"
+
+# ---- caddy ------------------------------------------------------------------
+
+Step "Getting Caddy (web server + certificate authority)"
+
+$caddyDir = Join-Path $Root 'scripts\windows\bin'
+$caddyExe = Join-Path $caddyDir 'caddy.exe'
+
+if (Test-Path $caddyExe) {
+    Ok "Already downloaded"
+} else {
+    New-Item -ItemType Directory -Force -Path $caddyDir | Out-Null
+    $zip = Join-Path $env:TEMP 'caddy.zip'
+    $url = 'https://github.com/caddyserver/caddy/releases/download/v2.8.4/caddy_2.8.4_windows_amd64.zip'
+    try {
+        Invoke-WebRequest -Uri $url -OutFile $zip -UseBasicParsing
+    } catch {
+        Die "Could not download Caddy. Get caddy_windows_amd64.zip from https://caddyserver.com/download, and put caddy.exe in $caddyDir"
+    }
+    Expand-Archive -Path $zip -DestinationPath $caddyDir -Force
+    Remove-Item $zip -Force
+    Ok "Downloaded"
 }
 
-# ---- firewall -------------------------------------------------------------
+# ---- start a dedicated PHP server just for this ------------------------------
 
-Step "Opening the firewall for inbound HTTPS on the private network"
+Step "Starting a PHP server dedicated to LAN access on 127.0.0.1:$PhpPort"
 
-$ruleName = 'OPES360 LAN HTTPS'
+if (Get-NetTCPConnection -LocalPort $PhpPort -State Listen -ErrorAction SilentlyContinue) {
+    Ok "Already running"
+} else {
+    $env:PHP_CLI_SERVER_WORKERS = '8'
+    Start-Process -FilePath 'php' -ArgumentList @('-S', "127.0.0.1:$PhpPort", '-t', 'public', 'public/index.php') `
+        -WorkingDirectory $Root -WindowStyle Hidden
+    Start-Sleep -Seconds 1
+    Ok "Started"
+}
+
+# ---- write a standalone Caddyfile for this, on its own port -----------------
+
+Step "Writing a LAN-only Caddy config on port $LanPort"
+
+$publicPath   = (Join-Path $Root 'public') -replace '\\', '/'
+$lanCaddyfile = Join-Path $Root 'Caddyfile.lan'
+
+@"
+# Generated by scripts/windows/lan-access.ps1 - independent of the main
+# Caddyfile/Laragon vhost, so it never contends for port 443.
+{
+	local_certs
+	admin off
+}
+
+${lanIp}:${LanPort} {
+	tls internal
+
+	root * $publicPath
+
+	encode gzip
+
+	@build path /build/*
+	header @build Cache-Control "public, max-age=31536000, immutable"
+
+	@sw path /sw.js
+	header @sw Cache-Control "no-cache, must-revalidate"
+
+	@static file
+	handle @static {
+		file_server
+	}
+
+	handle {
+		reverse_proxy 127.0.0.1:$PhpPort
+	}
+}
+"@ | Set-Content -Path $lanCaddyfile -Encoding UTF8
+
+Ok "Written"
+
+# ---- (re)start the LAN caddy instance ----------------------------------------
+
+Step "Starting Caddy for LAN access"
+
+Get-CimInstance Win32_Process -Filter "Name = 'caddy.exe'" -ErrorAction SilentlyContinue |
+    Where-Object { $_.CommandLine -like '*Caddyfile.lan*' } |
+    ForEach-Object { Stop-Process -Id $_.ProcessId -Force -ErrorAction SilentlyContinue }
+Start-Sleep -Seconds 1
+
+Start-Process -FilePath $caddyExe -ArgumentList @('run', '--config', $lanCaddyfile) `
+    -WorkingDirectory $Root -WindowStyle Hidden
+Ok "Caddy started - it will mint a certificate for $lanIp on first request"
+
+# ---- firewall -----------------------------------------------------------------
+
+Step "Opening the firewall for inbound TCP $LanPort on the private network"
+
+$ruleName = "OPES360 LAN Access ($LanPort)"
 if (Get-NetFirewallRule -DisplayName $ruleName -ErrorAction SilentlyContinue) {
     Ok "Firewall rule already present"
 } else {
-    New-NetFirewallRule -DisplayName $ruleName -Direction Inbound -Protocol TCP -LocalPort 443 `
+    New-NetFirewallRule -DisplayName $ruleName -Direction Inbound -Protocol TCP -LocalPort $LanPort `
         -Profile Private -Action Allow | Out-Null
-    Ok "Added inbound rule for TCP 443 (Private networks only)"
+    Ok "Added"
 }
-
-if ($UseLaragon) {
-    Write-Host ""
-    Write-Host "  Phone (same WiFi) -> https://$lanIp" -ForegroundColor White
-    Write-Host ""
-    exit
-}
-
-# ---- extend the Caddyfile to also serve the LAN IP ----------------------------
-
-Step "Adding $lanIp to the Caddyfile"
-
-$content = Get-Content $caddyfilePath -Raw
-$escapedDomain = [regex]::Escape($Domain)
-
-if ($content -match "(?m)^$escapedDomain,\s*$([regex]::Escape($lanIp))\s*\{") {
-    Ok "Already configured for $lanIp"
-} elseif ($content -match "(?m)^$escapedDomain\s*\{") {
-    $content = [regex]::Replace($content, "(?m)^$escapedDomain\s*\{", "$Domain, $lanIp {")
-    Set-Content -Path $caddyfilePath -Value $content -NoNewline
-    Ok "Caddyfile now serves both $Domain and $lanIp"
-} else {
-    Die "Could not find a '$Domain {' block in the Caddyfile - has it been hand-edited? Add ', $lanIp' to the site address yourself and re-run."
-}
-
-# ---- restart caddy so it picks up the new site address and issues a cert ------
-
-Step "Restarting Caddy"
-
-$caddyExe = Join-Path $PSScriptRoot 'bin\caddy.exe'
-if (-not (Test-Path $caddyExe)) { Die "caddy.exe not found at $caddyExe - run install.ps1 first." }
-
-Get-Process caddy -ErrorAction SilentlyContinue | Stop-Process -Force
-Start-Sleep -Seconds 1
-Start-Process -FilePath $caddyExe -ArgumentList @('run', '--config', $caddyfilePath) `
-    -WorkingDirectory $Root -WindowStyle Hidden
-Ok "Caddy restarted - it will mint a certificate for $lanIp on first request"
 
 # ---- locate the local CA root so it can be copied to the phone ----------------
 
@@ -160,10 +219,39 @@ if ($caRoot) {
     Warn "It's under %AppData%\Caddy or %LocalAppData%\Caddy\pki\authorities\local\ - search for root.crt."
 }
 
+# ---- verify -------------------------------------------------------------------
+
+Step "Checking it actually answers"
+
+# -SkipCertificateCheck is PowerShell 7+ only; this works on Windows
+# PowerShell 5.1 too, which is what "powershell.exe" launches.
+$originalCertCallback = [System.Net.ServicePointManager]::ServerCertificateValidationCallback
+[System.Net.ServicePointManager]::ServerCertificateValidationCallback = { $true }
+
+$ready = $false
+try {
+    foreach ($i in 1..15) {
+        Start-Sleep -Seconds 2
+        try {
+            $r = Invoke-WebRequest "https://${lanIp}:${LanPort}/up" -UseBasicParsing -TimeoutSec 5
+            if ($r.StatusCode -eq 200) { $ready = $true; break }
+        } catch { }
+    }
+} finally {
+    [System.Net.ServicePointManager]::ServerCertificateValidationCallback = $originalCertCallback
+}
+
+if ($ready) {
+    Ok "https://${lanIp}:${LanPort} is answering"
+} else {
+    Warn "Did not answer within 30 seconds. Check storage\logs\laravel.log,"
+    Warn "and that nothing else already owns port $LanPort or $PhpPort."
+}
+
 # ---- done -----------------------------------------------------------------
 
 Write-Host ""
-Write-Host "  Phone (same WiFi) -> https://$lanIp" -ForegroundColor White
+Write-Host "  Phone (same WiFi) -> https://${lanIp}:${LanPort}" -ForegroundColor White
 Write-Host ""
 Write-Host "  The padlock will show a warning until the phone trusts this PC's CA." -ForegroundColor Gray
 Write-Host "  One-time, per phone:" -ForegroundColor Gray
@@ -171,9 +259,11 @@ Write-Host "    1. Send OPES360-local-CA.crt from the Desktop to the phone (emai
 Write-Host "    2. Android: open the file -> Install -> CA certificate." -ForegroundColor Gray
 Write-Host "       iOS: open it to install the profile, then Settings -> General ->" -ForegroundColor Gray
 Write-Host "       About -> Certificate Trust Settings -> turn full trust on for it." -ForegroundColor Gray
-Write-Host "    3. Reload https://$lanIp on the phone." -ForegroundColor Gray
+Write-Host "    3. Reload https://${lanIp}:${LanPort} on the phone." -ForegroundColor Gray
 Write-Host ""
-Write-Host "  Until then, https://$lanIp still works with a 'not secure' warning" -ForegroundColor Gray
-Write-Host "  you can click through - only the offline/PWA install features need" -ForegroundColor Gray
-Write-Host "  the trusted cert." -ForegroundColor Gray
+Write-Host "  Until then it still works with a 'not secure' warning you can click" -ForegroundColor Gray
+Write-Host "  through - only the offline/PWA install features need the trusted cert." -ForegroundColor Gray
+Write-Host ""
+Write-Host "  This runs independently of opes360.test - re-run this script any time" -ForegroundColor Gray
+Write-Host "  after a reboot to bring it back." -ForegroundColor Gray
 Write-Host ""

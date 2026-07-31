@@ -23,6 +23,8 @@
 Homestead.json
 Homestead.yaml
 Thumbs.db
+/Caddyfile
+/Caddyfile.lan
 
 # Agent worktrees and local Claude Code state — never project code.
 /.claude/
