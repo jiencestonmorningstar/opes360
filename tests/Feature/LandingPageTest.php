@@ -28,6 +28,19 @@ class LandingPageTest extends TestCase
             ->assertSee('3,000', false);
     }
 
+    /** Four slides of three cards apiece, to the right of the hero text. */
+    public function test_the_home_page_shows_a_four_slide_feature_slider(): void
+    {
+        $response = $this->get('/')->assertOk();
+
+        $response->assertSee('Opes Forms', false)
+            ->assertSee('Opes Events', false)
+            ->assertSee('Loyalty Program', false)
+            ->assertSee('Public Reviews', false)
+            ->assertSee('Offline-first', false)
+            ->assertSee('aria-label="Go to slide 4"', false);
+    }
+
     public function test_authenticated_users_still_see_the_dashboard_at_the_root(): void
     {
         $this->travelTo(Carbon::parse('2026-07-27 09:30:00', 'UTC'));
@@ -73,9 +86,41 @@ class LandingPageTest extends TestCase
             ->assertSee('210,000', false);
     }
 
+    public function test_the_pricing_page_shows_which_plan_unlocks_which_module(): void
+    {
+        $response = $this->get(route('marketing.pricing'))->assertOk();
+
+        $response->assertSee('What each plan unlocks')
+            ->assertSee('Opes Events (ticketing &amp; QR check-in)', false)
+            ->assertSee('Loyalty program &amp; printed cards', false)
+            ->assertSee('Opes Forms', false);
+    }
+
     public function test_the_contact_page_renders(): void
     {
         $this->get(route('marketing.contact'))->assertOk();
+    }
+
+    public function test_the_privacy_page_renders(): void
+    {
+        $this->get(route('marketing.privacy'))
+            ->assertOk()
+            ->assertSee('Privacy Policy');
+    }
+
+    public function test_the_terms_page_renders(): void
+    {
+        $this->get(route('marketing.terms'))
+            ->assertOk()
+            ->assertSee('Terms of Service');
+    }
+
+    public function test_footer_links_to_privacy_and_terms(): void
+    {
+        $this->get('/about')
+            ->assertOk()
+            ->assertSee(route('marketing.privacy'), false)
+            ->assertSee(route('marketing.terms'), false);
     }
 
     public function test_a_valid_contact_submission_queues_a_notification_and_redirects(): void

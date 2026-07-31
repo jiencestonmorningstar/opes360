@@ -39,6 +39,16 @@ class MarketingController extends Controller
         return view('marketing.contact');
     }
 
+    public function privacy()
+    {
+        return view('marketing.privacy');
+    }
+
+    public function terms()
+    {
+        return view('marketing.terms');
+    }
+
     public function storeContact(Request $request)
     {
         $data = $request->validate([

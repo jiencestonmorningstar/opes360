@@ -20,9 +20,15 @@
             </nav>
         </div>
 
-        <p class="mt-8 text-center text-[12.5px] text-muted sm:text-left">
-            Built by <a href="{{ config('opes.brand.vendor_url') }}" class="font-medium text-brand hover:underline">{{ config('opes.brand.vendor') }}</a>
-            &middot; &copy; {{ now()->year }}
-        </p>
+        <div class="mt-8 flex flex-col items-center justify-between gap-3 border-t border-border pt-6 sm:flex-row">
+            <p class="text-[12.5px] text-muted">
+                Built by <a href="{{ config('opes.brand.vendor_url') }}" class="font-medium text-brand hover:underline">{{ config('opes.brand.vendor') }}</a>
+                &middot; &copy; {{ now()->year }}
+            </p>
+            <nav class="flex gap-5 text-[12.5px] font-medium text-muted">
+                <a href="{{ route('marketing.privacy') }}" class="hover:text-brand">Privacy</a>
+                <a href="{{ route('marketing.terms') }}" class="hover:text-brand">Terms</a>
+            </nav>
+        </div>
     </div>
 </footer>

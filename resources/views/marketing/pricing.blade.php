@@ -48,6 +48,7 @@
                 'Everything in Basic',
                 'Business documents & letters',
                 'Statement of account',
+                'Opes Forms & public reviews',
                 'Custom letterhead & business card',
             ],
             'highlight' => true,
@@ -59,12 +60,33 @@
             'features' => [
                 'Unlimited team members',
                 'Everything in Growth',
+                'Opes Events ticketing',
+                'Loyalty program & cards',
                 'Priority support',
                 'Custom branding',
                 'Dedicated onboarding',
             ],
             'highlight' => false,
         ],
+    ];
+
+    // The benefits, spelled out module by module — the same list backs the
+    // three tiers above, so the two can never quietly drift apart.
+    $moduleAccess = [
+        ['module' => 'Sales, invoicing & receipts', 'basic' => true, 'growth' => true, 'business' => true],
+        ['module' => 'Customers & CRM', 'basic' => true, 'growth' => true, 'business' => true],
+        ['module' => 'Inventory', 'basic' => true, 'growth' => true, 'business' => true],
+        ['module' => 'Offline mode (PWA)', 'basic' => true, 'growth' => true, 'business' => true],
+        ['module' => 'QR verification', 'basic' => true, 'growth' => true, 'business' => true],
+        ['module' => 'Business documents & letters (26 templates)', 'basic' => false, 'growth' => true, 'business' => true],
+        ['module' => 'Statement of account', 'basic' => false, 'growth' => true, 'business' => true],
+        ['module' => 'Custom letterhead & business card designs', 'basic' => false, 'growth' => true, 'business' => true],
+        ['module' => 'Opes Forms (builder + website embed)', 'basic' => false, 'growth' => true, 'business' => true],
+        ['module' => 'Public reviews', 'basic' => false, 'growth' => true, 'business' => true],
+        ['module' => 'Email & in-app notifications', 'basic' => false, 'growth' => true, 'business' => true],
+        ['module' => 'Opes Events (ticketing & QR check-in)', 'basic' => false, 'growth' => false, 'business' => true],
+        ['module' => 'Loyalty program & printed cards', 'basic' => false, 'growth' => false, 'business' => true],
+        ['module' => 'Priority support', 'basic' => false, 'growth' => false, 'business' => true],
     ];
 @endphp
 
@@ -116,6 +138,45 @@
         <p class="mt-8 text-center text-[13px] text-faint">
             Prices shown in {{ \App\Support\Money::symbol('XAF') }} (Central African CFA franc). No card required to get started.
         </p>
+    </section>
+
+    {{-- The benefits: which plan unlocks which module, spelled out. --}}
+    <section class="border-t border-border py-14 sm:py-16">
+        <div class="mx-auto max-w-6xl px-5">
+            <div class="mx-auto max-w-2xl text-center">
+                <h2 class="text-[24px] font-bold tracking-[-0.02em] text-ink sm:text-[28px]">What each plan unlocks</h2>
+                <p class="mt-3 text-[14.5px] text-muted">Every module the platform offers, and the plan it's included from.</p>
+            </div>
+
+            <div class="mt-8 overflow-x-auto">
+                <table class="w-full min-w-[520px] border-collapse text-[14px]">
+                    <thead>
+                        <tr class="border-b border-border">
+                            <th class="px-3 py-3 text-left font-semibold text-ink-2">Module</th>
+                            @foreach ($tiers as $tier)
+                                <th class="px-3 py-3 text-center font-semibold {{ $tier['highlight'] ? 'text-brand' : 'text-ink-2' }}">{{ $tier['name'] }}</th>
+                            @endforeach
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach ($moduleAccess as $row)
+                            <tr class="border-b border-border last:border-0">
+                                <td class="px-3 py-3 text-ink-2">{{ $row['module'] }}</td>
+                                @foreach (['basic', 'growth', 'business'] as $key)
+                                    <td class="px-3 py-3 text-center">
+                                        @if ($row[$key])
+                                            <x-icon name="check-circle" class="mx-auto size-[18px] text-positive" stroke-width="2" />
+                                        @else
+                                            <span class="text-faint">—</span>
+                                        @endif
+                                    </td>
+                                @endforeach
+                            </tr>
+                        @endforeach
+                    </tbody>
+                </table>
+            </div>
+        </div>
     </section>
 
     <section class="border-t border-border py-16 text-center sm:py-20">
