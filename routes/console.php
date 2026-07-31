@@ -31,3 +31,12 @@ Schedule::command('opes:expire-leases')
 Schedule::command('model:prune', ['--model' => [SyncReceipt::class]])
     ->daily()
     ->at('03:15');
+
+/*
+ * Demo accounts convert to a free trial 14 days after signup, automatically
+ * and without locking anyone out. Daily is enough — nothing time-critical
+ * depends on the exact hour it flips.
+ */
+Schedule::command('opes:convert-expired-demos')
+    ->daily()
+    ->at('03:30');

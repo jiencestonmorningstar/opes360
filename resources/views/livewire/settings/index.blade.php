@@ -12,6 +12,26 @@
         <p class="mt-1 text-[14.5px] text-muted">Your account, your team, your devices.</p>
     </div>
 
+    {{-- Demo account (start/end delimited) --}}
+    @if ($company?->isDemo())
+        <div class="card mt-5 flex flex-wrap items-center justify-between gap-3 border-brand/30 bg-tint-blue p-5">
+            <div>
+                <p class="text-[14.5px] font-bold text-ink">You're on a demo account</p>
+                <p class="mt-0.5 text-[13px] text-ink-2">
+                    @php $days = $company->demoDaysLeft(); @endphp
+                    {{ $days === null ? 'Runs for 14 days, then moves to a free trial automatically.' : ($days.' '.\Illuminate\Support\Str::plural('day', $days).' left, then it moves to a free trial automatically.') }}
+                </p>
+            </div>
+            @can('business.update')
+                <button type="button" wire:click="endDemo" wire:confirm="End the demo now and start your free trial?"
+                        class="tap focusable shrink-0 rounded-xl bg-brand px-4 py-2.5 text-[13.5px] font-semibold text-white transition-opacity hover:opacity-90">
+                    End demo & start free trial
+                </button>
+            @endcan
+        </div>
+    @endif
+    {{-- /Demo account --}}
+
     <div class="mt-5 grid gap-4 lg:grid-cols-2">
 
         {{-- Profile --}}

@@ -84,6 +84,7 @@
         <p class="mt-5 text-center text-[13.5px] text-muted">
             New to {{ config('opes.brand.name') }}?
             <a href="{{ route('register') }}" class="font-semibold text-brand hover:underline">Create your business</a>
+            · <a href="{{ route('demo.request') }}" class="font-semibold text-brand hover:underline">Try a demo</a>
         </p>
     </div>
 

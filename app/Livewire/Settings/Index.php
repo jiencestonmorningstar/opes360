@@ -122,6 +122,18 @@ class Index extends Component
         session()->flash('twoFactorStatus', 'Two-factor authentication is off.');
     }
 
+    /** Ends the demo clock early. Gated the same as everything else on this business. */
+    public function endDemo(): void
+    {
+        $this->authorize('business.update');
+
+        $company = app(CurrentCompany::class)->get();
+
+        if ($company !== null && $company->isDemo()) {
+            $company->endDemo();
+        }
+    }
+
     public function revokeDevice(string $deviceId): void
     {
         $this->authorize('devices.revoke');

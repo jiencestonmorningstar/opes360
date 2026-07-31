@@ -33,7 +33,33 @@ class Company extends Model
             // Encrypted at rest; tax_id_index carries lookups.
             'tax_id' => 'encrypted',
             'vat_number' => 'encrypted',
+            'demo_expires_at' => 'datetime',
         ];
+    }
+
+    public function isDemo(): bool
+    {
+        return $this->account_type === 'demo';
+    }
+
+    public function isTrial(): bool
+    {
+        return $this->account_type === 'trial';
+    }
+
+    public function demoDaysLeft(): ?int
+    {
+        if (! $this->isDemo() || $this->demo_expires_at === null) {
+            return null;
+        }
+
+        return max(0, (int) now()->diffInDays($this->demo_expires_at, false));
+    }
+
+    /** Ends the demo clock immediately and moves to a free trial. */
+    public function endDemo(): void
+    {
+        $this->forceFill(['account_type' => 'trial', 'demo_expires_at' => null])->save();
     }
 
     public function getRouteKeyName(): string

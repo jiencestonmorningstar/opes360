@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\AuthController;
+use App\Http\Controllers\DemoRequestController;
 use App\Http\Controllers\EventPublicController;
 use App\Http\Controllers\FormExportController;
 use App\Http\Controllers\FormPublicController;
@@ -64,6 +65,17 @@ Route::middleware('guest')->group(function () {
     // is reachable by a guest — the session holds only a pending user id.
     Route::get('/two-factor', [AuthController::class, 'showChallenge'])->name('two-factor.challenge');
     Route::post('/two-factor', [AuthController::class, 'challenge'])->name('two-factor.verify');
+});
+
+/*
+ * Public demo request: the whole point is zero friction between "let me try
+ * this" and a working, populated account in the visitor's inbox, so it sits
+ * outside both the guest and auth groups — reachable either way.
+ */
+Route::middleware('throttle:10,1')->group(function () {
+    Route::get('/demo', [DemoRequestController::class, 'show'])->name('demo.request');
+    Route::post('/demo', [DemoRequestController::class, 'store'])->name('demo.store');
+    Route::get('/demo/thanks', [DemoRequestController::class, 'thanks'])->name('demo.thanks');
 });
 
 Route::post('/logout', function (Request $request) {
