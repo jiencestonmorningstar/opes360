@@ -5,7 +5,7 @@
 $Root = Split-Path (Split-Path $PSScriptRoot -Parent) -Parent
 
 if (-not (Test-Path (Join-Path $Root 'Caddyfile'))) {
-    Write-Host "This install used Laragon — stop it from its own tray icon, not this script." -ForegroundColor Yellow
+    Write-Host "This install used Laragon - stop it from its own tray icon, not this script." -ForegroundColor Yellow
     exit
 }
 

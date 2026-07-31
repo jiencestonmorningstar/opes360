@@ -12,12 +12,12 @@ $Root = Split-Path (Split-Path $PSScriptRoot -Parent) -Parent
 Set-Location $Root
 
 if (-not (Test-Path (Join-Path $Root '.env'))) {
-    Write-Host "No .env — run install.ps1 first." -ForegroundColor Red
+    Write-Host "No .env - run install.ps1 first." -ForegroundColor Red
     exit 1
 }
 
 if (-not (Test-Path (Join-Path $Root 'Caddyfile'))) {
-    Write-Host "No Caddyfile — this install used Laragon, which starts with Windows." -ForegroundColor Yellow
+    Write-Host "No Caddyfile - this install used Laragon, which starts with Windows." -ForegroundColor Yellow
     Write-Host "Check the Laragon tray icon; nothing here to start." -ForegroundColor Yellow
     Start-Process "https://$Domain"
     exit

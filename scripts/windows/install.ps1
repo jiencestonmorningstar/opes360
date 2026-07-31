@@ -8,7 +8,7 @@
 
     Certificates come from Caddy, which runs its own certificate authority and
     installs it into the Windows trust store. That matters for more than the
-    padlock — the service worker will not register on an untrusted origin, so
+    padlock - the service worker will not register on an untrusted origin, so
     without it the offline half of the product silently does nothing.
 
     Run from an ADMINISTRATOR PowerShell. Editing the hosts file and adding a
@@ -55,7 +55,7 @@ function Ok($text)   { Write-Host "    $text" -ForegroundColor Green }
 function Warn($text) { Write-Host "    $text" -ForegroundColor Yellow }
 function Die($text)  { Write-Host "`nFAILED: $text" -ForegroundColor Red; exit 1 }
 
-Write-Host "OPES360 — local setup at https://$Domain" -ForegroundColor White
+Write-Host "OPES360 - local setup at https://$Domain" -ForegroundColor White
 
 # ---- prerequisites -----------------------------------------------------------
 
@@ -95,14 +95,14 @@ if (-not (Test-Path (Join-Path $Root 'vendor\autoload.php'))) {
     Die "vendor/ is missing. Use the release archive (it includes vendor), or run 'composer install'."
 }
 if (-not (Test-Path (Join-Path $Root 'public\build\manifest.json'))) {
-    Warn "public/build is missing — the site will render unstyled. Run 'npm ci; npm run build' if you cloned from git."
+    Warn "public/build is missing - the site will render unstyled. Run 'npm ci; npm run build' if you cloned from git."
 }
 Ok "Application files in place"
 
 # ---- laragon -------------------------------------------------------------
 
 # Laragon runs its own Apache/nginx on 80/443 and its own DNS resolver for
-# every *.test hostname derived from a folder name under laragon\www — that
+# every *.test hostname derived from a folder name under laragon\www - that
 # is exactly what this script would otherwise install Caddy to do, and two
 # servers cannot both bind port 443. Detect it and hand off instead of
 # fighting it. Laragon also auto-detects a Laravel project (the presence of
@@ -110,13 +110,13 @@ Ok "Application files in place"
 $UseLaragon = (Test-Path 'C:\laragon\laragon.exe') -or (Get-Process laragon -ErrorAction SilentlyContinue)
 
 if ($UseLaragon) {
-    Ok "Laragon detected — it will serve the site instead of Caddy"
+    Ok "Laragon detected - it will serve the site instead of Caddy"
 }
 
 # ---- hosts file --------------------------------------------------------------
 
 if ($UseLaragon) {
-    Step "Skipping the hosts file — Laragon resolves *.test itself"
+    Step "Skipping the hosts file - Laragon resolves *.test itself"
 } else {
     Step "Pointing $Domain at this machine"
 
@@ -180,7 +180,7 @@ if ($mysql) {
     }
     Ok "Database '$DbName' ready"
 } else {
-    Warn "The mysql client is not on PATH — create the database yourself:"
+    Warn "The mysql client is not on PATH - create the database yourself:"
     Warn "  CREATE DATABASE $DbName CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;"
     Read-Host "Press Enter once the database exists"
 }
@@ -216,7 +216,7 @@ Set-EnvValue 'DB_DATABASE' $DbName
 Set-EnvValue 'DB_USERNAME' $DbUser
 Set-EnvValue 'DB_PASSWORD' $DbPassword
 # Mail is written to storage/logs/laravel.log rather than sent. Reset links are
-# still generated and still work — you read them out of the log.
+# still generated and still work - you read them out of the log.
 Set-EnvValue 'MAIL_MAILER' 'log'
 # Caddy (or Laragon's own Apache/nginx) terminates TLS in front of PHP.
 # Without this Laravel decides the request is plain http and builds every URL
@@ -238,7 +238,7 @@ if (-not (Select-String -Path $envPath -Pattern '^APP_KEY=base64:' -Quiet)) {
 Step "Setting up the schema"
 
 & php artisan migrate --force
-if ($LASTEXITCODE -ne 0) { Die "Migration failed — check the database credentials above." }
+if ($LASTEXITCODE -ne 0) { Die "Migration failed - check the database credentials above." }
 
 if (-not $SkipSeed) {
     $hasData = (& php artisan tinker --execute="echo App\Models\Company::withoutGlobalScopes()->count();" 2>$null | Select-Object -Last 1)
@@ -246,7 +246,7 @@ if (-not $SkipSeed) {
         & php artisan db:seed --force
         Ok "Demo business seeded"
     } else {
-        Ok "Existing data found — not seeding over it"
+        Ok "Existing data found - not seeding over it"
     }
 }
 
@@ -300,7 +300,7 @@ if ($UseLaragon) {
     }
 
     Write-Host ""
-    Write-Host "  Nothing else to start or stop — Laragon manages the web server." -ForegroundColor Gray
+    Write-Host "  Nothing else to start or stop - Laragon manages the web server." -ForegroundColor Gray
     Write-Host ""
 
 } else {
@@ -322,7 +322,7 @@ $Domain {
 	tls internal
 
 	# Static files come off disk. Without this every asset is proxied to PHP,
-	# which routes it through Laravel and returns an HTML 404 — the stylesheet
+	# which routes it through Laravel and returns an HTML 404 - the stylesheet
 	# then fails MIME checking and the page renders unstyled.
 	root * $publicPath
 
@@ -365,7 +365,7 @@ $Domain {
     Start-Process -FilePath $caddyExe `
         -ArgumentList @('run', '--config', (Join-Path $Root 'Caddyfile')) `
         -WorkingDirectory $Root -WindowStyle Hidden
-    Ok "Caddy started — it will ask to trust its certificate the first time"
+    Ok "Caddy started - it will ask to trust its certificate the first time"
 
     Step "Waiting for the site"
 
