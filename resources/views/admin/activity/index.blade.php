@@ -3,6 +3,26 @@
         <h1 class="text-[24px] font-bold tracking-[-0.02em] text-ink">Admin activity</h1>
         <p class="mt-1 text-[14px] text-muted">Every write any platform admin has made, across every business.</p>
 
+        <form method="GET" class="mt-5 flex flex-wrap gap-2.5">
+            <label for="admin" class="sr-only">Filter by admin</label>
+            <select id="admin" name="admin" class="h-11 rounded-xl border border-border bg-surface px-3.5 text-[14px] text-ink" onchange="this.form.submit()">
+                <option value="">All admins</option>
+                @foreach ($admins as $adminOption)
+                    <option value="{{ $adminOption->id }}" @selected($selectedAdmin == $adminOption->id)>{{ $adminOption->name }}</option>
+                @endforeach
+            </select>
+            <label for="action" class="sr-only">Filter by action</label>
+            <select id="action" name="action" class="h-11 rounded-xl border border-border bg-surface px-3.5 text-[14px] text-ink" onchange="this.form.submit()">
+                <option value="">All actions</option>
+                @foreach ($actions as $actionOption)
+                    <option value="{{ $actionOption }}" @selected($selectedAction === $actionOption)>{{ str_replace('_', ' ', $actionOption) }}</option>
+                @endforeach
+            </select>
+            @if ($selectedAdmin || $selectedAction)
+                <a href="{{ route('admin.activity') }}" class="focusable flex h-11 items-center px-2 text-[13px] font-semibold text-muted hover:text-ink-2">Clear</a>
+            @endif
+        </form>
+
         <div class="mt-5 card overflow-hidden p-0">
             <div class="divide-y divide-border">
                 @forelse ($activity as $entry)

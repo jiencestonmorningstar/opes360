@@ -73,6 +73,11 @@ class Company extends Model
         return $this->morphMany(PlatformAdminActivity::class, 'subject');
     }
 
+    public function notes(): HasMany
+    {
+        return $this->hasMany(CompanyNote::class);
+    }
+
     /** Points earned for a given spend, rounded down — no fractional points. */
     public function loyaltyPointsFor(float $amountSpent): int
     {

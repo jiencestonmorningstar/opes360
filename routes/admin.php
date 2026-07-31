@@ -40,6 +40,10 @@ Route::prefix('admin')->name('admin.')->group(function () {
         Route::get('/', [AdminDashboardController::class, 'index'])->name('dashboard');
 
         Route::get('/companies', [AdminCompanyController::class, 'index'])->name('companies');
+        // Must be registered before /companies/{company} — otherwise the
+        // {company} wildcard matches "export" first and 404s trying to
+        // resolve it as a slug.
+        Route::get('/companies/export', [AdminCompanyController::class, 'export'])->name('companies.export');
         // withTrashed(): "full read access to everything" has to include a
         // business that has since been deleted, not just active ones — the
         // suspend/activate/plan actions below deliberately do NOT get this,
@@ -54,6 +58,9 @@ Route::prefix('admin')->name('admin.')->group(function () {
         Route::post('/companies/{company}/plan', [AdminCompanyController::class, 'updatePlan'])->name('companies.plan')->middleware('admin.role');
         Route::post('/companies/{company}/members/{member}/remove', [AdminCompanyController::class, 'removeMember'])->name('companies.members.remove');
         Route::post('/companies/{company}/members/{member}/reset-password', [AdminCompanyController::class, 'resetMemberPassword'])->name('companies.members.reset-password');
+        Route::post('/companies/{company}/extend-demo', [AdminCompanyController::class, 'extendDemo'])->name('companies.extend-demo');
+        Route::post('/companies/{company}/end-demo', [AdminCompanyController::class, 'endDemo'])->name('companies.end-demo');
+        Route::post('/companies/{company}/notes', [AdminCompanyController::class, 'addNote'])->name('companies.notes.store');
 
         Route::get('/admins', [PlatformAdminsController::class, 'index'])->name('admins');
         Route::post('/admins', [PlatformAdminsController::class, 'store'])->name('admins.store')->middleware('admin.role');

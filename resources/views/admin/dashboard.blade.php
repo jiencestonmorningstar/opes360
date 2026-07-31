@@ -22,6 +22,18 @@
             @endforeach
         </div>
 
+        <div class="mt-6 card p-5">
+            <p class="text-[15px] font-bold text-ink">New businesses per week</p>
+            <p class="mt-0.5 text-[12.5px] text-muted">Last 12 weeks, including demo and trial signups.</p>
+            <x-ui.bar-chart
+                class="mt-5"
+                :series="collect($weeklySignups)->map(fn ($week, $i) => [
+                    'label' => $i % 3 === 0 ? $week['label'] : '',
+                    'value' => $week['count'],
+                    'highlight' => $i === count($weeklySignups) - 1,
+                ])->all()" />
+        </div>
+
         <div class="mt-6 grid gap-5 lg:grid-cols-[1.3fr_1fr]">
             <div class="card overflow-hidden p-0">
                 <div class="flex items-center justify-between border-b border-border px-5 py-3.5">

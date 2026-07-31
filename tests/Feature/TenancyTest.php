@@ -4,6 +4,7 @@ namespace Tests\Feature;
 
 use App\Models\ActivityLog;
 use App\Models\Company;
+use App\Models\CompanyNote;
 use App\Models\CompanyUserPermission;
 use App\Models\Concerns\BelongsToCompany;
 use App\Models\Contact;
@@ -112,6 +113,11 @@ class TenancyTest extends TestCase
             // about a company that is not the current one, which the global scope
             // would silently filter out. Every query against it passes company_id.
             CompanyUserPermission::class,
+
+            // Platform-admin-only annotations about a business, not tenant data —
+            // no business user or company-scoped query ever touches this table.
+            // Same rationale as ActivityLog above.
+            CompanyNote::class,
         ];
 
         $files = glob(app_path('Models/*.php'));

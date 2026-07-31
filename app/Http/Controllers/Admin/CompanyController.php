@@ -3,9 +3,12 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Models\Company;
+use App\Models\CompanyNote;
+use App\Models\Contact;
 use App\Models\Document;
 use App\Models\Event;
 use App\Models\Form;
+use App\Models\Item;
 use App\Models\PlatformAdminActivity;
 use App\Models\User;
 use App\Notifications\CompanyPlanChangedNotification;
@@ -27,10 +30,24 @@ class CompanyController extends Controller
 {
     public function index(Request $request)
     {
-        $query = Company::query()->withCount('users');
-        $status = $request->query('status');
+        [$query, $search, $status, $sort] = $this->filteredCompanies($request);
 
-        if ($search = trim((string) $request->query('search'))) {
+        return view('admin.companies.index', [
+            'companies' => $query->paginate(20)->withQueryString(),
+            'search' => $search,
+            'status' => $status,
+            'sort' => $sort,
+        ]);
+    }
+
+    /** Shared by index() (paginated) and export() (the full filtered set as CSV). */
+    protected function filteredCompanies(Request $request): array
+    {
+        $query = Company::query()->withCount('users');
+        $status = $request->query('status', '');
+        $search = trim((string) $request->query('search'));
+
+        if ($search !== '') {
             $like = '%'.str_replace(['%', '_'], ['\%', '\_'], $search).'%';
             $query->where(fn ($q) => $q->where('name', 'like', $like)->orWhere('email', 'like', $like));
         }
@@ -52,12 +69,35 @@ class CompanyController extends Controller
             default => $query->latest(),
         };
 
-        return view('admin.companies.index', [
-            'companies' => $query->paginate(20)->withQueryString(),
-            'search' => $search,
-            'status' => $request->query('status', ''),
-            'sort' => $sort,
-        ]);
+        return [$query, $search, $status, $sort];
+    }
+
+    /** CSV of the current filtered list — respects search/status/sort exactly like the page does. */
+    public function export(Request $request)
+    {
+        [$query] = $this->filteredCompanies($request);
+
+        $filename = 'companies-'.now()->format('Y-m-d').'.csv';
+
+        return response()->streamDownload(function () use ($query) {
+            $out = fopen('php://output', 'w');
+            fputcsv($out, ['Name', 'Email', 'Plan', 'Status', 'Users', 'Created']);
+
+            $query->chunk(200, function ($companies) use ($out) {
+                foreach ($companies as $company) {
+                    fputcsv($out, [
+                        $company->name,
+                        $company->email,
+                        $company->plan,
+                        $company->trashed() ? 'deleted' : ($company->isSuspended() ? 'suspended' : $company->account_type),
+                        $company->users_count,
+                        $company->created_at->toDateString(),
+                    ]);
+                }
+            });
+
+            fclose($out);
+        }, $filename, ['Content-Type' => 'text/csv']);
     }
 
     public function show(Company $company)
@@ -76,9 +116,25 @@ class CompanyController extends Controller
             'recentDocuments' => $scoped(Document::class)->with('contact')->latest()->limit(8)->get(),
             'formCount' => $scoped(Form::class)->count(),
             'eventCount' => $scoped(Event::class)->count(),
+            'contactCount' => $scoped(Contact::class)->count(),
+            'itemCount' => $scoped(Item::class)->count(),
             'recentActivity' => $company->platformAdminActivity()->with('admin')->latest()->limit(15)->get(),
+            'notes' => $company->notes()->with('admin')->latest()->get(),
             'plans' => PlanEntitlements::PLANS,
         ]);
+    }
+
+    public function addNote(Request $request, Company $company)
+    {
+        $data = $request->validate(['body' => ['required', 'string', 'max:2000']]);
+
+        CompanyNote::create([
+            'company_id' => $company->id,
+            'platform_admin_id' => $request->user('admin')->id,
+            'body' => $data['body'],
+        ]);
+
+        return back()->with('status', 'Note added.');
     }
 
     public function suspend(Request $request, Company $company)
@@ -161,5 +217,36 @@ class CompanyController extends Controller
         ]);
 
         return back()->with('status', "Password reset link sent to {$member->email}.");
+    }
+
+    public function extendDemo(Request $request, Company $company)
+    {
+        abort_unless($company->isDemo(), 404);
+
+        $data = $request->validate(['days' => ['required', 'integer', 'min:1', 'max:90']]);
+
+        // Extends from the later of "now" and the current expiry, so
+        // extending an already-expired demo doesn't just add days onto a
+        // date in the past and leave it still expired.
+        $from = $company->demo_expires_at?->max(now()) ?? now();
+        $company->forceFill(['demo_expires_at' => $from->addDays($data['days'])])->save();
+
+        PlatformAdminActivity::log($request->user('admin'), 'extended_demo', $company, [
+            'days' => $data['days'],
+            'new_expiry' => $company->demo_expires_at->toDateString(),
+        ]);
+
+        return back()->with('status', "Demo extended {$data['days']} days, now expiring {$company->demo_expires_at->format('M j, Y')}.");
+    }
+
+    public function endDemo(Request $request, Company $company)
+    {
+        abort_unless($company->isDemo(), 404);
+
+        $company->endDemo();
+
+        PlatformAdminActivity::log($request->user('admin'), 'ended_demo_early', $company);
+
+        return back()->with('status', 'Demo ended — the business now has an open-ended trial.');
     }
 }

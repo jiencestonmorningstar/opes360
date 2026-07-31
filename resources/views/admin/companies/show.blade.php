@@ -34,9 +34,11 @@
             </div>
         </div>
 
-        <div class="mt-6 grid grid-cols-2 gap-4 sm:grid-cols-5">
+        <div class="mt-6 grid grid-cols-2 gap-4 sm:grid-cols-4 lg:grid-cols-7">
             @foreach ([
                 ['label' => 'Users', 'value' => $company->users_count, 'icon' => 'users'],
+                ['label' => 'Contacts', 'value' => $contactCount, 'icon' => 'user'],
+                ['label' => 'Items', 'value' => $itemCount, 'icon' => 'cube'],
                 ['label' => 'Documents', 'value' => $documentCount, 'icon' => 'document'],
                 ['label' => 'Forms', 'value' => $formCount, 'icon' => 'clipboard'],
                 ['label' => 'Events', 'value' => $eventCount, 'icon' => 'ticket'],
@@ -102,6 +104,41 @@
                 <p class="mt-2 text-[12px] text-faint">Suspending locks every user out immediately; nothing is deleted.</p>
             </div>
         </div>
+
+        @if ($company->isDemo())
+            <div class="mt-5 card p-5">
+                <p class="flex items-center gap-2 text-[15px] font-bold text-ink">
+                    <x-icon name="spark" class="size-[18px] text-faint" stroke-width="1.8" />
+                    Demo
+                </p>
+                <p class="mt-1 text-[13px] text-muted">
+                    @if ($company->demo_expires_at)
+                        Expires {{ $company->demo_expires_at->format('M j, Y') }}
+                        ({{ $company->demoDaysLeft() }} {{ \Illuminate\Support\Str::plural('day', $company->demoDaysLeft()) }} left)
+                    @else
+                        No expiry set.
+                    @endif
+                </p>
+                <div class="mt-3 flex flex-wrap gap-2.5">
+                    <form method="POST" action="{{ route('admin.companies.extend-demo', $company) }}" class="flex gap-2">
+                        @csrf
+                        <select name="days" class="h-11 rounded-lg border border-border bg-surface px-3 text-[14px] text-ink">
+                            @foreach ([7 => '7 days', 14 => '14 days', 30 => '30 days'] as $value => $label)
+                                <option value="{{ $value }}">{{ $label }}</option>
+                            @endforeach
+                        </select>
+                        <button type="submit" class="tap focusable h-11 shrink-0 rounded-lg bg-ink px-4 text-[13.5px] font-semibold text-white">Extend</button>
+                    </form>
+                    <form method="POST" action="{{ route('admin.companies.end-demo', $company) }}"
+                          onsubmit="return confirm('End the demo now and move {{ $company->name }} to an open-ended trial?')">
+                        @csrf
+                        <button type="submit" class="tap focusable flex h-11 items-center justify-center rounded-lg border border-border px-4 text-[13.5px] font-semibold text-ink-2 hover:bg-surface-2">
+                            End demo now → trial
+                        </button>
+                    </form>
+                </div>
+            </div>
+        @endif
         @endunless
 
         <div class="mt-5 card overflow-hidden p-0">
@@ -156,6 +193,34 @@
                         @endunless
                     </div>
                 @endforeach
+            </div>
+        </div>
+
+        <div class="mt-5 card overflow-hidden p-0">
+            <p class="flex items-center gap-2 border-b border-border px-5 py-3.5 text-[15px] font-bold text-ink">
+                <x-icon name="clipboard" class="size-[18px] text-faint" stroke-width="1.8" />
+                Notes
+            </p>
+
+            @unless ($company->trashed())
+                <form method="POST" action="{{ route('admin.companies.notes.store', $company) }}" class="border-b border-border p-4">
+                    @csrf
+                    <textarea name="body" rows="2" placeholder="Add a note for other admins — e.g. what was discussed, what was promised…" required
+                              class="w-full rounded-lg border border-border bg-surface px-3 py-2 text-[13.5px] text-ink placeholder:text-faint focus:border-brand focus:outline-none focus:ring-2 focus:ring-brand/20"></textarea>
+                    @error('body') <p class="mt-1 text-[12px] font-medium text-warning">{{ $message }}</p> @enderror
+                    <button type="submit" class="tap focusable mt-2 h-9 rounded-lg bg-ink px-4 text-[13px] font-semibold text-white">Add note</button>
+                </form>
+            @endunless
+
+            <div class="divide-y divide-border">
+                @forelse ($notes as $note)
+                    <div class="px-5 py-3">
+                        <p class="whitespace-pre-line text-[13.5px] text-ink-2">{{ $note->body }}</p>
+                        <p class="mt-1 text-[12px] text-faint">{{ $note->admin?->name ?? 'Unknown admin' }} · {{ $note->created_at->diffForHumans() }}</p>
+                    </div>
+                @empty
+                    <p class="px-5 py-6 text-center text-[13.5px] text-muted">No notes yet.</p>
+                @endforelse
             </div>
         </div>
 

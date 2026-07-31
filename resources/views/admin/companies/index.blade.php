@@ -1,7 +1,16 @@
 <x-layouts.admin title="Companies" active="companies">
     <div class="px-5 py-8 lg:px-8">
-        <h1 class="text-[24px] font-bold tracking-[-0.02em] text-ink">Companies</h1>
-        <p class="mt-1 text-[14px] text-muted">{{ $companies->total() }} {{ \Illuminate\Support\Str::plural('business', $companies->total()) }} on the platform.</p>
+        <div class="flex items-start justify-between gap-3">
+            <div>
+                <h1 class="text-[24px] font-bold tracking-[-0.02em] text-ink">Companies</h1>
+                <p class="mt-1 text-[14px] text-muted">{{ $companies->total() }} {{ \Illuminate\Support\Str::plural('business', $companies->total()) }} on the platform.</p>
+            </div>
+            <a href="{{ route('admin.companies.export', request()->query()) }}"
+               class="tap focusable flex h-10 shrink-0 items-center gap-2 rounded-lg border border-border px-3.5 text-[13px] font-semibold text-ink-2 hover:bg-surface-2">
+                <x-icon name="document" class="size-[16px]" stroke-width="1.8" />
+                Export CSV
+            </a>
+        </div>
 
         <form method="GET" class="mt-5 flex flex-wrap gap-2.5">
             <div class="relative min-w-[220px] flex-1">

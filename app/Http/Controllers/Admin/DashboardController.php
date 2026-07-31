@@ -45,7 +45,37 @@ class DashboardController extends Controller
                 'business' => $activeByPlan->get('business', 0),
             ],
             'recentCompanies' => Company::query()->latest()->limit(10)->get(),
+            'weeklySignups' => $this->weeklySignups(),
             'plans' => PlanEntitlements::PLANS,
         ]);
+    }
+
+    /**
+     * Signups per week for the last 12 weeks. Grouped in PHP rather than a
+     * DB-side date-bucket function: MySQL and SQLite (dev/tests) disagree on
+     * those function names, and the query is already bounded to 12 weeks of
+     * rows, so there's nothing to gain from pushing the grouping into SQL.
+     *
+     * @return array<int, array{label: string, count: int}>
+     */
+    protected function weeklySignups(): array
+    {
+        $since = now()->subWeeks(11)->startOfWeek();
+
+        $byWeek = Company::query()
+            ->where('created_at', '>=', $since)
+            ->get(['created_at'])
+            ->groupBy(fn (Company $c) => $c->created_at->startOfWeek()->toDateString());
+
+        return collect(range(0, 11))
+            ->map(function (int $i) use ($since, $byWeek) {
+                $weekStart = $since->copy()->addWeeks($i);
+
+                return [
+                    'label' => $weekStart->format('M j'),
+                    'count' => $byWeek->get($weekStart->toDateString(), collect())->count(),
+                ];
+            })
+            ->all();
     }
 }
