@@ -5,6 +5,10 @@
 
     $phones = collect($company->phones ?? []);
     $whatsapp = data_get($company->socials, 'whatsapp');
+    $reviewAverage = $reviews->isNotEmpty() ? number_format($reviews->avg('rating'), 1) : null;
+
+    $inputClass = 'h-12 w-full rounded-xl border border-border bg-surface px-3.5 text-[14.5px] text-ink placeholder:text-faint focus:border-brand focus:outline-none focus:ring-2 focus:ring-brand/20';
+    $labelClass = 'mb-1.5 block text-[13px] font-semibold text-ink-2 text-left';
 @endphp
 
 <!DOCTYPE html>
@@ -48,11 +52,18 @@
             <p class="mt-1 text-[14.5px] text-muted">{{ $company->motto }}</p>
         @endif
 
-        <div class="mt-3 flex items-center gap-1.5 rounded-full bg-tint-green px-3.5 py-1.5">
-            <x-icon name="check-circle" class="size-[16px] text-positive" stroke-width="2.2" />
-            <span class="text-[12.5px] font-semibold text-positive">Verified business</span>
-            @if ($businessToken)
-                <a href="{{ route('verification.show', $businessToken->token) }}" class="sr-only">Verification details</a>
+        <div class="mt-3 flex flex-wrap items-center justify-center gap-2">
+            <span class="flex items-center gap-1.5 rounded-full bg-tint-green px-3.5 py-1.5">
+                <x-icon name="check-circle" class="size-[16px] text-positive" stroke-width="2.2" />
+                <span class="text-[12.5px] font-semibold text-positive">Verified business</span>
+                @if ($businessToken)
+                    <a href="{{ route('verification.show', $businessToken->token) }}" class="sr-only">Verification details</a>
+                @endif
+            </span>
+            @if ($reviewAverage)
+                <a href="#reviews" class="focusable rounded-full bg-tint-orange px-3.5 py-1.5 text-[12.5px] font-semibold text-warning">
+                    ★ {{ $reviewAverage }} / 5 · {{ $reviews->count() }} {{ str('review')->plural($reviews->count()) }}
+                </a>
             @endif
         </div>
 
@@ -131,6 +142,83 @@
             </div>
         </div>
     @endif
+
+    {{-- Reviews: published only — submissions stay hidden until moderated --}}
+    @if ($reviews->isNotEmpty())
+        <div id="reviews" class="card mt-4 p-6">
+            <div class="flex items-center justify-between gap-3">
+                <h2 class="text-[16px] font-bold text-ink">What customers say</h2>
+                <span class="tnum shrink-0 text-[13px] font-semibold text-warning">★ {{ $reviewAverage }} / 5</span>
+            </div>
+            <div class="mt-4 space-y-3">
+                @foreach ($reviews as $review)
+                    <div class="rounded-xl bg-surface-2 p-4">
+                        <span class="text-[13px] tracking-[0.15em]" aria-label="{{ $review->rating }} out of 5 stars">
+                            <span class="text-warning">{{ str_repeat('★', $review->rating) }}</span><span class="text-faint">{{ str_repeat('☆', 5 - $review->rating) }}</span>
+                        </span>
+                        <p class="mt-2 text-[13.5px] leading-relaxed text-ink-2">{{ $review->body }}</p>
+                        <p class="mt-2 text-[12px] font-semibold text-muted">
+                            {{ $review->author_name }} · {{ $review->created_at->format('j M Y') }}
+                        </p>
+                    </div>
+                @endforeach
+            </div>
+        </div>
+    @endif
+
+    {{-- Leave a review --}}
+    <div class="card mt-4 p-6">
+        <h2 class="text-[16px] font-bold text-ink">Leave a review</h2>
+
+        @if (session('review_status'))
+            <div class="mt-4 rounded-xl bg-tint-green px-4 py-3 text-[13.5px] font-semibold text-positive">
+                {{ session('review_status') }}
+            </div>
+        @else
+            <form method="POST" action="{{ route('profile.business.review', $company) }}" class="mt-4 space-y-4 text-left">
+                @csrf
+
+                {{-- Honeypot: invisible to people, irresistible to bots. --}}
+                <div class="hidden" aria-hidden="true">
+                    <label>Website
+                        <input type="text" name="website_url" tabindex="-1" autocomplete="off">
+                    </label>
+                </div>
+
+                <label class="block">
+                    <span class="{{ $labelClass }}">Your name</span>
+                    <input type="text" name="author_name" value="{{ old('author_name') }}" maxlength="80" class="{{ $inputClass }}">
+                    @error('author_name') <p class="mt-1 text-left text-[12.5px] font-medium text-warning">{{ $message }}</p> @enderror
+                </label>
+
+                <fieldset>
+                    <legend class="{{ $labelClass }}">Rating</legend>
+                    <div class="grid grid-cols-5 gap-2">
+                        @for ($i = 1; $i <= 5; $i++)
+                            <label class="focusable flex h-11 cursor-pointer items-center justify-center gap-1 rounded-xl border border-border bg-surface text-[13.5px] font-semibold text-ink-2 hover:bg-surface-2 has-checked:border-brand has-checked:bg-tint-blue has-checked:text-brand">
+                                <input type="radio" name="rating" value="{{ $i }}" class="sr-only" @checked((int) old('rating') === $i)>
+                                {{ $i }}<span aria-hidden="true">★</span>
+                            </label>
+                        @endfor
+                    </div>
+                    @error('rating') <p class="mt-1 text-left text-[12.5px] font-medium text-warning">{{ $message }}</p> @enderror
+                </fieldset>
+
+                <label class="block">
+                    <span class="{{ $labelClass }}">Comment</span>
+                    <textarea name="body" rows="4" maxlength="2000" placeholder="How was your experience?"
+                              class="w-full rounded-xl border border-border bg-surface px-3.5 py-3 text-[14.5px] text-ink placeholder:text-faint focus:border-brand focus:outline-none focus:ring-2 focus:ring-brand/20">{{ old('body') }}</textarea>
+                    @error('body') <p class="mt-1 text-left text-[12.5px] font-medium text-warning">{{ $message }}</p> @enderror
+                </label>
+
+                <button type="submit"
+                        class="focusable flex h-12 w-full items-center justify-center rounded-xl bg-brand text-[15px] font-semibold text-white hover:opacity-90">
+                    Submit Review
+                </button>
+                <p class="text-center text-[12px] text-faint">Reviews appear once the business approves them.</p>
+            </form>
+        @endif
+    </div>
 
     <p class="mt-7 text-center text-[12px] text-faint">
         Powered by <span class="font-semibold"><span class="text-ink">{{ config('opes.brand.name_prefix') }}</span><span class="text-brand">{{ config('opes.brand.name_suffix') }}</span></span>

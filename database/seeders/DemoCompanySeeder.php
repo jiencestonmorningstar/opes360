@@ -7,6 +7,7 @@ use App\Enums\DocumentType;
 use App\Models\Artisan;
 use App\Models\ArtisanTestimonial;
 use App\Models\Company;
+use App\Models\CompanyReview;
 use App\Models\Contact;
 use App\Models\Document;
 use App\Models\DocumentLine;
@@ -156,6 +157,7 @@ class DemoCompanySeeder extends Seeder
         $this->seedExpenses($customers);
 
         $this->seedArtisans();
+        $this->seedReviews();
         $this->seedForms();
         $this->seedEvent();
         $this->recomputeContactBalances();
@@ -251,6 +253,27 @@ class DemoCompanySeeder extends Seeder
             'checked_in_by' => $this->owner->id,
             'paid_at' => now()->subDays(2),
         ])->save();
+    }
+
+    /** Three published reviews on the public business profile. */
+    protected function seedReviews(): void
+    {
+        $reviews = [
+            ['Adaeze Okafor', 5, 'They set up our invoicing and receipts in one afternoon. Support on WhatsApp actually replies.', 12],
+            ['Ibrahim Musa', 4, 'Solid work on our branding and stationery. Delivery slipped by a day but the quality made up for it.', 7],
+            ['Funke Adeyemi', 5, 'Professional team. The verified profile page has already brought us two new corporate clients.', 2],
+        ];
+
+        foreach ($reviews as [$author, $rating, $body, $daysAgo]) {
+            CompanyReview::create([
+                'author_name' => $author,
+                'rating' => $rating,
+                'body' => $body,
+                'is_published' => true,
+                'created_at' => $this->today->subDays($daysAgo),
+                'updated_at' => $this->today->subDays($daysAgo),
+            ]);
+        }
     }
 
     /** Two artisans with public, verified profiles (Module 5). */
@@ -361,6 +384,7 @@ class DemoCompanySeeder extends Seeder
         Ticket::query()->delete();
         TicketType::query()->delete();
         Event::query()->forceDelete();
+        CompanyReview::query()->delete();
         ArtisanTestimonial::query()->delete();
         Artisan::query()->forceDelete();
         PaymentAllocation::query()->delete();

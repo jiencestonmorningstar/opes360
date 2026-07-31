@@ -3,6 +3,7 @@
 namespace App\Livewire\Business;
 
 use App\Models\Company;
+use App\Models\CompanyReview;
 use App\Models\VerificationToken;
 use App\Support\CurrentCompany;
 use Illuminate\Contracts\View\View;
@@ -111,6 +112,7 @@ class Edit extends Component
         return view('livewire.business.edit', [
             'company' => $company,
             'businessToken' => $this->businessToken($company),
+            'pendingReviews' => CompanyReview::query()->where('is_published', false)->count(),
         ])->layout('components.layouts.app', ['title' => 'Business', 'active' => 'business']);
     }
 

@@ -4,10 +4,12 @@ namespace App\Http\Controllers;
 
 use App\Models\Artisan;
 use App\Models\Company;
+use App\Models\CompanyReview;
 use App\Models\Item;
 use App\Models\Scopes\CompanyScope;
 use App\Models\VerificationToken;
 use App\Support\CurrentCompany;
+use Illuminate\Http\Request;
 use Illuminate\Routing\Controller;
 
 /**
@@ -30,7 +32,37 @@ class ProfileController extends Controller
                 ->where('subject_id', $company->id)
                 ->first(),
             'items' => Item::query()->active()->orderBy('name')->limit(8)->get(),
+            'reviews' => CompanyReview::query()->published()->latest()->get(),
         ]));
+    }
+
+    /**
+     * A visitor's review. Stored unpublished — nothing appears publicly until
+     * the business approves it on the moderation screen.
+     */
+    public function submitReview(Request $request, Company $company)
+    {
+        // Honeypot: humans never see the field, bots fill it. Answer exactly as
+        // if the review were accepted so the bot learns nothing.
+        if ($request->filled('website_url')) {
+            return redirect()->route('profile.business', $company)
+                ->with('review_status', 'Thanks — your review is awaiting approval.');
+        }
+
+        $data = $request->validate([
+            'author_name' => ['required', 'string', 'max:80'],
+            'rating' => ['required', 'integer', 'min:1', 'max:5'],
+            'body' => ['required', 'string', 'max:2000'],
+        ]);
+
+        app(CurrentCompany::class)->as($company, fn () => CompanyReview::create($data + [
+            'is_published' => false,
+            // Hashed, never raw: enough to group repeat abuse for triage.
+            'submitted_ip_hash' => $request->ip() ? hash('sha256', $request->ip()) : null,
+        ]));
+
+        return redirect()->route('profile.business', $company)
+            ->with('review_status', 'Thanks — your review is awaiting approval.');
     }
 
     /**
