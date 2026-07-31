@@ -11,7 +11,7 @@
             </div>
             <select name="status" class="h-11 rounded-xl border border-border bg-surface px-3.5 text-[14px] text-ink">
                 <option value="">All statuses</option>
-                @foreach (['demo' => 'Demo', 'trial' => 'Trial', 'active' => 'Active'] as $key => $label)
+                @foreach (['demo' => 'Demo', 'trial' => 'Trial', 'active' => 'Active', 'deleted' => 'Deleted'] as $key => $label)
                     <option value="{{ $key }}" @selected($status === $key)>{{ $label }}</option>
                 @endforeach
             </select>
@@ -32,8 +32,8 @@
                         <span class="hidden shrink-0 rounded-full bg-surface-2 px-2.5 py-1 text-[11px] font-bold uppercase tracking-wide text-ink-2 sm:inline-block">
                             {{ $company->plan }}
                         </span>
-                        <span class="shrink-0 rounded-full px-2.5 py-1 text-[11px] font-bold uppercase tracking-wide {{ $company->isSuspended() ? 'bg-tint-orange text-warning' : 'bg-surface-2 text-faint' }}">
-                            {{ $company->isSuspended() ? 'Suspended' : $company->account_type }}
+                        <span class="shrink-0 rounded-full px-2.5 py-1 text-[11px] font-bold uppercase tracking-wide {{ $company->trashed() ? 'bg-surface-2 text-faint' : ($company->isSuspended() ? 'bg-tint-orange text-warning' : 'bg-surface-2 text-faint') }}">
+                            {{ $company->trashed() ? 'Deleted' : ($company->isSuspended() ? 'Suspended' : $company->account_type) }}
                         </span>
                         <x-icon name="chevron-right" class="hidden size-[18px] shrink-0 text-faint sm:block" stroke-width="2.2" />
                     </a>

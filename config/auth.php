@@ -113,6 +113,16 @@ return [
             'expire' => 60,
             'throttle' => 60,
         ],
+
+        // A dedicated broker/table so an admin's reset tokens never share
+        // storage with a business user's, even if the two email addresses
+        // happen to collide.
+        'platform_admins' => [
+            'provider' => 'platform_admins',
+            'table' => 'platform_admin_password_reset_tokens',
+            'expire' => 60,
+            'throttle' => 60,
+        ],
     ],
 
     /*

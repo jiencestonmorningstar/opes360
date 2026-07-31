@@ -56,6 +56,17 @@
                        class="mt-1.5 h-12 w-full rounded-xl border border-border bg-surface px-4 text-[15px] text-ink placeholder:text-faint focus:border-brand focus:outline-none focus:ring-2 focus:ring-brand/20">
             </div>
 
+            <div class="flex items-center justify-between gap-3 pt-1">
+                <label class="flex items-center gap-2.5 text-[14px] text-ink-2">
+                    <input type="checkbox" name="remember" value="1"
+                           class="size-[18px] rounded border-border-strong text-brand focus:ring-brand/30">
+                    Keep me signed in
+                </label>
+                <a href="{{ route('admin.password.request') }}" class="text-[13px] font-semibold text-brand hover:underline">
+                    Forgot password?
+                </a>
+            </div>
+
             <button type="submit"
                     class="tap focusable mt-2 flex h-12 w-full items-center justify-center rounded-xl bg-ink text-[15px] font-semibold text-white transition-opacity hover:opacity-90">
                 Sign in

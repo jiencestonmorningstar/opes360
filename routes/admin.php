@@ -15,6 +15,13 @@ Route::prefix('admin')->name('admin.')->group(function () {
     Route::middleware('guest:admin')->group(function () {
         Route::view('/login', 'admin.auth.login')->name('login');
         Route::post('/login', [AdminAuthController::class, 'login'])->name('login.attempt');
+
+        Route::view('/forgot-password', 'admin.auth.forgot-password')->name('password.request');
+        Route::post('/forgot-password', [AdminAuthController::class, 'sendResetLink'])->name('password.email');
+
+        Route::get('/reset-password/{token}', fn (string $token) => view('admin.auth.reset-password', ['token' => $token]))
+            ->name('password.reset');
+        Route::post('/reset-password', [AdminAuthController::class, 'resetPassword'])->name('password.update');
     });
 
     Route::middleware('auth:admin')->group(function () {
@@ -23,7 +30,11 @@ Route::prefix('admin')->name('admin.')->group(function () {
         Route::get('/', [AdminDashboardController::class, 'index'])->name('dashboard');
 
         Route::get('/companies', [AdminCompanyController::class, 'index'])->name('companies');
-        Route::get('/companies/{company}', [AdminCompanyController::class, 'show'])->name('companies.show');
+        // withTrashed(): "full read access to everything" has to include a
+        // business that has since been deleted, not just active ones — the
+        // suspend/activate/plan actions below deliberately do NOT get this,
+        // since acting on a deleted company isn't a meaningful operation.
+        Route::get('/companies/{company}', [AdminCompanyController::class, 'show'])->name('companies.show')->withTrashed();
         Route::post('/companies/{company}/suspend', [AdminCompanyController::class, 'suspend'])->name('companies.suspend');
         Route::post('/companies/{company}/activate', [AdminCompanyController::class, 'activate'])->name('companies.activate');
         Route::post('/companies/{company}/plan', [AdminCompanyController::class, 'updatePlan'])->name('companies.plan');

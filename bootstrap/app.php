@@ -4,6 +4,7 @@ use App\Http\Middleware\SecurityHeaders;
 use App\Http\Middleware\SetCurrentCompany;
 use Illuminate\Auth\Middleware\Authenticate;
 use Illuminate\Auth\Middleware\Authorize;
+use Illuminate\Auth\Middleware\RedirectIfAuthenticated;
 use Illuminate\Contracts\Auth\Middleware\AuthenticatesRequests;
 use Illuminate\Contracts\Session\Middleware\AuthenticatesSessions;
 use Illuminate\Cookie\Middleware\AddQueuedCookiesToResponse;
@@ -39,6 +40,14 @@ return Application::configure(basePath: dirname(__DIR__))
         // login, not the business one — the two guards share no session.
         Authenticate::redirectUsing(function ($request) {
             return $request->routeIs('admin.*') ? route('admin.login') : route('login');
+        });
+
+        // The mirror case: an admin who is already signed in and revisits
+        // /admin/login must land back on /admin, not on the business
+        // dashboard route — the framework default has no guard awareness
+        // and would otherwise route them to a page their session can't use.
+        RedirectIfAuthenticated::redirectUsing(function ($request) {
+            return $request->routeIs('admin.*') ? route('admin.dashboard') : route('dashboard');
         });
 
         $middleware->trustProxies(

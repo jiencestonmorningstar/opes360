@@ -21,16 +21,20 @@ class CompanyController extends Controller
     public function index(Request $request)
     {
         $query = Company::query()->withCount('users')->latest();
+        $status = $request->query('status');
 
         if ($search = trim((string) $request->query('search'))) {
             $like = '%'.str_replace(['%', '_'], ['\%', '\_'], $search).'%';
             $query->where(fn ($q) => $q->where('name', 'like', $like)->orWhere('email', 'like', $like));
         }
 
-        if ($status = $request->query('status')) {
-            in_array($status, ['demo', 'trial', 'active'], true)
-                ? $query->where('account_type', $status)
-                : null;
+        // 'deleted' is a separate branch, not a where() on the normal query:
+        // Company uses SoftDeletes, so the default query already excludes
+        // trashed rows and needs onlyTrashed() to see them at all.
+        if ($status === 'deleted') {
+            $query->onlyTrashed();
+        } elseif (in_array($status, ['demo', 'trial', 'active'], true)) {
+            $query->where('account_type', $status);
         }
 
         return view('admin.companies.index', [

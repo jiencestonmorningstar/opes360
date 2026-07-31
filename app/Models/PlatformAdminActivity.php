@@ -4,6 +4,8 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Support\Facades\Request;
+use Illuminate\Support\Str;
 
 /**
  * Every write a platform admin makes against a business — suspend, activate,
@@ -36,6 +38,10 @@ class PlatformAdminActivity extends Model
             'subject_type' => $company ? Company::class : null,
             'subject_id' => $company?->id,
             'meta' => $meta,
+            // Captured here rather than passed in by every caller, so no
+            // future admin action can accidentally ship without it.
+            'ip_address' => Request::ip(),
+            'user_agent' => Str::limit((string) Request::userAgent(), 512, ''),
         ]);
     }
 }

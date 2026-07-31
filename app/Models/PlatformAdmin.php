@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Notifications\AdminResetPassword;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
@@ -22,11 +23,22 @@ class PlatformAdmin extends Authenticatable
 
     protected function casts(): array
     {
-        return ['email_verified_at' => 'datetime'];
+        return [
+            'email_verified_at' => 'datetime',
+            // The password reset flow assigns a plain password expecting
+            // this cast to hash it — without it, resetPassword() would
+            // write a plaintext password straight into the column.
+            'password' => 'hashed',
+        ];
     }
 
     public function activity(): HasMany
     {
         return $this->hasMany(PlatformAdminActivity::class);
+    }
+
+    public function sendPasswordResetNotification(#[\SensitiveParameter] $token): void
+    {
+        $this->notify(new AdminResetPassword($token));
     }
 }

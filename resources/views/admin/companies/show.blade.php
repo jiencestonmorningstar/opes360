@@ -12,6 +12,13 @@
             </div>
         @endif
 
+        @if ($company->trashed())
+            <div class="mt-4 flex items-center gap-2.5 rounded-xl bg-surface-2 px-4 py-3 text-[13.5px] font-medium text-ink-2">
+                <x-icon name="alert" class="size-[18px] shrink-0 text-faint" stroke-width="2" />
+                This business was deleted on {{ $company->deleted_at->format('M j, Y') }}. Read-only — plan and access controls are disabled.
+            </div>
+        @endif
+
         <div class="mt-4 flex items-start gap-4">
             <span class="flex size-14 shrink-0 items-center justify-center rounded-2xl bg-surface-2 text-[18px] font-bold text-ink-2">
                 {{ strtoupper(substr($company->name, 0, 2)) }}
@@ -19,8 +26,8 @@
             <div class="min-w-0 flex-1">
                 <div class="flex flex-wrap items-center gap-2.5">
                     <h1 class="text-[22px] font-bold tracking-[-0.02em] text-ink">{{ $company->name }}</h1>
-                    <span class="shrink-0 rounded-full px-3 py-1 text-[11.5px] font-bold uppercase tracking-wide {{ $company->isSuspended() ? 'bg-tint-orange text-warning' : 'bg-tint-green text-positive' }}">
-                        {{ $company->isSuspended() ? 'Suspended' : $company->account_type }}
+                    <span class="shrink-0 rounded-full px-3 py-1 text-[11.5px] font-bold uppercase tracking-wide {{ $company->trashed() ? 'bg-surface-2 text-faint' : ($company->isSuspended() ? 'bg-tint-orange text-warning' : 'bg-tint-green text-positive') }}">
+                        {{ $company->trashed() ? 'Deleted' : ($company->isSuspended() ? 'Suspended' : $company->account_type) }}
                     </span>
                 </div>
                 <p class="mt-1 text-[13.5px] text-muted">{{ $company->email }} · created {{ $company->created_at->format('M j, Y') }}</p>
@@ -41,6 +48,7 @@
             @endforeach
         </div>
 
+        @unless ($company->trashed())
         <div class="mt-5 grid gap-5 sm:grid-cols-2">
             <div class="card p-5">
                 <p class="flex items-center gap-2 text-[15px] font-bold text-ink">
@@ -74,6 +82,7 @@
                 <p class="mt-2 text-[12px] text-faint">Suspending locks every user out immediately; nothing is deleted.</p>
             </div>
         </div>
+        @endunless
 
         <div class="mt-5 card overflow-hidden p-0">
             <p class="flex items-center gap-2 border-b border-border px-5 py-3.5 text-[15px] font-bold text-ink">
@@ -108,6 +117,9 @@
                             <span class="font-semibold">{{ $entry->admin?->name ?? 'Unknown admin' }}</span>
                             {{ str_replace('_', ' ', $entry->action) }}
                             <span class="text-faint">· {{ $entry->created_at->diffForHumans() }}</span>
+                            @if ($entry->ip_address)
+                                <span class="text-faint">· {{ $entry->ip_address }}</span>
+                            @endif
                         </div>
                     @endforeach
                 </div>
