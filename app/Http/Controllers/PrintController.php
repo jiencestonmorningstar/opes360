@@ -84,6 +84,9 @@ class PrintController extends Controller
                 : 'circular',
             'name' => $request->string('name')->toString() ?: $request->user()->name,
             'title' => $request->string('title')->toString() ?: 'Business Owner',
+            // The design lives on the company, not the URL: a saved link keeps
+            // producing whatever the business currently has chosen.
+            'design' => $company->cardDesign(),
             // Sized per asset: a card QR is physically small, a letterhead's larger.
             'qrSvg' => $qr->svg($token->publicUrl(), $asset === 'letterhead' ? 150 : 110),
         ]);
