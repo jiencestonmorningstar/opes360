@@ -38,9 +38,9 @@
             </p>
 
             <div class="mt-8 flex flex-col items-center justify-center gap-3 sm:flex-row">
-                <a href="{{ route('register') }}"
+                <a href="{{ route('demo.request') }}"
                    class="tap focusable flex h-12 w-full items-center justify-center rounded-xl bg-brand px-6 text-[15px] font-semibold text-white transition-opacity hover:opacity-90 sm:w-auto">
-                    Create your business
+                    Try a demo
                 </a>
                 <a href="{{ route('marketing.pricing') }}"
                    class="tap focusable flex h-12 w-full items-center justify-center rounded-xl border border-border bg-surface px-6 text-[15px] font-semibold text-ink transition-colors hover:border-brand/40 sm:w-auto">
@@ -121,9 +121,9 @@
             <h2 class="text-[26px] font-bold tracking-[-0.02em] text-ink sm:text-[30px]">Ready to get started?</h2>
             <p class="mt-3 text-[15px] text-muted">Set up your business in a few minutes — no card required.</p>
             <div class="mt-7 flex flex-col items-center justify-center gap-3 sm:flex-row">
-                <a href="{{ route('register') }}"
+                <a href="{{ route('demo.request') }}"
                    class="tap focusable flex h-12 w-full items-center justify-center rounded-xl bg-brand px-6 text-[15px] font-semibold text-white transition-opacity hover:opacity-90 sm:w-auto">
-                    Create your business
+                    Try a demo
                 </a>
                 <a href="{{ route('marketing.contact') }}"
                    class="tap focusable flex h-12 w-full items-center justify-center rounded-xl border border-border bg-surface px-6 text-[15px] font-semibold text-ink transition-colors hover:border-brand/40 sm:w-auto">

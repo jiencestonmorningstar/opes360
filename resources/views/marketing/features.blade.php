@@ -62,9 +62,9 @@
         <h2 class="text-[24px] font-bold tracking-[-0.02em] text-ink sm:text-[28px]">Ready to get started?</h2>
         <p class="mx-auto mt-3 max-w-md text-[14.5px] text-muted">Set up your business in a few minutes — no card required.</p>
         <div class="mt-7 flex flex-col items-center justify-center gap-3 sm:flex-row">
-            <a href="{{ route('register') }}"
+            <a href="{{ route('demo.request') }}"
                class="tap focusable flex h-12 w-full items-center justify-center rounded-xl bg-brand px-6 text-[15px] font-semibold text-white transition-opacity hover:opacity-90 sm:w-auto">
-                Create your business
+                Try a demo
             </a>
             <a href="{{ route('marketing.pricing') }}"
                class="tap focusable flex h-12 w-full items-center justify-center rounded-xl border border-border bg-surface px-6 text-[15px] font-semibold text-ink transition-colors hover:border-brand/40 sm:w-auto">

@@ -60,9 +60,9 @@
         </div>
 
         <div class="mt-10 flex flex-col gap-3 sm:flex-row">
-            <a href="{{ route('register') }}"
+            <a href="{{ route('demo.request') }}"
                class="tap focusable flex h-12 items-center justify-center rounded-xl bg-brand px-6 text-[15px] font-semibold text-white transition-opacity hover:opacity-90">
-                Create your business
+                Try a demo
             </a>
             <a href="{{ route('marketing.contact') }}"
                class="tap focusable flex h-12 items-center justify-center rounded-xl border border-border bg-surface px-6 text-[15px] font-semibold text-ink transition-colors hover:border-brand/40">

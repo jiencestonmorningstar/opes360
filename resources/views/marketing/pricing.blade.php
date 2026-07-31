@@ -105,7 +105,7 @@
                         @endforeach
                     </ul>
 
-                    <a href="{{ route('register') }}"
+                    <a href="{{ route('demo.request') }}"
                        class="tap focusable mt-7 flex h-12 w-full items-center justify-center rounded-xl text-[15px] font-semibold transition-opacity hover:opacity-90 {{ $tier['highlight'] ? 'bg-brand text-white' : 'border border-border bg-surface text-ink' }}">
                         Get started
                     </a>
