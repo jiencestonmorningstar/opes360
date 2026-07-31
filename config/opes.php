@@ -31,6 +31,9 @@ return [
             ['label' => 'Business Owner', 'detail' => 'Full access to everything', 'email' => 'john@opesware.com'],
             ['label' => 'Sales Officer', 'detail' => 'Day-to-day sales and customers', 'email' => 'sales@opesware.com'],
         ],
+        // Seeded by PlatformAdminSeeder — shares the flag and password above so
+        // turning demo logins off hides this one-tap sign-in too.
+        'admin_email' => 'admin@opes360.com',
     ],
 
     /*

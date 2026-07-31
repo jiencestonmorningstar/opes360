@@ -15,10 +15,10 @@ class PlatformAdminSeeder extends Seeder
     public function run(): void
     {
         PlatformAdmin::updateOrCreate(
-            ['email' => 'admin@opes360.com'],
+            ['email' => config('opes.demo.admin_email')],
             [
                 'name' => 'Platform Admin',
-                'password' => Hash::make('password'),
+                'password' => Hash::make(config('opes.demo.password')),
                 'email_verified_at' => now(),
             ],
         );
