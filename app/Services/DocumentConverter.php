@@ -26,6 +26,8 @@ class DocumentConverter
     protected const TARGETS = [
         'quotation' => DocumentType::Invoice,
         'proforma' => DocumentType::Invoice,
+        // A finished job becomes the bill for it.
+        'work_order' => DocumentType::Invoice,
         'invoice' => DocumentType::CreditNote,
     ];
 
@@ -35,8 +37,8 @@ class DocumentConverter
             return false;
         }
 
-        // A quotation already turned into an invoice must not spawn a second one.
-        if ($document->type === DocumentType::Quotation || $document->type === DocumentType::Proforma) {
+        // A source already turned into an invoice must not spawn a second one.
+        if (in_array($document->type, [DocumentType::Quotation, DocumentType::Proforma, DocumentType::WorkOrder], true)) {
             return ! Document::query()
                 ->where('parent_document_id', $document->id)
                 ->invoices()

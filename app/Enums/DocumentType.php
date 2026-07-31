@@ -11,6 +11,9 @@ enum DocumentType: string
     case DeliveryNote = 'delivery_note';
     case CreditNote = 'credit_note';
     case DebitNote = 'debit_note';
+    case WorkOrder = 'work_order';
+    case GoodsReceivedNote = 'goods_received_note';
+    case Waybill = 'waybill';
 
     public function label(): string
     {
@@ -22,6 +25,9 @@ enum DocumentType: string
             self::DeliveryNote => 'Delivery Note',
             self::CreditNote => 'Credit Note',
             self::DebitNote => 'Debit Note',
+            self::WorkOrder => 'Work Order',
+            self::GoodsReceivedNote => 'Goods Received Note',
+            self::Waybill => 'Waybill',
         };
     }
 
@@ -36,6 +42,9 @@ enum DocumentType: string
             self::DeliveryNote => 'DN',
             self::CreditNote => 'CN',
             self::DebitNote => 'DBN',
+            self::WorkOrder => 'WO',
+            self::GoodsReceivedNote => 'GRN',
+            self::Waybill => 'WB',
         };
     }
 

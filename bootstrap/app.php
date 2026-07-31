@@ -45,6 +45,17 @@ return Application::configure(basePath: dirname(__DIR__))
             SetCurrentCompany::class,
         ]);
 
+        /*
+         * The embedded form submit runs inside other people's websites, where
+         * third-party cookie rules strip our session cookie — so the CSRF
+         * token could never match. The check is also pointless there: CSRF
+         * protects cookie-authenticated actions, and this endpoint is public,
+         * throttled, and validates a capability URL (the share token) instead.
+         */
+        $middleware->validateCsrfTokens(except: [
+            'f/*/embed',
+        ]);
+
         // Applied globally so public verification and profile pages — the ones a
         // stranger opens from a printed code — are covered too.
         $middleware->append(SecurityHeaders::class);

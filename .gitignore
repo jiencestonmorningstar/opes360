@@ -1,5 +1,6 @@
 *.log
 .DS_Store
+/build
 .env
 .env.backup
 .env.production
@@ -22,3 +23,6 @@
 Homestead.json
 Homestead.yaml
 Thumbs.db
+
+# Agent worktrees and local Claude Code state — never project code.
+/.claude/

@@ -18,6 +18,22 @@ return [
     ],
 
     /*
+     * One-tap demo sign-ins on the login page. These are ordinary POSTs of the
+     * seeded demo credentials through the real login flow — same throttling,
+     * same session handling, no separate auth path — so switching them off is
+     * purely cosmetic. Off is the right setting the moment real businesses
+     * hold data in this install.
+     */
+    'demo' => [
+        'enabled' => env('OPES_DEMO_LOGINS', true),
+        'password' => 'password',
+        'accounts' => [
+            ['label' => 'Business Owner', 'detail' => 'Full access to everything', 'email' => 'john@opesware.com'],
+            ['label' => 'Sales Officer', 'detail' => 'Day-to-day sales and customers', 'email' => 'sales@opesware.com'],
+        ],
+    ],
+
+    /*
      * Full navigation. `primary` marks the five entries that appear in the mobile
      * bottom bar; everything else is reachable from the sidebar on desktop and the
      * "More" sheet on mobile.
@@ -33,6 +49,8 @@ return [
         ['key' => 'business', 'label' => 'Business', 'icon' => 'briefcase', 'route' => 'business', 'primary' => true, 'ability' => 'business.view'],
         ['key' => 'products', 'label' => 'Products', 'icon' => 'cube', 'route' => 'products', 'ability' => 'products.view'],
         ['key' => 'papers', 'label' => 'Documents', 'icon' => 'document', 'route' => 'papers', 'ability' => 'papers.view'],
+        ['key' => 'forms', 'label' => 'Forms', 'icon' => 'clipboard', 'route' => 'forms', 'ability' => 'forms.view'],
+        ['key' => 'events', 'label' => 'Events', 'icon' => 'ticket', 'route' => 'events', 'ability' => 'events.view'],
         ['key' => 'reports', 'label' => 'Reports', 'icon' => 'chart-bar', 'route' => 'reports', 'ability' => 'reports.view'],
         ['key' => 'payments', 'label' => 'Payments', 'icon' => 'credit-card', 'route' => 'payments', 'ability' => 'payments.view'],
         ['key' => 'calendar', 'label' => 'Calendar', 'icon' => 'calendar', 'route' => 'calendar', 'ability' => 'sales.view'],
@@ -52,11 +70,14 @@ return [
     'quick_actions' => [
         ['label' => 'New Invoice', 'icon' => 'document-plus', 'accent' => 'blue', 'route' => 'documents.create', 'params' => ['type' => 'invoice'], 'ability' => 'sales.create'],
         ['label' => 'New Quotation', 'icon' => 'document', 'accent' => 'green', 'route' => 'documents.create', 'params' => ['type' => 'quotation'], 'ability' => 'sales.create'],
+        ['label' => 'New Proforma', 'icon' => 'document', 'accent' => 'teal', 'route' => 'documents.create', 'params' => ['type' => 'proforma'], 'ability' => 'sales.create'],
         ['label' => 'New Receipt', 'icon' => 'printer', 'accent' => 'orange', 'route' => 'payments', 'ability' => 'receipts.create'],
         ['label' => 'Add Customer', 'icon' => 'user-plus', 'accent' => 'purple', 'route' => 'customers.create', 'ability' => 'customers.create'],
         ['label' => 'Add Product', 'icon' => 'cube', 'accent' => 'blue', 'route' => 'products.create', 'ability' => 'products.create'],
         ['label' => 'Record Payment', 'icon' => 'banknotes', 'accent' => 'teal', 'route' => 'sales', 'params' => ['state' => 'pending'], 'ability' => 'payments.record'],
         ['label' => 'New Contract', 'icon' => 'document', 'accent' => 'slate', 'route' => 'papers', 'ability' => 'papers.create'],
+        ['label' => 'New Form', 'icon' => 'clipboard', 'accent' => 'purple', 'route' => 'forms', 'ability' => 'forms.create'],
+        ['label' => 'New Event', 'icon' => 'ticket', 'accent' => 'orange', 'route' => 'events.create', 'ability' => 'events.create'],
         ['label' => 'Scan QR', 'icon' => 'qr-code', 'accent' => 'pink', 'route' => 'scan'],
         ['label' => 'More', 'icon' => 'ellipsis', 'accent' => 'slate', 'route' => 'help'],
     ],

@@ -6,17 +6,23 @@ use App\Models\Artisan;
 use App\Models\BusinessDocument;
 use App\Models\Contact;
 use App\Models\Document;
+use App\Models\Event;
+use App\Models\Form;
 use App\Models\Item;
 use App\Models\Payment;
 use App\Models\Receipt;
+use App\Models\Ticket;
 use App\Models\User;
 use App\Policies\ArtisanPolicy;
 use App\Policies\BusinessDocumentPolicy;
 use App\Policies\ContactPolicy;
 use App\Policies\DocumentPolicy;
+use App\Policies\EventPolicy;
+use App\Policies\FormPolicy;
 use App\Policies\ItemPolicy;
 use App\Policies\PaymentPolicy;
 use App\Policies\ReceiptPolicy;
+use App\Policies\TicketPolicy;
 use App\Support\CurrentCompany;
 use App\Support\Permissions;
 use Illuminate\Foundation\Support\Providers\AuthServiceProvider as ServiceProvider;
@@ -32,6 +38,9 @@ class AuthServiceProvider extends ServiceProvider
         Receipt::class => ReceiptPolicy::class,
         Artisan::class => ArtisanPolicy::class,
         BusinessDocument::class => BusinessDocumentPolicy::class,
+        Form::class => FormPolicy::class,
+        Event::class => EventPolicy::class,
+        Ticket::class => TicketPolicy::class,
     ];
 
     public function boot(): void

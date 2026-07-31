@@ -13,30 +13,42 @@ From an **Administrator PowerShell**, in the extracted release folder:
 .\scripts\windows\install.ps1
 ```
 
-It does everything: checks PHP and its extensions, adds the hosts entry,
-downloads Caddy, creates the database, writes `.env`, generates the app key,
-migrates, seeds the demo business, builds the caches, writes the web-server
-config, starts both processes, waits for the site to answer, and opens it.
+It does everything: checks PHP and its extensions, creates the database,
+writes `.env`, generates the app key, migrates, seeds the demo business, and
+builds the caches. What serves the site depends on what it finds:
 
-Windows will ask once to trust Caddy's certificate authority. **Say yes** — the
-service worker will not register on an untrusted origin, so declining leaves the
-offline half of the product silently doing nothing.
+- **Laragon installed** (e.g. the project lives in `C:\laragon\www\opes360`) —
+  it hands off to Laragon's own Apache/nginx and DNS resolver instead of
+  installing anything extra, since a second web server cannot also bind port
+  443. It will pause once and ask you to do two things from the Laragon tray
+  icon that cannot be scripted (SSL → *.test certificate, then Reload), then
+  waits for the site and opens it.
+- **No Laragon** — it downloads Caddy, adds the hosts entry, writes a
+  Caddyfile, starts both PHP and Caddy, waits for the site to answer, and
+  opens it. Windows will ask once to trust Caddy's certificate authority.
+  **Say yes** — the service worker will not register on an untrusted origin,
+  so declining leaves the offline half of the product silently doing nothing.
 
 ```powershell
-.\scripts\windows\stop.ps1     # stop
-.\scripts\windows\start.ps1    # start again after a reboot
+.\scripts\windows\stop.ps1     # stop (no-op under Laragon — use its tray icon)
+.\scripts\windows\start.ps1    # start again after a reboot (same)
 ```
 
-Neither process installs as a service, so they stop when the machine does.
+Neither script installs anything as a Windows service. Under Caddy, both
+processes stop when the machine does. Under Laragon, Laragon itself decides
+whether it starts with Windows.
 
-You still need **PHP 8.2+** and **MySQL or MariaDB** on the machine first. If you
-have neither, install [Laragon Full](https://laragon.org/download/) — it brings
-both — then run the script from Laragon's terminal.
+You still need **PHP 8.2+** and **MySQL or MariaDB** on the machine first. If
+you have neither, install [Laragon Full](https://laragon.org/download/) — it
+brings both, and the installer above detects and uses it automatically. Just
+extract the release into `C:\laragon\www\<foldername>` first — Laragon derives
+the domain from the folder name, so `opes360` gives `opes360.test`.
 
-> The script was written against the arrangement verified on Linux — Caddy with
-> its own CA in front of PHP — but PowerShell could not be executed in the
-> environment it was authored in. Expect to fix a small thing on the first run;
-> paste any error and it can be corrected.
+> The Caddy path was verified end-to-end (Linux, same nginx/Caddy-in-front-of-PHP
+> arrangement); the Laragon path was written against Laragon's documented
+> auto-vhost behavior but PowerShell could not be executed in the environment
+> it was authored in. Expect to fix a small thing on the first run; paste any
+> error and it can be corrected.
 
 ---
 
@@ -112,19 +124,32 @@ automatically. No hosts file, no nginx config, no certificate warnings.
 
 ## Route B — Laragon
 
-Laragon creates `.test` hostnames and writes the Windows hosts file for you.
+Laragon creates `.test` hostnames and its own trusted certificates for you —
+this is the route for `C:\laragon\www\opes360`.
 
 1. Install **[Laragon Full](https://laragon.org/download/)** — it includes PHP,
    nginx/Apache and MySQL.
-2. Extract the release into `C:\laragon\www\opes360`.
-3. Laragon → right-click tray icon → **Apache/Nginx → Reload**. The site appears
-   at `http://opes360.test`.
-4. For HTTPS: right-click tray icon → **Apache/Nginx → SSL → Create certificate
-   for \*.test**, then reload. Laragon adds the CA to Windows' trust store.
-5. Follow [§4](#4-configure-and-set-up).
+2. Extract the release into `C:\laragon\www\opes360`. The folder name becomes
+   the domain: `opes360` → `opes360.test`. Laragon detects the `artisan` file
+   and points the vhost at `public/` on its own — no manual document-root
+   configuration needed.
+3. Check `php -v` in Laragon's terminal. Laravel 12 needs **8.2+**; switch via
+   **Menu → PHP → Version** if Laragon's bundled default is older.
+4. From an Administrator PowerShell in that folder, run
+   `.\scripts\windows\install.ps1` — it detects Laragon automatically, skips
+   installing Caddy, writes `.env` pointed at Laragon's MySQL
+   (`127.0.0.1:3306`, `root`, empty password by default), migrates and seeds,
+   then pauses once for the two clicks Laragon needs and cannot be scripted
+   into:
+   - tray icon → **Apache/Nginx → SSL → Create certificate for \*.test**
+   - tray icon → **Apache/Nginx → Reload**
+5. It opens `https://opes360.test` once the site answers. Sign in with
+   `john@opesware.com` / `password`.
 
-> Laragon's default PHP may be older than 8.2. Check with `php -v` and switch via
-> **Menu → PHP → Version** if needed — Laravel 12 will not boot on 8.1.
+Doing it by hand instead of the installer is the same four things: create the
+`opes360` database, copy `.env.example` to `.env` with the values in
+[§4](#4-configure-and-set-up), reload Laragon after creating the SSL
+certificate, then `php artisan migrate --seed`.
 
 ---
 
