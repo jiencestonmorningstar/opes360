@@ -189,10 +189,15 @@ class Create extends Component
     public function render(): View
     {
         $docType = DocumentType::from($this->type);
+        $company = app(CurrentCompany::class)->get();
 
         return view('livewire.documents.create', [
             'docType' => $docType,
-            'currency' => app(CurrentCompany::class)->get()?->currency ?? 'USD',
+            'currency' => $company?->currency ?? 'USD',
+            // The preview's letterhead. Injected once at render — the sheet's
+            // header never changes while typing, so it costs no round trips
+            // and the preview keeps working offline.
+            'companyName' => $company?->name ?? '',
             // Only invoices hold device number leases, so only they can be
             // *issued* offline. Everything else still saves as a draft.
             'canIssueOffline' => $docType === DocumentType::Invoice,

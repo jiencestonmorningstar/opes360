@@ -77,6 +77,20 @@ export default function documentForm(config) {
             return money(amount, this.currency);
         },
 
+        /**
+         * Dates for the preview, written the way the printed sheet writes them
+         * ("Jul 31, 2026") rather than the input's yyyy-mm-dd.
+         */
+        formatDate(value) {
+            if (! value) return '';
+
+            const date = new Date(`${value}T00:00:00`);
+
+            return isNaN(date)
+                ? value
+                : date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+        },
+
         // ---- customer -----------------------------------------------------
 
         async search() {

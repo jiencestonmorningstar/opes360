@@ -1,9 +1,17 @@
 @php
     $inputClass = 'h-12 w-full rounded-xl border border-border bg-surface px-3.5 text-[14.5px] text-ink placeholder:text-faint focus:border-brand focus:outline-none focus:ring-2 focus:ring-brand/20';
     $labelClass = 'mb-1.5 block text-[13px] font-semibold text-ink-2';
+
+    // Same composition as print/paper.blade.php, so the miniature matches the sheet.
+    $letterheadPhone = data_get($company->phones, 0);
+    $letterheadAddress = collect([
+        $company->address_line1,
+        $company->city,
+        $company->country,
+    ])->filter()->implode(' · ');
 @endphp
 
-<div class="px-5 pb-32 lg:px-6 lg:pt-6 lg:pb-8">
+<div class="px-5 pb-32 lg:px-6 lg:pt-6 lg:pb-8" x-data="{ pane: 'form' }">
 
     <div class="flex items-center gap-3">
         <a href="{{ $paper ? route('papers.show', $paper) : route('papers') }}"
@@ -18,10 +26,25 @@
         </div>
     </div>
 
-    <div class="mt-5 grid gap-4 lg:grid-cols-5">
+    {{-- On a phone there is no room for the form and the sheet side by side,
+         so one control flips between them; from `lg` both are always shown. --}}
+    <div class="mt-5 grid grid-cols-2 gap-1 rounded-xl bg-surface-2 p-1 lg:hidden">
+        <button type="button" @click="pane = 'form'"
+                class="focusable h-10 rounded-lg text-[13.5px] font-semibold transition-colors"
+                :class="pane === 'form' ? 'bg-surface text-ink shadow-card' : 'text-muted'">
+            Edit
+        </button>
+        <button type="button" @click="pane = 'preview'"
+                class="focusable h-10 rounded-lg text-[13.5px] font-semibold transition-colors"
+                :class="pane === 'preview' ? 'bg-surface text-ink shadow-card' : 'text-muted'">
+            Preview
+        </button>
+    </div>
+
+    <div class="mt-4 grid gap-4 lg:mt-5 lg:grid-cols-5">
 
         {{-- Fields --}}
-        <div class="space-y-4 lg:col-span-2">
+        <div class="space-y-4 lg:col-span-2" :class="pane === 'form' ? '' : 'hidden lg:block'">
             <x-ui.panel title="Details">
                 <label class="block">
                     <span class="{{ $labelClass }}">Document name</span>
@@ -62,16 +85,42 @@
         </div>
 
         {{-- Live preview. The point of the screen: these get signed, so the
-             sentences the answers produce have to be readable before saving. --}}
-        <div class="lg:col-span-3">
-            <div class="card overflow-hidden">
+             sentences the answers produce have to be readable before saving.
+             A miniature of print/paper.blade.php — same letterhead, title line
+             and body, scaled to the screen. --}}
+        <div class="lg:col-span-3" :class="pane === 'preview' ? '' : 'hidden lg:block'" data-preview="paper">
+            <div class="card overflow-hidden lg:sticky lg:top-6">
                 <div class="flex items-center justify-between border-b border-border px-5 py-3.5">
                     <span class="text-[13.5px] font-semibold text-ink-2">Preview</span>
                     <span class="text-[12px] text-faint">Updates as you type</span>
                 </div>
 
-                <div class="prose-paper max-h-[70vh] overflow-y-auto px-6 py-6">
-                    {!! $bodyHtml !!}
+                <div class="max-h-[70vh] overflow-y-auto p-5 lg:p-6">
+                    {{-- Letterhead --}}
+                    <div class="flex flex-wrap items-start justify-between gap-x-4 gap-y-1 border-b-2 border-ink pb-3">
+                        <div class="min-w-0">
+                            <p class="text-[16px] font-extrabold leading-tight tracking-[-0.02em] text-ink">{{ $company->name }}</p>
+                            @if ($company->motto)
+                                <p class="mt-0.5 text-[11px] text-muted">{{ $company->motto }}</p>
+                            @endif
+                        </div>
+                        <div class="min-w-0 text-[10.5px] leading-relaxed text-muted sm:text-right">
+                            @if ($letterheadAddress) <p>{{ $letterheadAddress }}</p> @endif
+                            @if ($letterheadPhone) <p>{{ $letterheadPhone }}</p> @endif
+                            @if ($company->email) <p class="break-words">{{ $company->email }}</p> @endif
+                        </div>
+                    </div>
+
+                    {{-- Title line. Drafts in the editor never carry a reference
+                         yet — issuing is what assigns one. --}}
+                    <div class="mt-3 flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1">
+                        <span class="min-w-0 break-words text-[13.5px] font-extrabold tracking-[-0.01em] text-ink">{{ $title }}</span>
+                        <span class="text-[10px] font-bold uppercase tracking-[0.08em] text-warning">Draft — not issued</span>
+                    </div>
+
+                    <div class="prose-paper mt-4">
+                        {!! $bodyHtml !!}
+                    </div>
                 </div>
 
                 @if ($notice)
