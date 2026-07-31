@@ -24,12 +24,7 @@
         <div class="flex-1 lg:hidden"></div>
 
         {{-- Notifications --}}
-        <button type="button"
-                class="tap focusable relative flex items-center justify-center rounded-lg text-ink"
-                aria-label="Notifications, 1 unread">
-            <x-icon name="bell" class="size-[25px]" />
-            <span class="absolute right-1.5 top-1.5 size-[9px] rounded-full bg-brand ring-2 ring-canvas lg:ring-canvas"></span>
-        </button>
+        @livewire('notifications.bell')
 
         {{-- Account --}}
         <div class="relative" x-data="{ menu: false }" @keydown.escape.window="menu = false">

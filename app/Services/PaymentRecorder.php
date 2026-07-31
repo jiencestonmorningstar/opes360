@@ -11,6 +11,8 @@ use App\Models\PaymentAllocation;
 use App\Models\Receipt;
 use App\Models\User;
 use App\Models\VerificationToken;
+use App\Notifications\PaymentReceivedNotification;
+use App\Support\NotifyCompany;
 use Illuminate\Support\Facades\DB;
 use RuntimeException;
 
@@ -95,6 +97,13 @@ class PaymentRecorder
                 'document_id' => $document->id,
                 'amount' => $amount,
             ]);
+
+            // Best-effort: a mail/notification failure must never unwind a
+            // payment that has already moved money.
+            try {
+                NotifyCompany::about($document->company, 'payments.view', new PaymentReceivedNotification($payment));
+            } catch (\Throwable) {
+            }
 
             $paid = round((float) $document->amount_paid + $amount, 2);
             $balance = round((float) $document->total - $paid, 2);

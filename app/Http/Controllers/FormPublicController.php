@@ -8,6 +8,8 @@ use App\Models\Scopes\CompanyScope;
 use App\Support\FormFields;
 use Illuminate\Http\Request;
 use Illuminate\Routing\Controller;
+use App\Notifications\FormResponseReceivedNotification;
+use App\Support\NotifyCompany;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\ViewErrorBag;
 
@@ -63,6 +65,11 @@ class FormPublicController extends Controller
             'form_id' => $form->id,
             'answers' => $answers,
         ]);
+
+        try {
+            NotifyCompany::about($form->company, 'forms.responses', new FormResponseReceivedNotification($form));
+        } catch (\Throwable) {
+        }
 
         return redirect()->to('/f/'.$token.'/thanks');
     }
@@ -137,6 +144,11 @@ class FormPublicController extends Controller
             'form_id' => $form->id,
             'answers' => $answers,
         ]);
+
+        try {
+            NotifyCompany::about($form->company, 'forms.responses', new FormResponseReceivedNotification($form));
+        } catch (\Throwable) {
+        }
 
         return view('public.form-thanks', [
             'form' => $form,

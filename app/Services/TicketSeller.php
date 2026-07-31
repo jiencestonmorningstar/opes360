@@ -6,6 +6,8 @@ use App\Models\Event;
 use App\Models\Ticket;
 use App\Models\TicketType;
 use App\Models\VerificationToken;
+use App\Notifications\TicketSoldNotification;
+use App\Support\NotifyCompany;
 use Illuminate\Support\Facades\DB;
 use RuntimeException;
 
@@ -95,6 +97,13 @@ class TicketSeller
                 }
 
                 $type->increment('sold', $wanted);
+            }
+
+            foreach ($tickets as $ticket) {
+                try {
+                    NotifyCompany::about($event->company, 'events.view', new TicketSoldNotification($ticket));
+                } catch (\Throwable) {
+                }
             }
 
             return $tickets;
