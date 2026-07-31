@@ -50,6 +50,51 @@
                             </button>
                         @endforeach
                     </div>
+                    {{-- Letterhead design (start) --}}
+                    <span class="{{ $labelClass }} mt-4">Letterhead design</span>
+                    <div class="grid grid-cols-2 gap-2">
+                        @foreach (Stationery::LETTERHEAD_DESIGNS as $key => $label)
+                            <button type="button" wire:click="setLetterheadDesign('{{ $key }}')"
+                                    aria-pressed="{{ $letterheadDesign === $key ? 'true' : 'false' }}"
+                                    class="focusable rounded-xl p-2 text-left transition-colors
+                                           {{ $letterheadDesign === $key ? 'bg-tint-blue ring-1 ring-brand/40' : 'border border-border bg-surface hover:bg-surface-2' }}">
+                                {{-- A miniature of the sheet: enough to tell the designs apart. --}}
+                                <span class="block h-14 overflow-hidden rounded-md bg-white p-1.5 shadow-sm ring-1 ring-slate-200">
+                                    @if ($key === 'rule')
+                                        <span class="block h-2 w-2/3 rounded-sm bg-slate-800"></span>
+                                        <span class="mt-1 block h-px w-full bg-slate-800"></span>
+                                        <span class="mt-1.5 block h-1 w-full rounded bg-slate-200"></span>
+                                        <span class="mt-1 block h-1 w-5/6 rounded bg-slate-200"></span>
+                                    @elseif ($key === 'banner')
+                                        <span class="-m-1.5 mb-0 block h-4 bg-brand"></span>
+                                        <span class="mt-1.5 block h-1 w-full rounded bg-slate-200"></span>
+                                        <span class="mt-1 block h-1 w-5/6 rounded bg-slate-200"></span>
+                                    @elseif ($key === 'sidebar')
+                                        <span class="flex h-full gap-1.5">
+                                            <span class="-my-1.5 -ml-1.5 block w-2.5 shrink-0 bg-brand"></span>
+                                            <span class="min-w-0 flex-1 pt-0.5">
+                                                <span class="block h-1 w-full rounded bg-slate-200"></span>
+                                                <span class="mt-1 block h-1 w-5/6 rounded bg-slate-200"></span>
+                                            </span>
+                                        </span>
+                                    @else
+                                        <span class="mx-auto block h-px w-full bg-slate-800"></span>
+                                        <span class="mx-auto mt-1 block h-2 w-1/2 rounded-sm bg-slate-800"></span>
+                                        <span class="mx-auto mt-1 block h-px w-full bg-slate-800"></span>
+                                        <span class="mx-auto mt-1.5 block h-1 w-5/6 rounded bg-slate-200"></span>
+                                    @endif
+                                </span>
+                                <span class="mt-1.5 block text-[12.5px] font-semibold {{ $letterheadDesign === $key ? 'text-brand' : 'text-ink-2' }}">
+                                    {{ $label }}
+                                </span>
+                            </button>
+                        @endforeach
+                    </div>
+                    <p class="mt-2 text-[12px] text-muted">
+                        Applies to this sheet and to every generated document.
+                    </p>
+                    {{-- Letterhead design (end) --}}
+
                     <p class="mt-3 text-[12.5px] text-muted">
                         Exports at full bleed through your browser's print dialog — choose "Save as PDF" for a file.
                     </p>
