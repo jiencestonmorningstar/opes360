@@ -48,8 +48,11 @@ class PrintController extends Controller
      * regenerating it always reflects the ledger as it stands, which is
      * exactly what the customer asking "what do I owe you" wants.
      */
-    public function statement(Request $request, Contact $contact)
+    public function statement(Request $request, Contact $contact, QrCodes $qr)
     {
+        $company = app(CurrentCompany::class)->get();
+        abort_if($company === null, 404);
+
         $from = CarbonImmutable::make($request->query('from')) ?? now()->startOfYear()->toImmutable();
         $to = (CarbonImmutable::make($request->query('to')) ?? now()->toImmutable())->endOfDay();
 
@@ -94,15 +97,24 @@ class PrintController extends Controller
             return $line;
         });
 
+        // A statement is a report, not a numbered document, so its QR verifies
+        // the business itself — the same company token the stationery carries,
+        // created here on first use.
+        $token = VerificationToken::firstOrCreate(
+            ['subject_type' => Company::class, 'subject_id' => $company->id],
+            ['token' => VerificationToken::newToken(), 'company_id' => $company->id],
+        );
+
         return view('print.statement', [
             'contact' => $contact,
-            'company' => app(CurrentCompany::class)->get(),
+            'company' => $company,
             'from' => $from,
             'to' => $to,
             'lines' => $lines,
             'totalDebits' => $lines->sum('debit'),
             'totalCredits' => $lines->sum('credit'),
             'closing' => $running,
+            'qrSvg' => $qr->svg($token->publicUrl(), 110),
             'autoprint' => $request->boolean('print'),
         ]);
     }

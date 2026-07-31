@@ -16,9 +16,13 @@
         @page { size: A4; margin: 0; }
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body { font-family: 'Inter', -apple-system, 'Segoe UI', Roboto, sans-serif; color: #0f172a; background: #eef2f7; }
-        @media print { body { background: #fff; } .no-print { display: none !important; } .sheet { box-shadow: none !important; margin: 0 !important; } }
+        @media print { body { background: #fff; } .no-print { display: none !important; } .sheet { width: 210mm; min-height: 297mm; padding: 18mm 16mm 14mm; box-shadow: none !important; margin: 0 !important; } }
 
-        .sheet { width: 210mm; min-height: 297mm; background: #fff; margin: 24px auto; padding: 18mm 16mm 14mm; display: flex; flex-direction: column; box-shadow: 0 4px 24px rgba(15,23,42,.12); }
+        /* Screen previews yield to the viewport; @media print above restores
+           the exact A4 geometry. Body padding keeps the print bar clear. */
+        @media screen { body { padding-bottom: 84px; } }
+        .sheet { width: min(210mm, 100%); min-height: 297mm; background: #fff; margin: 24px auto; padding: 18mm 16mm 14mm; display: flex; flex-direction: column; box-shadow: 0 4px 24px rgba(15,23,42,.12); }
+        @media screen and (max-width: 700px) { .sheet { min-height: 0; margin: 12px auto; padding: 8mm 6mm 10mm; } }
 
         /* Same letterhead as the stationery, so a contract and an invoice
            visibly come from the same business. */
@@ -31,7 +35,7 @@
         .doc-title { font-size: 13pt; font-weight: 800; color: #0f172a; letter-spacing: -0.01em; }
         .doc-ref { font-variant-numeric: tabular-nums; font-weight: 700; color: #0f172a; }
 
-        .body { flex: 1; padding-top: 7mm; font-size: 10pt; line-height: 1.65; }
+        .body { flex: 1; padding-top: 7mm; font-size: 10pt; line-height: 1.65; overflow-wrap: break-word; }
         .body h1 { font-size: 17pt; font-weight: 800; letter-spacing: -0.02em; text-align: center; margin: 6mm 0 4mm; }
         .body h2 { font-size: 10.5pt; font-weight: 800; margin: 6mm 0 2mm; letter-spacing: -0.01em; }
         .body h2:first-child { margin-top: 0; }
@@ -49,7 +53,7 @@
 
         .notice { margin-top: 8mm; padding: 3.5mm 4mm; border-left: 2pt solid #f59e0b; background: #fffbeb; font-size: 7.5pt; color: #92400e; line-height: 1.55; page-break-inside: avoid; }
 
-        .foot { display: flex; justify-content: space-between; align-items: flex-end; gap: 10mm; border-top: 0.5pt solid #cbd5e1; margin-top: 8mm; padding-top: 4mm; font-size: 7.5pt; color: #94a3b8; }
+        .foot { display: flex; justify-content: space-between; align-items: flex-end; gap: 10mm; border-top: 0.5pt solid #cbd5e1; margin-top: 8mm; padding-top: 4mm; font-size: 7.5pt; color: #94a3b8; page-break-inside: avoid; }
         .qr { text-align: center; }
         .qr svg { display: block; }
         .qr-label { font-size: 6.5pt; color: #94a3b8; padding-top: 1mm; }

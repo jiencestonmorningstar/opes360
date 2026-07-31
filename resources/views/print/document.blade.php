@@ -19,10 +19,16 @@
             font-family: 'Inter', -apple-system, 'Segoe UI', Roboto, sans-serif;
             font-size: 10.5pt; color: #0f172a; line-height: 1.45;
         }
-        .sheet { max-width: 178mm; margin: 0 auto; padding: 24px 8px; }
+        /* On screen the sheet gives way to the viewport; overflow-wrap keeps a
+           long unbroken value (an email, a reference) from forcing a wider box.
+           The fixed print bar needs the body padding so it covers nothing. */
+        .sheet { width: 100%; max-width: 178mm; margin: 0 auto; padding: 24px 8px 96px; overflow-wrap: break-word; }
         @media print { .sheet { padding: 0; } .no-print { display: none !important; } }
 
         header { display: flex; justify-content: space-between; align-items: flex-start; gap: 24px; }
+        /* Flex items refuse to shrink below their content unless told to,
+           which is how a long business name pushes the sheet sideways. */
+        header > div, .parties > div, footer > div { min-width: 0; }
         .brand-name { font-size: 17pt; font-weight: 800; letter-spacing: -0.02em; }
         .muted { color: #64748b; }
         .small { font-size: 8.5pt; }
@@ -39,18 +45,22 @@
             letter-spacing: 0.06em; color: #64748b; padding: 0 8px 8px;
             border-bottom: 1.5pt solid #0f172a;
         }
-        tbody td { padding: 9px 8px; border-bottom: 0.5pt solid #e2e8f0; vertical-align: top; }
+        tbody td { padding: 9px 8px; border-bottom: 0.5pt solid #e2e8f0; vertical-align: top; overflow-wrap: anywhere; }
+        /* A row split across a page break reads as two half-entries. */
+        tbody tr { page-break-inside: avoid; }
         .num { text-align: right; font-variant-numeric: tabular-nums; }
 
-        .totals { margin-top: 14px; margin-left: auto; width: 62mm; }
+        .totals { margin-top: 14px; margin-left: auto; width: 62mm; max-width: 100%; page-break-inside: avoid; }
         .totals .row { display: flex; justify-content: space-between; padding: 4px 8px; }
         .totals .grand { border-top: 1.5pt solid #0f172a; margin-top: 4px; padding-top: 8px; font-weight: 800; font-size: 12pt; }
 
-        footer { display: flex; justify-content: space-between; align-items: flex-end; gap: 24px; margin-top: 40px; }
-        .verify { display: flex; gap: 12px; align-items: center; }
-        .verify svg { display: block; }
+        /* The QR footer and the signature block must land on paper whole. */
+        footer { display: flex; justify-content: space-between; align-items: flex-end; gap: 24px; margin-top: 40px; page-break-inside: avoid; }
+        .verify { display: flex; gap: 12px; align-items: center; min-width: 0; }
+        .verify svg { display: block; flex-shrink: 0; }
+        .verify .small { overflow-wrap: anywhere; }
         .sign { text-align: center; }
-        .sign .line { width: 52mm; border-bottom: 0.75pt solid #0f172a; margin-bottom: 4px; height: 40px; }
+        .sign .line { width: 52mm; max-width: 100%; border-bottom: 0.75pt solid #0f172a; margin-bottom: 4px; height: 40px; }
 
         .powered { margin-top: 28px; text-align: center; font-size: 7.5pt; color: #94a3b8; }
         .print-bar {

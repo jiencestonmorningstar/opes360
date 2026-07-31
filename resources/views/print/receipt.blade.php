@@ -18,15 +18,23 @@
             font-size: {{ $thermal ? '8.5pt' : '10pt' }};
             color: #000; line-height: 1.4;
         }
-        .slip { width: {{ $width - ($thermal ? 6 : 24) }}mm; margin: 16px auto; }
-        @media print { .slip { margin: 0 auto; } .no-print { display: none !important; } }
+        /* On screen the slip yields to narrow viewports (an A4 slip is wider
+           than a phone); print restores the exact millimetre width, and the
+           bottom padding keeps the fixed print bar off the slip. */
+        .slip { width: min({{ $width - ($thermal ? 6 : 24) }}mm, calc(100vw - 24px)); margin: 16px auto 96px; }
+        @media print { .slip { width: {{ $width - ($thermal ? 6 : 24) }}mm; margin: 0 auto; } .no-print { display: none !important; } }
         .center { text-align: center; }
         .name { font-weight: 800; font-size: {{ $thermal ? '10pt' : '13pt' }}; }
         .muted { color: #444; }
         .rule { border-top: 1px dashed #000; margin: 8px 0; }
         .row { display: flex; justify-content: space-between; gap: 8px; }
+        /* Labels hold their line; a long customer name or reference wraps
+           instead of pushing past the slip edge. */
+        .row > span:first-child { flex-shrink: 0; }
+        .row > span:last-child { text-align: right; overflow-wrap: anywhere; min-width: 0; }
         .big { font-weight: 800; font-size: {{ $thermal ? '11pt' : '14pt' }}; }
-        .qr { display: flex; justify-content: center; margin-top: 10px; }
+        .qr { display: flex; justify-content: center; margin-top: 10px; page-break-inside: avoid; }
+        .qr svg { max-width: 100%; }
         .print-bar { position: fixed; inset: auto 0 0 0; background: #0f172a; display: flex; justify-content: center; padding: 12px; }
         .print-bar button { background: #2563eb; color: #fff; border: 0; border-radius: 8px; padding: 10px 26px; font: inherit; font-weight: 700; cursor: pointer; }
     </style>
