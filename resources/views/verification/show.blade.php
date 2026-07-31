@@ -219,6 +219,12 @@
                     <dt class="text-[13.5px] text-muted">Points balance</dt>
                     <dd class="tnum text-[16px] font-bold text-ink">{{ $loyaltyCard->loyalty_points }}</dd>
                 </div>
+                @if ($company && $company->loyaltyPointValue() > 0)
+                    <div class="flex items-center justify-between gap-4">
+                        <dt class="text-[13.5px] text-muted">Worth</dt>
+                        <dd class="tnum text-[13.5px] font-semibold text-ink-2">{{ Money::format($loyaltyCard->loyalty_points * $company->loyaltyPointValue(), $company->currency) }}</dd>
+                    </div>
+                @endif
             </dl>
 
             @auth

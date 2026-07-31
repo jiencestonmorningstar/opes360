@@ -119,7 +119,13 @@
                     <div class="flex items-center justify-between gap-3">
                         <div>
                             <p class="tnum text-[24px] font-bold tracking-[-0.02em] text-ink">{{ $contact->loyalty_points }}</p>
-                            <p class="text-[12.5px] text-muted">points balance</p>
+                            @php $companyForLoyalty = app(\App\Support\CurrentCompany::class)->get(); @endphp
+                            <p class="text-[12.5px] text-muted">
+                                points balance
+                                @if ($companyForLoyalty && $companyForLoyalty->loyaltyPointValue() > 0)
+                                    · worth {{ \App\Support\Money::format($contact->loyalty_points * $companyForLoyalty->loyaltyPointValue(), $companyForLoyalty->currency) }}
+                                @endif
+                            </p>
                         </div>
                         @if ($contact->hasLoyaltyCard())
                             <a href="{{ route('customers.loyalty-card.print', $contact) }}" target="_blank" rel="noopener"

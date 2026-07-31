@@ -145,7 +145,18 @@ class LoyaltyTest extends TestCase
         $this->get('/v/'.$card->loyaltyVerificationToken->token)
             ->assertOk()
             ->assertSee('Verified authentic')
-            ->assertSee('3'); // points balance
+            ->assertSee('3') // points balance
+            ->assertSee('Worth'); // 3 points * $1/point, set in setUp()
+    }
+
+    public function test_the_customer_page_shows_what_the_balance_is_worth(): void
+    {
+        app(LoyaltyLedger::class)->earn($this->contact, $this->company, 500, Document::class, 'x', $this->owner);
+
+        $this->actingAs($this->owner)
+            ->get('/customers/'.$this->contact->id)
+            ->assertOk()
+            ->assertSee('worth');
     }
 
     public function test_staff_can_redeem_from_the_verification_page(): void
