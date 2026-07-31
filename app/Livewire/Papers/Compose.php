@@ -148,6 +148,9 @@ class Compose extends Component
             'definition' => $definition,
             'bodyHtml' => app(DocumentComposer::class)->toHtml($this->preview()),
             'notice' => ($definition['binding'] ?? false) ? DocumentTemplates::reviewNotice() : null,
+            // For the preview's letterhead, so the on-screen sheet carries the
+            // same header the printed one will.
+            'company' => app(CurrentCompany::class)->get(),
         ])->layout('components.layouts.app', [
             'title' => $this->paper ? 'Edit '.$this->paper->title : $definition['name'],
             'active' => 'papers',

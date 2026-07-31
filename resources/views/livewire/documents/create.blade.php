@@ -235,6 +235,91 @@
                     </button>
                 </div>
             </div>
+
+            {{-- Live preview: a miniature of print/document.blade.php, drawn
+                 entirely from the Alpine state above, so it works offline
+                 exactly like the rest of the form. Collapsed on a phone,
+                 where it would push the form off screen; open where there is
+                 room for it. --}}
+            <div class="mt-4" data-preview="document"
+                 x-data="{ open: window.matchMedia('(min-width: 1024px)').matches }">
+                <div class="card overflow-hidden">
+                    <button type="button" @click="open = ! open" :aria-expanded="open"
+                            class="focusable flex h-12 w-full items-center justify-between px-5 text-left">
+                        <span class="text-[13.5px] font-semibold text-ink-2">Preview</span>
+                        <span class="flex items-center text-faint transition-transform" :class="open && 'rotate-180'">
+                            <x-icon name="chevron-down" class="size-[18px]" stroke-width="2.2" />
+                        </span>
+                    </button>
+
+                    <div x-show="open" x-cloak class="border-t border-border p-4">
+                        {{-- Letterhead --}}
+                        <div class="flex flex-wrap items-start justify-between gap-x-4 gap-y-2">
+                            <p class="min-w-0 break-words text-[14px] font-extrabold leading-tight tracking-[-0.02em] text-ink">
+                                {{ $companyName }}
+                            </p>
+                            <div class="text-right">
+                                <p class="text-[10px] font-extrabold uppercase tracking-[0.08em] text-brand">{{ $docType->label() }}</p>
+                                <p class="tnum text-[11px] font-bold text-ink">Draft — no number yet</p>
+                                <p class="tnum mt-0.5 text-[10px] leading-relaxed text-muted">
+                                    <span x-show="issueDate">Issued <span x-text="formatDate(issueDate)"></span></span>
+                                    <span x-show="dueDate" class="block">Due <span x-text="formatDate(dueDate)"></span></span>
+                                </p>
+                            </div>
+                        </div>
+
+                        <div class="mt-3">
+                            <p class="text-[8.5px] font-bold uppercase tracking-[0.1em] text-faint">Billed To</p>
+                            <p class="mt-0.5 truncate text-[12px] font-bold text-ink"
+                               x-text="contact ? contact.name : 'No customer yet'"></p>
+                        </div>
+
+                        {{-- Line table. table-fixed with wrapping descriptions,
+                             so a long item never scrolls the sheet sideways. --}}
+                        <table class="mt-3 w-full table-fixed border-collapse">
+                            <thead>
+                                <tr class="text-[8.5px] font-bold uppercase tracking-[0.08em] text-muted">
+                                    <th class="w-[44%] border-b-2 border-ink pb-1 pr-1 text-left font-bold">Description</th>
+                                    <th class="w-[12%] border-b-2 border-ink pb-1 text-right font-bold">Qty</th>
+                                    <th class="w-[22%] border-b-2 border-ink pb-1 pl-1 text-right font-bold">Price</th>
+                                    <th class="w-[22%] border-b-2 border-ink pb-1 pl-1 text-right font-bold">Amount</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <template x-for="(line, index) in lines" :key="index">
+                                    <tr class="align-top">
+                                        <td class="break-words border-b border-border py-1.5 pr-1 text-[11px] text-ink"
+                                            x-text="line.description || '—'"></td>
+                                        <td class="tnum border-b border-border py-1.5 text-right text-[11px] text-ink-2"
+                                            x-text="line.quantity || '0'"></td>
+                                        <td class="tnum border-b border-border py-1.5 pl-1 text-right text-[11px] text-ink-2"
+                                            x-text="format(line.unit_price)"></td>
+                                        <td class="tnum border-b border-border py-1.5 pl-1 text-right text-[11px] font-semibold text-ink"
+                                            x-text="format(lineTotal(line))"></td>
+                                    </tr>
+                                </template>
+                            </tbody>
+                        </table>
+
+                        {{-- Totals --}}
+                        <div class="ml-auto mt-2.5 max-w-[220px]">
+                            <div class="flex items-baseline justify-between gap-4 py-0.5 text-[11px]">
+                                <span class="text-muted">Subtotal</span>
+                                <span class="tnum text-ink-2" x-text="format(total)"></span>
+                            </div>
+                            <div class="mt-1 flex items-baseline justify-between gap-4 border-t-2 border-ink pt-1.5 text-[12.5px] font-extrabold text-ink">
+                                <span>Total</span>
+                                <span class="tnum" x-text="format(total)"></span>
+                            </div>
+                        </div>
+
+                        <div class="mt-3" x-show="notes.trim() !== ''" x-cloak>
+                            <p class="text-[8.5px] font-bold uppercase tracking-[0.1em] text-faint">Notes</p>
+                            <p class="mt-0.5 whitespace-pre-line text-[10.5px] leading-relaxed text-ink-2" x-text="notes"></p>
+                        </div>
+                    </div>
+                </div>
+            </div>
         </div>
     </div>
 </div>
