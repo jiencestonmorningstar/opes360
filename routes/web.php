@@ -1,9 +1,13 @@
 <?php
 
 use App\Http\Controllers\AuthController;
+use App\Http\Controllers\EventPublicController;
+use App\Http\Controllers\FormExportController;
+use App\Http\Controllers\FormPublicController;
 use App\Http\Controllers\PrintController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\SyncController;
+use App\Http\Controllers\TicketController;
 use App\Http\Controllers\VerificationController;
 use App\Livewire\Business\Artisans as BusinessArtisans;
 use App\Livewire\Business\Companies as BusinessCompanies;
@@ -17,6 +21,12 @@ use App\Livewire\Customers\Show as CustomerShow;
 use App\Livewire\Dashboard;
 use App\Livewire\Documents\Create as DocumentCreate;
 use App\Livewire\Documents\Show as DocumentShow;
+use App\Livewire\Events\Index as EventsIndex;
+use App\Livewire\Events\Manage as EventsManage;
+use App\Livewire\Events\Show as EventsShow;
+use App\Livewire\Forms\Builder as FormsBuilder;
+use App\Livewire\Forms\Index as FormsIndex;
+use App\Livewire\Forms\Responses as FormsResponses;
 use App\Livewire\Onboarding\Register;
 use App\Livewire\Papers\Compose as PapersCompose;
 use App\Livewire\Papers\Index as PapersIndex;
@@ -103,6 +113,29 @@ Route::middleware('auth')->group(function () {
     Route::get('/library/{paper}', PapersShow::class)->middleware('can:view,paper')->name('papers.show');
     Route::get('/library/{paper}/edit', PapersCompose::class)->middleware('can:update,paper')->name('papers.edit');
     Route::get('/library/{paper}/print', [PrintController::class, 'paper'])->middleware('can:view,paper')->name('papers.print');
+    /*
+     * Module 16 — Opes Forms. The builder saves as it goes, so "create" is a
+     * server action that makes a draft and lands in the builder, not a page.
+     */
+    Route::get('/forms', FormsIndex::class)->middleware('can:forms.view')->name('forms');
+    Route::get('/forms/{form}/build', FormsBuilder::class)->middleware('can:update,form')->name('forms.build');
+    Route::get('/forms/{form}/responses', FormsResponses::class)->middleware('can:responses,form')->name('forms.responses');
+    Route::get('/forms/{form}/responses.csv', [FormExportController::class, 'csv'])->middleware('can:responses,form')->name('forms.responses.csv');
+
+    /*
+     * Module 17 — Opes Events. "create" before the wildcard, as with documents.
+     */
+    Route::get('/events', EventsIndex::class)->middleware('can:events.view')->name('events');
+    Route::get('/events/create', EventsManage::class)->middleware('can:events.create')->name('events.create');
+    Route::get('/events/{event}', EventsShow::class)->middleware('can:view,event')->name('events.show');
+    Route::get('/events/{event}/edit', EventsManage::class)->middleware('can:update,event')->name('events.edit');
+
+    // Check-in is POSTed from the public verification page by logged-in door
+    // staff; the policy re-checks company membership and the ability.
+    Route::post('/tickets/{ticket}/check-in', [TicketController::class, 'checkIn'])->name('tickets.check-in');
+    Route::post('/tickets/{ticket}/void', [TicketController::class, 'void'])->name('tickets.void');
+    Route::post('/tickets/{ticket}/paid', [TicketController::class, 'togglePaid'])->name('tickets.paid');
+
     Route::get('/calendar', CalendarIndex::class)->middleware('can:sales.view')->name('calendar');
     Route::get('/settings', SettingsIndex::class)->name('settings');
     Route::get('/scan', Scan::class)->name('scan');
@@ -141,6 +174,20 @@ Route::middleware('throttle:60,1')->group(function () {
 Route::middleware('throttle:60,1')->group(function () {
     Route::get('/v/{token}', [VerificationController::class, 'show'])->name('verification.show');
     Route::get('/v/{token}/qr.svg', [VerificationController::class, 'qr'])->name('verification.qr');
+});
+
+/*
+ * Public forms and event pages — what a share link opens. Same tenancy rule
+ * as verification: the visitor is not a user, the token names the company.
+ */
+Route::middleware('throttle:60,1')->group(function () {
+    Route::get('/f/{token}/thanks', [FormPublicController::class, 'thanks'])->name('form.thanks');
+    Route::get('/f/{token}', [FormPublicController::class, 'show'])->name('form.public');
+    Route::post('/f/{token}', [FormPublicController::class, 'submit'])->name('form.submit');
+
+    Route::get('/e/{token}/tickets', [EventPublicController::class, 'tickets'])->name('event.tickets');
+    Route::get('/e/{token}', [EventPublicController::class, 'show'])->name('event.public');
+    Route::post('/e/{token}', [EventPublicController::class, 'purchase'])->name('event.purchase');
 });
 
 /*

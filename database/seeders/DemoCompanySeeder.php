@@ -10,14 +10,20 @@ use App\Models\Company;
 use App\Models\Contact;
 use App\Models\Document;
 use App\Models\DocumentLine;
+use App\Models\Event;
+use App\Models\Form;
+use App\Models\FormResponse;
 use App\Models\Item;
 use App\Models\NumberLease;
 use App\Models\Payment;
 use App\Models\PaymentAllocation;
 use App\Models\Receipt;
 use App\Models\Role;
+use App\Models\Ticket;
+use App\Models\TicketType;
 use App\Models\User;
 use App\Models\VerificationToken;
+use App\Services\TicketSeller;
 use App\Support\CurrentCompany;
 use Carbon\CarbonImmutable;
 use Illuminate\Database\Eloquent\Collection;
@@ -100,6 +106,21 @@ class DemoCompanySeeder extends Seeder
             ],
         );
 
+        // A second demo account with a working-level role, so the login page's
+        // demo buttons can show the product as staff see it — conditionally
+        // rendered menus, no settings, no user management.
+        $staff = User::updateOrCreate(
+            ['email' => 'sales@opesware.com'],
+            [
+                'name' => 'Sarah Okafor',
+                'password' => Hash::make('password'),
+                'email_verified_at' => now(),
+                'phone' => '+234 802 345 6789',
+                'avatar_path' => null,
+                'theme' => 'system',
+            ],
+        );
+
         $this->company->users()->syncWithoutDetaching([
             $this->owner->id => [
                 'role_id' => Role::where('slug', Role::OWNER)->value('id'),
@@ -107,9 +128,16 @@ class DemoCompanySeeder extends Seeder
                 'status' => 'active',
                 'joined_at' => now(),
             ],
+            $staff->id => [
+                'role_id' => Role::where('slug', Role::SALES_OFFICER)->value('id'),
+                'job_title' => 'Sales Officer',
+                'status' => 'active',
+                'joined_at' => now(),
+            ],
         ]);
 
         $this->owner->forceFill(['current_company_id' => $this->company->id])->save();
+        $staff->forceFill(['current_company_id' => $this->company->id])->save();
 
         // Everything below is tenant-scoped, so the seeder must act as this company.
         app(CurrentCompany::class)->set($this->company);
@@ -128,7 +156,101 @@ class DemoCompanySeeder extends Seeder
         $this->seedExpenses($customers);
 
         $this->seedArtisans();
+        $this->seedForms();
+        $this->seedEvent();
         $this->recomputeContactBalances();
+    }
+
+    /** One open form with a few responses, so Forms is not an empty room. */
+    protected function seedForms(): void
+    {
+        $fields = [
+            ['id' => 'demo-name', 'type' => 'short_text', 'label' => 'Full name', 'help' => '', 'required' => true, 'options' => []],
+            ['id' => 'demo-email', 'type' => 'email', 'label' => 'Email address', 'help' => 'We will send the joining details here.', 'required' => true, 'options' => []],
+            ['id' => 'demo-session', 'type' => 'choice', 'label' => 'Which session will you attend?', 'help' => '', 'required' => true, 'options' => ['Morning (9am)', 'Afternoon (2pm)']],
+            ['id' => 'demo-topics', 'type' => 'checkboxes', 'label' => 'Topics you care about', 'help' => 'Pick as many as you like.', 'required' => false, 'options' => ['Invoicing', 'Inventory', 'Offline mode', 'Verification QR']],
+            ['id' => 'demo-notes', 'type' => 'long_text', 'label' => 'Anything else?', 'help' => '', 'required' => false, 'options' => []],
+        ];
+
+        $form = Form::create([
+            'title' => 'Client Workshop Registration',
+            'description' => 'Register for the free OPES360 client workshop. Spaces are limited.',
+            'status' => 'open',
+            'share_token' => Form::newShareToken(),
+            'fields' => $fields,
+            'created_by' => $this->owner->id,
+        ]);
+
+        foreach ([
+            ['Chiamaka Eze', 'chiamaka@example.com', 'Morning (9am)', ['Invoicing', 'Offline mode'], ''],
+            ['Tunde Bakare', 'tunde@example.com', 'Afternoon (2pm)', ['Inventory'], 'Will there be a recording?'],
+            ['Ngozi Ade', 'ngozi@example.com', 'Morning (9am)', ['Invoicing', 'Verification QR'], ''],
+        ] as [$name, $email, $session, $topics, $notes]) {
+            FormResponse::create([
+                'form_id' => $form->id,
+                'answers' => array_filter([
+                    'demo-name' => $name,
+                    'demo-email' => $email,
+                    'demo-session' => $session,
+                    'demo-topics' => $topics,
+                    'demo-notes' => $notes,
+                ]),
+            ]);
+        }
+    }
+
+    /** One published event, part-sold, one attendee already through the door. */
+    protected function seedEvent(): void
+    {
+        $event = Event::create([
+            'title' => 'Product Showcase Evening',
+            'description' => "An evening walk-through of what's new, with live demos and Q&A.",
+            'venue' => 'Landmark Centre, Victoria Island',
+            'starts_at' => $this->today->addDays(12)->setTime(18, 0),
+            'ends_at' => $this->today->addDays(12)->setTime(21, 0),
+            'status' => 'published',
+            'share_token' => Event::newShareToken(),
+            'created_by' => $this->owner->id,
+        ]);
+
+        $general = $event->ticketTypes()->create([
+            'company_id' => $this->company->id,
+            'name' => 'General admission',
+            'price' => 25,
+            'quantity' => 100,
+            'sort' => 0,
+        ]);
+
+        $vip = $event->ticketTypes()->create([
+            'company_id' => $this->company->id,
+            'name' => 'VIP (front row + meet the team)',
+            'price' => 75,
+            'quantity' => 20,
+            'sort' => 1,
+        ]);
+
+        $seller = app(TicketSeller::class);
+
+        $tickets = [
+            ...$seller->sell($event, [$general->id => 2], 'Chiamaka Eze', 'chiamaka@example.com', null),
+            ...$seller->sell($event, [$general->id => 1], 'Tunde Bakare', 'tunde@example.com', '+234 803 555 0111'),
+            ...$seller->sell($event, [$vip->id => 1], 'Ngozi Ade', 'ngozi@example.com', null),
+        ];
+
+        // Most have paid; one VIP is through the door already so the check-in
+        // counter on the event page has something to say.
+        foreach ($tickets as $index => $ticket) {
+            if ($index < 3) {
+                $ticket->forceFill(['paid_at' => now()])->save();
+            }
+        }
+
+        end($tickets)->forceFill([
+            'status' => 'checked_in',
+            'checked_in_at' => now()->subDay(),
+            'checked_in_by' => $this->owner->id,
+            'paid_at' => now()->subDays(2),
+        ])->save();
     }
 
     /** Two artisans with public, verified profiles (Module 5). */
@@ -234,6 +356,11 @@ class DemoCompanySeeder extends Seeder
     /** Keeps re-running the seeder idempotent without touching other tenants. */
     protected function wipeExistingDemoData(): void
     {
+        FormResponse::query()->delete();
+        Form::query()->forceDelete();
+        Ticket::query()->delete();
+        TicketType::query()->delete();
+        Event::query()->forceDelete();
         ArtisanTestimonial::query()->delete();
         Artisan::query()->forceDelete();
         PaymentAllocation::query()->delete();

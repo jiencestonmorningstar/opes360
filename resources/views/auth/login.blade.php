@@ -87,6 +87,37 @@
         </p>
     </div>
 
+    @if (config('opes.demo.enabled'))
+        {{-- One-tap demo sign-ins. Plain POSTs of the seeded credentials through
+             the normal login flow — same throttle, same session handling. --}}
+        <div class="card mt-4 p-5">
+            <div class="flex items-center gap-2">
+                <span class="flex size-[30px] items-center justify-center rounded-lg bg-tint-purple">
+                    <x-icon name="spark" class="size-[17px] text-accent-purple" stroke-width="1.9" />
+                </span>
+                <div>
+                    <p class="text-[14.5px] font-semibold text-ink">Just looking around?</p>
+                    <p class="text-[12.5px] text-muted">Sign in to the demo business with one tap.</p>
+                </div>
+            </div>
+
+            <div class="mt-4 grid grid-cols-1 gap-2.5 min-[400px]:grid-cols-2">
+                @foreach (config('opes.demo.accounts') as $account)
+                    <form method="POST" action="{{ route('login') }}">
+                        @csrf
+                        <input type="hidden" name="email" value="{{ $account['email'] }}">
+                        <input type="hidden" name="password" value="{{ config('opes.demo.password') }}">
+                        <button type="submit"
+                                class="tap focusable flex h-auto w-full flex-col items-start gap-0.5 rounded-xl border border-border bg-surface px-4 py-3 text-left transition-colors hover:border-brand/40 hover:bg-surface-2">
+                            <span class="text-[14px] font-semibold text-ink">{{ $account['label'] }}</span>
+                            <span class="text-[12px] leading-snug text-muted">{{ $account['detail'] }}</span>
+                        </button>
+                    </form>
+                @endforeach
+            </div>
+        </div>
+    @endif
+
     <p class="mt-6 text-center text-[12.5px] text-muted">
         Built by <a href="{{ config('opes.brand.vendor_url') }}" class="font-medium text-brand hover:underline">{{ config('opes.brand.vendor') }}</a>
     </p>
