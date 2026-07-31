@@ -65,7 +65,15 @@ return [
         'Professional Services', 'Other',
     ],
 
-    'currencies' => ['USD', 'EUR', 'GBP', 'NGN', 'GHS', 'KES', 'ZAR', 'XOF'],
+    'currencies' => ['USD', 'EUR', 'GBP', 'NGN', 'GHS', 'KES', 'ZAR', 'XOF', 'XAF'],
+
+    /*
+     * Where the public contact form's messages go. Defaults to the mail
+     * "from" address so a fresh install works without extra configuration.
+     */
+    'contact' => [
+        'recipient' => env('CONTACT_RECIPIENT', env('MAIL_FROM_ADDRESS', 'hello@example.com')),
+    ],
 
     'quick_actions' => [
         ['label' => 'New Invoice', 'icon' => 'document-plus', 'accent' => 'blue', 'route' => 'documents.create', 'params' => ['type' => 'invoice'], 'ability' => 'sales.create'],

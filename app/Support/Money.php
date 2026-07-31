@@ -14,6 +14,7 @@ class Money
         'KES' => 'KSh',
         'ZAR' => 'R',
         'XOF' => 'CFA',
+        'XAF' => 'FCFA',
     ];
 
     public static function symbol(?string $currency): string
