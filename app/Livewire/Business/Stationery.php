@@ -6,6 +6,7 @@ use App\Models\Company;
 use App\Models\VerificationToken;
 use App\Support\CurrentCompany;
 use Illuminate\Contracts\View\View;
+use Illuminate\Foundation\Auth\Access\AuthorizesRequests;
 use Livewire\Attributes\Url;
 use Livewire\Component;
 
@@ -18,6 +19,8 @@ use Livewire\Component;
  */
 class Stationery extends Component
 {
+    use AuthorizesRequests;
+
     #[Url]
     public string $asset = 'letterhead';
 
@@ -26,6 +29,8 @@ class Stationery extends Component
     public string $cardName = '';
 
     public string $cardTitle = '';
+
+    public string $cardDesign = 'classic';
 
     public string $stampShape = 'circular';
 
@@ -44,11 +49,29 @@ class Stationery extends Component
 
         $this->cardName = auth()->user()->name;
         $this->cardTitle = 'Business Owner';
+        $this->cardDesign = app(CurrentCompany::class)->get()?->cardDesign() ?? 'classic';
     }
 
     public function setAsset(string $asset): void
     {
         $this->asset = array_key_exists($asset, self::ASSETS) ? $asset : 'letterhead';
+    }
+
+    /**
+     * Persisted on the company rather than kept as screen state: the print
+     * route reads the design from the record, so a saved print link keeps
+     * producing whatever the business currently has chosen.
+     */
+    public function setCardDesign(string $design): void
+    {
+        if (! in_array($design, Company::CARD_DESIGNS, true)) {
+            return;
+        }
+
+        $this->authorize('business.manage-stationery');
+
+        $this->cardDesign = $design;
+        app(CurrentCompany::class)->get()->update(['card_design' => $design]);
     }
 
     public function render(): View
