@@ -104,6 +104,8 @@ Route::post('/logout', function (Request $request) {
     return redirect()->route('login');
 })->name('logout');
 
+Route::view('/account-suspended', 'account-suspended')->middleware('auth')->name('account-suspended');
+
 /*
  * '/' is shared between the marketing home and the authenticated dashboard.
  * A route collection keys by method+URI, so two separate Route::get('/', ...)
@@ -273,3 +275,9 @@ Route::get('/manifest.webmanifest', function () {
         ],
     ])->header('Content-Type', 'application/manifest+json');
 })->name('manifest');
+
+/*
+ * Platform admin — entirely separate guard, session and routes from
+ * everything above. See routes/admin.php.
+ */
+require __DIR__.'/admin.php';

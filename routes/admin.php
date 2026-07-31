@@ -1,0 +1,31 @@
+<?php
+
+use App\Http\Controllers\Admin\AuthController as AdminAuthController;
+use App\Http\Controllers\Admin\CompanyController as AdminCompanyController;
+use App\Http\Controllers\Admin\DashboardController as AdminDashboardController;
+use Illuminate\Support\Facades\Route;
+
+/*
+ * Platform admin. Its own guard ('admin'), its own login, its own prefix —
+ * nothing here shares session, middleware or routes with the business side
+ * in routes/web.php. See config/auth.php for the guard/provider split and
+ * App\Models\PlatformAdmin's docblock for why it's a separate table.
+ */
+Route::prefix('admin')->name('admin.')->group(function () {
+    Route::middleware('guest:admin')->group(function () {
+        Route::view('/login', 'admin.auth.login')->name('login');
+        Route::post('/login', [AdminAuthController::class, 'login'])->name('login.attempt');
+    });
+
+    Route::middleware('auth:admin')->group(function () {
+        Route::post('/logout', [AdminAuthController::class, 'logout'])->name('logout');
+
+        Route::get('/', [AdminDashboardController::class, 'index'])->name('dashboard');
+
+        Route::get('/companies', [AdminCompanyController::class, 'index'])->name('companies');
+        Route::get('/companies/{company}', [AdminCompanyController::class, 'show'])->name('companies.show');
+        Route::post('/companies/{company}/suspend', [AdminCompanyController::class, 'suspend'])->name('companies.suspend');
+        Route::post('/companies/{company}/activate', [AdminCompanyController::class, 'activate'])->name('companies.activate');
+        Route::post('/companies/{company}/plan', [AdminCompanyController::class, 'updatePlan'])->name('companies.plan');
+    });
+});

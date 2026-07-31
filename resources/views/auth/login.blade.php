@@ -121,6 +121,7 @@
 
     <p class="mt-6 text-center text-[12.5px] text-muted">
         Built by <a href="{{ config('opes.brand.vendor_url') }}" class="font-medium text-brand hover:underline">{{ config('opes.brand.vendor') }}</a>
+        · <a href="{{ route('admin.login') }}" class="hover:text-ink-2">Platform admin</a>
     </p>
 </div>
 </body>

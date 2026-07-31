@@ -1,5 +1,6 @@
 <?php
 
+use App\Models\PlatformAdmin;
 use App\Models\User;
 
 return [
@@ -42,6 +43,14 @@ return [
             'driver' => 'session',
             'provider' => 'users',
         ],
+
+        // Platform staff. A separate guard and provider so an admin session
+        // and a business session never share identity — signing into one
+        // implies nothing about the other, even in the same browser.
+        'admin' => [
+            'driver' => 'session',
+            'provider' => 'platform_admins',
+        ],
     ],
 
     /*
@@ -65,6 +74,11 @@ return [
         'users' => [
             'driver' => 'eloquent',
             'model' => env('AUTH_MODEL', User::class),
+        ],
+
+        'platform_admins' => [
+            'driver' => 'eloquent',
+            'model' => PlatformAdmin::class,
         ],
 
         // 'users' => [

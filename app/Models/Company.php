@@ -8,6 +8,7 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\MorphMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
 class Company extends Model
@@ -60,6 +61,16 @@ class Company extends Model
     public function endDemo(): void
     {
         $this->forceFill(['account_type' => 'trial', 'demo_expires_at' => null])->save();
+    }
+
+    public function isSuspended(): bool
+    {
+        return $this->suspended_at !== null;
+    }
+
+    public function platformAdminActivity(): MorphMany
+    {
+        return $this->morphMany(PlatformAdminActivity::class, 'subject');
     }
 
     /** Points earned for a given spend, rounded down — no fractional points. */

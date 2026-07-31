@@ -49,6 +49,7 @@ class LoyaltyTest extends TestCase
             'loyalty_enabled' => true,
             'loyalty_points_per_amount' => 100,
             'loyalty_point_value' => 1,
+            'plan' => 'business',
         ]);
 
         $this->joinCompany($this->company, $this->owner);

@@ -5,6 +5,7 @@ namespace App\Policies;
 use App\Models\Company;
 use App\Models\User;
 use App\Support\CurrentCompany;
+use App\Support\PlanEntitlements;
 use Illuminate\Database\Eloquent\Model;
 
 /**
@@ -65,6 +66,9 @@ abstract class CompanyScopedPolicy
             return false;
         }
 
-        return $user->hasPermissionIn($company, $this->group().'.'.$ability);
+        $fullAbility = $this->group().'.'.$ability;
+
+        return PlanEntitlements::allowsAbility($company, $fullAbility)
+            && $user->hasPermissionIn($company, $fullAbility);
     }
 }

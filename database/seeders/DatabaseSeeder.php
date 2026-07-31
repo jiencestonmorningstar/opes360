@@ -11,6 +11,7 @@ class DatabaseSeeder extends Seeder
         // Roles and permissions are reference data and must exist before any
         // company is created, since membership requires a role.
         $this->call(RolePermissionSeeder::class);
+        $this->call(PlatformAdminSeeder::class);
 
         $this->call(DemoCompanySeeder::class);
     }

@@ -2,6 +2,7 @@
 
 use App\Http\Middleware\SecurityHeaders;
 use App\Http\Middleware\SetCurrentCompany;
+use Illuminate\Auth\Middleware\Authenticate;
 use Illuminate\Auth\Middleware\Authorize;
 use Illuminate\Contracts\Auth\Middleware\AuthenticatesRequests;
 use Illuminate\Contracts\Session\Middleware\AuthenticatesSessions;
@@ -34,6 +35,12 @@ return Application::configure(basePath: dirname(__DIR__))
          * The proxy list is configurable rather than fixed: on shared hosting
          * the terminator is on the same host, behind a load balancer it is not.
          */
+        // An unauthenticated hit on an admin.* route must land on the admin
+        // login, not the business one — the two guards share no session.
+        Authenticate::redirectUsing(function ($request) {
+            return $request->routeIs('admin.*') ? route('admin.login') : route('login');
+        });
+
         $middleware->trustProxies(
             at: env('TRUSTED_PROXIES', '127.0.0.1,::1') === '*'
                 ? '*'

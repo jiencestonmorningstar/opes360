@@ -41,6 +41,7 @@ class FormsTest extends TestCase
             'name' => 'Acme Ltd',
             'owner_id' => $this->user->id,
             'currency' => 'USD',
+            'plan' => 'business',
         ]);
 
         $this->joinCompany($this->company, $this->user);
