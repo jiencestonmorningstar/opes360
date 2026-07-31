@@ -35,18 +35,20 @@ class PlatformAdminsController extends Controller
             // re-inviting a previously-revoked address restores them below
             // instead of bouncing off "already taken".
             'email' => ['required', 'email', Rule::unique('platform_admins', 'email')->whereNull('deleted_at')],
+            'role' => ['required', Rule::in(PlatformAdmin::ROLES)],
         ]);
 
         $revoked = PlatformAdmin::withTrashed()->where('email', $data['email'])->first();
 
         if ($revoked) {
             $revoked->restore();
-            $revoked->update(['name' => $data['name']]);
+            $revoked->update(['name' => $data['name'], 'role' => $data['role']]);
             $admin = $revoked;
         } else {
             $admin = PlatformAdmin::create([
                 'name' => $data['name'],
                 'email' => $data['email'],
+                'role' => $data['role'],
                 // An unusable placeholder — the invitee sets their real
                 // password through the same reset link every "forgot
                 // password" uses, so no first password is ever generated or

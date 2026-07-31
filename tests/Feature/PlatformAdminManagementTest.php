@@ -176,11 +176,12 @@ class PlatformAdminManagementTest extends TestCase
         Notification::fake();
 
         $this->actingAs($this->admin, 'admin')
-            ->post('/admin/admins', ['name' => 'New Admin', 'email' => 'new-admin@example.com'])
+            ->post('/admin/admins', ['name' => 'New Admin', 'email' => 'new-admin@example.com', 'role' => PlatformAdmin::ROLE_SUPPORT])
             ->assertRedirect();
 
         $newAdmin = PlatformAdmin::where('email', 'new-admin@example.com')->first();
         $this->assertNotNull($newAdmin);
+        $this->assertSame(PlatformAdmin::ROLE_SUPPORT, $newAdmin->role);
 
         Notification::assertSentTo($newAdmin, \App\Notifications\AdminResetPassword::class);
         $this->assertDatabaseHas('platform_admin_activity', [

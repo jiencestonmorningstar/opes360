@@ -20,6 +20,7 @@ class PlatformAdminSeeder extends Seeder
                 'name' => 'Platform Admin',
                 'password' => Hash::make(config('opes.demo.password')),
                 'email_verified_at' => now(),
+                'role' => PlatformAdmin::ROLE_ADMIN,
             ],
         );
     }

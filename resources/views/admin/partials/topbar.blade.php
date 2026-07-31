@@ -52,6 +52,15 @@
                     <span class="hidden dark:inline">Light mode</span>
                 </button>
 
+                <a href="{{ route('admin.settings') }}" role="menuitem"
+                   class="flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-[14.5px] font-medium text-ink-2 hover:bg-surface-2">
+                    <x-icon name="cog" class="size-5 text-muted" />
+                    Settings
+                    @if ($admin && ! $admin->hasTwoFactorEnabled())
+                        <span class="ml-auto size-2 rounded-full bg-warning" title="Two-factor is off"></span>
+                    @endif
+                </a>
+
                 <a href="{{ route('login') }}" role="menuitem"
                    class="flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-[14.5px] font-medium text-ink-2 hover:bg-surface-2">
                     <x-icon name="briefcase" class="size-5 text-muted" />

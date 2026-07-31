@@ -2,7 +2,8 @@
 
 namespace App\Services;
 
-use App\Models\User;
+use App\Contracts\TwoFactorAuthenticatable;
+use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\Crypt;
 use Illuminate\Support\Str;
 use PragmaRX\Google2FA\Google2FA;
@@ -14,6 +15,10 @@ use PragmaRX\Google2FA\Google2FA;
  * does not hand an attacker a working second factor. Enrolment is only
  * confirmed once the user proves they can generate a code, which stops a
  * half-finished setup from locking anyone out.
+ *
+ * Works against User or PlatformAdmin — anything that is both an Eloquent
+ * model (for forceFill/save) and implements TwoFactorAuthenticatable (for
+ * the encrypted-state helpers).
  */
 class TwoFactor
 {
@@ -33,7 +38,7 @@ class TwoFactor
     }
 
     /** The otpauth:// URI an authenticator app scans. */
-    public function provisioningUri(User $user, string $secret): string
+    public function provisioningUri(Model&TwoFactorAuthenticatable $user, string $secret): string
     {
         return $this->engine->getQRCodeUrl(
             config('opes.brand.name'),
@@ -50,7 +55,7 @@ class TwoFactor
     }
 
     /** Starts enrolment without enabling it — nothing changes until confirmed. */
-    public function startEnrolment(User $user): string
+    public function startEnrolment(Model&TwoFactorAuthenticatable $user): string
     {
         $secret = $this->generateSecret();
 
@@ -63,7 +68,7 @@ class TwoFactor
         return $secret;
     }
 
-    public function confirm(User $user, string $code): bool
+    public function confirm(Model&TwoFactorAuthenticatable $user, string $code): bool
     {
         $secret = $user->twoFactorSecret();
 
@@ -76,7 +81,7 @@ class TwoFactor
         return true;
     }
 
-    public function disable(User $user): void
+    public function disable(Model&TwoFactorAuthenticatable $user): void
     {
         $user->forceFill([
             'two_factor_secret' => null,
@@ -88,7 +93,7 @@ class TwoFactor
     /**
      * Consumes a recovery code, removing it so each works exactly once.
      */
-    public function consumeRecoveryCode(User $user, string $code): bool
+    public function consumeRecoveryCode(Model&TwoFactorAuthenticatable $user, string $code): bool
     {
         $codes = $user->recoveryCodes();
         $code = Str::lower(trim($code));

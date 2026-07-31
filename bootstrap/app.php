@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Middleware\EnsurePlatformAdminRole;
 use App\Http\Middleware\SecurityHeaders;
 use App\Http\Middleware\SetCurrentCompany;
 use Illuminate\Auth\Middleware\Authenticate;
@@ -59,6 +60,10 @@ return Application::configure(basePath: dirname(__DIR__))
         // Runs on every web request so tenant scoping is never opt-in.
         $middleware->web(append: [
             SetCurrentCompany::class,
+        ]);
+
+        $middleware->alias([
+            'admin.role' => EnsurePlatformAdminRole::class,
         ]);
 
         /*

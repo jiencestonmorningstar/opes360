@@ -57,17 +57,22 @@
                     <x-icon name="credit-card" class="size-[18px] text-faint" stroke-width="1.8" />
                     Plan
                 </p>
-                <form method="POST" action="{{ route('admin.companies.plan', $company) }}" class="mt-3 flex gap-2"
-                      onsubmit="return confirm('Change {{ $company->name }}\'s plan?')">
-                    @csrf
-                    <select name="plan" class="h-11 flex-1 rounded-lg border border-border bg-surface px-3 text-[14px] text-ink">
-                        @foreach ($plans as $plan)
-                            <option value="{{ $plan }}" @selected($company->plan === $plan)>{{ ucfirst($plan) }}</option>
-                        @endforeach
-                    </select>
-                    <button type="submit" class="tap focusable h-11 shrink-0 rounded-lg bg-ink px-4 text-[13.5px] font-semibold text-white">Save</button>
-                </form>
-                <p class="mt-2 text-[12px] text-faint">Only enforced while the account is Active — demo and trial always see every module.</p>
+                @if (auth('admin')->user()->isAdmin())
+                    <form method="POST" action="{{ route('admin.companies.plan', $company) }}" class="mt-3 flex gap-2"
+                          onsubmit="return confirm('Change {{ $company->name }}\'s plan?')">
+                        @csrf
+                        <select name="plan" class="h-11 flex-1 rounded-lg border border-border bg-surface px-3 text-[14px] text-ink">
+                            @foreach ($plans as $plan)
+                                <option value="{{ $plan }}" @selected($company->plan === $plan)>{{ ucfirst($plan) }}</option>
+                            @endforeach
+                        </select>
+                        <button type="submit" class="tap focusable h-11 shrink-0 rounded-lg bg-ink px-4 text-[13.5px] font-semibold text-white">Save</button>
+                    </form>
+                    <p class="mt-2 text-[12px] text-faint">Only enforced while the account is Active — demo and trial always see every module.</p>
+                @else
+                    <p class="mt-3 text-[15px] font-semibold capitalize text-ink">{{ $company->plan }}</p>
+                    <p class="mt-2 text-[12px] text-faint">Changing the plan needs the full Admin role.</p>
+                @endif
             </div>
 
             <div class="card p-5">
