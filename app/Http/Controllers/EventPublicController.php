@@ -32,6 +32,30 @@ class EventPublicController extends Controller
         ]);
     }
 
+    /**
+     * The iframe variant — an event card for embedding on another website.
+     *
+     * Unlike forms, the purchase itself does not happen inside the frame: the
+     * confirmation page holds the buyer's tickets in the session, and inside
+     * a third-party iframe the browser strips that cookie — the buyer would
+     * pay attention, submit, and land with nothing. The embed therefore sells
+     * the click, and "Get tickets" opens the full page as its own tab.
+     */
+    public function embed(string $token)
+    {
+        $event = $this->findEvent($token);
+
+        if ($event === null || $event->status === 'draft') {
+            abort(404);
+        }
+
+        return view('public.event-embed', [
+            'event' => $event,
+            'company' => $event->company,
+            'types' => $event->ticketTypes,
+        ]);
+    }
+
     public function purchase(Request $request, string $token, TicketSeller $seller)
     {
         $event = $this->findEvent($token);

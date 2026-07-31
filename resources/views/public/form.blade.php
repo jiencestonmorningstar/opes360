@@ -1,3 +1,14 @@
+@php
+    /*
+     * This view renders twice over: standalone behind the share link, and
+     * inside an <iframe> on someone else's website (the /embed routes). The
+     * embedded run cannot rely on the session — third-party cookie rules
+     * strip it — so errors and old input arrive as plain variables from the
+     * controller instead of session flashes.
+     */
+    $embed = $embed ?? false;
+    $action = $embed ? route('form.embed.submit', $form->share_token) : route('form.submit', $form->share_token);
+@endphp
 <!DOCTYPE html>
 <html lang="{{ str_replace('_', '-', app()->getLocale()) }}" class="h-full">
 <head>
@@ -20,7 +31,7 @@
 </head>
 
 {{-- No app shell: the person filling this in is not a user. --}}
-<body class="flex min-h-full flex-col items-center px-5 py-10">
+<body class="flex min-h-full flex-col items-center {{ $embed ? 'px-1 py-2' : 'px-5 py-10' }}">
 <main class="w-full max-w-[560px]">
 
     <div class="card border-t-4 border-t-brand p-6">
@@ -43,14 +54,16 @@
             </div>
         @endif
 
-        <form method="POST" action="{{ route('form.submit', $form->share_token) }}" class="mt-4 space-y-4">
-            @csrf
+        <form method="POST" action="{{ $action }}" class="mt-4 space-y-4">
+            @if (! $embed)
+                @csrf
+            @endif
 
             @foreach ($fields as $field)
                 @php
                     $key = 'answers.'.$field['id'];
                     $name = "answers[{$field['id']}]";
-                    $old = old('answers.'.$field['id']);
+                    $old = $embed ? data_get($oldInput ?? [], $field['id']) : old('answers.'.$field['id']);
                 @endphp
 
                 <div class="card p-5 {{ $errors->has($key) || $errors->has($key.'.*') ? 'border-warning/60' : '' }}">
@@ -148,7 +161,7 @@
         </form>
     @endif
 
-    <p class="mt-7 text-center text-[12px] text-faint">
+    <p class="{{ $embed ? 'mt-4' : 'mt-7' }} text-center text-[12px] text-faint">
         Powered by <span class="font-semibold"><span class="text-ink">{{ config('opes.brand.name_prefix') }}</span><span class="text-brand">{{ config('opes.brand.name_suffix') }}</span></span>
         · Never submit passwords through this form.
     </p>

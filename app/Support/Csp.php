@@ -42,7 +42,16 @@ class Csp
         return 'nonce="'.e($this->nonce()).'"';
     }
 
-    public function header(): string
+    /**
+     * @param  bool  $embeddable  true only for the /embed variants of public
+     *                            forms and event pages, which exist to be
+     *                            iframed into other people's websites — the
+     *                            Google Forms model. Everything else keeps
+     *                            frame-ancestors 'none': no other page in a
+     *                            financial product has any business inside
+     *                            someone else's frame.
+     */
+    public function header(bool $embeddable = false): string
     {
         $nonce = "'nonce-".$this->nonce()."'";
 
@@ -62,7 +71,7 @@ class Csp
             "worker-src 'self' blob:",
             "manifest-src 'self'",
             "form-action 'self'",
-            "frame-ancestors 'none'",
+            $embeddable ? 'frame-ancestors *' : "frame-ancestors 'none'",
             "base-uri 'self'",
             "object-src 'none'",
         ])->implode('; ');

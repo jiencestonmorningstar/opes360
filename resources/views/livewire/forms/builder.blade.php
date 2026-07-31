@@ -43,7 +43,7 @@
             @endcan
         </div>
 
-        {{-- Share link, only meaningful once open --}}
+        {{-- Share link + embed snippet, only meaningful once open --}}
         @if ($form->isOpen())
             <div class="mt-4 rounded-xl bg-surface-2 p-3.5" x-data="{ copied: false }">
                 <p class="text-[11.5px] font-medium uppercase tracking-wide text-faint">Share link</p>
@@ -56,6 +56,23 @@
                         <span x-show="copied" x-cloak class="text-positive">Copied</span>
                     </button>
                 </div>
+            </div>
+
+            @php
+                $embedSnippet = '<iframe src="'.route('form.embed', $form->share_token).'" width="100%" height="760" style="border:0" title="'.e($form->title).'"></iframe>';
+            @endphp
+            <div class="mt-3 rounded-xl bg-surface-2 p-3.5" x-data="{ copied: false }">
+                <p class="text-[11.5px] font-medium uppercase tracking-wide text-faint">Embed on your website</p>
+                <div class="mt-1.5 flex items-center gap-2">
+                    <code class="tnum min-w-0 flex-1 truncate text-[12px] text-muted">{{ $embedSnippet }}</code>
+                    <button type="button"
+                            @click="navigator.clipboard?.writeText({{ Js::from($embedSnippet) }}).then(() => { copied = true; setTimeout(() => copied = false, 1500) })"
+                            class="focusable shrink-0 rounded-lg border border-border bg-surface px-3 py-1.5 text-[12.5px] font-semibold text-ink-2 hover:bg-surface">
+                        <span x-show="!copied">Copy</span>
+                        <span x-show="copied" x-cloak class="text-positive">Copied</span>
+                    </button>
+                </div>
+                <p class="mt-1.5 text-[12px] leading-snug text-faint">Paste into any website's HTML — the form fills and submits right on the page, like a Google Form.</p>
             </div>
         @endif
     </div>

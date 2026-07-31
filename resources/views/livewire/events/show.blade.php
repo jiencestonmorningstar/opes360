@@ -81,6 +81,23 @@
                     </span>
                 @endif
             </div>
+
+            @php
+                $embedSnippet = '<iframe src="'.route('event.embed', $event->share_token).'" width="100%" height="440" style="border:0" title="'.e($event->title).'"></iframe>';
+            @endphp
+            <div class="mt-4 rounded-xl bg-surface-2 p-3.5" x-data="{ copiedEmbed: false }">
+                <p class="text-[11.5px] font-medium uppercase tracking-wide text-faint">Embed on your website</p>
+                <div class="mt-1.5 flex items-center gap-2">
+                    <code class="tnum min-w-0 flex-1 truncate text-[12px] text-muted">{{ $embedSnippet }}</code>
+                    <button type="button"
+                            @click="navigator.clipboard?.writeText({{ Js::from($embedSnippet) }}).then(() => { copiedEmbed = true; setTimeout(() => copiedEmbed = false, 1500) })"
+                            class="focusable shrink-0 rounded-lg border border-border bg-surface px-3 py-1.5 text-[12.5px] font-semibold text-ink-2 hover:bg-surface">
+                        <span x-show="!copiedEmbed">Copy</span>
+                        <span x-show="copiedEmbed" x-cloak class="text-positive">Copied</span>
+                    </button>
+                </div>
+                <p class="mt-1.5 text-[12px] leading-snug text-faint">Shows the event card with live prices and availability; "Get tickets" opens the sales page.</p>
+            </div>
         </div>
     @endif
 

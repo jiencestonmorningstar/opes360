@@ -81,6 +81,7 @@ Route::middleware('auth')->group(function () {
     Route::get('/customers', CustomersIndex::class)->middleware('can:customers.view')->name('customers');
     Route::get('/customers/create', CustomerForm::class)->middleware('can:customers.create')->name('customers.create');
     Route::get('/customers/{contact}', CustomerShow::class)->middleware('can:view,contact')->name('customers.show');
+    Route::get('/customers/{contact}/statement', [PrintController::class, 'statement'])->middleware('can:view,contact')->name('customers.statement');
     Route::get('/customers/{contact}/edit', CustomerForm::class)->middleware('can:update,contact')->name('customers.edit');
 
     // "create" is registered before the wildcard so it is never read as an id.
@@ -182,10 +183,15 @@ Route::middleware('throttle:60,1')->group(function () {
  */
 Route::middleware('throttle:60,1')->group(function () {
     Route::get('/f/{token}/thanks', [FormPublicController::class, 'thanks'])->name('form.thanks');
+    // The /embed variants render inside iframes on other websites — the only
+    // routes in the product allowed to. See SecurityHeaders.
+    Route::get('/f/{token}/embed', [FormPublicController::class, 'embed'])->name('form.embed');
+    Route::post('/f/{token}/embed', [FormPublicController::class, 'embedSubmit'])->name('form.embed.submit');
     Route::get('/f/{token}', [FormPublicController::class, 'show'])->name('form.public');
     Route::post('/f/{token}', [FormPublicController::class, 'submit'])->name('form.submit');
 
     Route::get('/e/{token}/tickets', [EventPublicController::class, 'tickets'])->name('event.tickets');
+    Route::get('/e/{token}/embed', [EventPublicController::class, 'embed'])->name('event.embed');
     Route::get('/e/{token}', [EventPublicController::class, 'show'])->name('event.public');
     Route::post('/e/{token}', [EventPublicController::class, 'purchase'])->name('event.purchase');
 });

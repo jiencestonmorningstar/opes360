@@ -31,7 +31,7 @@
         </p>
 
         @if ($form->isOpen())
-            <a href="{{ route('form.public', $form->share_token) }}"
+            <a href="{{ ($embed ?? false) ? route('form.embed', $form->share_token) : route('form.public', $form->share_token) }}"
                class="focusable mt-6 text-[13.5px] font-semibold text-brand hover:underline">
                 Submit another response
             </a>
