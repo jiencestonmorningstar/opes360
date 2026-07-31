@@ -77,9 +77,13 @@ class DocumentTemplates
                 TXT,
             ],
 
+            // Key stays 'nda' rather than becoming 'one_way_nda': documents
+            // already issued from this template store the key, and renaming
+            // it would orphan them. The name and summary carry the
+            // clarification instead, now that a mutual sibling exists below.
             'nda' => [
-                'name' => 'Non-Disclosure Agreement',
-                'summary' => 'Before sharing anything commercially sensitive.',
+                'name' => 'One-Way NDA',
+                'summary' => 'Before sharing anything commercially sensitive with someone.',
                 'icon' => 'briefcase',
                 'accent' => 'purple',
                 'binding' => true,
@@ -965,6 +969,417 @@ class DocumentTemplates
                 {{ items }}
 
                 Authorised by {{ authorised_by }}. Security should verify the items against this list at the gate and retain a copy.
+                TXT,
+            ],
+
+            'mutual_nda' => [
+                'name' => 'Mutual NDA',
+                'summary' => 'Both sides sharing confidential information — a two-way discussion.',
+                'icon' => 'briefcase',
+                'accent' => 'purple',
+                'binding' => true,
+                'fields' => [
+                    ['key' => 'other_party', 'label' => 'Other party', 'required' => true],
+                    ['key' => 'purpose', 'label' => 'Purpose of discussion', 'type' => 'textarea', 'required' => true,
+                        'placeholder' => 'e.g. Evaluating a possible partnership or joint venture.'],
+                    ['key' => 'duration_years', 'label' => 'Confidentiality period (years)', 'default' => '3'],
+                ],
+                'body' => <<<'TXT'
+                ## 1. Parties
+
+                This agreement is made on {{ today }} between **{{ company.name }}** and **{{ other_party }}** (together, "the Parties"), each of whom may disclose confidential information to the other.
+
+                ## 2. Purpose
+
+                The Parties wish to exchange confidential information for the following purpose:
+
+                {{ purpose }}
+
+                ## 3. Confidential information
+
+                "Confidential information" means any non-public information disclosed by either Party to the other, in any form, whether or not marked confidential. It does not include information that is already public, was already lawfully known to the receiving Party, or is independently developed without reference to what was disclosed.
+
+                ## 4. Obligations
+
+                Whichever Party receives confidential information from the other shall:
+
+                - Use it only for the purpose stated above.
+                - Not disclose it to anyone else without the disclosing Party's written permission.
+                - Protect it with at least the care it applies to its own confidential information.
+
+                These obligations bind both Parties equally, regardless of which of them disclosed the information in question.
+
+                ## 5. Duration
+
+                These obligations continue for {{ duration_years }} years from the date of this agreement.
+
+                ## 6. Return
+
+                On request, the receiving Party shall return or destroy the other's confidential information and confirm in writing that it has done so.
+                TXT,
+            ],
+
+            'ip_assignment' => [
+                'name' => 'IP & Asset Assignment',
+                'summary' => 'Move inventions, trademarks or copyright into the business.',
+                'icon' => 'document',
+                'accent' => 'blue',
+                'binding' => true,
+                'fields' => [
+                    ['key' => 'assignor_name', 'label' => 'Assigned by', 'required' => true,
+                        'placeholder' => 'e.g. the founder or contractor who created it'],
+                    ['key' => 'asset_description', 'label' => 'What is being assigned', 'type' => 'textarea', 'required' => true,
+                        'placeholder' => 'Describe the invention, design, trademark, code, content or other work.'],
+                    ['key' => 'consideration', 'label' => 'In exchange for', 'default' => 'the sum of one dollar and other good and valuable consideration'],
+                    ['key' => 'warranty_note', 'label' => 'Ownership warranty', 'default' => 'was created solely by the Assignor and is free of any third-party claim'],
+                ],
+                'body' => <<<'TXT'
+                ## Assignment of Intellectual Property
+
+                This assignment is made on {{ today }} by **{{ assignor_name }}** ("the Assignor") in favour of **{{ company.name }}** ("the Company").
+
+                ## 1. What is assigned
+
+                The Assignor irrevocably assigns to the Company all right, title and interest — including any patent, trademark, copyright, design and trade secret rights — in and to the following:
+
+                {{ asset_description }}
+
+                ## 2. Consideration
+
+                This assignment is made in exchange for {{ consideration }}.
+
+                ## 3. Warranty
+
+                The Assignor warrants that the assigned work {{ warranty_note }}, and that the Assignor has full authority to make this assignment.
+
+                ## 4. Further assurance
+
+                The Assignor shall sign any further document reasonably needed to record the Company's ownership, including with a trademark or patent office.
+                TXT,
+            ],
+
+            'contractor_agreement' => [
+                'name' => 'Independent Contractor Agreement',
+                'summary' => 'Clear terms with a contractor — not an employee.',
+                'icon' => 'briefcase',
+                'accent' => 'teal',
+                'binding' => true,
+                'fields' => [
+                    ['key' => 'contractor_name', 'label' => 'Contractor name', 'required' => true],
+                    ['key' => 'services', 'label' => 'Services to be provided', 'type' => 'textarea', 'required' => true],
+                    ['key' => 'fee', 'label' => 'Fee', 'required' => true, 'placeholder' => 'e.g. $40/hour, invoiced monthly'],
+                    ['key' => 'start_date', 'label' => 'Start date', 'type' => 'date', 'required' => true],
+                    ['key' => 'notice_period', 'label' => 'Notice period', 'default' => '14 days'],
+                ],
+                'body' => <<<'TXT'
+                ## Independent Contractor Agreement
+
+                This agreement is made on {{ today }} between **{{ company.name }}** ("the Company") and **{{ contractor_name }}** ("the Contractor").
+
+                ## 1. Services
+
+                The Contractor agrees to provide the following services, beginning {{ start_date }}:
+
+                {{ services }}
+
+                ## 2. Fee
+
+                The Company shall pay {{ fee }}.
+
+                ## 3. Independent contractor status
+
+                The Contractor is engaged as an independent contractor, not an employee. The Contractor is responsible for their own taxes, insurance and statutory contributions, works without direct supervision as to method or hours, and may provide services to other clients. Nothing in this agreement creates an employment, partnership or agency relationship.
+
+                ## 4. Ownership of work
+
+                Work product created under this agreement belongs to the Company once paid for in full.
+
+                ## 5. Ending the agreement
+
+                Either party may end this agreement by giving {{ notice_period }} written notice.
+                TXT,
+            ],
+
+            'employee_handbook' => [
+                'name' => 'Employee Handbook',
+                'summary' => 'Baseline workplace policies and conduct, in one document.',
+                'icon' => 'document',
+                'accent' => 'slate',
+                'binding' => false,
+                'fields' => [
+                    ['key' => 'working_hours', 'label' => 'Working hours', 'default' => 'Monday to Friday, 8:00am to 5:00pm'],
+                    ['key' => 'leave_policy', 'label' => 'Leave policy', 'type' => 'textarea', 'required' => true,
+                        'placeholder' => 'Annual leave entitlement, how to request it, public holidays.'],
+                    ['key' => 'conduct', 'label' => 'Code of conduct', 'type' => 'textarea', 'required' => true,
+                        'placeholder' => 'Expected behaviour, punctuality, dress code, use of company property.'],
+                    ['key' => 'disciplinary_process', 'label' => 'Disciplinary process', 'type' => 'textarea',
+                        'default' => 'Verbal warning, written warning, final warning, then termination — each recorded on the employee\'s file.'],
+                    ['key' => 'perks', 'label' => 'Perks and benefits', 'type' => 'textarea'],
+                ],
+                'body' => <<<'TXT'
+                ## Employee Handbook — {{ company.name }}
+
+                This handbook sets out the baseline policies that apply to everyone working at {{ company.name }}. It is not a contract of employment; where it conflicts with an individual's signed offer letter, the offer letter governs.
+
+                ## Working hours
+
+                {{ working_hours }}
+
+                ## Leave
+
+                {{ leave_policy }}
+
+                ## Code of conduct
+
+                {{ conduct }}
+
+                ## Disciplinary process
+
+                {{ disciplinary_process }}
+
+                [## Perks and benefits
+
+                {{ perks }}
+
+                ]This handbook may be updated from time to time; staff will be told when it changes.
+                TXT,
+            ],
+
+            'separation_agreement' => [
+                'name' => 'Separation & Release Agreement',
+                'summary' => 'A clean, signed-off end to employment, with a release of claims.',
+                'icon' => 'document',
+                'accent' => 'orange',
+                'binding' => true,
+                'fields' => [
+                    ['key' => 'employee_name', 'label' => 'Employee name', 'required' => true],
+                    ['key' => 'last_working_day', 'label' => 'Last working day', 'type' => 'date', 'required' => true],
+                    ['key' => 'severance_terms', 'label' => 'Severance terms', 'type' => 'textarea', 'required' => true,
+                        'placeholder' => 'Amount, what it covers, and when it will be paid.'],
+                    ['key' => 'return_of_property', 'label' => 'Property to be returned', 'default' => 'Any laptop, keys, ID badge and other company property'],
+                ],
+                'body' => <<<'TXT'
+                ## Separation & Release Agreement
+
+                This agreement is made on {{ today }} between **{{ company.name }}** ("the Company") and **{{ employee_name }}** ("the Employee"), to record the terms on which the Employee's employment ends.
+
+                ## 1. Separation
+
+                The Employee's last working day is **{{ last_working_day }}**, after which the employment relationship ends.
+
+                ## 2. Severance
+
+                {{ severance_terms }}
+
+                ## 3. Return of property
+
+                {{ return_of_property }} shall be returned to the Company on or before the last working day.
+
+                ## 4. Release
+
+                In exchange for the severance above, the Employee releases the Company from any claim arising out of the employment or its ending, to the fullest extent permitted by law. This does not affect any right that cannot lawfully be released, such as an accrued statutory entitlement.
+
+                ## 5. References
+
+                The Company will confirm dates of employment and job title on request. Both parties agree to speak of the other professionally.
+
+                Signing below confirms that the Employee has read this agreement and enters into it voluntarily.
+                TXT,
+            ],
+
+            'msa' => [
+                'name' => 'Master Services Agreement',
+                'summary' => 'The core terms for an ongoing business-to-business service.',
+                'icon' => 'document',
+                'accent' => 'blue',
+                'binding' => true,
+                'fields' => [
+                    ['key' => 'client_name', 'label' => 'Client name', 'required' => true],
+                    ['key' => 'services_overview', 'label' => 'Services covered', 'type' => 'textarea', 'required' => true,
+                        'placeholder' => 'The general kind of work this agreement will cover — specifics go in each Statement of Work.'],
+                    ['key' => 'payment_terms', 'label' => 'Payment terms', 'default' => '14 days from invoice date'],
+                    ['key' => 'termination_notice', 'label' => 'Termination notice', 'default' => '30 days'],
+                ],
+                'body' => <<<'TXT'
+                ## Master Services Agreement
+
+                This agreement is made on {{ today }} between **{{ company.name }}** ("the Provider") and **{{ client_name }}** ("the Client"), and governs the following services:
+
+                {{ services_overview }}
+
+                ## 1. Statements of Work
+
+                Specific projects, deliverables, timelines and fees are set out in individual Statements of Work signed under this agreement. Where a Statement of Work conflicts with this agreement, this agreement governs unless the Statement of Work says otherwise in writing.
+
+                ## 2. Payment
+
+                Unless a Statement of Work says otherwise, invoices are payable within {{ payment_terms }}.
+
+                ## 3. Confidentiality
+
+                Each party shall keep confidential any non-public information it learns about the other through this agreement.
+
+                ## 4. Liability
+
+                Neither party is liable for indirect or consequential loss. Each party's liability under this agreement is limited to the fees paid under the Statement of Work giving rise to the claim.
+
+                ## 5. Term and termination
+
+                This agreement continues until ended by either party giving {{ termination_notice }} written notice, without affecting any Statement of Work already in progress.
+                TXT,
+            ],
+
+            'sow' => [
+                'name' => 'Statement of Work',
+                'summary' => 'One project — deliverables, timeline and fees — under a master agreement.',
+                'icon' => 'document',
+                'accent' => 'green',
+                'binding' => true,
+                'fields' => [
+                    ['key' => 'client_name', 'label' => 'Client name', 'required' => true],
+                    ['key' => 'project_name', 'label' => 'Project name', 'required' => true],
+                    ['key' => 'deliverables', 'label' => 'Deliverables', 'type' => 'textarea', 'required' => true],
+                    ['key' => 'timeline', 'label' => 'Timeline', 'required' => true, 'placeholder' => 'e.g. 6 weeks from the start date'],
+                    ['key' => 'fees', 'label' => 'Fees', 'required' => true],
+                    ['key' => 'msa_reference', 'label' => 'Under the master agreement dated'],
+                ],
+                'body' => <<<'TXT'
+                ## Statement of Work: {{ project_name }}
+
+                Issued {{ today }} between **{{ company.name }}** and **{{ client_name }}**.[ This Statement of Work is issued under the Master Services Agreement dated {{ msa_reference }}.]
+
+                ## 1. Deliverables
+
+                {{ deliverables }}
+
+                ## 2. Timeline
+
+                {{ timeline }}
+
+                ## 3. Fees
+
+                {{ fees }}
+
+                ## 4. Acceptance
+
+                Deliverables are deemed accepted unless the Client raises a written objection within 5 business days of delivery.
+                TXT,
+            ],
+
+            'website_tos' => [
+                'name' => 'Website Terms of Service',
+                'summary' => 'Rules for anyone using your website or app.',
+                'icon' => 'document',
+                'accent' => 'slate',
+                'binding' => true,
+                'fields' => [
+                    ['key' => 'website_url', 'label' => 'Website address', 'required' => true],
+                    ['key' => 'service_description', 'label' => 'What the site offers', 'type' => 'textarea', 'required' => true],
+                    ['key' => 'governing_law', 'label' => 'Governing law', 'placeholder' => 'e.g. the laws of Cameroon'],
+                ],
+                'body' => <<<'TXT'
+                ## Terms of Service — {{ website_url }}
+
+                These terms govern use of {{ website_url }} ("the Site"), operated by {{ company.name }}. By using the Site you agree to them.
+
+                ## 1. The service
+
+                {{ service_description }}
+
+                ## 2. Accounts
+
+                If the Site requires an account, you are responsible for keeping your login details secure and for activity that happens under your account.
+
+                ## 3. Acceptable use
+
+                You will not use the Site to break the law, infringe anyone's rights, or interfere with its operation or other users.
+
+                ## 4. Content
+
+                Content on the Site belongs to {{ company.name }} or its licensors unless stated otherwise. You may not copy or redistribute it without permission.
+
+                ## 5. Disclaimer
+
+                The Site is provided as available, without a guarantee that it will be uninterrupted or error-free.
+
+                [## 6. Governing law
+
+                These terms are governed by {{ governing_law }}.
+
+                ]{{ company.name }} may update these terms from time to time; continued use after a change means you accept it.
+                TXT,
+            ],
+
+            'customer_privacy_policy' => [
+                'name' => 'Privacy Policy',
+                'summary' => 'What you collect from customers and how you use it.',
+                'icon' => 'document',
+                'accent' => 'purple',
+                'binding' => true,
+                'fields' => [
+                    ['key' => 'data_collected', 'label' => 'What you collect', 'type' => 'textarea', 'required' => true,
+                        'placeholder' => 'e.g. name, email, phone, delivery address, payment details.'],
+                    ['key' => 'data_use', 'label' => 'How you use it', 'type' => 'textarea', 'required' => true],
+                    ['key' => 'data_sharing', 'label' => 'Who you share it with', 'default' => 'We do not sell customer data. It is shared only with providers who help us operate — payment processors, delivery partners — under confidentiality obligations.'],
+                    ['key' => 'contact_email', 'label' => 'Privacy contact email', 'required' => true],
+                ],
+                'body' => <<<'TXT'
+                ## Privacy Policy
+
+                {{ company.name }} collects and uses personal information as described here.
+
+                ## 1. What we collect
+
+                {{ data_collected }}
+
+                ## 2. How we use it
+
+                {{ data_use }}
+
+                ## 3. Sharing
+
+                {{ data_sharing }}
+
+                ## 4. Your rights
+
+                You may ask us what personal information we hold about you, ask us to correct it, or ask us to delete it, by writing to {{ contact_email }}.
+
+                ## 5. Changes
+
+                We may update this policy from time to time; the current version always applies.
+                TXT,
+            ],
+
+            'board_resolution' => [
+                'name' => 'Board Resolution',
+                'summary' => 'The formal record of one specific decision.',
+                'icon' => 'document',
+                'accent' => 'slate',
+                'binding' => true,
+                'fields' => [
+                    ['key' => 'meeting_date', 'label' => 'Date of meeting', 'type' => 'date', 'required' => true],
+                    ['key' => 'attendees', 'label' => 'Directors present', 'type' => 'textarea', 'required' => true],
+                    ['key' => 'resolution_text', 'label' => 'It was resolved that…', 'type' => 'textarea', 'required' => true,
+                        'placeholder' => 'State the decision precisely, e.g. "the Company shall open a bank account with..."'],
+                    ['key' => 'proposed_by', 'label' => 'Proposed by'],
+                    ['key' => 'seconded_by', 'label' => 'Seconded by'],
+                ],
+                'body' => <<<'TXT'
+                ## Resolution of the Directors of {{ company.name }}
+
+                At a meeting held on {{ meeting_date }}, attended by:
+
+                {{ attendees }}
+
+                ## Resolution
+
+                IT WAS RESOLVED THAT:
+
+                {{ resolution_text }}
+
+                [Proposed by {{ proposed_by }}[ and seconded by {{ seconded_by }}].
+
+                ]This resolution was passed and takes effect from the date above.
                 TXT,
             ],
         ];
