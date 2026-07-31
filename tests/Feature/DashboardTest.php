@@ -52,7 +52,7 @@ class DashboardTest extends TestCase
             ->assertSee('$820.00')     // Paid, today
             ->assertSee('$430.00')     // Outstanding, running balance
             ->assertSee('$5,760.00')   // Sales Overview, this week
-            ->assertSee('128')         // Customers
+            ->assertSee('129')         // Customers (128 crafted + the seeded demo client)
             ->assertSee('56')          // Products
             ->assertSee('24')          // Receipts today
             ->assertSee('$210.00');    // Expenses this month
@@ -93,6 +93,23 @@ class DashboardTest extends TestCase
                 'Mega Shop',
                 'Daily Needs',
             ]);
+    }
+
+    /**
+     * The seeded demo now includes a real XAF invoice and payment (the Jude
+     * Nshome / OPESWARE llc. account). It sits outside the crafted today/
+     * week/month windows, but even if it fell inside one, the dashboard's
+     * USD totals must not silently absorb a foreign-currency figure.
+     */
+    public function test_a_foreign_currency_invoice_does_not_inflate_home_currency_totals(): void
+    {
+        Livewire::actingAs($this->user)
+            ->test(Dashboard::class)
+            ->call('setRange', 'month')
+            ->assertOk()
+            // 30,000 XAF is not 30,000 USD — if the query summed both
+            // currencies together this month's total would balloon past it.
+            ->assertDontSee('$30,000.00');
     }
 
     public function test_changing_the_range_recomputes_the_window(): void
