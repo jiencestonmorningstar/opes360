@@ -61,7 +61,19 @@ Write-Host "OPES360 - local setup at https://$Domain" -ForegroundColor White
 
 Step "Checking PHP"
 
+# Laragon only puts its bundled PHP and MySQL on PATH inside its own terminal.
+# A fresh Administrator PowerShell has neither, so find them on disk instead
+# of telling the user to go fetch them.
 $php = Get-Command php -ErrorAction SilentlyContinue
+if (-not $php) {
+    $laragonPhp = Get-ChildItem -Path 'C:\laragon\bin\php' -Recurse -Filter php.exe -ErrorAction SilentlyContinue |
+        Sort-Object FullName -Descending | Select-Object -First 1
+    if ($laragonPhp) {
+        $env:Path = "$($laragonPhp.DirectoryName);$env:Path"
+        Ok "Using Laragon's PHP at $($laragonPhp.DirectoryName)"
+        $php = Get-Command php -ErrorAction SilentlyContinue
+    }
+}
 if (-not $php) {
     Die "PHP is not on PATH. Install PHP 8.2+ (or Laragon Full, which bundles it) and reopen this terminal."
 }
@@ -115,26 +127,26 @@ if ($UseLaragon) {
 
 # ---- hosts file --------------------------------------------------------------
 
-if ($UseLaragon) {
-    Step "Skipping the hosts file - Laragon resolves *.test itself"
+# Written even when Laragon is present. Laragon can resolve *.test through its
+# own auto-vhost mechanism, but only after a Reload, and not at all if it is
+# not running - which surfaced as DNS_PROBE_FINISHED_NXDOMAIN in practice. A
+# hosts entry costs nothing and does not depend on any of that.
+Step "Pointing $Domain at this machine"
+
+$hostsPath = "$env:SystemRoot\System32\drivers\etc\hosts"
+$hosts     = Get-Content $hostsPath -Raw
+
+if ($hosts -match "(?m)^\s*127\.0\.0\.1\s+$([regex]::Escape($Domain))\s*$") {
+    Ok "hosts entry already present"
 } else {
-    Step "Pointing $Domain at this machine"
+    Add-Content -Path $hostsPath -Value "`r`n127.0.0.1`t$Domain"
+    Ok "Added '127.0.0.1 $Domain' to the hosts file"
+}
 
-    $hostsPath = "$env:SystemRoot\System32\drivers\etc\hosts"
-    $hosts     = Get-Content $hostsPath -Raw
+ipconfig /flushdns | Out-Null
 
-    if ($hosts -match "(?m)^\s*127\.0\.0\.1\s+$([regex]::Escape($Domain))\s*$") {
-        Ok "hosts entry already present"
-    } else {
-        Add-Content -Path $hostsPath -Value "`r`n127.0.0.1`t$Domain"
-        Ok "Added '127.0.0.1 $Domain' to the hosts file"
-    }
-
-    ipconfig /flushdns | Out-Null
-
-    if (-not (Resolve-DnsName $Domain -ErrorAction SilentlyContinue)) {
-        Warn "$Domain still does not resolve. Some VPN and security tools override the hosts file."
-    }
+if (-not (Resolve-DnsName $Domain -ErrorAction SilentlyContinue)) {
+    Warn "$Domain still does not resolve. Some VPN and security tools override the hosts file."
 }
 
 # ---- caddy -------------------------------------------------------------------
@@ -169,6 +181,30 @@ if (-not $UseLaragon) {
 Step "Preparing the database"
 
 $mysql = Get-Command mysql -ErrorAction SilentlyContinue
+if (-not $mysql) {
+    $laragonMysql = Get-ChildItem -Path 'C:\laragon\bin\mysql' -Recurse -Filter mysql.exe -ErrorAction SilentlyContinue |
+        Where-Object { $_.DirectoryName -like '*\bin' } |
+        Sort-Object FullName -Descending | Select-Object -First 1
+    if ($laragonMysql) {
+        $env:Path = "$($laragonMysql.DirectoryName);$env:Path"
+        Ok "Using Laragon's MySQL client at $($laragonMysql.DirectoryName)"
+        $mysql = Get-Command mysql -ErrorAction SilentlyContinue
+    }
+}
+
+# The client is no use if the server is down. Laragon starts MySQL when its
+# main window starts services, not merely by being installed.
+if ($mysql -and -not (Get-NetTCPConnection -LocalPort 3306 -State Listen -ErrorAction SilentlyContinue)) {
+    if ($UseLaragon) {
+        Warn "Nothing is listening on port 3306 - MySQL is not running."
+        Warn "Open Laragon and click 'Start All', then come back here."
+        Read-Host "Press Enter once Laragon shows MySQL running"
+    } else {
+        Warn "Nothing is listening on port 3306 - start MySQL/MariaDB first."
+        Read-Host "Press Enter once it is running"
+    }
+}
+
 $pwArg = if ($DbPassword) { "-p$DbPassword" } else { '' }
 
 if ($mysql) {
@@ -263,39 +299,57 @@ if ($UseLaragon) {
     # ---- laragon handoff -------------------------------------------------
 
     Step "Handing off to Laragon"
-    Warn "Laragon needs two clicks it cannot be scripted into (no PowerShell hook"
+
+    if (-not (Get-Process laragon -ErrorAction SilentlyContinue)) {
+        Warn "Laragon is installed but not running - starting it."
+        Start-Process 'C:\laragon\laragon.exe'
+        Start-Sleep -Seconds 5
+    }
+
+    Warn "Laragon needs three clicks it cannot be scripted into (no PowerShell hook"
     Warn "for its tray menu):"
     Write-Host ""
-    Write-Host "    1. Right-click the Laragon tray icon -> Apache/Nginx -> SSL ->" -ForegroundColor Yellow
+    Write-Host "    1. In the Laragon window, click 'Start All' (if Apache/Nginx and" -ForegroundColor Yellow
+    Write-Host "       MySQL are not already green/running)" -ForegroundColor Yellow
+    Write-Host "    2. Right-click the Laragon tray icon -> Apache/Nginx -> SSL ->" -ForegroundColor Yellow
     Write-Host "       Create certificate for *.test" -ForegroundColor Yellow
-    Write-Host "    2. Right-click the Laragon tray icon -> Apache/Nginx -> Reload" -ForegroundColor Yellow
+    Write-Host "    3. Right-click the Laragon tray icon -> Apache/Nginx -> Reload" -ForegroundColor Yellow
     Write-Host ""
     Write-Host "    Laragon serves the folder name as the domain, so" -ForegroundColor Gray
     Write-Host "    C:\laragon\www\$(Split-Path $Root -Leaf) becomes https://$(Split-Path $Root -Leaf).test" -ForegroundColor Gray
     Write-Host "    It detects the 'artisan' file and points the vhost at public/ itself." -ForegroundColor Gray
     Write-Host ""
-    Read-Host "Press Enter once both are done"
+    Read-Host "Press Enter once all three are done"
 
     Step "Waiting for the site"
 
-    $ready = $false
-    foreach ($i in 1..40) {
+    $liveUrl = $null
+    foreach ($i in 1..20) {
         Start-Sleep -Seconds 2
-        try {
-            $r = Invoke-WebRequest "https://$Domain/up" -UseBasicParsing -TimeoutSec 5
-            if ($r.StatusCode -eq 200) { $ready = $true; break }
-        } catch { }
+        foreach ($scheme in 'https', 'http') {
+            try {
+                $r = Invoke-WebRequest "${scheme}://$Domain/up" -UseBasicParsing -TimeoutSec 5
+                if ($r.StatusCode -eq 200) { $liveUrl = "${scheme}://$Domain"; break }
+            } catch { }
+        }
+        if ($liveUrl) { break }
     }
 
     Write-Host ""
-    if ($ready) {
-        Write-Host "  https://$Domain is up." -ForegroundColor Green
+    if ($liveUrl -like 'https:*') {
+        Write-Host "  $liveUrl is up." -ForegroundColor Green
         Write-Host "  Sign in: john@opesware.com / password" -ForegroundColor Green
-        Start-Process "https://$Domain"
+        Start-Process $liveUrl
+    } elseif ($liveUrl) {
+        Warn "The site answers on http but not https - the SSL certificate step"
+        Warn "was skipped or needs a Reload. The offline features need https;"
+        Warn "redo tray icon -> Apache/Nginx -> SSL -> Create certificate, then Reload."
+        Write-Host "  Opening $liveUrl for now. Sign in: john@opesware.com / password" -ForegroundColor Green
+        Start-Process $liveUrl
     } else {
-        Warn "The site did not answer within 80 seconds."
+        Warn "The site did not answer within 40 seconds."
         Warn "Check the domain matches the folder name (Laragon derives it, -Domain is ignored by Laragon's own vhost)."
-        Warn "Check Laragon's tray icon shows Apache/Nginx and MySQL running."
+        Warn "Check Laragon's window shows Apache/Nginx and MySQL running."
         Warn "PHP errors appear in storage\logs\laravel.log"
     }
 
