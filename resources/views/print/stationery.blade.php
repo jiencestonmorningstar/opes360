@@ -10,6 +10,9 @@
     $design = in_array($company->letterhead_design, ['rule', 'banner', 'sidebar', 'crest'], true)
         ? $company->letterhead_design
         : 'rule';
+    $cardDesign = in_array($company->card_design, ['classic', 'bold', 'minimal', 'split'], true)
+        ? $company->card_design
+        : 'classic';
 @endphp
 
 <!DOCTYPE html>
@@ -195,7 +198,7 @@
 
 @elseif ($asset === 'card')
     {{-- Front --}}
-    @if ($design === 'bold')
+    @if ($cardDesign === 'bold')
         <div class="sheet card">
             <div class="card-inner card-bold">
                 <div>
@@ -216,7 +219,7 @@
             </div>
         </div>
 
-    @elseif ($design === 'minimal')
+    @elseif ($cardDesign === 'minimal')
         <div class="sheet card">
             <div class="card-inner card-minimal">
                 <div class="rule"></div>
@@ -236,7 +239,7 @@
             </div>
         </div>
 
-    @elseif ($design === 'split')
+    @elseif ($cardDesign === 'split')
         <div class="sheet card">
             <div class="card-inner card-split">
                 <div class="split-left">
