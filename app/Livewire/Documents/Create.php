@@ -9,6 +9,7 @@ use App\Models\Document;
 use App\Models\DocumentLine;
 use App\Services\DocumentIssuer;
 use App\Support\CurrentCompany;
+use App\Support\Vat;
 use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Contracts\View\View;
 use Illuminate\Foundation\Auth\Access\AuthorizesRequests;
@@ -148,10 +149,14 @@ class Create extends Component
         }
 
         $company = app(CurrentCompany::class)->get();
-        $lines = $this->normalisedLines($data['lines']);
-        $subtotal = round(collect($lines)->sum('line_total'), 2);
 
-        $document = DB::transaction(function () use ($contact, $company, $lines, $subtotal, $data, $issue) {
+        // TVA is computed once, here, and the per-line figures come back from
+        // the same pass that produced the totals — so the tax column on the
+        // printed sheet always sums to the tax line beneath it.
+        $vat = Vat::forCompany($company, $data['lines']);
+        $lines = $this->normalisedLines($data['lines'], $vat['lines']);
+
+        $document = DB::transaction(function () use ($contact, $company, $lines, $vat, $data, $issue) {
             $document = Document::create([
                 'type' => $this->type,
                 'contact_id' => $contact->id,
@@ -159,10 +164,11 @@ class Create extends Component
                 'issue_date' => $data['issue_date'],
                 'due_date' => $data['due_date'] ?? null,
                 'currency' => $company->currency,
-                'subtotal' => $subtotal,
-                'total' => $subtotal,
+                'subtotal' => $vat['subtotal'],
+                'tax_total' => $vat['tax_total'],
+                'total' => $vat['total'],
                 'amount_paid' => 0,
-                'balance' => $subtotal,
+                'balance' => $vat['total'],
                 'notes' => $data['notes'] ?: null,
                 'created_by' => auth()->id(),
             ]);
@@ -190,16 +196,21 @@ class Create extends Component
 
     /**
      * @param  array<int, array<string, mixed>>  $lines
+     * @param  array<int, array{net: float, tax: float, gross: float, unit_net: float}>  $taxed
      * @return array<int, array<string, mixed>>
      */
-    protected function normalisedLines(array $lines): array
+    protected function normalisedLines(array $lines, array $taxed): array
     {
         return collect($lines)
-            ->map(fn (array $line) => [
+            ->map(fn (array $line, int $index) => [
                 'description' => trim((string) $line['description']),
                 'quantity' => (float) $line['quantity'],
-                'unit_price' => (float) $line['unit_price'],
-                'line_total' => round((float) $line['quantity'] * (float) $line['unit_price'], 2),
+                // Always stored net of tax, whichever way it was keyed, so a
+                // line means the same thing on every document regardless of
+                // whether the business quotes HT or TTC.
+                'unit_price' => $taxed[$index]['unit_net'] ?? (float) $line['unit_price'],
+                'tax_amount' => $taxed[$index]['tax'] ?? 0.0,
+                'line_total' => $taxed[$index]['net'] ?? 0.0,
             ])
             ->values()
             ->all();
