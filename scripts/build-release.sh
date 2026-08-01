@@ -96,6 +96,11 @@ echo "==> Compressing"
 (cd "$STAGE" && zip -qr "$ARCHIVE" "$RELEASE")
 
 echo
+# Put the development dependencies back, so the working copy is usable the
+# moment this finishes rather than mysteriously missing phpunit and pint.
+echo "==> Restoring development dependencies"
+composer install --quiet
+
 echo "Release: $ARCHIVE"
 echo "Size:    $(du -h "$ARCHIVE" | cut -f1)"
 echo
