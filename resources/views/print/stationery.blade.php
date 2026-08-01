@@ -361,6 +361,25 @@
         .scb-feature svg { width: 4.2mm; height: 4.2mm; }
         .scb-feature span:last-child { font-size: 4.6pt; font-weight: 600; }
 
+        /* 'brand' variant (cards3): round mark lockup, the QR riding an
+           accent curve on the face; the back leads with the design's
+           tagline instead of the wordmark. */
+        .sc--brand .sc-badge { border-radius: 50%; }
+        .sc--brand .sc-curve { position: absolute; top: -10mm; bottom: -10mm; right: -14mm; width: 34mm; border-radius: 46% 0 0 46%; background: linear-gradient(170deg, var(--sc-accent), var(--sc-accent2)); }
+        .sc-panel { position: absolute; top: 50%; right: 2.5mm; transform: translateY(-50%); width: 15mm; z-index: 3; display: flex; flex-direction: column; align-items: center; gap: 1.2mm; }
+        .sc-panel .sc-qr { background: #fff; border-radius: 1.8mm; padding: 1.1mm; line-height: 0; }
+        .sc-panel .sc-qr svg { width: 11.5mm; height: 11.5mm; display: block; }
+        .sc-panel .sc-scan { font-size: 4.6pt; font-weight: 600; text-align: center; line-height: 1.35; color: #fff; white-space: pre-line; }
+        .sc--brand .sc-left, .sc--edge .sc-left { width: 46mm; }
+        .sc--brand .sc-wm, .sc--edge .sc-wm { right: 25mm; opacity: .1; }
+        .scb-tagline-hd { font-size: 10pt; font-weight: 800; letter-spacing: -0.02em; line-height: 1.3; padding-top: 1mm; }
+
+        /* 'edge' variant (cards5): S-curved accent band on the face; the
+           back runs the sector word up its left edge, five features. */
+        .sc--edge .sc-band { position: absolute; top: -8mm; bottom: -8mm; right: -10mm; width: 30mm; border-radius: 50% 0 0 50%; background: linear-gradient(170deg, var(--sc-accent), var(--sc-accent2)); }
+        .scb-vert { position: absolute; left: 1.5mm; top: 50%; transform: translateY(-50%) rotate(180deg); writing-mode: vertical-rl; font-size: 15pt; font-weight: 800; letter-spacing: .12em; opacity: .18; z-index: 1; }
+        .scb--edge .scb-features { gap: 4.6mm; }
+
         @if ($preview)
         /* Embedded on the stationery page: no chrome, transparent stage, and
            the sheet scaled to fill the frame's viewport. calc-division needs a
@@ -450,13 +469,26 @@
 
 @elseif ($asset === 'card')
     @if ($catalog !== null)
+        @php $scVariant = $catalog['variant'] ?? 'spot'; @endphp
         @if ($face !== 'back')
         {{-- Front (industry spotlight) --}}
         <div class="sheet card">
-            <div class="sc" style="{{ $scVars }}">
-                <div class="sc-ribbon"></div>
-                <div class="sc-edge"></div>
+            <div class="sc sc--{{ $scVariant }}" style="{{ $scVars }}">
+                @if ($scVariant === 'spot')
+                    <div class="sc-ribbon"></div>
+                    <div class="sc-edge"></div>
+                @elseif ($scVariant === 'brand')
+                    <div class="sc-curve"></div>
+                @else
+                    <div class="sc-band"></div>
+                @endif
                 <div class="sc-wm">{!! \App\Support\CardCatalog::glyph($catalog['watermark']) !!}</div>
+                @if ($scVariant !== 'spot')
+                    <div class="sc-panel">
+                        <div class="sc-qr">{!! $qrSvg !!}</div>
+                        <div class="sc-scan">{{ $catalog['scan'] ?? "Scan to view\nmy business" }}</div>
+                    </div>
+                @endif
                 <div class="sc-left">
                     <div class="sc-lockup">
                         <span class="sc-badge">{!! \App\Support\CardCatalog::glyph($catalog['badge']) !!}</span>
@@ -483,12 +515,21 @@
         @if ($face !== 'front')
         {{-- Back (industry spotlight) --}}
         <div class="sheet card">
-            <div class="scb" style="{{ $scbVars }}">
+            <div class="scb scb--{{ $scVariant }}" style="{{ $scbVars }}">
                 <div class="scb-wm">{!! \App\Support\CardCatalog::glyph($catalog['watermark']) !!}</div>
-                <div class="scb-brand trunc">{{ $nameBase }}@if ($nameAccent)<span class="sc-accent"> {{ $nameAccent }}</span>@endif</div>
-                @if ($company->motto)<div class="scb-motto trunc">{{ $company->motto }}</div>@endif
+                @if (! empty($catalog['vertical']))
+                    <div class="scb-vert">{{ $catalog['vertical'] }}</div>
+                @endif
+                @if ($scVariant === 'brand')
+                    <div class="scb-tagline-hd">{{ $catalog['tagline'][0] }}<br>{{ $catalog['tagline'][1] }}</div>
+                @else
+                    <div class="scb-brand trunc">{{ $nameBase }}@if ($nameAccent)<span class="sc-accent"> {{ $nameAccent }}</span>@endif</div>
+                    @if ($company->motto)<div class="scb-motto trunc">{{ $company->motto }}</div>@endif
+                @endif
                 <div class="scb-qr">{!! $qrSvg !!}</div>
-                <div class="scb-scan">Scan to view<br>my business</div>
+                @if ($scVariant === 'spot')
+                    <div class="scb-scan">Scan to view<br>my business</div>
+                @endif
                 <div class="scb-features">
                     @foreach ($catalog['features'] as [$featureGlyph, $featureLabel])
                         <div class="scb-feature">

@@ -79,11 +79,12 @@ class CardDesignsTest extends TestCase
                 ->assertSee('Acme Ltd')
                 ->getContent();
 
-            $family = CardCatalog::design($design)['family'];
-            if ($family === 'spotlight') {
-                $this->assertStringContainsString('class="sc"', $content, "{$design} front");
-                $this->assertStringContainsString('class="scb"', $content, "{$design} back");
-                $this->assertStringContainsString('Scan to view', $content);
+            $design_config = CardCatalog::design($design);
+            if ($design_config['family'] === 'spotlight') {
+                $variant = $design_config['variant'] ?? 'spot';
+                $this->assertStringContainsString('class="sc sc--'.$variant.'"', $content, "{$design} front");
+                $this->assertStringContainsString('class="scb scb--'.$variant.'"', $content, "{$design} back");
+                $this->assertStringContainsString('Scan to', $content);
             }
             $this->assertStringContainsString('<svg', $content, "{$design} card should carry a QR");
             // The catalogue back replaces the legacy shared dark back.
