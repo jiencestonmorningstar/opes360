@@ -51,8 +51,16 @@ class CardDesignsTest extends TestCase
 
             // The front face carries the design class; asserting the full
             // attribute keeps the stylesheet (which names every design) from
-            // producing a false pass.
-            $this->assertStringContainsString('card-inner card-'.$design, $content);
+            // producing a false pass. The premium designs use their own
+            // skeleton (pc-*) and bring their own back face (pcb-*).
+            if (in_array($design, ['azure', 'onyx', 'jade', 'cyber', 'violet', 'sunrise'], true)) {
+                $this->assertStringContainsString('pc pc-'.$design, $content);
+                $this->assertStringContainsString('pcb pcb-'.$design, $content);
+                $this->assertStringContainsString('Scan to view', $content);
+                $this->assertStringContainsString('All your business. One platform.', $content);
+            } else {
+                $this->assertStringContainsString('card-inner card-'.$design, $content);
+            }
             // The QR is non-negotiable: every design must stay verifiable.
             $this->assertStringContainsString('<svg', $content, "{$design} card should carry a QR");
         }

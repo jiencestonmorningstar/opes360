@@ -149,6 +149,26 @@
                                                     </div>
                                                 </div>
                                             </div>
+                                        @elseif (in_array($design, ['azure', 'jade', 'violet', 'sunrise'], true))
+                                            {{-- Light face, coloured side panel — enough to tell the skins apart. --}}
+                                            @php
+                                                $miniPanel = ['azure' => 'bg-blue-600', 'jade' => 'bg-green-600', 'violet' => 'bg-purple-600', 'sunrise' => 'bg-orange-500'][$design];
+                                            @endphp
+                                            <div class="relative flex h-full flex-col justify-between p-1.5">
+                                                <div class="absolute inset-y-1 right-1 w-1/3 rounded {{ $miniPanel }}"></div>
+                                                <div class="absolute right-2.5 top-1/2 size-3 -translate-y-1/2 rounded-sm bg-white"></div>
+                                                <div class="h-1.5 w-1/2 rounded-sm bg-slate-800"></div>
+                                                <div class="space-y-1"><div class="h-1 w-8 rounded-sm bg-slate-300"></div><div class="h-1 w-6 rounded-sm bg-slate-300"></div></div>
+                                            </div>
+                                        @elseif ($design === 'onyx' || $design === 'cyber')
+                                            @php
+                                                [$miniBg, $miniAccent] = $design === 'onyx' ? ['bg-zinc-900', 'bg-amber-400'] : ['bg-slate-900', 'bg-cyan-400'];
+                                            @endphp
+                                            <div class="relative flex h-full flex-col justify-between {{ $miniBg }} p-1.5">
+                                                <div class="h-1.5 w-1/2 rounded-sm {{ $miniAccent }}"></div>
+                                                <div class="absolute right-2.5 top-1/2 size-3 -translate-y-1/2 rounded-sm bg-white"></div>
+                                                <div class="space-y-1"><div class="h-1 w-8 rounded-sm bg-white/40"></div><div class="h-1 w-6 rounded-sm bg-white/40"></div></div>
+                                            </div>
                                         @else
                                             <div class="flex h-full flex-col justify-between p-1.5">
                                                 <div class="h-1.5 w-3/5 rounded-sm bg-slate-800"></div>

@@ -17,8 +17,17 @@ class Company extends Model
     use HasUlids;
     use SoftDeletes;
 
-    /** Business-card designs the stationery module can print. */
-    public const CARD_DESIGNS = ['classic', 'bold', 'minimal', 'split'];
+    /**
+     * Business-card designs the stationery module can print.
+     *
+     * The first four are the original set; the six that follow reproduce the
+     * premium template sheet (docs/image templates/cards1.png, designs 01-06)
+     * — each with its own front and back.
+     */
+    public const CARD_DESIGNS = [
+        'classic', 'bold', 'minimal', 'split',
+        'azure', 'onyx', 'jade', 'cyber', 'violet', 'sunrise',
+    ];
 
     protected $guarded = ['id'];
 
