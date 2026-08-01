@@ -74,6 +74,75 @@ function probe(string $host, int $port, float $timeout = 8.0): array
     ];
 }
 
+/**
+ * Attempts a real SMTP login, so a password can be checked without editing
+ * .env and reloading the application. Returns [ok, transcript].
+ *
+ * 535 means the server understood the attempt and rejected the credentials —
+ * which is a different problem from a port that will not open, and the two are
+ * worth telling apart before changing anything.
+ */
+function smtpAuth(string $host, int $port, string $user, string $pass): array
+{
+    $log = [];
+    $scheme = $port === 465 ? 'ssl://' : 'tcp://';
+    $context = stream_context_create(['ssl' => [
+        'verify_peer' => false, 'verify_peer_name' => false, 'allow_self_signed' => true,
+    ]]);
+
+    $socket = @stream_socket_client($scheme.$host.':'.$port, $n, $err, 10, STREAM_CLIENT_CONNECT, $context);
+    if (! $socket) {
+        return [false, ['could not connect: '.($err ?: $n)]];
+    }
+
+    stream_set_timeout($socket, 10);
+
+    $read = function () use ($socket, &$log) {
+        $out = '';
+        while (($line = fgets($socket, 1024)) !== false) {
+            $out .= $line;
+            // A multiline reply keeps a hyphen in the fourth column.
+            if (strlen($line) < 4 || $line[3] !== '-') {
+                break;
+            }
+        }
+        $log[] = '< '.trim($out);
+
+        return $out;
+    };
+    $write = function (string $cmd, bool $secret = false) use ($socket, &$log) {
+        $log[] = '> '.($secret ? '(hidden)' : trim($cmd));
+        fwrite($socket, $cmd."\r\n");
+    };
+
+    $read();
+    $write('EHLO opes360.local');
+    $read();
+
+    // Plain STARTTLS ports must be upgraded before credentials are offered.
+    if ($port !== 465) {
+        $write('STARTTLS');
+        $up = $read();
+        if (str_starts_with(trim($up), '220')) {
+            @stream_socket_enable_crypto($socket, true, STREAM_CRYPTO_METHOD_TLS_CLIENT);
+            $write('EHLO opes360.local');
+            $read();
+        }
+    }
+
+    $write('AUTH LOGIN');
+    $read();
+    $write(base64_encode($user), true);
+    $read();
+    $write(base64_encode($pass), true);
+    $result = $read();
+
+    $write('QUIT');
+    @fclose($socket);
+
+    return [str_starts_with(trim($result), '235'), $log];
+}
+
 // ---------------------------------------------------------------- boot Laravel
 $config = null;
 $bootError = null;
@@ -168,6 +237,18 @@ if ($to !== '' && filter_var($to, FILTER_VALIDATE_EMAIL) && $config !== null) {
     }
 }
 
+// ---------------------------------------------------------------- credential test
+$auth = null;
+$authUser = isset($_POST['smtp_user']) && is_string($_POST['smtp_user']) ? trim($_POST['smtp_user']) : '';
+$authPass = $_POST['smtp_pass'] ?? '';
+$authHost = isset($_POST['smtp_host']) && is_string($_POST['smtp_host']) ? trim($_POST['smtp_host']) : '';
+$authPort = isset($_POST['smtp_port']) ? (int) $_POST['smtp_port'] : 465;
+
+if ($authUser !== '' && $authPass !== '' && $authHost !== '') {
+    [$ok, $transcript] = smtpAuth($authHost, $authPort, $authUser, (string) $authPass);
+    $auth = ['ok' => $ok, 'log' => $transcript];
+}
+
 ?><!DOCTYPE html><html lang="en"><head><meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Mail check · OPES360</title><style>
@@ -241,6 +322,28 @@ if ($working !== [] && $current !== null && ! ($probes[$current]['ok'] ?? false)
     Edit <code>opes360/.env</code> to use it:
     <pre>MAIL_HOST=<?= h($pick['host'])."\n" ?>MAIL_PORT=<?= h((string) $pick['port'])."\n" ?>MAIL_SCHEME=<?= $pick['port'] === 465 ? 'smtps' : 'tls' ?></pre>
     then delete <code>opes360/bootstrap/cache/config.php</code> if it exists, and reload this page.</div>
+<?php } ?>
+</div>
+
+<div class="card">
+<h2>Test a mailbox password</h2>
+<p>This logs in to the mail server directly, so a password can be checked before it goes
+anywhere near <code>.env</code>. Nothing is saved.</p>
+<form method="post">
+    <p><input name="smtp_host" placeholder="opesbusiness.com" value="<?= h($authHost !== '' ? $authHost : ($config['host'] ?? '')) ?>" required>
+    <input name="smtp_port" style="min-width:90px" value="<?= h((string) ($authPort ?: 465)) ?>" required></p>
+    <p style="margin-top:8px"><input name="smtp_user" placeholder="notifications@opesbusiness.com" value="<?= h($authUser !== '' ? $authUser : ($config['username'] ?? '')) ?>" required>
+    <input type="password" name="smtp_pass" placeholder="mailbox password" required>
+    <button type="submit">Test login</button></p>
+</form>
+<?php if ($auth !== null) { ?>
+    <?php if ($auth['ok']) { ?>
+        <p class="ok" style="margin-top:12px">235 — accepted. This password is correct; put it in <code>.env</code> as
+        <code>MAIL_PASSWORD="…"</code> (with the quotes).</p>
+    <?php } else { ?>
+        <p class="bad" style="margin-top:12px">Rejected. The conversation with the server:</p>
+    <?php } ?>
+    <pre><?= h(implode("\n", $auth['log'])) ?></pre>
 <?php } ?>
 </div>
 
