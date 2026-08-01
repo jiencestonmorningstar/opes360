@@ -98,6 +98,23 @@ class Create extends Component
             return ['ok' => false, 'errors' => ['form' => ['You do not have permission to do this.']]];
         }
 
+        // Rows nobody typed into are dropped rather than rejected. The composer
+        // seeds an empty row and "Add Item" appends more, so an untouched one
+        // is not an item the user is trying to charge for — it used to fail the
+        // save with "Every item needs a description", pointing at a field the
+        // layout never labelled. The client compacts before sending; this is
+        // here because the server cannot assume the client did, and an offline
+        // device can replay a payload built by older code.
+        //
+        // Quantity is not part of the test: it is seeded to 1, so an untouched
+        // row still has one. A row carrying a price but no wording is a real
+        // mistake and still earns the error.
+        $payload['lines'] = collect($payload['lines'] ?? [])
+            ->reject(fn ($line) => trim((string) ($line['description'] ?? '')) === ''
+                && trim((string) ($line['unit_price'] ?? '')) === '')
+            ->values()
+            ->all();
+
         $validator = validator($payload, [
             'contact_id' => ['required', 'string'],
             'issue_date' => ['required', 'date'],
@@ -109,6 +126,8 @@ class Create extends Component
             'lines.*.unit_price' => ['required', 'numeric', 'gte:0'],
         ], [
             'contact_id.required' => 'Choose a customer first.',
+            'lines.required' => 'Add at least one item.',
+            'lines.min' => 'Add at least one item.',
             'lines.*.description.required' => 'Every item needs a description.',
             'lines.*.quantity.gt' => 'Quantity must be more than zero.',
             'lines.*.unit_price.gte' => 'Price cannot be negative.',

@@ -130,6 +130,73 @@ class DocumentCreationTest extends TestCase
         app(DocumentIssuer::class)->issue($document, $this->user);
     }
 
+    /*
+     * The composer seeds one empty row and "Add Item" appends more. Every one of
+     * them used to be validated, so a stray tap failed the save with "Every item
+     * needs a description" — naming a field the layout did not label at the time.
+     */
+
+    public function test_an_untouched_row_is_dropped_rather_than_failing_the_save(): void
+    {
+        $result = $this->returned(Livewire::actingAs($this->user)
+            ->test(Create::class, ['type' => 'invoice'])
+            ->call('save', $this->payload([
+                ['description' => 'Web design', 'quantity' => '2', 'unit_price' => '150'],
+                // What "Add Item" leaves behind: quantity seeded to 1, nothing typed.
+                ['description' => '', 'quantity' => '1', 'unit_price' => ''],
+            ]), false)
+        );
+
+        $this->assertTrue($result['ok'], 'A blank trailing row blocked the save.');
+
+        $document = Document::firstOrFail();
+
+        $this->assertCount(1, $document->lines);
+        $this->assertSame('300.00', $document->total);
+    }
+
+    public function test_a_row_with_a_price_but_no_description_is_still_refused(): void
+    {
+        $result = $this->returned(Livewire::actingAs($this->user)
+            ->test(Create::class, ['type' => 'invoice'])
+            ->call('save', $this->payload([
+                ['description' => 'Web design', 'quantity' => '2', 'unit_price' => '150'],
+                ['description' => '  ', 'quantity' => '1', 'unit_price' => '90'],
+            ]), false)
+        );
+
+        $this->assertFalse($result['ok']);
+        $this->assertArrayHasKey('lines.1.description', $result['errors']);
+        $this->assertSame(0, Document::count());
+    }
+
+    public function test_a_document_of_nothing_but_blank_rows_asks_for_an_item(): void
+    {
+        $result = $this->returned(Livewire::actingAs($this->user)
+            ->test(Create::class, ['type' => 'invoice'])
+            ->call('save', $this->payload([
+                ['description' => '', 'quantity' => '1', 'unit_price' => ''],
+            ]), false)
+        );
+
+        $this->assertFalse($result['ok']);
+        $this->assertSame(['Add at least one item.'], $result['errors']['lines']);
+    }
+
+    public function test_a_free_line_item_survives_the_blank_row_filter(): void
+    {
+        $result = $this->returned(Livewire::actingAs($this->user)
+            ->test(Create::class, ['type' => 'invoice'])
+            ->call('save', $this->payload([
+                ['description' => 'Consulting', 'quantity' => '1', 'unit_price' => '200'],
+                ['description' => 'Delivery — waived', 'quantity' => '1', 'unit_price' => '0'],
+            ]), false)
+        );
+
+        $this->assertTrue($result['ok']);
+        $this->assertCount(2, Document::firstOrFail()->lines);
+    }
+
     /** @return array<string, mixed> */
     protected function payload(array $lines, array $overrides = []): array
     {

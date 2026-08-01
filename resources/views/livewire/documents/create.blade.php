@@ -141,12 +141,20 @@
                     <template x-for="(line, index) in lines" :key="index">
                         <div class="rounded-xl border border-border p-3.5"
                              :class="(lineError(index, 'description') || lineError(index, 'quantity') || lineError(index, 'unit_price')) && 'border-warning/60'">
-                            <div class="flex items-start gap-2">
-                                <input type="text" x-model="line.description"
-                                       placeholder="What are you charging for?"
-                                       class="h-11 min-w-0 flex-1 rounded-lg border border-border bg-surface px-3.5 text-[14.5px] text-ink placeholder:text-faint focus:border-brand focus:outline-none focus:ring-2 focus:ring-brand/20">
+                            {{-- Labelled like Qty and Unit price below it. Left as
+                                 a bare placeholder, this was the field people
+                                 could not find when the save came back asking
+                                 for a "description" — a word that then appeared
+                                 nowhere on the screen. --}}
+                            <div class="flex items-end gap-2">
+                                <label class="min-w-0 flex-1">
+                                    <span class="mb-1 block text-[11.5px] font-medium uppercase tracking-wide text-faint">Description</span>
+                                    <input type="text" x-model="line.description"
+                                           placeholder="What are you charging for?"
+                                           class="h-11 w-full min-w-0 rounded-lg border border-border bg-surface px-3.5 text-[14.5px] text-ink placeholder:text-faint focus:border-brand focus:outline-none focus:ring-2 focus:ring-brand/20">
+                                </label>
                                 <button type="button" @click="removeLine(index)"
-                                        class="tap focusable flex shrink-0 items-center justify-center rounded-lg text-faint hover:text-warning"
+                                        class="tap focusable flex h-11 shrink-0 items-center justify-center rounded-lg text-faint hover:text-warning"
                                         aria-label="Remove item">
                                     <x-icon name="plus" class="size-[20px] rotate-45" stroke-width="2.2" />
                                 </button>

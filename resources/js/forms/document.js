@@ -65,6 +65,35 @@ export default function documentForm(config) {
             this.lines.splice(index, 1);
         },
 
+        /**
+         * A row nobody typed into. Quantity is not part of the test because it
+         * is seeded to 1, so an untouched row still has one.
+         *
+         * A row with a price but no wording is *not* blank — that is a real
+         * mistake and still earns the error.
+         */
+        isBlankLine(line) {
+            return ! String(line.description ?? '').trim()
+                && ! String(line.unit_price ?? '').trim();
+        },
+
+        /**
+         * Drop the rows nobody typed into, so what gets validated is exactly
+         * what the user can see.
+         *
+         * The form seeds one empty row and "Add Item" appends more, and every
+         * one of them used to be validated — so a stray tap produced "Every
+         * item needs a description" against a row the user considered empty,
+         * naming a field the layout never labelled. Compacting first means the
+         * row disappears instead, and any error that remains points at a row
+         * with something in it.
+         */
+        compactLines() {
+            const kept = this.lines.filter((line) => ! this.isBlankLine(line));
+
+            this.lines = kept.length ? kept : [this.blankLine()];
+        },
+
         lineTotal(line) {
             return (parseFloat(line.quantity) || 0) * (parseFloat(line.unit_price) || 0);
         },
@@ -190,7 +219,15 @@ export default function documentForm(config) {
                 errors.due_date = ['The due date cannot be before the issue date.'];
             }
 
+            if (this.lines.every((line) => this.isBlankLine(line))) {
+                errors.form = [`Add at least one item to this ${this.docLabel.toLowerCase()}.`];
+            }
+
             this.lines.forEach((line, index) => {
+                // Compacting has already removed untouched rows; if one is left
+                // it is the only row, and the message above covers it.
+                if (this.isBlankLine(line)) return;
+
                 if (! String(line.description).trim()) {
                     errors[`lines.${index}.description`] = ['Every item needs a description.'];
                 }
@@ -223,6 +260,10 @@ export default function documentForm(config) {
 
         async persist(issue) {
             if (this.saving) return;
+
+            // Before anything is checked or sent, so the rows on screen, the
+            // rows validated and the rows saved are the same three things.
+            this.compactLines();
 
             this.saving = true;
             this.errors = {};
