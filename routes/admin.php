@@ -5,6 +5,7 @@ use App\Http\Controllers\Admin\AuthController as AdminAuthController;
 use App\Http\Controllers\Admin\CompanyController as AdminCompanyController;
 use App\Http\Controllers\Admin\DashboardController as AdminDashboardController;
 use App\Http\Controllers\Admin\PlatformAdminsController;
+use App\Http\Controllers\Admin\ResourceController;
 use App\Http\Controllers\Admin\TwoFactorController as AdminTwoFactorController;
 use Illuminate\Support\Facades\Route;
 
@@ -65,6 +66,15 @@ Route::prefix('admin')->name('admin.')->group(function () {
         Route::get('/admins', [PlatformAdminsController::class, 'index'])->name('admins');
         Route::post('/admins', [PlatformAdminsController::class, 'store'])->name('admins.store')->middleware('admin.role');
         Route::delete('/admins/{admin}', [PlatformAdminsController::class, 'destroy'])->name('admins.destroy')->middleware('admin.role');
+
+        /*
+     * The generic record browser. Every tenant-owned table is reachable here,
+     * platform-wide or narrowed to one business with ?company=slug — see
+     * App\Support\Admin\AdminResources for why this is one screen and not
+     * twenty. Read only.
+     */
+        Route::get('/records/{resource}', [ResourceController::class, 'index'])->name('records');
+        Route::get('/records/{resource}/export', [ResourceController::class, 'export'])->name('records.export');
 
         Route::get('/activity', [AdminActivityController::class, 'index'])->name('activity');
 

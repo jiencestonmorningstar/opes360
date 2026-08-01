@@ -34,21 +34,41 @@
             </div>
         </div>
 
+        <div class="mt-6 flex flex-wrap gap-1.5">
+            {{-- Everything else this business holds — payments, receipts,
+                 tickets, loyalty, devices and the rest — one click away. --}}
+            @foreach (\App\Support\Admin\AdminResources::all() as $resourceKey => $resource)
+                <a href="{{ route('admin.records', ['resource' => $resourceKey, 'company' => $company->slug]) }}"
+                   class="focusable rounded-lg bg-surface-2 px-3 py-1.5 text-[12.5px] font-semibold text-ink-2 transition-colors hover:bg-tint-blue hover:text-brand">
+                    {{ $resource['label'] }}
+                </a>
+            @endforeach
+        </div>
+
         <div class="mt-6 grid grid-cols-2 gap-4 sm:grid-cols-4 lg:grid-cols-7">
             @foreach ([
                 ['label' => 'Users', 'value' => $company->users_count, 'icon' => 'users'],
-                ['label' => 'Contacts', 'value' => $contactCount, 'icon' => 'user'],
-                ['label' => 'Items', 'value' => $itemCount, 'icon' => 'cube'],
-                ['label' => 'Documents', 'value' => $documentCount, 'icon' => 'document'],
-                ['label' => 'Forms', 'value' => $formCount, 'icon' => 'clipboard'],
-                ['label' => 'Events', 'value' => $eventCount, 'icon' => 'ticket'],
+                ['label' => 'Contacts', 'value' => $contactCount, 'icon' => 'user', 'resource' => 'customers'],
+                ['label' => 'Items', 'value' => $itemCount, 'icon' => 'cube', 'resource' => 'products'],
+                ['label' => 'Documents', 'value' => $documentCount, 'icon' => 'document', 'resource' => 'documents'],
+                ['label' => 'Forms', 'value' => $formCount, 'icon' => 'clipboard', 'resource' => 'forms'],
+                ['label' => 'Events', 'value' => $eventCount, 'icon' => 'ticket', 'resource' => 'events'],
                 ['label' => 'Currency', 'value' => $company->currency, 'icon' => 'banknotes'],
             ] as $tile)
-                <div class="card p-4">
+                {{-- A count that cannot be opened is a dead end. Each tile that
+                     stands for a table links into the record browser, scoped to
+                     this business. --}}
+                @php
+                    $tileHref = ($tile['resource'] ?? null)
+                        ? route('admin.records', ['resource' => $tile['resource'], 'company' => $company->slug])
+                        : null;
+                @endphp
+                <{{ $tileHref ? 'a' : 'div' }} @if ($tileHref) href="{{ $tileHref }}" @endif
+                    class="card p-4 {{ $tileHref ? 'focusable block transition-colors hover:border-brand/40 hover:bg-tint-blue' : '' }}">
                     <x-icon :name="$tile['icon']" class="size-[18px] text-faint" stroke-width="1.8" />
                     <p class="mt-2.5 text-[12px] font-medium text-muted">{{ $tile['label'] }}</p>
                     <p class="tnum mt-0.5 text-[18px] font-bold text-ink">{{ $tile['value'] }}</p>
-                </div>
+                </{{ $tileHref ? 'a' : 'div' }}>
             @endforeach
         </div>
 

@@ -43,12 +43,13 @@
             @foreach ([
                 ['key' => 'dashboard', 'label' => 'Dashboard', 'icon' => 'chart-bar', 'route' => 'admin.dashboard'],
                 ['key' => 'companies', 'label' => 'Companies', 'icon' => 'briefcase', 'route' => 'admin.companies'],
+                ['key' => 'records', 'label' => 'Records', 'icon' => 'document', 'route' => 'admin.records', 'params' => ['resource' => 'documents']],
                 ['key' => 'activity', 'label' => 'Activity', 'icon' => 'clock', 'route' => 'admin.activity'],
                 ['key' => 'admins', 'label' => 'Admins', 'icon' => 'users', 'route' => 'admin.admins'],
             ] as $item)
                 @php $isActive = $active === $item['key']; @endphp
                 <li>
-                    <a href="{{ route($item['route']) }}"
+                    <a href="{{ route($item['route'], $item['params'] ?? []) }}"
                        @if ($isActive) aria-current="page" @endif
                        class="focusable group flex h-[52px] items-center gap-3.5 rounded-xl px-3.5 text-[15.5px] font-medium transition-colors
                               {{ $isActive ? 'bg-surface-2 text-ink' : 'text-ink-2 hover:bg-surface-2' }}"
