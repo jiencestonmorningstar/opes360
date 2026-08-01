@@ -51,21 +51,36 @@ if (-not (Test-Path "$root\public\build\manifest.json")) {
 
 # --- staging ----------------------------------------------------------------
 Step "Staging $release"
-New-Item -ItemType Directory -Force -Path $stageRelease | Out-Null
+# The archive holds the two halves the server needs, already separated:
+#
+#   opes360\      the application — must NOT be web-served, it holds .env
+#   public_html\  only what the web may reach
+#
+# Extracting this in the cPanel home directory drops each half where it belongs
+# and merges public_html into the one already there, so nothing has to be moved
+# by hand — the step most often got wrong, and getting it wrong either 404s
+# every page or exposes the key that decrypts stored tax IDs.
+$app = Join-Path $stageRelease 'opes360'
+$web = Join-Path $stageRelease 'public_html'
+New-Item -ItemType Directory -Force -Path $app, $web | Out-Null
 
 $include = @(
-    'app', 'bootstrap', 'config', 'database', 'public', 'resources',
+    'app', 'bootstrap', 'config', 'database', 'resources',
     'routes', 'scripts', 'storage', 'vendor', 'artisan', 'composer.json', 'composer.lock'
 )
 
 foreach ($item in $include) {
     $source = Join-Path $root $item
     if (Test-Path $source) {
-        Copy-Item $source -Destination $stageRelease -Recurse -Force
+        Copy-Item $source -Destination $app -Recurse -Force
     }
 }
 
-Copy-Item (Join-Path $root '.env.example') (Join-Path $stageRelease '.env.example') -Force
+Copy-Item (Join-Path $root '.env.example') (Join-Path $app '.env.example') -Force
+
+# -Force so the dotfiles come too: .htaccess is what makes every URL beyond the
+# homepage work at all.
+Copy-Item (Join-Path $root 'public\*') -Destination $web -Recurse -Force
 
 # --- pruning ----------------------------------------------------------------
 # Composer keeps a .git directory per package when anything was installed from
@@ -74,7 +89,7 @@ Copy-Item (Join-Path $root '.env.example') (Join-Path $stageRelease '.env.exampl
 Step 'Pruning non-runtime files'
 # -Include is matched against the leaf name and quietly finds nothing in some
 # PowerShell versions, so filter explicitly instead of trusting it.
-Get-ChildItem $stageRelease -Recurse -Force -Directory -ErrorAction SilentlyContinue |
+Get-ChildItem $app -Recurse -Force -Directory -ErrorAction SilentlyContinue |
     Where-Object { $_.Name -eq '.git' -or $_.Name -eq '.github' } |
     Sort-Object { $_.FullName.Length } -Descending |
     Remove-Item -Recurse -Force -ErrorAction SilentlyContinue
@@ -84,25 +99,32 @@ Get-ChildItem $stageRelease -Recurse -Force -Directory -ErrorAction SilentlyCont
 # holds the key that decrypts every stored tax ID, the other your test data.
 Step 'Clearing local state'
 foreach ($leak in '.env', 'storage\app\installed', 'database\database.sqlite') {
-    $path = Join-Path $stageRelease $leak
+    $path = Join-Path $app $leak
     if (Test-Path $path) { Remove-Item $path -Force }
 }
 
-Get-ChildItem (Join-Path $stageRelease 'storage\logs') -Filter '*.log' -ErrorAction SilentlyContinue | Remove-Item -Force
+Get-ChildItem (Join-Path $app 'storage\logs') -Filter '*.log' -ErrorAction SilentlyContinue | Remove-Item -Force
 foreach ($cache in 'framework\cache\data', 'framework\sessions', 'framework\views') {
-    $path = Join-Path $stageRelease "storage\$cache"
+    $path = Join-Path $app "storage\$cache"
     if (Test-Path $path) {
         Get-ChildItem $path -Exclude '.gitignore' -Force | Remove-Item -Recurse -Force -ErrorAction SilentlyContinue
     }
 }
-Get-ChildItem (Join-Path $stageRelease 'bootstrap\cache') -Filter '*.php' -ErrorAction SilentlyContinue | Remove-Item -Force
+Get-ChildItem (Join-Path $app 'bootstrap\cache') -Filter '*.php' -ErrorAction SilentlyContinue | Remove-Item -Force
 
 # --- verification -----------------------------------------------------------
 Step 'Verifying the archive is complete'
-foreach ($needed in 'vendor\autoload.php', 'public\index.php', 'public\install.php', 'public\build\manifest.json', 'artisan') {
-    if (-not (Test-Path (Join-Path $stageRelease $needed))) { Die "$needed is missing from the release." }
+foreach ($needed in 'vendor\autoload.php', 'artisan') {
+    if (-not (Test-Path (Join-Path $app $needed))) { Die "$needed is missing from the release." }
 }
-if (Test-Path (Join-Path $stageRelease '.env')) { Die 'A .env made it into the release. Refusing to package it.' }
+foreach ($needed in 'index.php', 'install.php', '.htaccess', 'build\manifest.json') {
+    if (-not (Test-Path (Join-Path $web $needed))) { Die "public_html\$needed is missing from the release." }
+}
+# Prove the separation held and that nothing secret sits in the web half.
+if (Test-Path (Join-Path $app '.env')) { Die 'A .env made it into the release. Refusing to package it.' }
+if (Test-Path (Join-Path $web '.env')) { Die 'A .env is inside the web root. Refusing to package it.' }
+if (Test-Path (Join-Path $web 'app')) { Die 'Application code is inside the web root. Refusing to package it.' }
+if (Test-Path (Join-Path $app 'public')) { Die 'public\ was left in the application half.' }
 
 # --- compress ---------------------------------------------------------------
 Step 'Compressing'
@@ -115,10 +137,10 @@ if (Test-Path $zip) { Remove-Item $zip -Force }
 try {
     Add-Type -AssemblyName System.IO.Compression.FileSystem -ErrorAction Stop
     [System.IO.Compression.ZipFile]::CreateFromDirectory(
-        $stage, $zip, [System.IO.Compression.CompressionLevel]::Optimal, $false)
+        $stageRelease, $zip, [System.IO.Compression.CompressionLevel]::Optimal, $false)
 } catch {
     Write-Host 'Falling back to Compress-Archive (slower)...' -ForegroundColor Yellow
-    Compress-Archive -Path $stageRelease -DestinationPath $zip -CompressionLevel Optimal
+    Compress-Archive -Path (Join-Path $stageRelease '*') -DestinationPath $zip -CompressionLevel Optimal
 }
 
 if (-not (Test-Path $zip)) { Die 'The archive was not created.' }

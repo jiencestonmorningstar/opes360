@@ -60,36 +60,37 @@ Both scripts put your development dependencies back when they finish.
 
 ## 2. Upload and extract
 
-1. cPanel → **File Manager** → your **home** directory (the one containing
-   `public_html`, *not* `public_html` itself).
+1. cPanel → **File Manager** → your **home** directory (the one that *contains*
+   `public_html`, not `public_html` itself).
 2. **Upload** the zip, then select it and choose **Extract**.
-3. Rename the extracted folder to exactly **`opes360`**.
 
-The application lives outside `public_html` on purpose. `.env` holds the key
-that decrypts every stored tax ID; if the app root were web-served, one
-misconfigured rule would expose it.
+That is the whole step. The archive carries the two halves already separated,
+so extracting here puts each where it belongs:
+
+```
+/home/youruser/
+├── opes360/        the application — never web-served; holds .env
+└── public_html/    only what the web may reach
+```
+
+`public_html` already exists, and the extract merges into it rather than
+replacing it.
+
+**Why the split matters.** `.env` holds the key that decrypts every stored tax
+ID, along with your database and mailbox passwords. Keeping the application a
+level above the web root means those files cannot be requested at all, rather
+than relying on a rule to hide them.
+
+Nothing needs moving and nothing needs editing: `index.php` works out where the
+application lives and tells the framework where the public folder ended up.
+
+> If `public_html` already holds your host's default `index.html`, it is
+> harmless — the shipped `.htaccess` names `index.php` first. Delete it anyway
+> if you like a tidy folder.
 
 ---
 
-## 3. Move the public folder into place
-
-Without SSH there is no symlink, so the contents of the app's `public` folder go
-into `public_html` instead. In File Manager:
-
-1. Open `opes360/public`.
-2. **Select all** (including the hidden `.htaccess` — turn on *Show Hidden
-   Files* in File Manager's settings first).
-3. **Move** them to `public_html`.
-
-You do **not** need to edit `index.php`. It works out where the application
-lives, and tells the framework where the public folder ended up.
-
-> If `public_html` already has a default `index.html` or `index.php` from your
-> host, delete it first — otherwise it wins and your site never appears.
-
----
-
-## 3b. Optional: import the database first
+## 3. Optional: import the database first
 
 `install.php` creates the tables itself, so this step is optional. It is worth
 doing when the schema step is slow or times out — building 39 tables inside a

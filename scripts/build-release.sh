@@ -37,63 +37,85 @@ npm ci --silent
 npm run build
 
 echo "==> Staging $RELEASE"
-mkdir -p "$STAGE/$RELEASE"
+# The archive holds the two halves the server needs, already separated:
+#
+#   opes360/      the application — must NOT be web-served, it holds .env
+#   public_html/  only what the web may reach
+#
+# Extracting this in the cPanel home directory drops each half where it
+# belongs and merges public_html into the one already there. Shipping a
+# single folder instead would leave the operator to move the contents of
+# public/ by hand, which is the step most often got wrong — and getting it
+# wrong either 404s every page or exposes the key that decrypts stored tax IDs.
+mkdir -p "$STAGE/$RELEASE/opes360" "$STAGE/$RELEASE/public_html"
+
+APP="$STAGE/$RELEASE/opes360"
 
 # Everything the application needs to run, and nothing it does not. Tests, the
 # node toolchain and the local database are deliberately absent.
 for path in \
-    app bootstrap config database public resources routes scripts storage vendor \
+    app bootstrap config database resources routes scripts storage vendor \
     artisan composer.json composer.lock
 do
-    cp -R "$path" "$STAGE/$RELEASE/"
+    cp -R "$path" "$APP/"
 done
 
-cp .env.example "$STAGE/$RELEASE/.env.example"
+cp .env.example "$APP/.env.example"
+
+# The public half, including the dotfiles — .htaccess is what makes every URL
+# beyond the homepage work at all.
+cp -R public/. "$STAGE/$RELEASE/public_html/"
 
 echo "==> Pruning non-runtime files from vendor"
 # Composer keeps a .git directory per package when anything was ever installed
 # from source, and package history is far larger than package code — here it was
 # 380 MB of the 450 MB tree. None of it is reachable at runtime, and a shared
 # host's upload limit is the binding constraint, so it goes.
-find "$STAGE/$RELEASE/vendor" -type d -name '.git' -prune -exec rm -rf {} + 2>/dev/null || true
-find "$STAGE/$RELEASE/vendor" -type d -name '.github' -prune -exec rm -rf {} + 2>/dev/null || true
-find "$STAGE/$RELEASE/vendor" -type f \( \
+find "$APP/vendor" -type d -name '.git' -prune -exec rm -rf {} + 2>/dev/null || true
+find "$APP/vendor" -type d -name '.github' -prune -exec rm -rf {} + 2>/dev/null || true
+find "$APP/vendor" -type f \( \
         -name '*.md' -o -name '.gitignore' -o -name '.gitattributes' -o \
         -name '.editorconfig' -o -name 'phpunit.xml*' -o -name '.php-cs-fixer*' \
     \) -delete 2>/dev/null || true
 
 echo "==> Clearing local state from the archive"
-rm -rf "$STAGE/$RELEASE"/storage/logs/*
-rm -rf "$STAGE/$RELEASE"/storage/framework/cache/data/*
-rm -rf "$STAGE/$RELEASE"/storage/framework/sessions/*
-rm -rf "$STAGE/$RELEASE"/storage/framework/views/*
-rm -f  "$STAGE/$RELEASE"/database/*.sqlite
+rm -rf "$APP"/storage/logs/*
+rm -rf "$APP"/storage/framework/cache/data/*
+rm -rf "$APP"/storage/framework/sessions/*
+rm -rf "$APP"/storage/framework/views/*
+rm -f  "$APP"/database/*.sqlite
 # A cached config baked here would carry this machine's .env — including its
 # APP_KEY — onto the server. It is rebuilt there instead.
-rm -f  "$STAGE/$RELEASE"/bootstrap/cache/*.php
+rm -f  "$APP"/bootstrap/cache/*.php
 # The symlink points at a path that does not exist on the server; it is recreated
 # by the deploy steps.
-rm -f  "$STAGE/$RELEASE"/public/storage
+rm -f  "$STAGE/$RELEASE"/public_html/storage
 
 # Directories git does not carry but the framework needs to exist.
 mkdir -p \
-    "$STAGE/$RELEASE"/storage/logs \
-    "$STAGE/$RELEASE"/storage/framework/{cache/data,sessions,views} \
-    "$STAGE/$RELEASE"/storage/app/public
+    "$APP"/storage/logs \
+    "$APP"/storage/framework/{cache/data,sessions,views} \
+    "$APP"/storage/app/public
 
 echo "==> Verifying the archive is complete"
-test -f "$STAGE/$RELEASE/vendor/autoload.php"       || { echo "FAIL: vendor missing"; exit 1; }
-test -f "$STAGE/$RELEASE/public/build/manifest.json" || { echo "FAIL: assets not built"; exit 1; }
-test ! -e "$STAGE/$RELEASE/.env"                     || { echo "FAIL: .env must never ship"; exit 1; }
-test ! -d "$STAGE/$RELEASE/node_modules"             || { echo "FAIL: node_modules must never ship"; exit 1; }
-test -f "$STAGE/$RELEASE/scripts/windows/install.ps1" || { echo "FAIL: Windows installer missing"; exit 1; }
+test -f "$APP/vendor/autoload.php"                       || { echo "FAIL: vendor missing"; exit 1; }
+test -f "$STAGE/$RELEASE/public_html/build/manifest.json" || { echo "FAIL: assets not built"; exit 1; }
+test ! -e "$APP/.env"                     || { echo "FAIL: .env must never ship"; exit 1; }
+test ! -d "$APP/node_modules"                            || { echo "FAIL: node_modules must never ship"; exit 1; }
+test -f "$APP/scripts/windows/install.ps1"               || { echo "FAIL: Windows installer missing"; exit 1; }
+
+test -f "$STAGE/$RELEASE/public_html/index.php"          || { echo "FAIL: public_html/index.php missing"; exit 1; }
+test -f "$STAGE/$RELEASE/public_html/.htaccess"          || { echo "FAIL: .htaccess missing — every URL would 404"; exit 1; }
+test ! -d "$STAGE/$RELEASE/public_html/app"              || { echo "FAIL: application code inside the web root"; exit 1; }
+test ! -e "$STAGE/$RELEASE/public_html/.env"             || { echo "FAIL: .env inside the web root"; exit 1; }
+test ! -d "$APP/public"                                  || { echo "FAIL: public/ left in the app half"; exit 1; }
 
 mkdir -p "$OUT"
 ARCHIVE="$OUT/$RELEASE.zip"
 rm -f "$ARCHIVE"
 
 echo "==> Compressing"
-(cd "$STAGE" && zip -qr "$ARCHIVE" "$RELEASE")
+(cd "$STAGE/$RELEASE" && zip -qr "$ARCHIVE" opes360 public_html)
 
 echo
 # Put the development dependencies back, so the working copy is usable the

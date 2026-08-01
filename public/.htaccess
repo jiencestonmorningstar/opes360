@@ -1,3 +1,11 @@
+# Apache's default index order lists index.html before index.php, so a leftover
+# "welcome" page from the host would be served instead of the application — a
+# fresh deploy that appears to have done nothing. Naming index.php first settles
+# it without anyone having to notice the stale file.
+<IfModule mod_dir.c>
+    DirectoryIndex index.php index.html
+</IfModule>
+
 <IfModule mod_rewrite.c>
     <IfModule mod_negotiation.c>
         Options -MultiViews -Indexes
