@@ -11,20 +11,28 @@ use App\Models\LedgerAccount;
  *
  * ── Provenance of the numbers ────────────────────────────────────────────
  *
- * Every account below was cross-checked against independent published
- * references to the SYSCOHADA révisé plan comptable (the 2017 revision, in
- * force since 1 January 2018 under the AUDCIF). The official PDF itself could
- * not be retrieved from this network, so these are corroborated rather than
- * transcribed from the source document.
+ * Verified two ways. Every number and label below was checked against the
+ * machine-readable SYSCOHADA chart shipped in Odoo's l10n_syscohada
+ * localization (l10n_syscohada_data.xml, fetched from GitHub — the full
+ * OHADA plan as a production accounting system encodes it), and the numbers
+ * were independently corroborated against published references to the révisé
+ * plan (the 2017 revision, in force since 1 January 2018 under the AUDCIF).
+ * Every account used here agrees across both, i.e. these accounts are
+ * unchanged by the revision. The official OHADA PDF itself remains
+ * unreachable from this network, so "verified" here means against those two
+ * independent encodings, not against the source document.
  *
- * They agree across sources at the three-digit level, which is the level this
- * chart works at. SUB_ACCOUNTS below records the four-digit subdivisions the
- * same references list, as a guide for an accountant subdividing the chart —
- * they are deliberately not seeded, because which subdivisions a business
- * actually needs is a decision about that business, not a default.
+ * The labels are the plan's own, which is why some are more specific than a
+ * UI would choose: 521 is "Banques locales" because 522 is banks in other
+ * OHADA states, and 571 is "Caisse siège social" because 572 is a branch
+ * till. Renaming them to something friendlier would misdescribe accounts
+ * whose meaning is positional.
  *
- * It remains a starting point an accountant confirms against their own copy of
- * the plan comptable. The chart is per company and editable for that reason.
+ * The chart works at the three-digit compte principal level. The plan
+ * subdivides further — full practice posts at the four-digit compte
+ * divisionnaire — and SUB_ACCOUNTS records those subdivisions verbatim for an
+ * accountant extending the chart. They are deliberately not seeded: which of
+ * them a business needs is a decision about the business, not a default.
  *
  * ── Why roles ───────────────────────────────────────────────────────────
  *
@@ -43,16 +51,16 @@ class ChartOfAccounts
      */
     public const ROLES = [
         'receivables' => ['411', 'Clients'],
-        'payables' => ['401', 'Fournisseurs'],
+        'payables' => ['401', 'Fournisseurs, dettes en compte'],
         'vat_collected' => ['443', 'État, TVA facturée'],
         'vat_deductible' => ['445', 'État, TVA récupérable'],
         // Where TVA facturée less TVA récupérable nets out for the monthly
         // declaration. Seeded so the account exists when an accountant comes
         // to post the declaration; nothing posts to it automatically, because
         // when and how to net the two is their call, not the software's.
-        'vat_due' => ['444', 'État, TVA due'],
-        'bank' => ['521', 'Banques'],
-        'cash' => ['571', 'Caisse'],
+        'vat_due' => ['444', 'État, TVA due ou crédit de TVA'],
+        'bank' => ['521', 'Banques locales'],
+        'cash' => ['571', 'Caisse siège social'],
         'purchases' => ['601', 'Achats de marchandises'],
         'sales_goods' => ['701', 'Ventes de marchandises'],
         'sales_services' => ['706', 'Services vendus'],
@@ -71,6 +79,10 @@ class ChartOfAccounts
             '4431' => 'TVA facturée sur ventes',
             '4432' => 'TVA facturée sur prestations de services',
             '4433' => 'TVA facturée sur travaux',
+        ],
+        '444' => [
+            '4441' => 'État, TVA due',
+            '4449' => 'État, crédit de TVA à reporter',
         ],
         '445' => [
             '4451' => 'TVA récupérable sur immobilisations',
