@@ -344,7 +344,7 @@
         .sc-title { font-size: 5.6pt; color: var(--sc-muted); padding-top: .4mm; }
         .sc-rows { margin-top: auto; display: flex; flex-direction: column; gap: 1.6mm; }
         .sc-row { display: flex; align-items: center; gap: 1.8mm; min-width: 0; }
-        .sc-chip { width: 3.8mm; height: 3.8mm; border-radius: 50%; background: var(--sc-accent); color: #fff; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+        .sc-chip { width: 3.8mm; height: 3.8mm; border-radius: 50%; background: var(--sc-accent); color: var(--sc-chip-ink, #fff); display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
         .sc-chip svg { width: 2mm; height: 2mm; }
         .sc-rowtext { font-size: 6.2pt; color: var(--sc-rowfg); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 
@@ -389,7 +389,9 @@
         .pr { position: relative; width: 100%; height: 100%; overflow: hidden; background: var(--pr-face); color: var(--pr-ink); }
         .pr-wedge { position: absolute; top: -8mm; bottom: -8mm; right: -16mm; width: 44mm; background: linear-gradient(170deg, var(--pr-accent), var(--pr-accent2)); border-radius: 48% 0 0 48%; }
         .pr--facet .pr-wedge { border-radius: 0; clip-path: polygon(36% 0, 100% 0, 100% 100%, 10% 100%); }
-        .pr--pillar .pr-wedge { border-radius: 0; clip-path: polygon(30% 0, 100% 0, 100% 100%, 48% 100%); }
+        /* The slanted edge must stay left of the QR caption at every height,
+           or the reversed-out text strays onto a light face. */
+        .pr--pillar .pr-wedge { right: -10mm; width: 40mm; border-radius: 0; clip-path: polygon(22% 0, 100% 0, 100% 100%, 30% 100%); }
         .pr-wm { position: absolute; top: 50%; right: 3mm; transform: translateY(-50%); width: 28mm; height: 28mm; color: #fff; opacity: .2; z-index: 2; }
         .pr-wm svg { width: 100%; height: 100%; }
         .pr-left { position: absolute; left: 5.5mm; top: 5mm; bottom: 5mm; width: 46mm; display: flex; flex-direction: column; z-index: 3; }

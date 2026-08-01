@@ -107,7 +107,7 @@ class CardCatalog
             'fit-01' => [
                 'label' => 'Vigueur', 'sector' => 'Fitness & Sport', 'family' => 'spotlight', 'variant' => 'brand',
                 'face' => '#101010', 'ink' => '#ffffff', 'muted' => '#9ca3af',
-                'accent' => '#a3e635', 'accent2' => '#65a30d',
+                'accent' => '#a3e635', 'accent2' => '#65a30d', 'chipInk' => '#1a2e05',
                 'back' => '#0d0d0d', 'backInk' => '#ffffff',
                 'badge' => 'dumbbell', 'watermark' => 'dumbbell',
                 'tagline' => ['Train Hard.', 'Live Strong.'], 'scan' => "Scan to view\nour programs",
