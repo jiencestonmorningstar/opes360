@@ -20,10 +20,12 @@
     $scVars = $scbVars = '';
     if ($catalog !== null) {
         $darkFace = $catalog['ink'] === '#ffffff';
-        $scVars = "--sc-face:{$catalog['face']};--sc-ink:{$catalog['ink']};--sc-muted:{$catalog['muted']};"
-            ."--sc-accent:{$catalog['accent']};--sc-accent2:{$catalog['accent2']};"
-            .'--sc-rowfg:'.($darkFace ? '#d6d3d1' : '#334155');
-        $scbVars = "--sc-back:{$catalog['back']};--sc-back-ink:{$catalog['backInk']};--sc-accent:{$catalog['accent']}";
+        $p = $catalog['family'] === 'pro' ? 'pr' : 'sc';
+        $scVars = "--{$p}-face:{$catalog['face']};--{$p}-ink:{$catalog['ink']};--{$p}-muted:{$catalog['muted']};"
+            ."--{$p}-accent:{$catalog['accent']};--{$p}-accent2:{$catalog['accent2']};"
+            ."--{$p}-rowfg:".($darkFace ? '#d6d3d1' : '#334155').';'
+            ."--{$p}-chip-ink:".($catalog['chipInk'] ?? '#ffffff');
+        $scbVars = "--{$p}-back:{$catalog['back']};--{$p}-back-ink:{$catalog['backInk']};--{$p}-accent:{$catalog['accent']}";
     }
 
     /*
@@ -380,6 +382,52 @@
         .scb-vert { position: absolute; left: 1.5mm; top: 50%; transform: translateY(-50%) rotate(180deg); writing-mode: vertical-rl; font-size: 15pt; font-weight: 800; letter-spacing: .12em; opacity: .18; z-index: 1; }
         .scb--edge .scb-features { gap: 4.6mm; }
 
+        /* ── The 'pro' family (cards6…cards18) ────────────────────────────
+           Brand-lockup face with an accent wedge and the QR under a
+           SCAN TO SAVE caption; the back carries a two-line headline, the
+           service list, the QR, the website and social marks. */
+        .pr { position: relative; width: 100%; height: 100%; overflow: hidden; background: var(--pr-face); color: var(--pr-ink); }
+        .pr-wedge { position: absolute; top: -8mm; bottom: -8mm; right: -16mm; width: 44mm; background: linear-gradient(170deg, var(--pr-accent), var(--pr-accent2)); border-radius: 48% 0 0 48%; }
+        .pr--facet .pr-wedge { border-radius: 0; clip-path: polygon(36% 0, 100% 0, 100% 100%, 10% 100%); }
+        .pr--pillar .pr-wedge { border-radius: 0; clip-path: polygon(30% 0, 100% 0, 100% 100%, 48% 100%); }
+        .pr-wm { position: absolute; top: 50%; right: 3mm; transform: translateY(-50%); width: 28mm; height: 28mm; color: #fff; opacity: .2; z-index: 2; }
+        .pr-wm svg { width: 100%; height: 100%; }
+        .pr-left { position: absolute; left: 5.5mm; top: 5mm; bottom: 5mm; width: 46mm; display: flex; flex-direction: column; z-index: 3; }
+        .pr-lockup { display: flex; align-items: center; gap: 2mm; min-width: 0; }
+        .pr-mark { width: 7.4mm; height: 7.4mm; border-radius: 1.6mm; background: linear-gradient(150deg, var(--pr-accent), var(--pr-accent2)); color: #fff; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+        .pr-mark svg { width: 4.4mm; height: 4.4mm; }
+        .pr-brand { font-size: 9.5pt; font-weight: 800; letter-spacing: -0.02em; line-height: 1.05; }
+        .pr-brand .pr-accent { color: var(--pr-accent); }
+        .pr-sub { font-size: 4.4pt; letter-spacing: .18em; text-transform: uppercase; color: var(--pr-muted); padding-top: .5mm; }
+        .pr-person { font-size: 9pt; font-weight: 700; color: var(--pr-accent); padding-top: 3.2mm; }
+        .pr-title { font-size: 5.6pt; color: var(--pr-muted); padding-top: .4mm; }
+        .pr-rows { margin-top: auto; display: flex; flex-direction: column; gap: 1.6mm; }
+        .pr-row { display: flex; align-items: center; gap: 1.8mm; min-width: 0; }
+        .pr-chip { width: 3.8mm; height: 3.8mm; border-radius: 50%; background: var(--pr-accent); color: var(--pr-chip-ink, #fff); display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+        .pr-chip svg { width: 2mm; height: 2mm; }
+        .pr-rowtext { font-size: 6.2pt; color: var(--pr-rowfg); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+        .pr-panel { position: absolute; right: 3mm; bottom: 4.5mm; width: 16mm; z-index: 3; display: flex; flex-direction: column; align-items: center; gap: 1.1mm; }
+        .pr-qr { background: #fff; border-radius: 1.8mm; padding: 1mm; line-height: 0; box-shadow: 0 0 0 .45mm var(--pr-accent), 0 0 0 .8mm #fff; }
+        .pr-qr svg { width: 11mm; height: 11mm; display: block; }
+        .pr-scan { font-size: 4.2pt; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; text-align: center; color: var(--pr-scan, #fff); line-height: 1.45; white-space: pre-line; }
+
+        .prb { position: relative; width: 100%; height: 100%; overflow: hidden; background: var(--pr-back); color: var(--pr-back-ink); padding: 5.5mm 6mm 4.5mm; display: flex; flex-direction: column; align-items: flex-start; }
+        .prb-wm { position: absolute; top: 50%; right: 2mm; transform: translateY(-50%); width: 32mm; height: 32mm; color: #fff; opacity: .09; }
+        .prb-hd { font-size: 9.5pt; font-weight: 800; line-height: 1.3; position: relative; z-index: 2; }
+        .prb-hd em { font-style: normal; color: var(--pr-accent); }
+        .prb-services { margin-top: 3mm; display: flex; flex-direction: column; gap: 1.7mm; position: relative; z-index: 2; }
+        .prb-service { display: flex; align-items: center; gap: 1.8mm; }
+        .prb-service .ic { width: 3.6mm; height: 3.6mm; border: 0.4pt solid var(--pr-accent); border-radius: 1mm; color: var(--pr-accent); display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+        .prb-service .ic svg { width: 2.2mm; height: 2.2mm; }
+        .prb-service span:last-child { font-size: 6pt; }
+        .prb-qr { position: absolute; top: 46%; right: 8mm; transform: translateY(-50%); background: #fff; border-radius: 2mm; padding: 1.2mm; line-height: 0; box-shadow: 0 0 0 .5mm var(--pr-accent); z-index: 2; }
+        .prb-qr svg { width: 12.5mm; height: 12.5mm; display: block; }
+        .prb-foot { margin-top: auto; width: 100%; display: flex; align-items: center; justify-content: space-between; border-top: .4pt solid rgba(255,255,255,.18); padding-top: 2mm; position: relative; z-index: 2; }
+        .prb-site { font-size: 6.2pt; font-weight: 600; color: var(--pr-accent); }
+        .prb-socials { display: flex; gap: 1.6mm; }
+        .prb-socials span { width: 4mm; height: 4mm; border-radius: 50%; border: .4pt solid rgba(255,255,255,.55); display: flex; align-items: center; justify-content: center; }
+        .prb-socials svg { width: 2.1mm; height: 2.1mm; }
+
         @if ($preview)
         /* Embedded on the stationery page: no chrome, transparent stage, and
            the sheet scaled to fill the frame's viewport. calc-division needs a
@@ -470,6 +518,67 @@
 @elseif ($asset === 'card')
     @if ($catalog !== null)
         @php $scVariant = $catalog['variant'] ?? 'spot'; @endphp
+        @if ($catalog['family'] === 'pro')
+            @if ($face !== 'back')
+            {{-- Front (industry pro) --}}
+            <div class="sheet card">
+                <div class="pr pr--{{ $catalog['variant'] ?? 'swoop' }}" style="{{ $scVars }}">
+                    <div class="pr-wedge"></div>
+                    <div class="pr-wm">{!! \App\Support\CardCatalog::glyph($catalog['watermark']) !!}</div>
+                    <div class="pr-panel">
+                        <div class="pr-qr">{!! $qrSvg !!}</div>
+                        <div class="pr-scan">{{ $catalog['scan'] ?? "Scan to save\nour contact" }}</div>
+                    </div>
+                    <div class="pr-left">
+                        <div class="pr-lockup">
+                            <span class="pr-mark">{!! \App\Support\CardCatalog::glyph($catalog['badge']) !!}</span>
+                            <div style="min-width:0">
+                                <div class="pr-brand trunc">{{ $nameBase }}@if ($nameAccent)<span class="pr-accent"> {{ $nameAccent }}</span>@endif</div>
+                                @if ($company->industry || $company->motto)<div class="pr-sub trunc">{{ $company->industry ?? $company->motto }}</div>@endif
+                            </div>
+                        </div>
+                        <div class="pr-person trunc">{{ $name }}</div>
+                        <div class="pr-title trunc">{{ $title }}</div>
+                        <div class="pr-rows">
+                            @foreach ($contactRows as $rowKey => $rowValue)
+                                <div class="pr-row">
+                                    <span class="pr-chip">{!! $glyphs[$rowKey] !!}</span>
+                                    <span class="pr-rowtext">{{ $rowValue }}</span>
+                                </div>
+                            @endforeach
+                        </div>
+                    </div>
+                </div>
+            </div>
+            @endif
+
+            @if ($face !== 'front')
+            {{-- Back (industry pro) --}}
+            <div class="sheet card">
+                <div class="prb" style="{{ $scbVars }}">
+                    <div class="prb-wm">{!! \App\Support\CardCatalog::glyph($catalog['watermark']) !!}</div>
+                    <div class="prb-hd">{{ $catalog['headline'][0] }}<br><em>{{ $catalog['headline'][1] }}</em></div>
+                    <div class="prb-services">
+                        @foreach ($catalog['services'] as [$serviceGlyph, $serviceLabel])
+                            <div class="prb-service">
+                                <span class="ic">{!! \App\Support\CardCatalog::glyph($serviceGlyph) !!}</span>
+                                <span>{{ $serviceLabel }}</span>
+                            </div>
+                        @endforeach
+                    </div>
+                    <div class="prb-qr">{!! $qrSvg !!}</div>
+                    <div class="prb-foot">
+                        <span class="prb-site trunc">{{ $company->website ?: $company->email }}</span>
+                        <span class="prb-socials">
+                            @foreach (['fb', 'ig', 'ln'] as $social)
+                                <span>{!! \App\Support\CardCatalog::glyph($social) !!}</span>
+                            @endforeach
+                        </span>
+                    </div>
+                </div>
+            </div>
+            @endif
+        @else
         @if ($face !== 'back')
         {{-- Front (industry spotlight) --}}
         <div class="sheet card">
@@ -540,6 +649,7 @@
                 </div>
             </div>
         </div>
+        @endif
         @endif
     @elseif ($isPremiumCard)
         @if ($face !== 'back')
