@@ -295,5 +295,124 @@
                 filing form — that has a fixed line structure your accountant will map these figures onto.
             </p>
         @endif
+
+        {{-- Plan comptable --}}
+        @if ($tab === 'chart')
+            @can('accounting.manage')
+                <x-ui.panel title="Add an account" class="mt-5">
+                    <div class="grid gap-3 min-[640px]:grid-cols-[130px_1fr_170px_auto]">
+                        <label>
+                            <span class="mb-1 block text-[12px] font-semibold uppercase tracking-wide text-faint">Number</span>
+                            <input type="text" inputmode="numeric" wire:model="newNumber" placeholder="4111"
+                                   class="{{ $inputClass }} tnum">
+                        </label>
+                        <label>
+                            <span class="mb-1 block text-[12px] font-semibold uppercase tracking-wide text-faint">Name</span>
+                            <input type="text" wire:model="newName" placeholder="Clients — boutique"
+                                   class="{{ $inputClass }}">
+                        </label>
+                        <label>
+                            <span class="mb-1 block text-[12px] font-semibold uppercase tracking-wide text-faint">Increases by</span>
+                            <select wire:model="newSide" class="{{ $inputClass }}">
+                                <option value="">Automatic</option>
+                                <option value="debit">Debit</option>
+                                <option value="credit">Credit</option>
+                            </select>
+                        </label>
+                        <div class="flex items-end">
+                            <button type="button" wire:click="addAccount"
+                                    class="focusable h-11 rounded-lg bg-brand px-4 text-[13.5px] font-semibold text-white hover:opacity-90">
+                                Add
+                            </button>
+                        </div>
+                    </div>
+                    @error('newNumber') <p class="mt-2 text-[12.5px] font-medium text-warning">{{ $message }}</p> @enderror
+                    @error('newName') <p class="mt-2 text-[12.5px] font-medium text-warning">{{ $message }}</p> @enderror
+                    <p class="mt-2 text-[12px] text-muted">
+                        The side is derived from the parent account or the class — override it only when you
+                        know better, as with 4191 avances reçues.
+                    </p>
+                </x-ui.panel>
+
+                @if ($suggested->isNotEmpty())
+                    <div class="mt-4">
+                        <p class="text-[12.5px] font-semibold text-ink-2">Subdivisions the plan lists, one click to add:</p>
+                        <div class="mt-2 flex flex-wrap gap-1.5">
+                            @foreach ($suggested as $number => $name)
+                                <button type="button" wire:click="addSuggested('{{ $number }}')" wire:key="sugg-{{ $number }}"
+                                        class="focusable rounded-lg bg-surface-2 px-3 py-1.5 text-[12.5px] font-semibold text-ink-2 hover:bg-tint-blue hover:text-brand">
+                                    <span class="tnum">{{ $number }}</span> {{ $name }}
+                                </button>
+                            @endforeach
+                        </div>
+                    </div>
+                @endif
+            @endcan
+
+            <div class="card mt-5 overflow-hidden p-0">
+                <div class="overflow-x-auto">
+                    <table class="w-full min-w-[720px] text-left">
+                        <thead>
+                            <tr class="border-b border-border bg-surface-2">
+                                <th class="{{ $th }}">Compte</th>
+                                <th class="{{ $th }}">Libellé</th>
+                                <th class="{{ $th }}">Classe</th>
+                                <th class="{{ $th }}">Sens</th>
+                                <th class="{{ $th }} text-right">Solde</th>
+                                @can('accounting.manage')<th class="{{ $th }}"></th>@endcan
+                            </tr>
+                        </thead>
+                        <tbody class="divide-y divide-border">
+                            @foreach ($chartRows as $row)
+                                <tr wire:key="acct-{{ $row['account']->id }}" class="{{ $row['account']->is_active ? '' : 'opacity-50' }}">
+                                    <td class="{{ $td }} tnum font-semibold text-ink">{{ $row['account']->number }}</td>
+                                    <td class="{{ $td }}">
+                                        @if ($editingId === $row['account']->id)
+                                            <span class="flex items-center gap-2">
+                                                <input type="text" wire:model="editingName" wire:keydown.enter="saveRename"
+                                                       class="h-9 w-full max-w-xs rounded-lg border border-border bg-surface px-2.5 text-[13.5px] text-ink focus:border-brand focus:outline-none">
+                                                <button type="button" wire:click="saveRename" class="focusable text-[12.5px] font-semibold text-brand hover:underline">Save</button>
+                                                <button type="button" wire:click="cancelRename" class="focusable text-[12.5px] font-semibold text-muted hover:underline">Cancel</button>
+                                            </span>
+                                            @error('editingName') <p class="mt-1 text-[12px] font-medium text-warning">{{ $message }}</p> @enderror
+                                        @else
+                                            {{ $row['account']->name }}
+                                            @unless ($row['account']->is_active)
+                                                <span class="ml-1.5 rounded bg-surface-2 px-1.5 py-0.5 text-[11px] font-semibold text-muted">inactive</span>
+                                            @endunless
+                                        @endif
+                                    </td>
+                                    <td class="{{ $td }}">{{ $row['account']->class }}</td>
+                                    <td class="{{ $td }}">{{ $row['account']->isDebitNormal() ? 'Débit' : 'Crédit' }}</td>
+                                    <td class="{{ $td }} tnum text-right {{ $row['hasMovement'] ? 'font-semibold text-ink' : 'text-faint' }}">
+                                        {{ $row['hasMovement'] ? $amount($row['balance']) : '—' }}
+                                    </td>
+                                    @can('accounting.manage')
+                                        <td class="{{ $td }} whitespace-nowrap text-right">
+                                            <button type="button" wire:click="startRename('{{ $row['account']->id }}')"
+                                                    class="focusable text-[12.5px] font-semibold text-brand hover:underline">Rename</button>
+                                            <button type="button" wire:click="toggleActive('{{ $row['account']->id }}')"
+                                                    class="focusable ml-2.5 text-[12.5px] font-semibold text-muted hover:underline">
+                                                {{ $row['account']->is_active ? 'Deactivate' : 'Reactivate' }}
+                                            </button>
+                                            @unless ($row['hasMovement'])
+                                                <button type="button" wire:click="deleteAccount('{{ $row['account']->id }}')"
+                                                        wire:confirm="Remove account {{ $row['account']->number }} from the chart?"
+                                                        class="focusable ml-2.5 text-[12.5px] font-semibold text-negative hover:underline">Delete</button>
+                                            @endunless
+                                        </td>
+                                    @endcan
+                                </tr>
+                            @endforeach
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <p class="mt-4 text-[12.5px] text-muted">
+                An account with entries can be renamed or deactivated but never deleted — the books
+                reference it, and a balance that cites a vanished account explains nothing.
+            </p>
+        @endif
     @endif
 </div>

@@ -27,7 +27,7 @@ class Permissions
         'Events' => ['view', 'create', 'update', 'void', 'check-in'],
         'Loyalty' => ['view', 'manage', 'redeem'],
         'Reports' => ['view', 'export'],
-        'Accounting' => ['view', 'export'],
+        'Accounting' => ['view', 'export', 'manage'],
         'Users' => ['view', 'invite', 'update-role', 'remove'],
         'Devices' => ['view', 'revoke'],
         'Settings' => ['view', 'update'],

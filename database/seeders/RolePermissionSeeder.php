@@ -32,7 +32,7 @@ class RolePermissionSeeder extends Seeder
             'Events' => ['view', 'create', 'update', 'void', 'check-in'],
             'Loyalty' => ['view', 'manage', 'redeem'],
             'Reports' => ['view', 'export'],
-            'Accounting' => ['view', 'export'],
+            'Accounting' => ['view', 'export', 'manage'],
             'Users' => ['view'],
             'Devices' => ['view'],
             'Settings' => ['view'],
@@ -50,7 +50,7 @@ class RolePermissionSeeder extends Seeder
             'Loyalty' => ['view'],
             'Reports' => ['view', 'export'],
             // The books are the accountant's job before anyone else's.
-            'Accounting' => ['view', 'export'],
+            'Accounting' => ['view', 'export', 'manage'],
             'Settings' => ['view'],
         ]],
         'sales-officer' => ['name' => 'Sales Officer', 'level' => 5, 'grants' => [

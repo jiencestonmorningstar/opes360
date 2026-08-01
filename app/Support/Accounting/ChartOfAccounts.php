@@ -165,11 +165,40 @@ class ChartOfAccounts
     {
         if ($class === 4) {
             // 411 is owed to the business and 445 is tax it can reclaim —
-            // both assets. Everything else in class 4 here is owed by it.
-            return in_array($number, ['411', '445'], true) ? 'debit' : 'credit';
+            // both assets, and so are their subdivisions (4111, 4452…), which
+            // is why this matches on prefix. 4191 Clients avances reçues
+            // deliberately does not match: it starts 419, and money a
+            // customer paid in advance is owed *by* the business.
+            return str_starts_with($number, '411') || str_starts_with($number, '445')
+                ? 'debit'
+                : 'credit';
         }
 
         return LedgerAccount::normalBalanceFor($class);
+    }
+
+    /**
+     * The side a new account most likely wants, offered as a default the
+     * accountant can override. An account under an existing one inherits its
+     * parent's side — the longest matching prefix wins, so 4111 follows 411 —
+     * and anything without a parent falls to the class rule.
+     */
+    public static function suggestSide(Company $company, string $number): string
+    {
+        $parent = LedgerAccount::query()
+            ->withoutGlobalScopes()
+            ->where('company_id', $company->id)
+            ->where('number', '!=', $number)
+            ->get(['number', 'normal_balance'])
+            ->filter(fn (LedgerAccount $a) => str_starts_with($number, $a->number))
+            ->sortByDesc(fn (LedgerAccount $a) => strlen($a->number))
+            ->first();
+
+        if ($parent !== null) {
+            return $parent->normal_balance;
+        }
+
+        return self::normalBalanceFor($number, LedgerAccount::classOf($number));
     }
 
     /** The account a role points at, or null when the chart has not been seeded. */
