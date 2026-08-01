@@ -40,6 +40,7 @@
         'mail' => '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="m22 7-10 6L2 7"/></svg>',
         'web' => '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M2 12h20M12 2a15 15 0 0 1 0 20 15 15 0 0 1 0-20z"/></svg>',
         'pin' => '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 10c0 6-8 12-8 12S4 16 4 10a8 8 0 0 1 16 0z"/><circle cx="12" cy="10" r="3"/></svg>',
+        'person' => '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="3.5"/><path d="M5.5 20c.8-3.2 3.4-5 6.5-5s5.7 1.8 6.5 5"/></svg>',
     ];
 
     $features = [
@@ -49,16 +50,6 @@
         ['label' => 'Reports', 'glyph' => '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v18h18"/><path d="M7 15v-4M12 17V8M17 13v-2"/></svg>'],
     ];
 
-    // Each design's palette, matched to docs/image templates/cards1.png.
-    $palettes = [
-        'azure' => ['accent' => '#2563eb', 'accent2' => '#1e40af', 'panelText' => '#ffffff'],
-        'onyx' => ['accent' => '#d8a740', 'accent2' => '#b8860b', 'panelText' => '#f4e3bd'],
-        'jade' => ['accent' => '#16a34a', 'accent2' => '#15803d', 'panelText' => '#ffffff'],
-        'cyber' => ['accent' => '#22d3ee', 'accent2' => '#0e7490', 'panelText' => '#a5f3fc'],
-        'violet' => ['accent' => '#7c3aed', 'accent2' => '#a855f7', 'panelText' => '#ffffff'],
-        'sunrise' => ['accent' => '#f97316', 'accent2' => '#ea580c', 'panelText' => '#ffffff'],
-    ];
-    $pal = $palettes[$cardDesign] ?? $palettes['azure'];
 @endphp
 
 <!DOCTYPE html>
@@ -176,102 +167,140 @@
            shares — left column of identity + contact rows, right panel with
            the QR and its "scan" caption, decorated back — and each skin
            supplies colour, curvature and texture. All shapes are pure CSS so
-           the print stays vector at any DPI. */
+           the print stays vector at any DPI. Colours are sampled from the
+           template sheet itself (docs/image templates/cards1.png). */
         .pc, .pcb { position: relative; width: 100%; height: 100%; overflow: hidden; background: #fff; }
-        .pc-left { position: absolute; left: 5.5mm; top: 5mm; bottom: 5mm; width: 50mm; z-index: 3; display: flex; flex-direction: column; }
+        .pc-left { position: absolute; left: 5.5mm; top: 5mm; bottom: 5mm; width: 50mm; z-index: 4; display: flex; flex-direction: column; }
         .pc-brand { font-size: 10.5pt; font-weight: 800; letter-spacing: -0.02em; line-height: 1.05; }
         .pc-brand-accent { color: var(--pc-accent); }
         .pc-motto { font-size: 5.2pt; color: #94a3b8; padding-top: 0.6mm; }
-        .pc-person { font-size: 8.6pt; font-weight: 700; padding-top: 3.2mm; }
-        .pc-title { font-size: 5.6pt; color: #94a3b8; padding-top: 0.4mm; }
-        .pc-rows { margin-top: auto; display: flex; flex-direction: column; gap: 1.5mm; }
+        .pc-person-wrap { display: flex; align-items: center; gap: 1.8mm; padding-top: 3.2mm; min-width: 0; }
+        .pc-person-badge { display: none; width: 5mm; height: 5mm; border-radius: 50%; border: 0.55pt solid var(--pc-accent); color: var(--pc-accent); flex-shrink: 0; align-items: center; justify-content: center; }
+        .pc-person-badge svg { width: 2.8mm; height: 2.8mm; }
+        .pc-person { font-size: 8.6pt; font-weight: 700; }
+        .pc-title { font-size: 5.6pt; color: var(--pc-title-fg, #94a3b8); padding-top: 0.4mm; }
+        .pc-rows { margin-top: auto; display: flex; flex-direction: column; gap: 1.6mm; }
         .pc-row { display: flex; align-items: center; gap: 1.8mm; min-width: 0; }
-        .pc-chip { width: 3.6mm; height: 3.6mm; border-radius: 50%; flex-shrink: 0; display: flex; align-items: center; justify-content: center; background: var(--pc-chip-bg); color: var(--pc-chip-fg); }
+        /* Solid accent chips with reversed-out glyphs, as on every template. */
+        .pc-chip { width: 3.8mm; height: 3.8mm; border-radius: 50%; flex-shrink: 0; display: flex; align-items: center; justify-content: center; background: var(--pc-chip-bg, var(--pc-accent)); color: var(--pc-chip-fg, #fff); }
         .pc-chip svg { width: 2mm; height: 2mm; }
         .pc-row-text { font-size: 6.2pt; color: var(--pc-row-fg, #334155); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
         .pc-panel { position: absolute; z-index: 2; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 1.6mm; }
+        .pc-panel > * { position: relative; }
         .pc-qr { background: #fff; border-radius: 1.6mm; padding: 1.4mm; line-height: 0; }
         .pc-qr svg { width: 15mm; height: 15mm; display: block; }
         .pc-scan { font-size: 5pt; font-weight: 600; text-align: center; line-height: 1.35; color: var(--pc-panel-fg, #fff); }
-        .pc-deco-a, .pc-deco-b, .pcb-deco-a, .pcb-deco-b { position: absolute; }
+        .pc-deco-a, .pc-deco-b, .pc-deco-c, .pc-deco-d { position: absolute; }
 
-        /* Back skeleton: centred stack of wordmark, feature row, tagline. */
+        /* Back skeleton: centred stack of wordmark, boxed feature row and
+           tagline — the feature glyphs sit inside rounded-square outlines on
+           every template back. */
         .pcb { display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; padding: 5mm 6mm; }
         .pcb > * { position: relative; z-index: 3; }
         /* The decos are corner ornaments, not flow content — re-assert the
            absolute positioning that `.pcb > *` above would otherwise flatten
            into the centred column, and keep them under the text. */
-        .pcb .pcb-deco-a, .pcb .pcb-deco-b { position: absolute; z-index: 1; }
+        .pcb .pcb-deco-a, .pcb .pcb-deco-b, .pcb .pcb-deco-c { position: absolute; z-index: 1; }
         .pcb-brand { font-size: 13pt; font-weight: 800; letter-spacing: -0.02em; }
         .pcb-brand .pc-brand-accent { color: var(--pc-accent); }
         .pcb-motto { font-size: 5.6pt; color: var(--pcb-muted, #94a3b8); padding-top: 0.6mm; }
-        .pcb-features { display: flex; gap: 4.6mm; padding: 4.2mm 0 3.6mm; }
-        .pcb-feature { display: flex; flex-direction: column; align-items: center; gap: 1mm; color: var(--pcb-icon); }
-        .pcb-feature svg { width: 4.6mm; height: 4.6mm; }
+        .pcb-features { display: flex; gap: 5mm; padding: 4.4mm 0 4mm; }
+        .pcb-feature { display: flex; flex-direction: column; align-items: center; gap: 1.1mm; color: var(--pcb-icon); }
+        .pcb-feature-box { width: 7.4mm; height: 7.4mm; border: 0.55pt solid currentColor; border-radius: 2mm; display: flex; align-items: center; justify-content: center; }
+        .pcb-feature svg { width: 4.2mm; height: 4.2mm; }
         .pcb-feature span:last-child { font-size: 4.8pt; font-weight: 600; color: var(--pcb-label, var(--pcb-icon)); }
-        .pcb-tagline { font-size: 6pt; font-weight: 600; color: var(--pcb-tagline); border-top: 0.4pt solid var(--pcb-rule, transparent); padding-top: 2.2mm; min-width: 46mm; }
+        .pcb-dash { display: none; width: 5.6mm; height: 0.7mm; border-radius: 1mm; margin-bottom: 2.6mm; background: var(--pcb-dash, currentColor); }
+        .pcb-tagline { font-size: 6pt; font-weight: 600; color: var(--pcb-tagline); }
 
-        /* 01 · Azure — white face, blue panel with a concave white bite. */
-        .pc-azure { --pc-accent: #2563eb; --pc-chip-bg: #dbeafe; --pc-chip-fg: #2563eb; }
-        .pc-azure .pc-panel { top: 2.5mm; right: 2.5mm; bottom: 2.5mm; width: 29mm; border-radius: 2.5mm; background: linear-gradient(160deg, #2f6bf0, #1e40af); }
-        .pc-azure .pc-deco-a { top: 50%; right: 27mm; width: 18mm; height: 26mm; transform: translateY(-50%); background: #fff; border-radius: 50%; z-index: 3; }
-        .pc-azure .pc-deco-b { left: -8mm; bottom: -12mm; width: 26mm; height: 26mm; border-radius: 50%; background: #dbeafe; }
-        .pcb-azure { background: linear-gradient(150deg, #2f6bf0 0%, #1d4ed8 55%, #1e3a8a 100%); color: #fff; --pc-accent: #bfdbfe; --pcb-muted: rgba(255,255,255,.75); --pcb-icon: #fff; --pcb-tagline: #fff; --pcb-rule: rgba(255,255,255,.35); }
+        /* 01 · Azure — white face; full-bleed blue block on the right with a
+           lighter tab and pale crescent layered behind a concave white bite;
+           circled person badge beside the name. */
+        .pc-azure { --pc-accent: #1464fc; --pc-chip-bg: #0a5cf5; }
+        .pc-azure .pc-person-badge { display: flex; }
+        .pc-azure .pc-panel { top: 0; right: 0; bottom: 0; width: 29mm; border-radius: 4.5mm 0 0 4.5mm; background: linear-gradient(155deg, #0f6bfa 0%, #0a4fd6 45%, #04338c 100%); }
+        .pc-azure .pc-deco-c { top: 0; right: 26.5mm; width: 6.5mm; height: 30mm; border-radius: 2.2mm; background: #4f8bfb; z-index: 1; }
+        .pc-azure .pc-deco-d { bottom: -6mm; right: 24mm; width: 16mm; height: 26mm; border-radius: 50%; background: #e5effd; z-index: 1; }
+        .pc-azure .pc-deco-a { top: 50%; right: 26mm; width: 16mm; height: 26mm; transform: translateY(-50%); background: #fff; border-radius: 50%; z-index: 3; }
+        .pc-azure .pc-deco-b { left: -10mm; bottom: -14mm; width: 30mm; height: 30mm; border-radius: 50%; background: #e8f0fd; }
+        .pcb-azure { background: radial-gradient(60mm 40mm at 50% 0%, rgba(255,255,255,.14), transparent 60%), linear-gradient(160deg, #0f4ab9 0%, #0a3ba2 40%, #032169 100%); color: #fff; --pc-accent: #fff; --pcb-muted: rgba(255,255,255,.8); --pcb-icon: #fff; --pcb-tagline: #fff; }
 
-        /* 02 · Onyx — black face, gold hairline frame leaning behind the QR. */
-        .pc-onyx { background: #0e0e10; color: #fff; --pc-accent: #d8a740; --pc-chip-bg: rgba(216,167,64,.16); --pc-chip-fg: #d8a740; --pc-row-fg: #d6d3cd; --pc-panel-fg: #f4e3bd; }
+        /* 02 · Onyx — hatched black face; a leaning gold-edged panel bleeds
+           off the bottom-right corner; gold wordmark spark. */
+        .pc-onyx { background: repeating-linear-gradient(115deg, rgba(255,255,255,.014) 0 2px, transparent 2px 7px), #0c1114; color: #fff; --pc-accent: #e2b34d; --pc-chip-bg: #dcab4b; --pc-chip-fg: #17130a; --pc-row-fg: #cfcbc2; --pc-title-fg: #8d8778; --pc-panel-fg: #f2e7c9; }
         .pc-onyx .pc-person { color: #fff; }
-        .pc-onyx .pc-motto, .pc-onyx .pc-title { color: #8a8578; }
-        .pc-onyx .pc-panel { top: 8mm; right: 6mm; bottom: 8mm; width: 26mm; }
-        .pc-onyx .pc-deco-a { top: 6mm; right: 4mm; bottom: 6mm; width: 30mm; border: 0.5pt solid rgba(216,167,64,.65); border-radius: 3mm; transform: skewX(-6deg); }
-        .pcb-onyx { background: #0d0d0f; color: #f4e3bd; --pc-accent: #d8a740; --pcb-muted: #8a8578; --pcb-icon: #d8a740; --pcb-label: #e8d9ac; --pcb-tagline: #f4e3bd; --pcb-rule: rgba(216,167,64,.4); }
-        .pcb-onyx .pcb-brand { color: #d8a740; }
-        .pcb-onyx .pcb-deco-a { top: -1mm; right: -8mm; width: 34mm; height: 7mm; background: linear-gradient(90deg, #b8860b, #e9c766); transform: rotate(-24deg); }
-        .pcb-onyx .pcb-deco-b { top: 3.4mm; right: -9mm; width: 34mm; height: 1.2mm; background: rgba(216,167,64,.5); transform: rotate(-24deg); }
+        .pc-onyx .pc-motto { color: #8d8778; }
+        .pc-onyx .pc-brand::after { content: '\2726'; color: #e9c766; font-size: 4.6pt; vertical-align: top; margin-left: 0.5mm; }
+        .pc-onyx .pc-deco-a { top: 4mm; right: -4mm; bottom: -7mm; width: 37mm; background: #151a1e; border: 0.5pt solid rgba(222,173,74,.9); border-radius: 4mm; transform: skewX(-8deg); }
+        .pc-onyx .pc-panel { top: 8mm; right: 4mm; bottom: 8mm; width: 27mm; }
+        .pcb-onyx { background: repeating-linear-gradient(120deg, rgba(255,255,255,.016) 0 3px, transparent 3px 9px), #101214; color: #f4e3bd; --pc-accent: #e2b34d; --pcb-muted: #a9a291; --pcb-icon: #e2b34d; --pcb-label: #f5f2ea; --pcb-tagline: #f0ede4; }
+        .pcb-onyx .pcb-brand { color: #e2b34d; }
+        .pcb-onyx .pcb-brand::after { content: '\2726'; color: #e9c766; font-size: 5pt; vertical-align: top; margin-left: 0.5mm; }
+        .pcb-onyx .pcb-deco-a { top: -3mm; right: -9mm; width: 34mm; height: 8mm; background: linear-gradient(90deg, #c0903f, #f0c060); transform: rotate(24deg); }
+        .pcb-onyx .pcb-deco-c { top: 4.2mm; right: -10mm; width: 34mm; height: 1.1mm; background: rgba(222,173,74,.45); transform: rotate(24deg); }
 
-        /* 03 · Jade — white face, soft green bloom, green panel; back closes
-           on a curved green band. */
-        .pc-jade { --pc-accent: #16a34a; --pc-chip-bg: #dcfce7; --pc-chip-fg: #16a34a; }
-        .pc-jade .pc-deco-b { top: -10mm; right: -6mm; width: 34mm; height: 34mm; border-radius: 50%; background: #dcfce7; }
-        .pc-jade .pc-panel { top: 2.5mm; right: 2.5mm; bottom: 2.5mm; width: 29mm; border-radius: 2.5mm; background: linear-gradient(160deg, #22b358, #15803d); }
-        .pc-jade .pc-deco-a { top: 50%; right: 27mm; width: 18mm; height: 26mm; transform: translateY(-50%); background: #fff; border-radius: 50%; z-index: 3; }
-        .pcb-jade { --pc-accent: #16a34a; --pcb-muted: #94a3b8; --pcb-icon: #16a34a; --pcb-label: #166534; --pcb-tagline: #fff; padding-bottom: 12mm; }
+        /* 03 · Jade — white face over layered green blooms; the QR panel
+           floats inset; green title; back closes on a curved green band. */
+        .pc-jade { --pc-accent: #2e9440; --pc-title-fg: #2e9440; }
+        .pc-jade .pc-deco-c { top: 0; right: 0; bottom: 0; width: 33mm; border-radius: 6mm 0 0 6mm; background: linear-gradient(200deg, #e9f3e6 0%, #cfe3c9 60%, #bcd9b4 100%); }
+        .pc-jade .pc-deco-d { top: -10mm; right: -10mm; width: 36mm; height: 42mm; border-radius: 50%; background: rgba(79,159,51,.28); z-index: 1; }
+        .pc-jade .pc-panel { top: 9mm; right: 2mm; bottom: 9mm; width: 27mm; border-radius: 3.5mm; background: linear-gradient(160deg, #5aa93e 0%, #2c8632 55%, #1f7028 100%); }
+        .pc-jade .pc-qr { border-radius: 2.5mm; }
+        .pc-jade .pc-deco-a { top: 54%; right: 26mm; width: 14mm; height: 22mm; transform: translateY(-50%); background: #fff; border-radius: 50%; z-index: 3; }
+        .pcb-jade { --pc-accent: #2e9440; --pcb-muted: #94a3b8; --pcb-icon: #2e9440; --pcb-label: #1f2937; --pcb-tagline: #fff; padding-bottom: 12mm; }
         .pcb-jade .pcb-brand { color: #0f172a; }
-        .pcb-jade .pcb-deco-a { left: -10mm; right: -10mm; bottom: -9mm; height: 16mm; background: linear-gradient(90deg, #22b358, #15803d); border-radius: 50% 50% 0 0; }
-        .pcb-jade .pcb-tagline { position: absolute; left: 0; right: 0; bottom: 2.6mm; border-top: none; min-width: 0; }
+        .pcb-jade .pcb-deco-b { top: -8mm; left: -8mm; width: 24mm; height: 24mm; border-radius: 50%; background: #eef6ec; }
+        .pcb-jade .pcb-deco-a { left: -10mm; right: -10mm; bottom: -9mm; height: 16mm; background: linear-gradient(90deg, #278a30, #1d6b26); border-radius: 50% 50% 0 0; }
+        .pcb-jade .pcb-tagline { position: absolute; left: 0; right: 0; bottom: 2.6mm; }
 
-        /* 04 · Cyber — deep navy, cyan accents, the QR held in a hexagon. */
-        .pc-cyber { background: #081b2b; color: #fff; --pc-accent: #22d3ee; --pc-chip-bg: rgba(34,211,238,.14); --pc-chip-fg: #22d3ee; --pc-row-fg: #cbd5e1; --pc-panel-fg: #a5f3fc; }
+        /* 04 · Cyber — deep navy with a cyan glow, faceted corner and dot
+           grid; the QR held in a crisply outlined hexagon. */
+        .pc-cyber { background: radial-gradient(44mm 40mm at 86% 8%, rgba(34,211,238,.16), transparent 70%), #0a1c2a; color: #fff; --pc-accent: #2fd6f0; --pc-chip-bg: #17c3e4; --pc-chip-fg: #062033; --pc-row-fg: #cbd5e1; --pc-title-fg: #64748b; --pc-panel-fg: #55d7ea; }
         .pc-cyber .pc-person { color: #fff; }
-        .pc-cyber .pc-motto, .pc-cyber .pc-title { color: #64748b; }
-        .pc-cyber .pc-deco-a { top: -14mm; right: -10mm; width: 40mm; height: 40mm; border-radius: 50%; background: radial-gradient(circle, rgba(34,211,238,.16), transparent 65%); }
-        .pc-cyber .pc-deco-b { bottom: -12mm; right: 18mm; width: 30mm; height: 30mm; border-radius: 50%; background: radial-gradient(circle, rgba(34,211,238,.1), transparent 60%); }
-        .pc-cyber .pc-panel { top: 50%; right: 5mm; width: 27mm; height: 30mm; transform: translateY(-50%); background: #0c2438; clip-path: polygon(50% 0, 96% 25%, 96% 75%, 50% 100%, 4% 75%, 4% 25%); box-shadow: inset 0 0 0 0.5pt #22d3ee; }
-        .pcb-cyber { background: #081b2b; color: #fff; --pc-accent: #22d3ee; --pcb-muted: #64748b; --pcb-icon: #22d3ee; --pcb-label: #a5f3fc; --pcb-tagline: #e0fbff; --pcb-rule: rgba(34,211,238,.35); }
+        .pc-cyber .pc-motto { color: #64748b; }
+        .pc-cyber .pc-deco-b { bottom: 0; right: 0; width: 34mm; height: 26mm; background: rgba(3,10,18,.55); clip-path: polygon(100% 34%, 100% 100%, 30% 100%); }
+        .pc-cyber .pc-deco-c { right: 1mm; bottom: 1mm; width: 26mm; height: 16mm; background-image: radial-gradient(rgba(34,211,238,.3) 13%, transparent 15%); background-size: 2.6mm 2.6mm; opacity: .45; }
+        .pc-cyber .pc-panel { top: 50%; right: 3.5mm; width: 30mm; height: 42mm; transform: translateY(-50%); background: #2fd6f0; clip-path: polygon(50% 0, 97% 24%, 97% 76%, 50% 100%, 3% 76%, 3% 24%); }
+        .pc-cyber .pc-panel::before { content: ''; position: absolute; inset: 0.45mm; background: #0d2334; clip-path: polygon(50% 0, 97% 24%, 97% 76%, 50% 100%, 3% 76%, 3% 24%); }
+        .pcb-cyber { background: radial-gradient(50mm 40mm at 82% 0%, rgba(34,211,238,.1), transparent 70%), #0a1c2a; color: #fff; --pc-accent: #2fd6f0; --pcb-muted: #64748b; --pcb-icon: #2fd6f0; --pcb-label: #cfeef5; --pcb-tagline: #e6fbff; --pcb-dash: #2fd6f0; }
+        .pcb-cyber .pcb-dash { display: block; }
         .pcb-cyber .pcb-deco-a { top: -12mm; right: -12mm; width: 34mm; height: 34mm; background: transparent; clip-path: polygon(50% 0, 96% 25%, 96% 75%, 50% 100%, 4% 75%, 4% 25%); box-shadow: inset 0 0 0 0.5pt rgba(34,211,238,.4); }
         .pcb-cyber .pcb-deco-b { bottom: -10mm; left: -8mm; width: 26mm; height: 26mm; background: transparent; clip-path: polygon(50% 0, 96% 25%, 96% 75%, 50% 100%, 4% 75%, 4% 25%); box-shadow: inset 0 0 0 0.5pt rgba(34,211,238,.25); }
+        .pcb-cyber .pcb-deco-c { bottom: 0; left: 0; width: 30mm; height: 20mm; background: rgba(3,10,18,.45); clip-path: polygon(0 30%, 70% 100%, 0 100%); }
 
-        /* 05 · Violet — white face, purple gradient wave, dotted texture. */
-        .pc-violet { --pc-accent: #7c3aed; --pc-chip-bg: #ede9fe; --pc-chip-fg: #7c3aed; }
-        .pc-violet .pc-deco-a { top: -8mm; right: -14mm; bottom: -8mm; width: 44mm; background: linear-gradient(200deg, #a855f7, #6d28d9); border-radius: 42% 0 0 46%; }
-        .pc-violet .pc-deco-b { left: 40mm; bottom: 2mm; width: 9mm; height: 9mm; background-image: radial-gradient(#a855f7 22%, transparent 24%); background-size: 2.2mm 2.2mm; z-index: 2; }
-        .pc-violet .pc-panel { top: 50%; right: 6mm; width: 25mm; transform: translateY(-50%); }
-        .pc-violet .pc-qr { border-radius: 2.4mm; box-shadow: 0 1mm 3mm rgba(76,29,149,.35); }
-        .pcb-violet { background: linear-gradient(150deg, #7c3aed, #9333ea 60%, #6d28d9); color: #fff; --pc-accent: #ddd6fe; --pcb-muted: rgba(255,255,255,.75); --pcb-icon: #fff; --pcb-tagline: #fff; --pcb-rule: rgba(255,255,255,.35); }
+        /* 05 · Violet — white face; indigo-to-magenta wave layered over
+           lighter crescents; the QR and its caption share a floating white
+           card; purple dot grid. */
+        .pc-violet { --pc-accent: #7c3aed; }
+        .pc-violet .pc-deco-c { top: -16mm; right: -6mm; width: 42mm; height: 44mm; border-radius: 50%; background: #c9a8f0; z-index: 1; }
+        .pc-violet .pc-deco-d { bottom: -18mm; right: -6mm; width: 40mm; height: 36mm; border-radius: 50%; background: #b78ae8; z-index: 1; }
+        .pc-violet .pc-deco-a { top: -8mm; right: -14mm; bottom: -8mm; width: 44mm; background: linear-gradient(190deg, #5a28bd 0%, #7c2fb4 55%, #8a33a5 100%); border-radius: 42% 0 0 46%; z-index: 2; }
+        .pc-violet .pc-deco-b { left: 38mm; bottom: 3mm; width: 9mm; height: 9mm; background-image: radial-gradient(#8b5cf6 22%, transparent 24%); background-size: 2.2mm 2.2mm; z-index: 3; }
+        .pc-violet .pc-panel { top: 50%; right: 5mm; width: 26mm; transform: translateY(-50%); background: #fff; border-radius: 3mm; padding: 2.2mm 2.2mm 1.8mm; gap: 1.4mm; box-shadow: 0 1.2mm 3mm rgba(50,20,90,.35); z-index: 3; }
+        .pc-violet .pc-qr { padding: 0.8mm; border: 0.45pt solid #7c3aed; border-radius: 1.8mm; }
+        .pc-violet .pc-qr svg { width: 14mm; height: 14mm; }
+        .pc-violet .pc-scan { color: #241640; }
+        .pcb-violet { background: linear-gradient(135deg, #a558cf 0%, #6d2fb2 45%, #3b2496 80%, #282788 100%); color: #fff; --pc-accent: #fff; --pcb-muted: rgba(255,255,255,.8); --pcb-icon: #fff; --pcb-tagline: #fff; --pcb-dash: rgba(255,255,255,.6); }
+        .pcb-violet .pcb-dash { display: block; }
+        .pcb-violet .pcb-deco-b { left: 4mm; bottom: 2mm; width: 9mm; height: 9mm; background-image: radial-gradient(rgba(255,255,255,.35) 20%, transparent 22%); background-size: 2.2mm 2.2mm; }
 
-        /* 06 · Sunrise — white face, black-and-orange crescents, the QR in a
-           ringed circle riding the swoosh. */
-        .pc-sunrise { --pc-accent: #f97316; --pc-chip-bg: #ffedd5; --pc-chip-fg: #f97316; }
-        .pc-sunrise .pc-deco-a { top: -16mm; right: -34mm; width: 62mm; height: 94mm; border-radius: 50%; background: #101014; }
-        .pc-sunrise .pc-deco-b { top: -14mm; right: -38mm; width: 60mm; height: 90mm; border-radius: 50%; background: linear-gradient(200deg, #fb923c, #ea580c); z-index: 2; }
+        /* 06 · Sunrise — white face; navy-black and orange crescents with a
+           thin orange arc ahead of them; the QR in an orange-ringed circle
+           riding the swoosh. */
+        .pc-sunrise { --pc-accent: #f9741d; }
+        .pc-sunrise .pc-deco-c { top: -18mm; right: -26mm; width: 60mm; height: 96mm; border-radius: 50%; border-left: 0.6pt solid #f9741d; }
+        .pc-sunrise .pc-deco-a { top: -16mm; right: -34mm; width: 62mm; height: 94mm; border-radius: 50%; background: #0d1823; z-index: 1; }
+        .pc-sunrise .pc-deco-b { top: -14mm; right: -38mm; width: 60mm; height: 90mm; border-radius: 50%; background: linear-gradient(180deg, #f88c34 0%, #ee6d10 60%, #e35f08 100%); z-index: 2; }
         .pc-sunrise .pc-panel { top: 50%; right: 4.5mm; width: 24mm; transform: translateY(-50%); }
-        .pc-sunrise .pc-qr { border-radius: 50%; padding: 2.2mm; box-shadow: 0 0 0 1.1mm #f97316, 0 0 0 1.6mm #fff; }
-        .pc-sunrise .pc-qr svg { width: 13mm; height: 13mm; }
-        .pc-sunrise .pc-scan { color: #431407; margin-top: 2.6mm; }
-        .pcb-sunrise { --pc-accent: #f97316; --pcb-muted: #94a3b8; --pcb-icon: #f97316; --pcb-label: #9a3412; --pcb-tagline: #0f172a; --pcb-rule: #fed7aa; }
+        /* The square code must fit the round chip: 11.5mm side ≈ 16.3mm
+           diagonal inside the 16.7mm circle, so the quiet zone survives. */
+        .pc-sunrise .pc-qr { border-radius: 50%; padding: 2.6mm; box-shadow: 0 0 0 1.3mm #ee6d10, 0 0 0 1.8mm #fff; }
+        .pc-sunrise .pc-qr svg { width: 11.5mm; height: 11.5mm; }
+        .pc-sunrise .pc-scan { color: #1f2937; margin-top: 4mm; }
+        .pcb-sunrise { --pc-accent: #f9741d; --pcb-muted: #94a3b8; --pcb-icon: #f9741d; --pcb-label: #303a46; --pcb-tagline: #17202b; }
         .pcb-sunrise .pcb-brand { color: #0f172a; }
-        .pcb-sunrise .pcb-deco-a { top: -7mm; right: -7mm; width: 16mm; height: 16mm; background: linear-gradient(200deg, #fb923c, #ea580c); transform: rotate(45deg); border-radius: 2mm; }
-        .pcb-sunrise .pcb-deco-b { bottom: -12mm; left: -12mm; width: 27mm; height: 27mm; border-radius: 50%; background: linear-gradient(200deg, #fb923c, #ea580c); }
+        .pcb-sunrise .pcb-deco-c { top: 1mm; right: -12mm; width: 42mm; height: 11mm; background: #fbd7b0; transform: rotate(22deg); }
+        .pcb-sunrise .pcb-deco-a { top: -4mm; right: -11mm; width: 42mm; height: 10mm; background: linear-gradient(90deg, #f2913c, #e56607); transform: rotate(22deg); }
+        .pcb-sunrise .pcb-deco-b { bottom: -16mm; left: -14mm; width: 52mm; height: 26mm; border-radius: 50%; background: linear-gradient(90deg, #ef7c1a, #e35f08); transform: rotate(8deg); }
 
     </style>
 </head>
@@ -350,13 +379,20 @@
         {{-- Front --}}
         <div class="sheet card">
             <div class="pc pc-{{ $cardDesign }}">
+                <div class="pc-deco-c"></div>
+                <div class="pc-deco-d"></div>
                 <div class="pc-deco-a"></div>
                 <div class="pc-deco-b"></div>
                 <div class="pc-left">
                     <div class="pc-brand trunc">{{ $nameBase }}@if ($nameAccent)<span class="pc-brand-accent"> {{ $nameAccent }}</span>@endif</div>
                     @if ($company->motto)<div class="pc-motto trunc">{{ $company->motto }}</div>@endif
-                    <div class="pc-person trunc">{{ $name }}</div>
-                    <div class="pc-title trunc">{{ $title }}</div>
+                    <div class="pc-person-wrap">
+                        <span class="pc-person-badge">{!! $glyphs['person'] !!}</span>
+                        <div style="min-width:0">
+                            <div class="pc-person trunc">{{ $name }}</div>
+                            <div class="pc-title trunc">{{ $title }}</div>
+                        </div>
+                    </div>
                     <div class="pc-rows">
                         @foreach ($contactRows as $rowKey => $rowValue)
                             <div class="pc-row">
@@ -376,6 +412,7 @@
         {{-- Back --}}
         <div class="sheet card">
             <div class="pcb pcb-{{ $cardDesign }}">
+                <div class="pcb-deco-c"></div>
                 <div class="pcb-deco-a"></div>
                 <div class="pcb-deco-b"></div>
                 <div class="pcb-brand trunc">{{ $nameBase }}@if ($nameAccent)<span class="pc-brand-accent"> {{ $nameAccent }}</span>@endif</div>
@@ -383,11 +420,12 @@
                 <div class="pcb-features">
                     @foreach ($features as $feature)
                         <div class="pcb-feature">
-                            {!! $feature['glyph'] !!}
+                            <span class="pcb-feature-box">{!! $feature['glyph'] !!}</span>
                             <span>{{ $feature['label'] }}</span>
                         </div>
                     @endforeach
                 </div>
+                <div class="pcb-dash"></div>
                 <div class="pcb-tagline">All your business. One platform.</div>
             </div>
         </div>
