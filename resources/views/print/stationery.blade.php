@@ -28,6 +28,8 @@
         $scbVars = "--{$p}-back:{$catalog['back']};--{$p}-back-ink:{$catalog['backInk']};--{$p}-accent:{$catalog['accent']}";
         if ($catalog['featAccent'] ?? false) {
             $scbVars .= ";--scb-feat:{$catalog['accent']};--scb-qr-ring:{$catalog['accent']}";
+        } elseif (isset($catalog['feat'])) {
+            $scbVars .= ";--scb-feat:{$catalog['feat']}";
         }
         $scFrontClasses = 'sc--'.($catalog['variant'] ?? 'spot')
             .($darkFace ? ' sc--dark' : '')
@@ -356,6 +358,8 @@
         .sc--spot.sc--dark .sc-wm { opacity: .35; }
         .sc--solid .sc-wm { color: #fff; opacity: .28; right: 2mm; }
         .sc-wm svg { width: 100%; height: 100%; }
+        .sc-deco { position: absolute; top: 5.5mm; right: 30mm; width: 24mm; height: 9mm; color: var(--sc-accent); z-index: 1; }
+        .sc-deco svg { width: 100%; height: 100%; }
         .sc-left { position: absolute; left: 5.5mm; top: 5mm; bottom: 5mm; width: 50mm; display: flex; flex-direction: column; z-index: 2; }
         .sc-lockup { display: flex; align-items: center; gap: 2mm; min-width: 0; }
         .sc-badge { width: 7mm; height: 7mm; border-radius: 1.8mm; background: linear-gradient(150deg, var(--sc-accent), var(--sc-accent2)); color: #fff; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
@@ -625,6 +629,9 @@
                     <div class="sc-band"></div>
                 @endif
                 <div class="sc-wm">{!! \App\Support\CardCatalog::glyph($catalog['watermark']) !!}</div>
+                @if (! empty($catalog['frontDeco']))
+                    <div class="sc-deco">{!! \App\Support\CardCatalog::glyph($catalog['frontDeco']) !!}</div>
+                @endif
                 @if ($scVariant !== 'spot')
                     <div class="sc-panel">
                         <div class="sc-qr">{!! $qrSvg !!}</div>
