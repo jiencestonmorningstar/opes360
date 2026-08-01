@@ -221,7 +221,7 @@
         .pc-row-text { font-size: 6.2pt; color: var(--pc-row-fg, #334155); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
         .pc-panel { position: absolute; z-index: 2; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 1.6mm; }
         .pc-panel > * { position: relative; }
-        .pc-qr { background: #fff; border-radius: 1.6mm; padding: 1.4mm; line-height: 0; }
+        .pc-qr { background: #fff; border-radius: 1.6mm; padding: 1.7mm; line-height: 0; }
         .pc-qr svg { width: 15mm; height: 15mm; display: block; }
         .pc-scan { font-size: 5pt; font-weight: 600; text-align: center; line-height: 1.35; color: var(--pc-panel-fg, #fff); }
         .pc-deco-a, .pc-deco-b, .pc-deco-c, .pc-deco-d { position: absolute; }
@@ -328,12 +328,18 @@
         .pc-sunrise .pc-deco-c { top: -18mm; right: -26mm; width: 60mm; height: 96mm; border-radius: 50%; border-left: 0.6pt solid #f9741d; }
         .pc-sunrise .pc-deco-a { top: -16mm; right: -34mm; width: 62mm; height: 94mm; border-radius: 50%; background: #0d1823; z-index: 1; }
         .pc-sunrise .pc-deco-b { top: -14mm; right: -38mm; width: 60mm; height: 90mm; border-radius: 50%; background: linear-gradient(180deg, #f88c34 0%, #ee6d10 60%, #e35f08 100%); z-index: 2; }
-        .pc-sunrise .pc-panel { top: 50%; right: 4.5mm; width: 24mm; transform: translateY(-50%); }
+        .pc-sunrise .pc-panel { top: 50%; right: 2.5mm; width: 27mm; transform: translateY(-50%); }
         /* The square code must fit the round chip: 11.5mm side ≈ 16.3mm
            diagonal inside the 16.7mm circle, so the quiet zone survives. */
-        .pc-sunrise .pc-qr { border-radius: 50%; padding: 2.6mm; box-shadow: 0 0 0 1.3mm #ee6d10, 0 0 0 1.8mm #fff; }
-        .pc-sunrise .pc-qr svg { width: 11.5mm; height: 11.5mm; }
-        .pc-sunrise .pc-scan { color: #1f2937; margin-top: 4mm; }
+        /* Circular chip: the white disc must clear the square code's DIAGONAL,
+           not its width, or the corner finder patterns land on the orange and
+           the code stops scanning. 12.6mm square = 17.8mm diagonal, so this
+           padding takes the disc to 20.6mm and leaves a true quiet zone. */
+        .pc-sunrise .pc-qr { border-radius: 50%; padding: 4mm; box-shadow: 0 0 0 1.3mm #ee6d10, 0 0 0 1.8mm #fff; }
+        .pc-sunrise .pc-qr svg { width: 12.6mm; height: 12.6mm; }
+        /* The enlarged disc pushes the caption onto the black crescent, so it
+           reverses out — legible over both the crescent and the orange. */
+        .pc-sunrise .pc-scan { color: #fff; margin-top: 2.8mm; }
         .pcb-sunrise { --pc-accent: #f9741d; --pcb-muted: #94a3b8; --pcb-icon: #f9741d; --pcb-label: #303a46; --pcb-tagline: #17202b; --pcb-rule: rgba(15,23,42,.15); }
         .pcb-sunrise .pcb-deco-d { bottom: -17mm; left: -15mm; width: 56mm; height: 29mm; border-radius: 50%; background: #fbd7b0; transform: rotate(8deg); }
         .pcb-sunrise .pcb-brand { color: #0f172a; }
@@ -388,8 +394,8 @@
         .scb-brand { font-size: 14pt; font-weight: 800; letter-spacing: -0.02em; }
         .scb-brand .sc-accent { color: rgba(255,255,255,.78); }
         .scb-motto { font-size: 5.4pt; color: rgba(255,255,255,.72); padding-top: .5mm; }
-        .scb-qr { margin-top: 2.4mm; background: #fff; border-radius: 2mm; padding: 1.3mm; line-height: 0; box-shadow: 0 0 0 .55mm var(--scb-qr-ring, rgba(255,255,255,.3)); }
-        .scb-qr svg { width: 13mm; height: 13mm; display: block; }
+        .scb-qr { margin-top: 2.4mm; background: #fff; border-radius: 2mm; padding: 1.7mm; line-height: 0; box-shadow: 0 0 0 .55mm var(--scb-qr-ring, rgba(255,255,255,.3)); }
+        .scb-qr svg { width: 13.6mm; height: 13.6mm; display: block; }
         .scb-scan { font-size: 5pt; font-weight: 600; padding-top: 1.3mm; line-height: 1.35; }
         .scb-features { margin-top: auto; display: flex; gap: 6mm; color: var(--scb-feat, var(--sc-back-ink)); }
         .scb-feature { display: flex; flex-direction: column; align-items: center; gap: .9mm; }
@@ -401,9 +407,9 @@
            tagline instead of the wordmark. */
         .sc--brand .sc-badge { border-radius: 50%; }
         .sc--brand .sc-curve { position: absolute; top: -10mm; bottom: -10mm; right: -14mm; width: 34mm; border-radius: 46% 0 0 46%; background: linear-gradient(170deg, var(--sc-accent), var(--sc-accent2)); }
-        .sc-panel { position: absolute; top: 50%; right: 2.5mm; transform: translateY(-50%); width: 15mm; z-index: 3; display: flex; flex-direction: column; align-items: center; gap: 1.2mm; }
-        .sc-panel .sc-qr { background: #fff; border-radius: 1.8mm; padding: 1.1mm; line-height: 0; }
-        .sc-panel .sc-qr svg { width: 11.5mm; height: 11.5mm; display: block; }
+        .sc-panel { position: absolute; top: 50%; right: 2mm; transform: translateY(-50%); width: 16.5mm; z-index: 3; display: flex; flex-direction: column; align-items: center; gap: 1.2mm; }
+        .sc-panel .sc-qr { background: #fff; border-radius: 1.8mm; padding: 1.7mm; line-height: 0; }
+        .sc-panel .sc-qr svg { width: 13.2mm; height: 13.2mm; display: block; }
         .sc-panel .sc-scan { font-size: 4.6pt; font-weight: 600; text-align: center; line-height: 1.35; color: #fff; white-space: pre-line; }
         .sc--brand .sc-left, .sc--edge .sc-left { width: 46mm; }
         .sc--brand .sc-wm, .sc--edge .sc-wm { right: 25mm; opacity: .1; }
@@ -443,9 +449,9 @@
         .pr-chip { width: 3.8mm; height: 3.8mm; border-radius: 50%; background: var(--pr-accent); color: var(--pr-chip-ink, #fff); display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
         .pr-chip svg { width: 2mm; height: 2mm; }
         .pr-rowtext { font-size: 6.2pt; color: var(--pr-rowfg); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-        .pr-panel { position: absolute; right: 3mm; bottom: 4.5mm; width: 16mm; z-index: 3; display: flex; flex-direction: column; align-items: center; gap: 1.1mm; }
-        .pr-qr { background: #fff; border-radius: 1.8mm; padding: 1mm; line-height: 0; box-shadow: 0 0 0 .45mm var(--pr-accent), 0 0 0 .8mm #fff; }
-        .pr-qr svg { width: 11mm; height: 11mm; display: block; }
+        .pr-panel { position: absolute; right: 2.6mm; bottom: 4.2mm; width: 17.5mm; z-index: 3; display: flex; flex-direction: column; align-items: center; gap: 1.1mm; }
+        .pr-qr { background: #fff; border-radius: 1.8mm; padding: 1.7mm; line-height: 0; box-shadow: 0 0 0 .45mm var(--pr-accent), 0 0 0 .8mm #fff; }
+        .pr-qr svg { width: 13.2mm; height: 13.2mm; display: block; }
         .pr-scan { font-size: 4.2pt; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; text-align: center; color: var(--pr-scan, #fff); line-height: 1.45; white-space: pre-line; }
 
         .prb { position: relative; width: 100%; height: 100%; overflow: hidden; background: var(--pr-back); color: var(--pr-back-ink); padding: 5.5mm 6mm 4.5mm; display: flex; flex-direction: column; align-items: flex-start; }
@@ -457,8 +463,8 @@
         .prb-service .ic { width: 3.6mm; height: 3.6mm; border: 0.4pt solid var(--pr-accent); border-radius: 1mm; color: var(--pr-accent); display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
         .prb-service .ic svg { width: 2.2mm; height: 2.2mm; }
         .prb-service span:last-child { font-size: 6pt; }
-        .prb-qr { position: absolute; top: 46%; right: 8mm; transform: translateY(-50%); background: #fff; border-radius: 2mm; padding: 1.2mm; line-height: 0; box-shadow: 0 0 0 .5mm var(--pr-accent); z-index: 2; }
-        .prb-qr svg { width: 12.5mm; height: 12.5mm; display: block; }
+        .prb-qr { position: absolute; top: 46%; right: 8mm; transform: translateY(-50%); background: #fff; border-radius: 2mm; padding: 1.7mm; line-height: 0; box-shadow: 0 0 0 .5mm var(--pr-accent); z-index: 2; }
+        .prb-qr svg { width: 13.6mm; height: 13.6mm; display: block; }
         .prb-foot { margin-top: auto; width: 100%; display: flex; align-items: center; justify-content: space-between; border-top: .4pt solid rgba(255,255,255,.18); padding-top: 2mm; position: relative; z-index: 2; }
         .prb-site { font-size: 6.2pt; font-weight: 600; color: var(--pr-accent); }
         .prb-socials { display: flex; gap: 1.6mm; }

@@ -16,6 +16,7 @@ use App\Services\LoyaltyLedger;
 use App\Services\QrCodes;
 use App\Support\CurrentCompany;
 use App\Support\DocumentTemplates;
+use BaconQrCode\Common\ErrorCorrectionLevel;
 use Carbon\CarbonImmutable;
 use Illuminate\Http\Request;
 use Illuminate\Routing\Controller;
@@ -197,7 +198,21 @@ class PrintController extends Controller
             'preview' => $request->boolean('preview'),
             'face' => in_array($f = $request->string('face')->toString(), ['front', 'back'], true) ? $f : null,
             // Sized per asset: a card QR is physically small, a letterhead's larger.
-            'qrSvg' => $qr->svg($token->publicUrl(), $asset === 'letterhead' ? 150 : 110),
+            //
+            // A business card's QR opens the public business profile — the page
+            // with the contact details, catalogue and vCard — because that is
+            // what every card's caption promises ("scan to view my business",
+            // "scan to save our contact"). The letterhead and stamp keep the
+            // verification page: there the QR attests to a document.
+            'qrSvg' => $qr->svg(
+                $asset === 'card' ? route('profile.business', $company) : $token->publicUrl(),
+                $asset === 'letterhead' ? 150 : 110,
+                // A card's QR sits on a white chip whose padding already gives
+                // the code its quiet zone, so the SVG spends none of its width
+                // on one; the letterhead and stamp keep the default.
+                margin: $asset === 'card' ? 0 : 2,
+                level: $asset === 'card' ? ErrorCorrectionLevel::M() : null,
+            ),
         ]);
     }
 
