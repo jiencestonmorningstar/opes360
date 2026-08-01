@@ -5,6 +5,7 @@ namespace App\Services\Billing;
 use App\Models\Company;
 use App\Models\SubscriptionPayment;
 use App\Models\User;
+use App\Notifications\SubscriptionPaymentFailedNotification;
 use App\Notifications\SubscriptionPaymentSucceededNotification;
 use App\Support\PlanEntitlements;
 use Illuminate\Support\Facades\DB;
@@ -98,6 +99,14 @@ class SubscriptionBiller
 
             if ($status === 'successful') {
                 $this->activatePlan($payment);
+            }
+
+            // A payment that ends any other way is equally worth saying out
+            // loud: silence after approving a prompt is indistinguishable
+            // from a payment still in flight.
+            if (in_array($status, ['failed', 'cancelled', 'expired'], true)) {
+                Company::query()->find($payment->company_id)?->owner
+                    ?->notify(new SubscriptionPaymentFailedNotification($payment->fresh()));
             }
         });
     }

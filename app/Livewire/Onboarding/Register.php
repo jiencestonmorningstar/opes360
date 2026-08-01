@@ -6,6 +6,7 @@ use App\Models\Company;
 use App\Models\Role;
 use App\Models\User;
 use App\Models\VerificationToken;
+use App\Notifications\WelcomeNotification;
 use App\Support\Accounting\ChartOfAccounts;
 use App\Support\CurrentCompany;
 use Illuminate\Contracts\View\View;
@@ -76,7 +77,7 @@ class Register extends Component
             'businessName.required' => 'Your business needs a name.',
         ]);
 
-        $user = DB::transaction(function () {
+        [$user, $company] = DB::transaction(function () {
             $user = User::create([
                 'name' => trim($this->name),
                 'email' => strtolower(trim($this->email)),
@@ -124,8 +125,12 @@ class Register extends Component
                 'subject_id' => $company->id,
             ]));
 
-            return $user;
+            return [$user, $company];
         });
+
+        // Outside the transaction: a queued welcome message must never be the
+        // reason a registration rolls back, and it has nothing to add to one.
+        $user->notify(new WelcomeNotification($company));
 
         Auth::login($user, remember: true);
         session()->regenerate();

@@ -9,7 +9,9 @@ use App\Models\CompanyReview;
 use App\Models\Item;
 use App\Models\Scopes\CompanyScope;
 use App\Models\VerificationToken;
+use App\Notifications\ReviewSubmittedNotification;
 use App\Support\CurrentCompany;
+use App\Support\NotifyCompany;
 use Illuminate\Http\Request;
 use Illuminate\Routing\Controller;
 
@@ -62,11 +64,17 @@ class ProfileController extends Controller
             'body' => ['required', 'string', 'max:2000'],
         ]);
 
-        app(CurrentCompany::class)->as($company, fn () => CompanyReview::create($data + [
-            'is_published' => false,
-            // Hashed, never raw: enough to group repeat abuse for triage.
-            'submitted_ip_hash' => $request->ip() ? hash('sha256', $request->ip()) : null,
-        ]));
+        app(CurrentCompany::class)->as($company, function () use ($company, $data, $request) {
+            $review = CompanyReview::create($data + [
+                'is_published' => false,
+                // Hashed, never raw: enough to group repeat abuse for triage.
+                'submitted_ip_hash' => $request->ip() ? hash('sha256', $request->ip()) : null,
+            ]);
+
+            // Nothing reaches the public profile until it is approved, so the
+            // business has to be told the queue has something in it.
+            NotifyCompany::about($company, 'business.update', new ReviewSubmittedNotification($review));
+        });
 
         return redirect()->route('profile.business', $company)
             ->with('review_status', 'Thanks — your review is awaiting approval.');

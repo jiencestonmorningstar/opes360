@@ -51,3 +51,14 @@ Schedule::command('opes:remind-plan-renewals')
     ->daily()
     ->at('06:45')
     ->withoutOverlapping();
+
+/*
+ * Low-stock alerts. Daily and batched into one message per business: an alert
+ * per item, or per stock movement, would be filtered within a week — and a
+ * filtered alert is the same as no alert. Early enough to act on before the
+ * day's trading.
+ */
+Schedule::command('opes:alert-low-stock')
+    ->daily()
+    ->at('07:15')
+    ->withoutOverlapping();
