@@ -10,12 +10,13 @@ use App\Models\Document;
 use App\Models\Payment;
 use App\Models\Receipt;
 use App\Models\VerificationToken;
-use Carbon\CarbonImmutable;
 use App\Services\DocumentComposer;
 use App\Services\LogoComposer;
+use App\Services\LoyaltyLedger;
 use App\Services\QrCodes;
 use App\Support\CurrentCompany;
 use App\Support\DocumentTemplates;
+use Carbon\CarbonImmutable;
 use Illuminate\Http\Request;
 use Illuminate\Routing\Controller;
 
@@ -145,7 +146,7 @@ class PrintController extends Controller
     }
 
     /** A customer's physical loyalty card — issued lazily if it doesn't exist yet. */
-    public function loyaltyCard(Contact $contact, QrCodes $qr, \App\Services\LoyaltyLedger $loyalty)
+    public function loyaltyCard(Contact $contact, QrCodes $qr, LoyaltyLedger $loyalty)
     {
         $company = app(CurrentCompany::class)->get();
         abort_if($company === null, 404);
@@ -185,8 +186,16 @@ class PrintController extends Controller
             'name' => $request->string('name')->toString() ?: $request->user()->name,
             'title' => $request->string('title')->toString() ?: 'Business Owner',
             // The design lives on the company, not the URL: a saved link keeps
-            // producing whatever the business currently has chosen.
-            'design' => $company->cardDesign(),
+            // producing whatever the business currently has chosen. The picker
+            // may ask to render a specific design (?design=…) — that overrides
+            // this one request only and never saves anything.
+            'cardDesign' => in_array($d = $request->string('design')->toString(), Company::CARD_DESIGNS, true)
+                ? $d
+                : $company->cardDesign(),
+            // Embedded on the stationery page: no print bar, sheet scaled to
+            // the frame, optionally a single face for the design tiles.
+            'preview' => $request->boolean('preview'),
+            'face' => in_array($f = $request->string('face')->toString(), ['front', 'back'], true) ? $f : null,
             // Sized per asset: a card QR is physically small, a letterhead's larger.
             'qrSvg' => $qr->svg($token->publicUrl(), $asset === 'letterhead' ? 150 : 110),
         ]);

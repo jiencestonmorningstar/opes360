@@ -32,6 +32,10 @@ class SecurityHeaders
         // headers. Everything else stays locked to this origin.
         $embeddable = $request->routeIs('form.embed', 'form.embed.submit', 'event.embed');
 
+        // The stationery print view is framed by this app's own stationery
+        // page as the live preview; 'self' keeps every other origin out.
+        $selfEmbeddable = $request->routeIs('stationery.print');
+
         if (! $embeddable) {
             // Superseded by the policy's frame-ancestors, kept for browsers
             // that predate CSP level 2.
@@ -51,7 +55,7 @@ class SecurityHeaders
                 config('security.csp.report_only')
                     ? 'Content-Security-Policy-Report-Only'
                     : 'Content-Security-Policy',
-                $this->csp->header(embeddable: $embeddable),
+                $this->csp->header(embeddable: $embeddable, selfEmbeddable: $selfEmbeddable),
             );
         }
 

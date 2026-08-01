@@ -50,8 +50,12 @@ class Csp
      *                            frame-ancestors 'none': no other page in a
      *                            financial product has any business inside
      *                            someone else's frame.
+     * @param  bool  $selfEmbeddable  true for pages this app frames into its
+     *                                own UI (the stationery print view backs
+     *                                the live card previews). 'self' only —
+     *                                other origins still cannot frame them.
      */
-    public function header(bool $embeddable = false): string
+    public function header(bool $embeddable = false, bool $selfEmbeddable = false): string
     {
         $nonce = "'nonce-".$this->nonce()."'";
 
@@ -71,7 +75,7 @@ class Csp
             "worker-src 'self' blob:",
             "manifest-src 'self'",
             "form-action 'self'",
-            $embeddable ? 'frame-ancestors *' : "frame-ancestors 'none'",
+            $embeddable ? 'frame-ancestors *' : ($selfEmbeddable ? "frame-ancestors 'self'" : "frame-ancestors 'none'"),
             "base-uri 'self'",
             "object-src 'none'",
         ])->implode('; ');
