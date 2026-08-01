@@ -40,6 +40,12 @@ class MarketingController extends Controller
         return view('marketing.contact');
     }
 
+    /** The secretariat / print-shop partner programme. */
+    public function partners()
+    {
+        return view('marketing.partners');
+    }
+
     public function blog()
     {
         return view('marketing.blog.index', [

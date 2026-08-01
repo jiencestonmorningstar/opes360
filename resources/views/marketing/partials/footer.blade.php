@@ -15,6 +15,7 @@
                 <nav class="mt-3.5 flex flex-col gap-2.5 text-[13.5px] font-medium text-ink-2">
                     <a href="{{ route('marketing.features') }}" class="hover:text-brand">Features</a>
                     <a href="{{ route('marketing.pricing') }}" class="hover:text-brand">Pricing</a>
+                    <a href="{{ route('marketing.partners') }}" class="hover:text-brand">For secretariats</a>
                     <a href="{{ route('demo.request') }}" class="hover:text-brand">Try a demo</a>
                     <a href="{{ route('login') }}" class="hover:text-brand">Sign in</a>
                 </nav>

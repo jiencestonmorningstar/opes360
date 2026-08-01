@@ -84,6 +84,29 @@ return [
         'address' => 'Petite Terrain, Bonamoussadi, Douala, Cameroon',
     ],
 
+    /*
+     * The secretariat / print-shop partner programme.
+     *
+     * These are commercial terms, not preferences, so they live in one place:
+     * the marketing page that advertises them, the ledger that charges the card
+     * fee and the biller that credits the commission all read from here. A rate
+     * quoted on the website and a rate applied to a payment drifting apart is
+     * the kind of bug nobody notices until a partner does the arithmetic.
+     */
+    'partners' => [
+        // Charged to the partner each time they generate a card for a client.
+        'card_fee' => 500,
+
+        // Share of every successful subscription payment made by a business the
+        // partner enrolled. Recurring, for as long as that business keeps paying.
+        'commission_rate' => 0.10,
+
+        // Nothing is paid out below this; it is not worth a mobile-money fee.
+        'payout_minimum' => 10000,
+
+        'currency' => 'XAF',
+    ],
+
     'quick_actions' => [
         ['label' => 'New Invoice', 'icon' => 'document-plus', 'accent' => 'blue', 'route' => 'documents.create', 'params' => ['type' => 'invoice'], 'ability' => 'sales.create'],
         ['label' => 'New Quotation', 'icon' => 'document', 'accent' => 'green', 'route' => 'documents.create', 'params' => ['type' => 'quotation'], 'ability' => 'sales.create'],

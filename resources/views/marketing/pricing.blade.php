@@ -124,7 +124,51 @@
                 <p class="mt-3 text-[14.5px] text-muted">Every module the platform offers, and the plan it's included from.</p>
             </div>
 
-            <div class="mt-8 overflow-x-auto">
+            {{--
+                Two presentations of one list.
+
+                A three-column matrix needs about 520px to stay legible, which
+                on a 390px phone meant two of the three plans sat off-screen
+                behind a scroll nobody could see. Below `md` the same data is
+                grouped by the plan that unlocks it, which answers the question
+                someone on a phone is actually asking — "what do I get if I pay
+                for this one?" — without any sideways movement at all.
+            --}}
+            @php
+                $unlockedAt = [
+                    'Basic' => array_values(array_filter($moduleAccess, fn ($r) => $r['basic'])),
+                    'Growth' => array_values(array_filter($moduleAccess, fn ($r) => ! $r['basic'] && $r['growth'])),
+                    'Business' => array_values(array_filter($moduleAccess, fn ($r) => ! $r['growth'] && $r['business'])),
+                ];
+            @endphp
+
+            <div class="mt-8 space-y-4 md:hidden">
+                @foreach ($unlockedAt as $plan => $rows)
+                    <div class="card p-5">
+                        <div class="flex items-baseline justify-between gap-3">
+                            <h3 class="text-[16px] font-bold tracking-[-0.01em] text-ink">
+                                {{ $loop->first ? 'Included in ' : 'Added in ' }}{{ $plan }}
+                            </h3>
+                            <span class="shrink-0 text-[12.5px] font-semibold text-faint">{{ count($rows) }} modules</span>
+                        </div>
+                        <ul class="mt-4 space-y-2.5 text-[14px] text-ink-2">
+                            @foreach ($rows as $row)
+                                <li class="flex gap-2.5">
+                                    <x-icon name="check-circle" class="mt-0.5 size-[16px] shrink-0 text-positive" stroke-width="2" />
+                                    <span>{{ $row['module'] }}</span>
+                                </li>
+                            @endforeach
+                        </ul>
+                        @unless ($loop->first)
+                            <p class="mt-4 border-t border-border pt-3 text-[13px] text-muted">
+                                Everything in {{ $loop->index === 1 ? 'Basic' : 'Growth' }}, plus the above.
+                            </p>
+                        @endunless
+                    </div>
+                @endforeach
+            </div>
+
+            <div class="mt-8 hidden overflow-x-auto md:block">
                 <table class="w-full min-w-[520px] border-collapse text-[14px]">
                     <thead>
                         <tr class="border-b border-border">

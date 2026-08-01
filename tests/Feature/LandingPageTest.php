@@ -28,17 +28,42 @@ class LandingPageTest extends TestCase
             ->assertSee('3,000', false);
     }
 
-    /** Four slides of three cards apiece, to the right of the hero text. */
-    public function test_the_home_page_shows_a_four_slide_feature_slider(): void
+    /**
+     * Every module gets a slot in the grid. This replaced a hero carousel that
+     * listed the same six modules the grid below already listed, so the first
+     * two screens of the page said the same thing twice.
+     */
+    public function test_the_home_page_names_every_module_once(): void
     {
         $response = $this->get('/')->assertOk();
 
-        $response->assertSee('Opes Forms', false)
-            ->assertSee('Opes Events', false)
-            ->assertSee('Loyalty Program', false)
-            ->assertSee('Public Reviews', false)
-            ->assertSee('Offline-first', false)
-            ->assertSee('aria-label="Go to slide 4"', false);
+        foreach (['Opes Forms', 'Opes Events', 'Loyalty program', 'Public reviews', 'Offline mode', 'SYSCOHADA accounting'] as $module) {
+            $response->assertSee($module, false);
+        }
+
+        $body = $response->getContent();
+
+        $this->assertSame(1, substr_count($body, 'Opes Events'), 'A module named twice on one page is the duplication this layout removed.');
+    }
+
+    public function test_the_home_page_carries_the_three_pillars_and_their_mocks(): void
+    {
+        $this->get('/')
+            ->assertOk()
+            ->assertSee('Three things a receipt book cannot do')
+            // Each pillar is illustrated by a mock built from the design tokens
+            // rather than a screenshot; these strings only exist inside them.
+            ->assertSee('QT-2026-0042', false)
+            ->assertSee('Verified document', false)
+            ->assertSee('No connection', false);
+    }
+
+    public function test_the_home_page_advertises_the_partner_programme(): void
+    {
+        $this->get('/')
+            ->assertOk()
+            ->assertSee('For secretariats and print shops')
+            ->assertSee(route('marketing.partners'), false);
     }
 
     public function test_authenticated_users_still_see_the_dashboard_at_the_root(): void
@@ -94,6 +119,46 @@ class LandingPageTest extends TestCase
             ->assertSee('Opes Events (ticketing &amp; QR check-in)', false)
             ->assertSee('Loyalty program &amp; printed cards', false)
             ->assertSee('Opes Forms', false);
+    }
+
+    /**
+     * A 520px-wide matrix left two of the three plans off the side of a 390px
+     * phone, behind a scroll with nothing to suggest it was there. Below `md`
+     * the same rows are grouped by the plan that unlocks them instead.
+     */
+    public function test_the_plan_matrix_has_a_mobile_form_that_does_not_scroll_sideways(): void
+    {
+        $response = $this->get(route('marketing.pricing'))->assertOk();
+
+        $response->assertSee('Included in Basic')
+            ->assertSee('Added in Growth')
+            ->assertSee('Added in Business')
+            // The matrix survives, but only from `md` where it fits.
+            ->assertSee('hidden overflow-x-auto md:block', false);
+    }
+
+    public function test_the_partner_programme_page_states_the_terms_from_config(): void
+    {
+        $response = $this->get(route('marketing.partners'))->assertOk();
+
+        $response->assertSee('Secretariats', false)
+            ->assertSee('500', false)     // card fee
+            ->assertSee('10%', false)     // commission rate
+            ->assertSee('How long does the commission last?');
+    }
+
+    public function test_the_advertised_partner_terms_come_from_the_same_config_the_ledger_uses(): void
+    {
+        // A rate quoted on the website and a rate applied to a payment drifting
+        // apart is a bug nobody notices until a partner does the arithmetic.
+        config()->set('opes.partners.card_fee', 750);
+        config()->set('opes.partners.commission_rate', 0.15);
+
+        $this->get(route('marketing.partners'))
+            ->assertOk()
+            ->assertSee('750', false)
+            ->assertSee('15%', false)
+            ->assertDontSee('10%', false);
     }
 
     public function test_the_contact_page_renders(): void

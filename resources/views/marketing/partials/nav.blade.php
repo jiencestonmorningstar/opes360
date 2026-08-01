@@ -12,6 +12,7 @@
         <nav class="hidden items-center gap-7 text-[14.5px] font-medium text-ink-2 lg:flex">
             <a href="{{ route('marketing.features') }}" class="hover:text-brand">Features</a>
             <a href="{{ route('marketing.pricing') }}" class="hover:text-brand">Pricing</a>
+            <a href="{{ route('marketing.partners') }}" class="hover:text-brand">Partners</a>
             <a href="{{ route('marketing.blog') }}" class="hover:text-brand">Blog</a>
             <a href="{{ route('marketing.about') }}" class="hover:text-brand">About</a>
             <a href="{{ route('marketing.contact') }}" class="hover:text-brand">Contact</a>
@@ -44,6 +45,7 @@
         <nav class="mx-auto flex max-w-6xl flex-col gap-1 px-5 py-4 text-[15px] font-medium text-ink-2">
             <a href="{{ route('marketing.features') }}" class="rounded-lg px-2 py-2.5 hover:bg-surface-2 hover:text-ink">Features</a>
             <a href="{{ route('marketing.pricing') }}" class="rounded-lg px-2 py-2.5 hover:bg-surface-2 hover:text-ink">Pricing</a>
+            <a href="{{ route('marketing.partners') }}" class="rounded-lg px-2 py-2.5 hover:bg-surface-2 hover:text-ink">Partners</a>
             <a href="{{ route('marketing.blog') }}" class="rounded-lg px-2 py-2.5 hover:bg-surface-2 hover:text-ink">Blog</a>
             <a href="{{ route('marketing.about') }}" class="rounded-lg px-2 py-2.5 hover:bg-surface-2 hover:text-ink">About</a>
             <a href="{{ route('marketing.contact') }}" class="rounded-lg px-2 py-2.5 hover:bg-surface-2 hover:text-ink">Contact</a>
