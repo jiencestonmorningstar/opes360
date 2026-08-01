@@ -220,7 +220,8 @@ deployment is sound.
   for one node. Multiple app servers need Redis and shared session storage.
 - **`storage/app/public` is local disk.** Moving to S3 needs
   `FILESYSTEM_DISK=s3` and a migration of existing files.
-- **No renewal reminders or dunning.** `companies.plan_renews_at` is set on a
-  successful payment and shown on the billing page, but nothing currently
-  emails an owner before it lapses or downgrades a plan after it does — a
-  paid plan stays active until a platform admin or a new payment changes it.
+- **Reminders, but no dunning.** Owners are emailed a week before
+  `plan_renews_at` and again once it passes (`opes:remind-plan-renewals`,
+  scheduled daily). Nothing downgrades or suspends a lapsed plan — that stays
+  a deliberate choice: a paid plan remains active until a platform admin or a
+  new payment changes it.

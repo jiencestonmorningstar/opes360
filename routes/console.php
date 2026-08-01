@@ -40,3 +40,14 @@ Schedule::command('model:prune', ['--model' => [SyncReceipt::class]])
 Schedule::command('opes:convert-expired-demos')
     ->daily()
     ->at('03:30');
+
+/*
+ * Renewal nudges: a week before a plan's billing period ends and again once
+ * it has. Daily is the right grain — the command itself keeps per-cycle
+ * state, so running it more often would send nothing extra and less often
+ * would just make the "one week out" mail late.
+ */
+Schedule::command('opes:remind-plan-renewals')
+    ->daily()
+    ->at('06:45')
+    ->withoutOverlapping();

@@ -36,6 +36,7 @@ class Company extends Model
             'vat_number' => 'encrypted',
             'demo_expires_at' => 'datetime',
             'plan_renews_at' => 'datetime',
+            'renewal_reminder_for' => 'date',
             'vat_registered' => 'boolean',
             'prices_include_tax' => 'boolean',
             'vat_rate' => 'decimal:4',

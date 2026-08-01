@@ -32,13 +32,15 @@
                 <div class="flex items-center justify-between">
                     <div>
                         <p class="text-[16px] font-bold text-ink">{{ ucfirst($company->plan) }}</p>
-                        <p class="mt-0.5 text-[12.5px] text-muted">
-                            @if ($company->plan_renews_at)
-                                Renews {{ $company->plan_renews_at->format('d M Y') }}
-                            @else
-                                No active subscription payment on file yet.
-                            @endif
-                        </p>
+                        @if ($company->plan_renews_at?->isPast())
+                            <p class="mt-0.5 text-[12.5px] font-semibold text-warning">
+                                Billing period ended {{ $company->plan_renews_at->format('d M Y') }} — renew below.
+                            </p>
+                        @elseif ($company->plan_renews_at)
+                            <p class="mt-0.5 text-[12.5px] text-muted">Renews {{ $company->plan_renews_at->format('d M Y') }}</p>
+                        @else
+                            <p class="mt-0.5 text-[12.5px] text-muted">No active subscription payment on file yet.</p>
+                        @endif
                     </div>
                     <span class="flex size-[42px] shrink-0 items-center justify-center rounded-xl bg-tint-blue">
                         <x-icon name="credit-card" class="size-[20px] text-brand" />
