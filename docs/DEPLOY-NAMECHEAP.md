@@ -4,10 +4,10 @@ Written for shared hosting specifically. The generic guide in
 [`DEPLOYMENT.md`](DEPLOYMENT.md) assumes a server you control; this one assumes
 cPanel, no root, and no long-running processes.
 
-**Verified:** the release archive this produces was extracted, migrated, seeded
-and served against MariaDB 10.11 in production mode — every page 200, CSP
-enforced, no console errors. The full 203-test suite passes on MariaDB as well as
-MySQL, so the database difference costs nothing.
+**Verified:** the full 516-test suite passes against MariaDB 10.11 as well as
+MySQL, so the database difference costs nothing, and all 39 migrations apply
+cleanly to an empty MariaDB schema. The release archive was extracted, migrated
+and served in production mode — every page 200, CSP enforced, no console errors.
 
 **Not verified:** anything specific to Namecheap's account (their PHP build,
 their limits, their mail server). Those are checked by `opes:doctor` on the
@@ -134,6 +134,7 @@ are built from it, so an `http://` value prints codes that resolve to nothing.
 cd ~/opes360
 
 php artisan migrate --force
+php artisan opes:install          # reference data + your first administrator
 php artisan storage:link
 
 php artisan config:cache
@@ -142,6 +143,24 @@ php artisan view:cache
 
 chmod -R 775 storage bootstrap/cache
 ```
+
+**`opes:install` is not optional.** `migrate` creates the tables but leaves them
+empty, and registration assigns the owner role by looking it up — so on a
+migrated-but-unseeded database every business that signs up gets a null role and
+an account that can do nothing. The command seeds roles and permissions, then
+prompts for the email, name and password of your first platform administrator.
+
+Do **not** run `php artisan db:seed` on production. The default seeder also
+creates the demo company and a platform admin whose password is `password`.
+
+The command prompts for the password rather than taking it on the command line,
+so it stays out of your shell history; it insists on at least 12 characters with
+letters, numbers and symbols, and rejects passwords found in known breaches. It
+is safe to re-run — reference data is idempotent, and it asks before touching an
+existing administrator.
+
+Sign in at `https://yourdomain.com/admin/login` and enrol two-factor
+authentication before you do anything else.
 
 Then confirm before letting anyone in:
 
