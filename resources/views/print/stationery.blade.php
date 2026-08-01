@@ -26,6 +26,12 @@
             ."--{$p}-rowfg:".($darkFace ? '#d6d3d1' : '#334155').';'
             ."--{$p}-chip-ink:".($catalog['chipInk'] ?? '#ffffff');
         $scbVars = "--{$p}-back:{$catalog['back']};--{$p}-back-ink:{$catalog['backInk']};--{$p}-accent:{$catalog['accent']}";
+        if ($catalog['featAccent'] ?? false) {
+            $scbVars .= ";--scb-feat:{$catalog['accent']};--scb-qr-ring:{$catalog['accent']}";
+        }
+        $scFrontClasses = 'sc--'.($catalog['variant'] ?? 'spot')
+            .($darkFace ? ' sc--dark' : '')
+            .(($catalog['wedge'] ?? '') === 'solid' ? ' sc--solid' : '');
     }
 
     /*
@@ -81,6 +87,16 @@
         }
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body { font-family: 'Inter', -apple-system, 'Segoe UI', Roboto, sans-serif; color: #0f172a; background: #eef2f7; }
+
+        /* The card templates are set in Poppins (bundled, OFL) — the same
+           geometric sans the template sheets use. Scoped to cards so the
+           letterhead keeps its original look. */
+        @font-face { font-family: 'Poppins'; src: url('/fonts/poppins/Poppins-Regular.ttf'); font-weight: 400; }
+        @font-face { font-family: 'Poppins'; src: url('/fonts/poppins/Poppins-Medium.ttf'); font-weight: 500; }
+        @font-face { font-family: 'Poppins'; src: url('/fonts/poppins/Poppins-SemiBold.ttf'); font-weight: 600; }
+        @font-face { font-family: 'Poppins'; src: url('/fonts/poppins/Poppins-Bold.ttf'); font-weight: 700; }
+        @font-face { font-family: 'Poppins'; src: url('/fonts/poppins/Poppins-ExtraBold.ttf'); font-weight: 800; }
+        .card { font-family: 'Poppins', 'Inter', -apple-system, 'Segoe UI', Roboto, sans-serif; }
         @media print { body { background: #fff; } .no-print { display: none !important; } .sheet { box-shadow: none !important; margin: 0 !important; } }
 
         .sheet { background: #fff; margin: 24px auto; box-shadow: 0 4px 24px rgba(15,23,42,.12); }
@@ -330,17 +346,28 @@
            glyphs through CSS variables. */
         .sc { position: relative; width: 100%; height: 100%; overflow: hidden; background: var(--sc-face); color: var(--sc-ink); }
         .sc-ribbon { position: absolute; top: 0; bottom: 0; right: 0; width: 34mm; background: linear-gradient(160deg, var(--sc-accent), var(--sc-accent2)); clip-path: polygon(52% 0, 100% 0, 100% 100%, 22% 100%); opacity: .16; }
+        /* A dark face reads the template's photo region as a lifted panel;
+           a solid wedge (pharmacy) paints it in full accent instead. */
+        .sc--dark .sc-ribbon { background: #202024; clip-path: polygon(45% 0, 100% 0, 100% 100%, 18% 100%); opacity: 1; }
+        .sc--solid .sc-ribbon { opacity: 1; clip-path: polygon(56% 0, 100% 0, 100% 100%, 26% 100%); }
         .sc-edge { position: absolute; top: -6mm; bottom: -6mm; right: 27mm; width: 2.2mm; background: linear-gradient(var(--sc-accent), var(--sc-accent2)); transform: rotate(9deg); }
+        .sc--solid .sc-edge { background: var(--sc-face); right: 25mm; width: 2.4mm; }
         .sc-wm { position: absolute; top: 50%; right: 5mm; transform: translateY(-50%); width: 30mm; height: 30mm; color: var(--sc-accent); opacity: .16; }
+        .sc--spot.sc--dark .sc-wm { opacity: .35; }
+        .sc--solid .sc-wm { color: #fff; opacity: .28; right: 2mm; }
         .sc-wm svg { width: 100%; height: 100%; }
         .sc-left { position: absolute; left: 5.5mm; top: 5mm; bottom: 5mm; width: 50mm; display: flex; flex-direction: column; z-index: 2; }
         .sc-lockup { display: flex; align-items: center; gap: 2mm; min-width: 0; }
         .sc-badge { width: 7mm; height: 7mm; border-radius: 1.8mm; background: linear-gradient(150deg, var(--sc-accent), var(--sc-accent2)); color: #fff; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
         .sc-badge svg { width: 4.2mm; height: 4.2mm; }
-        .sc-brand { font-size: 9.5pt; font-weight: 800; letter-spacing: -0.02em; line-height: 1.05; }
+        /* The template anchors the sector badge to the card corner as a tab. */
+        .sc--spot .sc-badge { position: absolute; left: -5.5mm; top: -5mm; width: 10.5mm; height: 10.5mm; border-radius: 0 0 3mm 0; }
+        .sc--spot .sc-badge svg { width: 5.2mm; height: 5.2mm; }
+        .sc--spot .sc-lockup { padding-left: 6.6mm; min-height: 6mm; }
+        .sc-brand { font-size: 10pt; font-weight: 800; letter-spacing: -0.02em; line-height: 1.05; }
         .sc-brand .sc-accent, .scb-brand .sc-accent { color: var(--sc-accent); }
         .sc-motto { font-size: 5pt; color: var(--sc-muted); padding-top: .4mm; }
-        .sc-person { font-size: 9pt; font-weight: 700; color: var(--sc-accent); padding-top: 3.4mm; }
+        .sc-person { font-size: 10pt; font-weight: 700; color: var(--sc-accent); padding-top: 3.6mm; }
         .sc-title { font-size: 5.6pt; color: var(--sc-muted); padding-top: .4mm; }
         .sc-rows { margin-top: auto; display: flex; flex-direction: column; gap: 1.6mm; }
         .sc-row { display: flex; align-items: center; gap: 1.8mm; min-width: 0; }
@@ -351,17 +378,19 @@
         .scb { position: relative; width: 100%; height: 100%; overflow: hidden; background: var(--sc-back); color: var(--sc-back-ink); display: flex; flex-direction: column; align-items: center; text-align: center; padding: 5mm 6mm 4.5mm; }
         .scb > * { position: relative; z-index: 2; }
         .scb-wm { position: absolute; top: 50%; right: 2mm; transform: translateY(-50%); width: 34mm; height: 34mm; color: #fff; opacity: .1; z-index: 1; }
+        /* The sheets mirror the motif on the back's other side, fainter. */
+        .scb-wm--left { left: 1mm; right: auto; transform: translateY(-50%) scaleX(-1); opacity: .06; }
         .scb-wm svg { width: 100%; height: 100%; }
-        .scb-brand { font-size: 12pt; font-weight: 800; letter-spacing: -0.02em; }
+        .scb-brand { font-size: 14pt; font-weight: 800; letter-spacing: -0.02em; }
         .scb-brand .sc-accent { color: rgba(255,255,255,.78); }
         .scb-motto { font-size: 5.4pt; color: rgba(255,255,255,.72); padding-top: .5mm; }
-        .scb-qr { margin-top: 2.4mm; background: #fff; border-radius: 2mm; padding: 1.3mm; line-height: 0; box-shadow: 0 0 0 .55mm rgba(255,255,255,.3); }
+        .scb-qr { margin-top: 2.4mm; background: #fff; border-radius: 2mm; padding: 1.3mm; line-height: 0; box-shadow: 0 0 0 .55mm var(--scb-qr-ring, rgba(255,255,255,.3)); }
         .scb-qr svg { width: 13mm; height: 13mm; display: block; }
         .scb-scan { font-size: 5pt; font-weight: 600; padding-top: 1.3mm; line-height: 1.35; }
-        .scb-features { margin-top: auto; display: flex; gap: 6mm; }
+        .scb-features { margin-top: auto; display: flex; gap: 6mm; color: var(--scb-feat, var(--sc-back-ink)); }
         .scb-feature { display: flex; flex-direction: column; align-items: center; gap: .9mm; }
         .scb-feature svg { width: 4.2mm; height: 4.2mm; }
-        .scb-feature span:last-child { font-size: 4.6pt; font-weight: 600; }
+        .scb-feature span:last-child { font-size: 4.6pt; font-weight: 600; color: var(--sc-back-ink); }
 
         /* 'brand' variant (cards3): round mark lockup, the QR riding an
            accent curve on the face; the back leads with the design's
@@ -375,6 +404,8 @@
         .sc--brand .sc-left, .sc--edge .sc-left { width: 46mm; }
         .sc--brand .sc-wm, .sc--edge .sc-wm { right: 25mm; opacity: .1; }
         .scb-tagline-hd { font-size: 10pt; font-weight: 800; letter-spacing: -0.02em; line-height: 1.3; padding-top: 1mm; }
+        /* Café and spa sheets set their tagline in a script face. */
+        .scb-tagline-hd.script { font-family: Georgia, 'Times New Roman', serif; font-style: italic; font-weight: 600; letter-spacing: 0; }
 
         /* 'edge' variant (cards5): S-curved accent band on the face; the
            back runs the sector word up its left edge, five features. */
@@ -415,7 +446,7 @@
 
         .prb { position: relative; width: 100%; height: 100%; overflow: hidden; background: var(--pr-back); color: var(--pr-back-ink); padding: 5.5mm 6mm 4.5mm; display: flex; flex-direction: column; align-items: flex-start; }
         .prb-wm { position: absolute; top: 50%; right: 2mm; transform: translateY(-50%); width: 32mm; height: 32mm; color: #fff; opacity: .09; }
-        .prb-hd { font-size: 9.5pt; font-weight: 800; line-height: 1.3; position: relative; z-index: 2; }
+        .prb-hd { font-size: 8.5pt; font-weight: 800; line-height: 1.4; text-transform: uppercase; letter-spacing: .02em; position: relative; z-index: 2; }
         .prb-hd em { font-style: normal; color: var(--pr-accent); }
         .prb-services { margin-top: 3mm; display: flex; flex-direction: column; gap: 1.7mm; position: relative; z-index: 2; }
         .prb-service { display: flex; align-items: center; gap: 1.8mm; }
@@ -584,7 +615,7 @@
         @if ($face !== 'back')
         {{-- Front (industry spotlight) --}}
         <div class="sheet card">
-            <div class="sc sc--{{ $scVariant }}" style="{{ $scVars }}">
+            <div class="sc {{ $scFrontClasses }}" style="{{ $scVars }}">
                 @if ($scVariant === 'spot')
                     <div class="sc-ribbon"></div>
                     <div class="sc-edge"></div>
@@ -627,12 +658,13 @@
         {{-- Back (industry spotlight) --}}
         <div class="sheet card">
             <div class="scb scb--{{ $scVariant }}" style="{{ $scbVars }}">
-                <div class="scb-wm">{!! \App\Support\CardCatalog::glyph($catalog['watermark']) !!}</div>
+                <div class="scb-wm">{!! \App\Support\CardCatalog::glyph($catalog['watermarkBack'] ?? $catalog['watermark']) !!}</div>
+                <div class="scb-wm scb-wm--left">{!! \App\Support\CardCatalog::glyph($catalog['watermark']) !!}</div>
                 @if (! empty($catalog['vertical']))
                     <div class="scb-vert">{{ $catalog['vertical'] }}</div>
                 @endif
                 @if ($scVariant === 'brand')
-                    <div class="scb-tagline-hd">{{ $catalog['tagline'][0] }}<br>{{ $catalog['tagline'][1] }}</div>
+                    <div class="scb-tagline-hd {{ ($catalog['taglineStyle'] ?? '') }}">{{ $catalog['tagline'][0] }}<br>{{ $catalog['tagline'][1] }}</div>
                 @else
                     <div class="scb-brand trunc">{{ $nameBase }}@if ($nameAccent)<span class="sc-accent"> {{ $nameAccent }}</span>@endif</div>
                     @if ($company->motto)<div class="scb-motto trunc">{{ $company->motto }}</div>@endif
