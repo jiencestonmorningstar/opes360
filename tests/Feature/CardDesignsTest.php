@@ -94,11 +94,11 @@ class CardDesignsTest extends TestCase
 
     public function test_the_picker_groups_designs_by_sector_and_recommends_by_industry(): void
     {
-        // 'Technology' has no catalogue sector yet, so the picker opens on
-        // the universal set.
+        // 'Technology' maps straight onto the Technology & IT sector; an
+        // unknown chip falls back to the universal set.
         Livewire::actingAs($this->user)
             ->test(Stationery::class)
-            ->assertSet('cardSector', 'universal')
+            ->assertSet('cardSector', 'Technology & IT')
             ->call('setCardSector', 'Restaurant & Food')
             ->assertSet('cardSector', 'Restaurant & Food')
             ->call('setCardSector', 'nope')
