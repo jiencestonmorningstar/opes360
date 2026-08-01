@@ -17,49 +17,84 @@
  * needs a `dark:` variant just for colour. Components reach for `dark:` only when
  * the *treatment* genuinely differs between themes — e.g. stat cards are tinted
  * in light mode and flat in dark mode.
+ *
+ * ── Two roles per hue ──────────────────────────────────────────────────────
+ *
+ * A colour that is legible as text on a pale surface and a colour that is dark
+ * enough to carry white text are not the same colour, and the app had been
+ * using one value for both. That is why orange captions were unreadable at
+ * 2.49:1 while the orange chips they sat on looked fine.
+ *
+ *   --color-<hue>        the INK role.  Text, icons, borders, hairlines.
+ *                        Guaranteed ≥ 4.5:1 against canvas, surface, surface-2
+ *                        and its own tint.
+ *   --color-fill-<hue>   the FILL role. Solid backgrounds that carry white text
+ *                        or a white glyph. Guaranteed ≥ 4.5:1 against white.
+ *   --color-tint-<hue>   the WASH role. Icon bubbles and soft chips; the ink
+ *                        role of the same hue is legible on it.
+ *
+ * In light mode ink and fill are the same value — a 700-weight hue is dark
+ * enough for both. In dark mode they must diverge: text has to be light and a
+ * fill under white text has to stay dark. Every pair above is asserted by
+ * tests/Feature/Design/ColourContrastTest.php, so this cannot drift back.
  */
 @theme {
     --font-sans:
         Inter, ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif,
         'Apple Color Emoji', 'Segoe UI Emoji';
 
-    /* Surfaces */
+    /* Surfaces, lightest content plane last */
     --color-canvas: #eef2f7;
     --color-surface: #ffffff;
-    --color-surface-2: #f8fafc;
-    --color-border: #e7edf4;
-    --color-border-strong: #d7e0ea;
+    --color-surface-2: #f6f8fb;
+    --color-border: #e3e9f0;
+    --color-border-strong: #cbd5e1;
 
-    /* Text */
+    /* Text ramp — all four pass AA on all three surfaces */
     --color-ink: #0f172a;
     --color-ink-2: #334155;
-    --color-muted: #64748b;
-    --color-faint: #94a3b8;
+    --color-muted: #475569;
+    /* Slate-500 (#64748b) is the natural fourth step and reads correctly, but
+       lands at 4.23:1 on canvas — the tint is enough to push it under. */
+    --color-faint: #5b6b82;
 
-    /* Brand + semantics */
-    --color-brand: #2563eb;
-    --color-brand-ink: #1d4ed8;
-    --color-positive: #16a34a;
-    --color-warning: #f97316;
-    --color-negative: #dc2626;
+    /* Brand + semantics (ink role) */
+    --color-brand: #1d4ed8;
+    --color-positive: #166534;
+    --color-warning: #9a3412;
+    --color-negative: #b91c1c;
 
     /* Accent families used by stat cards, quick actions and document chips */
-    --color-accent-blue: #2563eb;
-    --color-accent-green: #16a34a;
-    --color-accent-orange: #f97316;
-    --color-accent-purple: #a855f7;
-    --color-accent-teal: #0d9488;
-    --color-accent-pink: #ec4899;
+    --color-accent-blue: #1d4ed8;
+    --color-accent-green: #166534;
+    --color-accent-orange: #9a3412;
+    --color-accent-purple: #7e22ce;
+    --color-accent-teal: #115e59;
+    --color-accent-pink: #be185d;
+    --color-accent-slate: #475569;
+
+    /* Fill role — solid backgrounds beneath white text */
+    --color-fill-brand: #1d4ed8;
+    --color-fill-positive: #166534;
+    --color-fill-warning: #9a3412;
+    --color-fill-negative: #b91c1c;
+    --color-fill-blue: #1d4ed8;
+    --color-fill-green: #166534;
+    --color-fill-orange: #9a3412;
+    --color-fill-purple: #7e22ce;
+    --color-fill-teal: #115e59;
+    --color-fill-pink: #be185d;
+    --color-fill-slate: #475569;
 
     /* Tints behind icon bubbles */
-    --color-tint-blue: #eff5ff;
-    --color-tint-green: #eafbf1;
-    --color-tint-orange: #fff4e8;
-    --color-tint-purple: #f6f1ff;
-    --color-tint-teal: #e8faf7;
-    --color-tint-pink: #fdf0f7;
-    --color-tint-slate: #eff2f7;
-    --color-accent-slate: #2563eb;
+    --color-tint-blue: #eef4ff;
+    --color-tint-green: #e9f9ef;
+    --color-tint-orange: #fdf3e7;
+    --color-tint-purple: #f5f0ff;
+    --color-tint-teal: #e6f8f5;
+    --color-tint-pink: #fdeff5;
+    --color-tint-red: #fdeeee;
+    --color-tint-slate: #eef1f6;
 
     --radius-card: 1rem;
 
@@ -71,37 +106,52 @@
     --color-canvas: #000000;
     --color-surface: #0d1117;
     --color-surface-2: #131922;
-    --color-border: #1c2230;
-    --color-border-strong: #273040;
+    --color-border: #1f2733;
+    --color-border-strong: #2b3546;
 
     --color-ink: #f1f5f9;
     --color-ink-2: #cbd5e1;
     --color-muted: #94a3b8;
-    --color-faint: #64748b;
+    --color-faint: #7d8da3;
 
-    --color-brand: #3b82f6;
-    --color-brand-ink: #60a5fa;
-    --color-positive: #22c55e;
-    --color-warning: #fb923c;
-    --color-negative: #f87171;
+    --color-brand: #7ba7f8;
+    --color-positive: #4ade80;
+    --color-warning: #fdba74;
+    --color-negative: #fca5a5;
 
-    --color-accent-blue: #3b82f6;
-    --color-accent-green: #22c55e;
-    --color-accent-orange: #f97316;
-    --color-accent-purple: #a855f7;
-    --color-accent-teal: #14b8a6;
-    --color-accent-pink: #ec4899;
+    --color-accent-blue: #7ba7f8;
+    --color-accent-green: #4ade80;
+    --color-accent-orange: #fdba74;
+    --color-accent-purple: #c4a0fb;
+    --color-accent-teal: #5eead4;
+    --color-accent-pink: #f9a8d4;
+    --color-accent-slate: #cbd5e1;
+
+    /* Fills stay dark here: white text has to survive on them, and a pale
+       button on a black canvas reads as a disabled control rather than a
+       primary action. */
+    --color-fill-brand: #2563eb;
+    --color-fill-positive: #15803d;
+    --color-fill-warning: #c2410c;
+    --color-fill-negative: #b91c1c;
+    --color-fill-blue: #2563eb;
+    --color-fill-green: #15803d;
+    --color-fill-orange: #c2410c;
+    --color-fill-purple: #7e22ce;
+    --color-fill-teal: #0f766e;
+    --color-fill-pink: #be185d;
+    --color-fill-slate: #475569;
 
     /* Pastels become deep, low-luminance washes of the same hue so the icon
        bubbles still read as colour-coded against a black canvas. */
-    --color-tint-blue: #101c33;
+    --color-tint-blue: #111d33;
     --color-tint-green: #0b2417;
     --color-tint-orange: #2a1608;
     --color-tint-purple: #1d1330;
     --color-tint-teal: #062725;
     --color-tint-pink: #2b0f20;
-    --color-tint-slate: #161d28;
-    --color-accent-slate: #60a5fa;
+    --color-tint-red: #2a1111;
+    --color-tint-slate: #171e29;
 
     --shadow-card: 0 1px 2px rgb(0 0 0 / 0.4);
     --shadow-raised: 0 4px 20px rgb(0 0 0 / 0.5);
@@ -112,6 +162,18 @@
         -webkit-text-size-adjust: 100%;
         /* Stop iOS Safari bouncing the document; scrolling lives in <main>. */
         overscroll-behavior-y: none;
+
+        /*
+         * The page background belongs here rather than only on <body>, because
+         * a page that forgets to set one then falls back to the browser default
+         * — white — while the text tokens have already flipped to their dark
+         * values. That is not a subtle regression: it is white text on a white
+         * page, and it shipped on 24 of the 31 standalone views before this
+         * line existed. Layouts still paint <body> for the treatments that
+         * differ (the app shell is white on mobile, canvas from `lg`); this is
+         * the floor beneath them.
+         */
+        background-color: var(--color-canvas);
     }
 
     body {

@@ -24,7 +24,7 @@
             </div>
             @can('business.update')
                 <button type="button" wire:click="endDemo" wire:confirm="End the demo now and start your free trial?"
-                        class="tap focusable shrink-0 rounded-xl bg-brand px-4 py-2.5 text-[13.5px] font-semibold text-white transition-opacity hover:opacity-90">
+                        class="tap focusable shrink-0 rounded-xl bg-fill-brand px-4 py-2.5 text-[13.5px] font-semibold text-white transition-opacity hover:opacity-90">
                     End demo & start free trial
                 </button>
             @endcan
@@ -60,7 +60,7 @@
             </div>
 
             <button type="button" wire:click="saveProfile"
-                    class="focusable mt-4 flex h-11 w-full items-center justify-center rounded-xl bg-brand text-[14.5px] font-semibold text-white hover:opacity-90">
+                    class="focusable mt-4 flex h-11 w-full items-center justify-center rounded-xl bg-fill-brand text-[14.5px] font-semibold text-white hover:opacity-90">
                 Save Profile
             </button>
         </x-ui.panel>
@@ -119,7 +119,7 @@
                             Cancel
                         </button>
                         <button type="button" wire:click="confirmTwoFactor"
-                                class="focusable h-11 flex-[1.4] rounded-xl bg-brand text-[14.5px] font-semibold text-white hover:opacity-90">
+                                class="focusable h-11 flex-[1.4] rounded-xl bg-fill-brand text-[14.5px] font-semibold text-white hover:opacity-90">
                             Turn on
                         </button>
                     </div>
@@ -158,7 +158,7 @@
                         an account that can issue invoices and take payments.
                     </p>
                     <button type="button" wire:click="startTwoFactor"
-                            class="focusable mt-4 flex h-11 w-full items-center justify-center rounded-xl bg-brand text-[14.5px] font-semibold text-white hover:opacity-90">
+                            class="focusable mt-4 flex h-11 w-full items-center justify-center rounded-xl bg-fill-brand text-[14.5px] font-semibold text-white hover:opacity-90">
                         Set up two-factor
                     </button>
                 @endif

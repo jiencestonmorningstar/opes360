@@ -136,7 +136,7 @@
                         @else
                             @can('loyalty.manage')
                                 <button type="button" wire:click="issueLoyaltyCard"
-                                        class="tap focusable flex h-11 items-center gap-1.5 rounded-xl bg-brand px-3.5 text-[13px] font-semibold text-white transition-opacity hover:opacity-90">
+                                        class="tap focusable flex h-11 items-center gap-1.5 rounded-xl bg-fill-brand px-3.5 text-[13px] font-semibold text-white transition-opacity hover:opacity-90">
                                     Issue card
                                 </button>
                             @endcan
@@ -187,7 +187,7 @@
                            placeholder="Add a note…"
                            class="h-11 min-w-0 flex-1 rounded-xl border border-border bg-surface px-3.5 text-[14px] text-ink placeholder:text-faint focus:border-brand focus:outline-none focus:ring-2 focus:ring-brand/20">
                     <button type="button" wire:click="addNote"
-                            class="tap focusable flex shrink-0 items-center justify-center rounded-xl bg-brand px-4 text-white">
+                            class="tap focusable flex shrink-0 items-center justify-center rounded-xl bg-fill-brand px-4 text-white">
                         <x-icon name="plus" class="size-[18px]" stroke-width="2.4" />
                     </button>
                 </div>

@@ -8,7 +8,7 @@
 
         @can('events.create')
             <a href="{{ route('events.create') }}"
-               class="tap focusable flex h-11 shrink-0 items-center gap-2 rounded-xl bg-brand px-4 text-[14.5px] font-semibold text-white transition-opacity hover:opacity-90">
+               class="tap focusable flex h-11 shrink-0 items-center gap-2 rounded-xl bg-fill-brand px-4 text-[14.5px] font-semibold text-white transition-opacity hover:opacity-90">
                 <x-icon name="plus" class="size-[18px]" stroke-width="2.2" />
                 New event
             </a>

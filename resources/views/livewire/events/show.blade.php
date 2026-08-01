@@ -30,7 +30,7 @@
         <div class="mt-4 flex flex-wrap items-center gap-2.5">
             @if (! $event->isPublished())
                 <button type="button" wire:click="publish"
-                        class="tap focusable flex h-11 items-center gap-1.5 rounded-xl bg-brand px-4 text-[13.5px] font-semibold text-white transition-opacity hover:opacity-90">
+                        class="tap focusable flex h-11 items-center gap-1.5 rounded-xl bg-fill-brand px-4 text-[13.5px] font-semibold text-white transition-opacity hover:opacity-90">
                     <x-icon name="check-circle" class="size-[17px]" stroke-width="2" />
                     Publish & start selling
                 </button>
@@ -143,7 +143,7 @@
             @foreach (['all' => 'All', 'issued' => 'Issued', 'checked_in' => 'Checked in', 'void' => 'Void'] as $key => $label)
                 <button type="button" wire:click="setFilter('{{ $key }}')" wire:key="fl-{{ $key }}"
                         class="focusable flex h-9 shrink-0 items-center rounded-full px-3.5 text-[13.5px] font-semibold transition-colors
-                               {{ $filter === $key ? 'bg-brand text-white' : 'border border-border bg-surface text-ink-2 hover:bg-surface-2' }}">
+                               {{ $filter === $key ? 'bg-fill-brand text-white' : 'border border-border bg-surface text-ink-2 hover:bg-surface-2' }}">
                     {{ $label }}
                 </button>
             @endforeach
@@ -173,7 +173,7 @@
                             @can('checkIn', $ticket)
                                 @if (! $ticket->isCheckedIn())
                                     <button type="button" wire:click="checkIn('{{ $ticket->id }}')"
-                                            class="focusable rounded-lg bg-brand px-3 py-1.5 text-[12.5px] font-semibold text-white transition-opacity hover:opacity-90">
+                                            class="focusable rounded-lg bg-fill-brand px-3 py-1.5 text-[12.5px] font-semibold text-white transition-opacity hover:opacity-90">
                                         Check in
                                     </button>
                                 @else

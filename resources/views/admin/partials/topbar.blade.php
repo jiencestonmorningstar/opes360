@@ -57,7 +57,7 @@
                     <x-icon name="cog" class="size-5 text-muted" />
                     Settings
                     @if ($admin && ! $admin->hasTwoFactorEnabled())
-                        <span class="ml-auto size-2 rounded-full bg-warning" title="Two-factor is off"></span>
+                        <span class="ml-auto size-2 rounded-full bg-fill-warning" title="Two-factor is off"></span>
                     @endif
                 </a>
 

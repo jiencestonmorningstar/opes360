@@ -1,28 +1,6 @@
 @php use App\Support\Money; @endphp
-<!DOCTYPE html>
-<html lang="{{ str_replace('_', '-', app()->getLocale()) }}" class="h-full">
-<head>
-    <meta charset="utf-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-    <title>{{ $event->title }} · Tickets</title>
-    <meta name="robots" content="noindex">
 
-    <script @cspNonce>
-        (function () {
-            try {
-                var stored = localStorage.getItem('opes-theme');
-                var system = window.matchMedia('(prefers-color-scheme: dark)').matches;
-                document.documentElement.classList.toggle('dark', stored === 'dark' || (stored !== 'light' && system));
-            } catch (e) {}
-        })();
-    </script>
-
-    @vite(['resources/css/app.css'])
-</head>
-
-<body class="flex min-h-full flex-col items-center px-1 py-2">
-<main class="w-full max-w-[560px]">
-
+<x-layouts.public :title="$event->title.' · Tickets'" robots="noindex" width="max-w-[560px]" variant="bare">
     <div class="card overflow-hidden border-t-4 border-t-brand">
         <div class="p-5">
             <p class="text-[11.5px] font-semibold uppercase tracking-wide text-faint">{{ $company->name }} presents</p>
@@ -50,7 +28,7 @@
                 {{-- Opens as its own tab: ticket delivery needs a first-party
                      session that a third-party iframe is not allowed to hold. --}}
                 <a href="{{ $event->publicUrl() }}" target="_blank" rel="noopener"
-                   class="tap focusable mt-4 flex h-12 w-full items-center justify-center rounded-xl bg-brand text-[15px] font-semibold text-white transition-opacity hover:opacity-90">
+                   class="tap focusable mt-4 flex h-12 w-full items-center justify-center rounded-xl bg-fill-brand text-[15px] font-semibold text-white transition-opacity hover:opacity-90">
                     Get tickets
                 </a>
             @endif
@@ -60,6 +38,4 @@
             Ticketed with <span class="font-semibold"><span class="text-ink">{{ config('opes.brand.name_prefix') }}</span><span class="text-brand">{{ config('opes.brand.name_suffix') }}</span></span>
         </p>
     </div>
-</main>
-</body>
-</html>
+</x-layouts.public>

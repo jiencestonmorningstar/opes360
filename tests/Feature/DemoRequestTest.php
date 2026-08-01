@@ -3,6 +3,7 @@
 namespace Tests\Feature;
 
 use App\Console\Commands\ConvertExpiredDemos;
+use App\Livewire\Settings\Index;
 use App\Models\BusinessDocument;
 use App\Models\Company;
 use App\Models\Contact;
@@ -12,8 +13,11 @@ use App\Models\Form;
 use App\Models\Item;
 use App\Models\User;
 use App\Notifications\DemoAccountCreatedNotification;
+use App\Support\CurrentCompany;
+use Database\Seeders\RolePermissionSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Notification;
+use Livewire\Livewire;
 use Tests\TestCase;
 
 /**
@@ -34,7 +38,7 @@ class DemoRequestTest extends TestCase
     public function test_submitting_creates_a_working_account_with_one_of_everything(): void
     {
         Notification::fake();
-        $this->seed(\Database\Seeders\RolePermissionSeeder::class);
+        $this->seed(RolePermissionSeeder::class);
 
         $this->post('/demo', [
             'name' => 'Ada Obi',
@@ -117,10 +121,10 @@ class DemoRequestTest extends TestCase
 
         $this->joinCompany($company, $owner);
         $owner->forceFill(['current_company_id' => $company->id])->save();
-        app(\App\Support\CurrentCompany::class)->set($company);
+        app(CurrentCompany::class)->set($company);
 
-        \Livewire\Livewire::actingAs($owner)
-            ->test(\App\Livewire\Settings\Index::class)
+        Livewire::actingAs($owner)
+            ->test(Index::class)
             ->call('endDemo');
 
         $this->assertSame('trial', $company->fresh()->account_type);

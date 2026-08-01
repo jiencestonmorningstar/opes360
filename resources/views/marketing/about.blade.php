@@ -1,28 +1,4 @@
-<!DOCTYPE html>
-<html lang="{{ str_replace('_', '-', app()->getLocale()) }}" class="h-full">
-<head>
-    <meta charset="utf-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-    <title>About · {{ config('opes.brand.name') }}</title>
-
-    <script @cspNonce>
-        (function () {
-            try {
-                var stored = localStorage.getItem('opes-theme');
-                var system = window.matchMedia('(prefers-color-scheme: dark)').matches;
-                document.documentElement.classList.toggle('dark', stored === 'dark' || (stored !== 'light' && system));
-            } catch (e) {}
-        })();
-    </script>
-
-    @vite(['resources/css/app.css', 'resources/js/app.js'])
-</head>
-
-<body class="min-h-full">
-
-@include('marketing.partials.nav')
-
-<main>
+<x-layouts.marketing title="About">
     <section class="mx-auto max-w-3xl px-5 py-16 sm:py-20">
         <h1 class="text-[30px] font-bold tracking-[-0.02em] text-ink sm:text-[36px]">About {{ config('opes.brand.name') }}</h1>
         <p class="mt-4 text-[16px] leading-relaxed text-muted">
@@ -61,7 +37,7 @@
 
         <div class="mt-10 flex flex-col gap-3 sm:flex-row">
             <a href="{{ route('demo.request') }}"
-               class="tap focusable flex h-12 items-center justify-center rounded-xl bg-brand px-6 text-[15px] font-semibold text-white transition-opacity hover:opacity-90">
+               class="tap focusable flex h-12 items-center justify-center rounded-xl bg-fill-brand px-6 text-[15px] font-semibold text-white transition-opacity hover:opacity-90">
                 Try a demo
             </a>
             <a href="{{ route('marketing.contact') }}"
@@ -70,9 +46,5 @@
             </a>
         </div>
     </section>
-</main>
-
-@include('marketing.partials.footer')
-
-</body>
-</html>
+</div>
+</x-layouts.marketing>

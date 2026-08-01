@@ -12,6 +12,7 @@ use App\Models\Document;
 use App\Models\DocumentLine;
 use App\Models\Event;
 use App\Models\Form;
+use App\Models\Payment;
 use App\Models\Role;
 use App\Models\User;
 use App\Notifications\FormResponseReceivedNotification;
@@ -168,7 +169,7 @@ class NotificationsTest extends TestCase
     public function test_the_bell_lists_and_marks_notifications_read(): void
     {
         $this->owner->notify(new PaymentReceivedNotification(
-            \App\Models\Payment::forceCreate([
+            Payment::forceCreate([
                 'company_id' => $this->company->id,
                 'method' => 'cash',
                 'amount' => 50,

@@ -1,30 +1,12 @@
-@props(['title' => null])
+@props(['title' => null, 'width' => 'max-w-[480px]'])
 
-{{-- Minimal shell for pre-auth pages: no nav, no tenant, just a centred column. --}}
-<!DOCTYPE html>
-<html lang="{{ str_replace('_', '-', app()->getLocale()) }}" class="h-full">
-<head>
-    <meta charset="utf-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-    <title>{{ $title ? $title.' · '.config('opes.brand.name') : config('opes.brand.name') }}</title>
-    <link rel="manifest" href="{{ url('/manifest.webmanifest') }}">
+{{--
+    Minimal shell for pre-auth pages: no nav, no tenant, just a centred column.
 
-    <script @cspNonce>
-        (function () {
-            try {
-                var stored = localStorage.getItem('opes-theme');
-                var system = window.matchMedia('(prefers-color-scheme: dark)').matches;
-                document.documentElement.classList.toggle('dark', stored === 'dark' || (stored !== 'light' && system));
-            } catch (e) {}
-        })();
-    </script>
-
-    @vite(['resources/css/app.css', 'resources/js/app.js'])
-    @livewireStyles
-</head>
-
-<body class="flex min-h-full items-center justify-center px-5 py-10">
+    Kept under its own name because much of the app asks for it that way, but it
+    is now a preset over the shared public shell rather than a second copy of the
+    document head.
+--}}
+<x-layouts.public :title="$title" :width="$width">
     {{ $slot }}
-    @livewireScripts
-</body>
-</html>
+</x-layouts.public>

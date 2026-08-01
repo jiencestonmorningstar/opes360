@@ -11,30 +11,7 @@
     $labelClass = 'mb-1.5 block text-[13px] font-semibold text-ink-2 text-left';
 @endphp
 
-<!DOCTYPE html>
-<html lang="{{ str_replace('_', '-', app()->getLocale()) }}" class="h-full">
-<head>
-    <meta charset="utf-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-    <title>{{ $company->name }} · {{ config('opes.brand.name') }}</title>
-    <meta name="description" content="{{ $company->motto ?? $company->name }}">
-
-    <script @cspNonce>
-        (function () {
-            try {
-                var stored = localStorage.getItem('opes-theme');
-                var system = window.matchMedia('(prefers-color-scheme: dark)').matches;
-                document.documentElement.classList.toggle('dark', stored === 'dark' || (stored !== 'light' && system));
-            } catch (e) {}
-        })();
-    </script>
-
-    @vite(['resources/css/app.css'])
-</head>
-
-<body class="flex min-h-full flex-col items-center px-5 py-8">
-<main class="w-full max-w-[480px]">
-
+<x-layouts.public :title="$company->name" :description="$company->motto ?? $company->name" width="max-w-[480px]">
     {{-- Identity card --}}
     <div class="card flex flex-col items-center p-7 text-center">
         @if ($company->logo_path)
@@ -212,7 +189,7 @@
                 </label>
 
                 <button type="submit"
-                        class="focusable flex h-12 w-full items-center justify-center rounded-xl bg-brand text-[15px] font-semibold text-white hover:opacity-90">
+                        class="focusable flex h-12 w-full items-center justify-center rounded-xl bg-fill-brand text-[15px] font-semibold text-white hover:opacity-90">
                     Submit Review
                 </button>
                 <p class="text-center text-[12px] text-faint">Reviews appear once the business approves them.</p>
@@ -224,6 +201,4 @@
         Powered by <span class="font-semibold"><span class="text-ink">{{ config('opes.brand.name_prefix') }}</span><span class="text-brand">{{ config('opes.brand.name_suffix') }}</span></span>
         · <a href="{{ config('opes.brand.vendor_url') }}" class="hover:underline">{{ config('opes.brand.vendor') }}</a>
     </p>
-</main>
-</body>
-</html>
+</x-layouts.public>

@@ -22,7 +22,10 @@
             {{-- The bar occupies just over half its column, which is the bar-to-gap
                  ratio in the design. --}}
             <div class="flex h-full flex-1 items-end justify-center">
-                <div class="w-[55%] rounded-t-[5px] {{ $isPeak ? 'bg-brand' : 'bg-brand/25 dark:bg-brand/40' }}"
+                {{-- Both bars are washes of the fill role, not the ink role: the
+                     ink role is pale in dark mode, which would make every quiet
+                     day brighter than the peak it is supposed to sit under. --}}
+                <div class="w-[55%] rounded-t-[5px] {{ $isPeak ? 'bg-fill-brand' : 'bg-fill-brand/30 dark:bg-fill-brand/45' }}"
                      style="height: {{ $pct }}%"></div>
             </div>
         @endforeach

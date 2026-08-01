@@ -16,7 +16,7 @@
     <div class="mt-7 flex items-center gap-2">
         @foreach ([1 => 'Account', 2 => 'Business'] as $index => $label)
             <div class="flex-1">
-                <div class="h-1.5 rounded-full {{ $step >= $index ? 'bg-brand' : 'bg-border' }}"></div>
+                <div class="h-1.5 rounded-full {{ $step >= $index ? 'bg-fill-brand' : 'bg-border' }}"></div>
                 <p class="mt-1.5 text-[11.5px] font-semibold {{ $step >= $index ? 'text-brand' : 'text-faint' }}">
                     {{ $label }}
                 </p>
@@ -52,7 +52,7 @@
             </div>
 
             <button type="button" wire:click="continueToBusiness"
-                    class="tap focusable mt-6 flex h-12 w-full items-center justify-center rounded-xl bg-brand text-[15px] font-semibold text-white hover:opacity-90">
+                    class="tap focusable mt-6 flex h-12 w-full items-center justify-center rounded-xl bg-fill-brand text-[15px] font-semibold text-white hover:opacity-90">
                 Continue
             </button>
 
@@ -116,7 +116,7 @@
                     Back
                 </button>
                 <button type="button" wire:click="finish" wire:loading.attr="disabled"
-                        class="tap focusable h-12 flex-[1.6] rounded-xl bg-brand text-[15px] font-semibold text-white hover:opacity-90">
+                        class="tap focusable h-12 flex-[1.6] rounded-xl bg-fill-brand text-[15px] font-semibold text-white hover:opacity-90">
                     <span wire:loading.remove wire:target="finish">Create Business</span>
                     <span wire:loading wire:target="finish">Setting up…</span>
                 </button>

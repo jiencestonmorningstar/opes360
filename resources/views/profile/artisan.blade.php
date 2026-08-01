@@ -3,30 +3,7 @@
     $rating = $artisan->averageRating();
 @endphp
 
-<!DOCTYPE html>
-<html lang="{{ str_replace('_', '-', app()->getLocale()) }}" class="h-full">
-<head>
-    <meta charset="utf-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-    <title>{{ $artisan->full_name }} · {{ $artisan->occupation ?? 'Artisan' }}</title>
-    <meta name="description" content="{{ $artisan->occupation }} at {{ $company->name }}">
-
-    <script @cspNonce>
-        (function () {
-            try {
-                var stored = localStorage.getItem('opes-theme');
-                var system = window.matchMedia('(prefers-color-scheme: dark)').matches;
-                document.documentElement.classList.toggle('dark', stored === 'dark' || (stored !== 'light' && system));
-            } catch (e) {}
-        })();
-    </script>
-
-    @vite(['resources/css/app.css'])
-</head>
-
-<body class="flex min-h-full flex-col items-center px-5 py-8">
-<main class="w-full max-w-[480px]">
-
+<x-layouts.public :title="$artisan->full_name.' · '.($artisan->occupation ?? 'Artisan')" width="max-w-[480px]">
     <div class="card flex flex-col items-center p-7 text-center">
         @if ($artisan->photoUrl())
             <img src="{{ $artisan->photoUrl() }}" alt="" class="size-[92px] rounded-full object-cover">
@@ -146,6 +123,4 @@
         Verified by <span class="font-semibold"><span class="text-ink">{{ config('opes.brand.name_prefix') }}</span><span class="text-brand">{{ config('opes.brand.name_suffix') }}</span></span>
         · <a href="{{ route('profile.business', $company) }}" class="hover:underline">{{ $company->name }}</a>
     </p>
-</main>
-</body>
-</html>
+</x-layouts.public>

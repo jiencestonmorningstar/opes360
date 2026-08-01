@@ -27,17 +27,23 @@ class Accent
         };
     }
 
-    /** Saturated fill for the solid icon tiles on the stat cards. */
+    /**
+     * Saturated fill for the solid icon tiles on the stat cards.
+     *
+     * The `fill-` family rather than `accent-`: these tiles carry a white glyph,
+     * and in dark mode the accent role is a pale tint that a white glyph would
+     * disappear into. See the token comments in resources/css/app.css.
+     */
     public static function solid(string $accent): string
     {
         return match ($accent) {
-            'green' => 'bg-accent-green',
-            'orange' => 'bg-accent-orange',
-            'purple' => 'bg-accent-purple',
-            'teal' => 'bg-accent-teal',
-            'pink' => 'bg-accent-pink',
-            'slate' => 'bg-accent-slate',
-            default => 'bg-accent-blue',
+            'green' => 'bg-fill-green',
+            'orange' => 'bg-fill-orange',
+            'purple' => 'bg-fill-purple',
+            'teal' => 'bg-fill-teal',
+            'pink' => 'bg-fill-pink',
+            'slate' => 'bg-fill-slate',
+            default => 'bg-fill-blue',
         };
     }
 

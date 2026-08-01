@@ -28,7 +28,7 @@
             <button type="button" wire:click="setAsset('{{ $key }}')" role="tab"
                     aria-selected="{{ $asset === $key ? 'true' : 'false' }}"
                     class="focusable h-10 shrink-0 rounded-full px-4 text-[13.5px] font-semibold transition-colors
-                           {{ $asset === $key ? 'bg-brand text-white' : 'border border-border bg-surface text-ink-2 hover:bg-surface-2' }}">
+                           {{ $asset === $key ? 'bg-fill-brand text-white' : 'border border-border bg-surface text-ink-2 hover:bg-surface-2' }}">
                 {{ $label }}
             </button>
         @endforeach
@@ -66,12 +66,12 @@
                                         <span class="mt-1.5 block h-1 w-full rounded bg-slate-200"></span>
                                         <span class="mt-1 block h-1 w-5/6 rounded bg-slate-200"></span>
                                     @elseif ($key === 'banner')
-                                        <span class="-m-1.5 mb-0 block h-4 bg-brand"></span>
+                                        <span class="-m-1.5 mb-0 block h-4 bg-fill-brand"></span>
                                         <span class="mt-1.5 block h-1 w-full rounded bg-slate-200"></span>
                                         <span class="mt-1 block h-1 w-5/6 rounded bg-slate-200"></span>
                                     @elseif ($key === 'sidebar')
                                         <span class="flex h-full gap-1.5">
-                                            <span class="-my-1.5 -ml-1.5 block w-2.5 shrink-0 bg-brand"></span>
+                                            <span class="-my-1.5 -ml-1.5 block w-2.5 shrink-0 bg-fill-brand"></span>
                                             <span class="min-w-0 flex-1 pt-0.5">
                                                 <span class="block h-1 w-full rounded bg-slate-200"></span>
                                                 <span class="mt-1 block h-1 w-5/6 rounded bg-slate-200"></span>
@@ -123,7 +123,7 @@
                             @foreach (array_merge(['universal'], array_keys(\App\Support\CardCatalog::bySector())) as $sector)
                                 <button type="button" wire:click="setCardSector('{{ $sector }}')" wire:key="card-sector-{{ $sector }}"
                                         class="focusable rounded-full px-3 py-1.5 text-[12px] font-semibold transition-colors
-                                               {{ $cardSector === $sector ? 'bg-brand text-white' : 'border border-border bg-surface text-ink-2 hover:bg-surface-2' }}">
+                                               {{ $cardSector === $sector ? 'bg-fill-brand text-white' : 'border border-border bg-surface text-ink-2 hover:bg-surface-2' }}">
                                     {{ $sector === 'universal' ? 'Universal' : $sector }}@if ($sector === $recommendedSector) ★@endif
                                 </button>
                             @endforeach
@@ -176,7 +176,7 @@
             @if ($asset !== 'signature')
                 <a href="{{ route('stationery.print', ['asset' => $asset, 'size' => $size, 'shape' => $stampShape, 'name' => $cardName, 'title' => $cardTitle]) }}"
                    target="_blank"
-                   class="focusable flex h-12 w-full items-center justify-center gap-2 rounded-xl bg-brand text-[15px] font-semibold text-white hover:opacity-90">
+                   class="focusable flex h-12 w-full items-center justify-center gap-2 rounded-xl bg-fill-brand text-[15px] font-semibold text-white hover:opacity-90">
                     <x-icon name="printer" class="size-[18px]" stroke-width="2" />
                     Print / Save as PDF
                 </a>

@@ -13,31 +13,7 @@
     $toneTint = ['positive' => 'bg-tint-green', 'warning' => 'bg-tint-orange', 'muted' => 'bg-surface-2'][$tone];
 @endphp
 
-<!DOCTYPE html>
-<html lang="{{ str_replace('_', '-', app()->getLocale()) }}" class="h-full">
-<head>
-    <meta charset="utf-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-    <title>{{ $headline }} · {{ config('opes.brand.name') }}</title>
-    <meta name="robots" content="noindex">
-
-    <script @cspNonce>
-        (function () {
-            try {
-                var stored = localStorage.getItem('opes-theme');
-                var system = window.matchMedia('(prefers-color-scheme: dark)').matches;
-                document.documentElement.classList.toggle('dark', stored === 'dark' || (stored !== 'light' && system));
-            } catch (e) {}
-        })();
-    </script>
-
-    @vite(['resources/css/app.css'])
-</head>
-
-{{-- No app shell: the scanner is a customer, not a user. One column, no nav. --}}
-<body class="flex min-h-full flex-col items-center px-5 py-10">
-<main class="w-full max-w-[440px]">
-
+<x-layouts.public :title="$headline" robots="noindex" width="max-w-[440px]">
     {{-- Verdict --}}
     <div class="card flex flex-col items-center p-7 text-center">
         <span class="flex size-[74px] items-center justify-center rounded-full {{ $toneTint }}">
@@ -192,7 +168,7 @@
                         <form method="POST" action="{{ route('tickets.check-in', $ticket) }}" class="mt-5">
                             @csrf
                             <button type="submit"
-                                    class="tap focusable flex h-12 w-full items-center justify-center gap-2 rounded-xl bg-brand text-[15px] font-semibold text-white transition-opacity hover:opacity-90">
+                                    class="tap focusable flex h-12 w-full items-center justify-center gap-2 rounded-xl bg-fill-brand text-[15px] font-semibold text-white transition-opacity hover:opacity-90">
                                 <x-icon name="check-circle" class="size-[20px]" stroke-width="2" />
                                 Check in
                             </button>
@@ -237,7 +213,7 @@
                                    class="h-11 w-full rounded-lg border border-border bg-surface px-3 text-[14px] text-ink focus:border-brand focus:outline-none focus:ring-1 focus:ring-brand/20">
                         </div>
                         <button type="submit"
-                                class="tap focusable h-11 shrink-0 rounded-lg bg-brand px-4 text-[13.5px] font-semibold text-white transition-opacity hover:opacity-90">
+                                class="tap focusable h-11 shrink-0 rounded-lg bg-fill-brand px-4 text-[13.5px] font-semibold text-white transition-opacity hover:opacity-90">
                             Redeem
                         </button>
                     </form>
@@ -270,6 +246,4 @@
         Verified by <span class="font-semibold"><span class="text-ink">{{ config('opes.brand.name_prefix') }}</span><span class="text-brand">{{ config('opes.brand.name_suffix') }}</span></span>
         · <a href="{{ config('opes.brand.vendor_url') }}" class="hover:underline">{{ config('opes.brand.vendor') }}</a>
     </p>
-</main>
-</body>
-</html>
+</x-layouts.public>

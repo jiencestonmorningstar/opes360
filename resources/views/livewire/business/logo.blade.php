@@ -68,7 +68,7 @@
             </x-ui.panel>
 
             <button type="button" wire:click="save" wire:loading.attr="disabled"
-                    class="focusable flex h-12 w-full items-center justify-center rounded-xl bg-brand text-[15px] font-semibold text-white hover:opacity-90">
+                    class="focusable flex h-12 w-full items-center justify-center rounded-xl bg-fill-brand text-[15px] font-semibold text-white hover:opacity-90">
                 <span wire:loading.remove wire:target="save">Use this logo</span>
                 <span wire:loading wire:target="save">Saving…</span>
             </button>

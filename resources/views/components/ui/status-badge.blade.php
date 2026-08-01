@@ -5,9 +5,9 @@
 
 @php
     [$text, $dot] = match ($tone) {
-        'positive' => ['text-positive', 'bg-positive'],
-        'warning' => ['text-warning', 'bg-warning'],
-        'negative' => ['text-negative', 'bg-negative'],
+        'positive' => ['text-positive', 'bg-fill-positive'],
+        'warning' => ['text-warning', 'bg-fill-warning'],
+        'negative' => ['text-negative', 'bg-fill-negative'],
         'muted' => ['text-faint', 'bg-faint'],
         default => ['text-muted', 'bg-muted'],
     };

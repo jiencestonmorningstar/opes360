@@ -15,7 +15,7 @@
 
         <div class="flex shrink-0 gap-2">
             <a href="{{ route('stationery') }}"
-               class="tap focusable flex items-center gap-2 rounded-full bg-brand px-5 text-[14px] font-semibold text-white hover:opacity-90">
+               class="tap focusable flex items-center gap-2 rounded-full bg-fill-brand px-5 text-[14px] font-semibold text-white hover:opacity-90">
                 <x-icon name="printer" class="size-[16px]" stroke-width="2" />
                 Stationery
             </a>
@@ -247,7 +247,7 @@
             </x-ui.panel>
 
             <button type="button" wire:click="save" wire:loading.attr="disabled"
-                    class="focusable flex h-12 w-full items-center justify-center rounded-xl bg-brand text-[15px] font-semibold text-white transition-opacity hover:opacity-90 lg:w-auto lg:px-10">
+                    class="focusable flex h-12 w-full items-center justify-center rounded-xl bg-fill-brand text-[15px] font-semibold text-white transition-opacity hover:opacity-90 lg:w-auto lg:px-10">
                 <span wire:loading.remove wire:target="save">Save Changes</span>
                 <span wire:loading wire:target="save">Saving…</span>
             </button>
@@ -322,7 +322,7 @@
                     </div>
 
                     <button type="button" wire:click="saveLoyaltySettings"
-                            class="tap focusable mt-4 flex h-11 w-full items-center justify-center rounded-xl bg-brand text-[14px] font-semibold text-white transition-opacity hover:opacity-90">
+                            class="tap focusable mt-4 flex h-11 w-full items-center justify-center rounded-xl bg-fill-brand text-[14px] font-semibold text-white transition-opacity hover:opacity-90">
                         Save loyalty settings
                     </button>
                 </x-ui.panel>

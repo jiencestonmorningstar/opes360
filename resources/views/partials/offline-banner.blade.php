@@ -15,7 +15,7 @@
 
     {{-- Offline takes precedence: it explains everything else on the bar. --}}
     <template x-if="! online">
-        <div class="flex items-center justify-center gap-2 bg-warning px-4 py-2 text-center text-white">
+        <div class="flex items-center justify-center gap-2 bg-fill-warning px-4 py-2 text-center text-white">
             <x-icon name="offline" class="size-[17px]" stroke-width="2" />
             <span class="text-[13px] font-semibold">
                 You're offline —
@@ -26,7 +26,7 @@
     </template>
 
     <template x-if="online && failed > 0">
-        <div class="flex items-center justify-center gap-2 bg-negative px-4 py-2 text-center text-white">
+        <div class="flex items-center justify-center gap-2 bg-fill-negative px-4 py-2 text-center text-white">
             <x-icon name="alert" class="size-[17px]" stroke-width="2" />
             <span class="text-[13px] font-semibold">
                 <span x-text="failed"></span> change<span x-show="failed !== 1">s</span> couldn't sync and need attention.
@@ -35,7 +35,7 @@
     </template>
 
     <template x-if="online && failed === 0 && pending > 0">
-        <div class="flex items-center justify-center gap-2 bg-brand px-4 py-2 text-center text-white">
+        <div class="flex items-center justify-center gap-2 bg-fill-brand px-4 py-2 text-center text-white">
             <x-icon name="sync" class="size-[16px]" stroke-width="2" ::class="running && 'animate-spin'" />
             <span class="text-[13px] font-semibold">
                 Syncing <span x-text="pending"></span> change<span x-show="pending !== 1">s</span>…

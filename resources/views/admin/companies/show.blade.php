@@ -106,7 +106,7 @@
                     <form method="POST" action="{{ route('admin.companies.activate', $company) }}" class="mt-3"
                           onsubmit="return confirm('Reactivate {{ $company->name }}?')">
                         @csrf
-                        <button type="submit" class="tap focusable flex h-11 w-full items-center justify-center rounded-lg bg-brand text-[13.5px] font-semibold text-white">
+                        <button type="submit" class="tap focusable flex h-11 w-full items-center justify-center rounded-lg bg-fill-brand text-[13.5px] font-semibold text-white">
                             Reactivate this business
                         </button>
                     </form>

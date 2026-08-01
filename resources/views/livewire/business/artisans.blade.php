@@ -15,7 +15,7 @@
 
         @unless ($editing)
             <button type="button" wire:click="startCreating"
-                    class="tap focusable flex shrink-0 items-center gap-2 rounded-full bg-brand px-5 text-[14.5px] font-semibold text-white hover:opacity-90">
+                    class="tap focusable flex shrink-0 items-center gap-2 rounded-full bg-fill-brand px-5 text-[14.5px] font-semibold text-white hover:opacity-90">
                 <x-icon name="user-plus" class="size-[18px]" stroke-width="2" />
                 <span class="hidden min-[420px]:inline">Add Artisan</span>
                 <span class="min-[420px]:hidden">Add</span>
@@ -120,7 +120,7 @@
                 </div>
 
                 <button type="button" wire:click="save" wire:loading.attr="disabled"
-                        class="focusable mt-5 flex h-12 w-full items-center justify-center rounded-xl bg-brand text-[15px] font-semibold text-white hover:opacity-90">
+                        class="focusable mt-5 flex h-12 w-full items-center justify-center rounded-xl bg-fill-brand text-[15px] font-semibold text-white hover:opacity-90">
                     <span wire:loading.remove wire:target="save">{{ $editingId ? 'Save Changes' : 'Add Artisan' }}</span>
                     <span wire:loading wire:target="save">Saving…</span>
                 </button>

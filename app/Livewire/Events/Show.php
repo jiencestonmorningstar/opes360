@@ -3,7 +3,6 @@
 namespace App\Livewire\Events;
 
 use App\Models\Event;
-use App\Models\Ticket;
 use App\Services\QrCodes;
 use Illuminate\Contracts\View\View;
 use Illuminate\Foundation\Auth\Access\AuthorizesRequests;

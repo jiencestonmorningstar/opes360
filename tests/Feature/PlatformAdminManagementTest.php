@@ -4,15 +4,19 @@ namespace Tests\Feature;
 
 use App\Enums\DocumentStatus;
 use App\Enums\DocumentType;
+use App\Models\ActivityLog;
 use App\Models\Company;
 use App\Models\Document;
 use App\Models\PlatformAdmin;
 use App\Models\PlatformAdminActivity;
 use App\Models\Role;
 use App\Models\User;
+use App\Notifications\AdminResetPassword;
 use App\Notifications\CompanyPlanChangedNotification;
 use App\Notifications\CompanyReactivatedNotification;
 use App\Notifications\CompanySuspendedNotification;
+use App\Notifications\ResetPassword;
+use App\Support\CurrentCompany;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Notification;
@@ -60,7 +64,7 @@ class PlatformAdminManagementTest extends TestCase
     {
         [$company, $owner] = $this->makeCompanyWithOwner();
 
-        app(\App\Support\CurrentCompany::class)->set($company);
+        app(CurrentCompany::class)->set($company);
         Document::create([
             'type' => DocumentType::Invoice,
             'status' => DocumentStatus::Issued,
@@ -71,7 +75,7 @@ class PlatformAdminManagementTest extends TestCase
             'total' => 100,
             'balance' => 100,
         ]);
-        app(\App\Support\CurrentCompany::class)->set(null);
+        app(CurrentCompany::class)->set(null);
 
         $this->actingAs($this->admin, 'admin')
             ->get('/admin/companies/'.$company->slug)
@@ -111,7 +115,7 @@ class PlatformAdminManagementTest extends TestCase
             ->post("/admin/companies/{$company->slug}/members/{$owner->id}/reset-password")
             ->assertRedirect();
 
-        Notification::assertSentTo($owner, \App\Notifications\ResetPassword::class);
+        Notification::assertSentTo($owner, ResetPassword::class);
         $this->assertDatabaseHas('platform_admin_activity', [
             'action' => 'sent_password_reset',
             'subject_id' => $company->id,
@@ -183,7 +187,7 @@ class PlatformAdminManagementTest extends TestCase
         $this->assertNotNull($newAdmin);
         $this->assertSame(PlatformAdmin::ROLE_SUPPORT, $newAdmin->role);
 
-        Notification::assertSentTo($newAdmin, \App\Notifications\AdminResetPassword::class);
+        Notification::assertSentTo($newAdmin, AdminResetPassword::class);
         $this->assertDatabaseHas('platform_admin_activity', [
             'action' => 'invited_admin',
             'subject_id' => $newAdmin->id,
@@ -282,7 +286,7 @@ class PlatformAdminManagementTest extends TestCase
         // platform_admin — no admin session exists at that point in the
         // test), so the 'updated' row from the suspend action is picked
         // explicitly rather than relying on latest() to break the tie.
-        $entry = \App\Models\ActivityLog::where('subject_id', $company->id)->where('event', 'updated')->first();
+        $entry = ActivityLog::where('subject_id', $company->id)->where('event', 'updated')->first();
         $this->assertSame($this->admin->email, $entry->properties['platform_admin']);
     }
 }

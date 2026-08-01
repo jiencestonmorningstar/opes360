@@ -1,28 +1,5 @@
-<!DOCTYPE html>
-<html lang="{{ str_replace('_', '-', app()->getLocale()) }}" class="h-full">
-<head>
-    <meta charset="utf-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-    <title>Privacy Policy · {{ config('opes.brand.name') }}</title>
-
-    <script @cspNonce>
-        (function () {
-            try {
-                var stored = localStorage.getItem('opes-theme');
-                var system = window.matchMedia('(prefers-color-scheme: dark)').matches;
-                document.documentElement.classList.toggle('dark', stored === 'dark' || (stored !== 'light' && system));
-            } catch (e) {}
-        })();
-    </script>
-
-    @vite(['resources/css/app.css', 'resources/js/app.js'])
-</head>
-
-<body class="min-h-full">
-
-@include('marketing.partials.nav')
-
-<main class="mx-auto max-w-3xl px-5 py-16 sm:py-20">
+<x-layouts.marketing title="Privacy Policy">
+<div class="mx-auto max-w-3xl px-5 py-16 sm:py-20">
     <h1 class="text-[30px] font-bold tracking-[-0.02em] text-ink sm:text-[36px]">Privacy Policy</h1>
     <p class="mt-2 text-[13.5px] text-faint">Last updated {{ now()->format('F Y') }}</p>
 
@@ -91,9 +68,5 @@
             </p>
         </section>
     </div>
-</main>
-
-@include('marketing.partials.footer')
-
-</body>
-</html>
+</div>
+</x-layouts.marketing>

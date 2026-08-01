@@ -28,7 +28,7 @@
                 <a href="{{ route('admin.records', array_filter(['resource' => $resourceKey, 'company' => $company?->slug])) }}"
                    @if ($resourceKey === $key) aria-current="page" @endif
                    class="focusable rounded-lg px-3 py-1.5 text-[13px] font-semibold transition-colors
-                          {{ $resourceKey === $key ? 'bg-brand text-white' : 'bg-surface-2 text-ink-2 hover:bg-tint-blue hover:text-brand' }}">
+                          {{ $resourceKey === $key ? 'bg-fill-brand text-white' : 'bg-surface-2 text-ink-2 hover:bg-tint-blue hover:text-brand' }}">
                     {{ $resource['label'] }}
                 </a>
             @endforeach
@@ -41,7 +41,7 @@
                 <input id="q" type="search" name="q" value="{{ $search }}"
                        placeholder="Search {{ strtolower($definition['label']) }}…"
                        class="h-11 w-full max-w-sm rounded-xl border border-border bg-surface px-3.5 text-[14px] text-ink placeholder:text-faint focus:border-brand focus:outline-none focus:ring-2 focus:ring-brand/20">
-                <button type="submit" class="focusable h-11 rounded-xl bg-brand px-4 text-[13.5px] font-semibold text-white hover:opacity-90">Search</button>
+                <button type="submit" class="focusable h-11 rounded-xl bg-fill-brand px-4 text-[13.5px] font-semibold text-white hover:opacity-90">Search</button>
                 @if ($search)
                     <a href="{{ route('admin.records', array_filter(['resource' => $key, 'company' => $company?->slug])) }}"
                        class="focusable flex h-11 items-center px-2 text-[13px] font-semibold text-muted hover:text-ink-2">Clear</a>

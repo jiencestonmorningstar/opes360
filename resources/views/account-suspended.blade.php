@@ -1,24 +1,4 @@
-<!DOCTYPE html>
-<html lang="{{ str_replace('_', '-', app()->getLocale()) }}" class="h-full">
-<head>
-    <meta charset="utf-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-    <title>Account suspended · {{ config('opes.brand.name') }}</title>
-
-    <script @cspNonce>
-        (function () {
-            try {
-                var stored = localStorage.getItem('opes-theme');
-                var system = window.matchMedia('(prefers-color-scheme: dark)').matches;
-                document.documentElement.classList.toggle('dark', stored === 'dark' || (stored !== 'light' && system));
-            } catch (e) {}
-        })();
-    </script>
-
-    @vite(['resources/css/app.css'])
-</head>
-
-<body class="flex h-full items-center justify-center px-5 py-10">
+<x-layouts.public title="Account suspended">
 <div class="w-full max-w-[420px] text-center">
     <span class="mx-auto flex size-[70px] items-center justify-center rounded-full bg-tint-orange">
         <x-icon name="alert" class="size-8 text-warning" stroke-width="1.8" />
@@ -38,5 +18,4 @@
         </button>
     </form>
 </div>
-</body>
-</html>
+</x-layouts.public>

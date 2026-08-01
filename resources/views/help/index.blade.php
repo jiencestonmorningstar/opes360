@@ -50,7 +50,7 @@
                 OPES360 is built by {{ config('opes.brand.vendor') }}. Reach the team and we will get back to you.
             </p>
             <a href="{{ config('opes.brand.vendor_url') }}" target="_blank"
-               class="focusable mt-4 flex h-11 items-center rounded-xl bg-brand px-6 text-[14.5px] font-semibold text-white hover:opacity-90">
+               class="focusable mt-4 flex h-11 items-center rounded-xl bg-fill-brand px-6 text-[14.5px] font-semibold text-white hover:opacity-90">
                 Contact Opesware
             </a>
         </section>

@@ -116,7 +116,7 @@ class LandingPageTest extends TestCase
     {
         $response = $this->get(route('marketing.blog'))->assertOk();
 
-        $response->assertSee("Why offline-first isn&#039;t a nice-to-have here", false)
+        $response->assertSee('Why offline-first isn&#039;t a nice-to-have here', false)
             ->assertSee('What a QR code on your invoice is actually proving');
     }
 

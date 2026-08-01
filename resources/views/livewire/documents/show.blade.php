@@ -150,7 +150,7 @@
 
                 <div class="space-y-2.5">
                     <a href="{{ route('documents.print', $document) }}" target="_blank"
-                       class="focusable flex h-11 w-full items-center justify-center gap-2 rounded-xl bg-brand text-[14px] font-semibold text-white transition-opacity hover:opacity-90">
+                       class="focusable flex h-11 w-full items-center justify-center gap-2 rounded-xl bg-fill-brand text-[14px] font-semibold text-white transition-opacity hover:opacity-90">
                         <x-icon name="document" class="size-[18px]" stroke-width="2" />
                         Print / PDF
                     </a>
@@ -213,7 +213,7 @@
                     @enderror
 
                     <button type="button" wire:click="voidDocument" wire:loading.attr="disabled"
-                            class="focusable mt-5 flex h-12 w-full items-center justify-center rounded-xl bg-negative text-[14.5px] font-semibold text-white hover:opacity-90">
+                            class="focusable mt-5 flex h-12 w-full items-center justify-center rounded-xl bg-fill-negative text-[14.5px] font-semibold text-white hover:opacity-90">
                         <span wire:loading.remove wire:target="voidDocument">Yes, void it</span>
                         <span wire:loading wire:target="voidDocument">Voiding…</span>
                     </button>
@@ -295,7 +295,7 @@
                         </label>
 
                         <button type="button" @click="submit()" :disabled="saving"
-                                class="focusable mt-5 flex h-12 w-full items-center justify-center rounded-xl bg-brand text-[14.5px] font-semibold text-white transition-opacity hover:opacity-90 disabled:opacity-60">
+                                class="focusable mt-5 flex h-12 w-full items-center justify-center rounded-xl bg-fill-brand text-[14.5px] font-semibold text-white transition-opacity hover:opacity-90 disabled:opacity-60">
                             <span x-show="! saving">Confirm &amp; Issue Receipt</span>
                             <span x-show="saving" x-cloak>Recording…</span>
                         </button>

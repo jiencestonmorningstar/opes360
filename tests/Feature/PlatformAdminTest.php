@@ -4,7 +4,6 @@ namespace Tests\Feature;
 
 use App\Models\Company;
 use App\Models\PlatformAdmin;
-use App\Models\PlatformAdminActivity;
 use App\Models\User;
 use App\Notifications\AdminResetPassword;
 use Illuminate\Foundation\Testing\RefreshDatabase;

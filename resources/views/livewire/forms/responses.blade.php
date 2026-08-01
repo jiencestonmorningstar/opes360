@@ -36,7 +36,7 @@
                                     <span class="tnum text-[13px] font-semibold text-muted">{{ $count }}</span>
                                 </div>
                                 <div class="mt-1 h-1.5 overflow-hidden rounded-full bg-surface-2">
-                                    <div class="h-full rounded-full bg-brand" style="width: {{ round($count / $max * 100) }}%"></div>
+                                    <div class="h-full rounded-full bg-fill-brand" style="width: {{ round($count / $max * 100) }}%"></div>
                                 </div>
                             </div>
                         @endforeach

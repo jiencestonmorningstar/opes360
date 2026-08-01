@@ -1,28 +1,6 @@
 @php use App\Support\Money; @endphp
-<!DOCTYPE html>
-<html lang="{{ str_replace('_', '-', app()->getLocale()) }}" class="h-full">
-<head>
-    <meta charset="utf-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-    <title>{{ $event->title }} · {{ $company->name }}</title>
-    <meta name="robots" content="noindex">
 
-    <script @cspNonce>
-        (function () {
-            try {
-                var stored = localStorage.getItem('opes-theme');
-                var system = window.matchMedia('(prefers-color-scheme: dark)').matches;
-                document.documentElement.classList.toggle('dark', stored === 'dark' || (stored !== 'light' && system));
-            } catch (e) {}
-        })();
-    </script>
-
-    @vite(['resources/css/app.css'])
-</head>
-
-<body class="flex min-h-full flex-col items-center px-5 py-10">
-<main class="w-full max-w-[560px]">
-
+<x-layouts.public :title="$event->title.' · '.$company->name" robots="noindex" width="max-w-[560px]">
     <div class="card overflow-hidden">
         <div class="border-t-4 border-t-brand p-6">
             <p class="text-[12px] font-semibold uppercase tracking-wide text-faint">{{ $company->name }} presents</p>
@@ -123,7 +101,7 @@
             </div>
 
             <button type="submit"
-                    class="tap focusable flex h-12 w-full items-center justify-center rounded-xl bg-brand text-[15px] font-semibold text-white transition-opacity hover:opacity-90">
+                    class="tap focusable flex h-12 w-full items-center justify-center rounded-xl bg-fill-brand text-[15px] font-semibold text-white transition-opacity hover:opacity-90">
                 Get tickets
             </button>
         </form>
@@ -133,6 +111,4 @@
         Ticketed with <span class="font-semibold"><span class="text-ink">{{ config('opes.brand.name_prefix') }}</span><span class="text-brand">{{ config('opes.brand.name_suffix') }}</span></span>
         · Every ticket carries a verifiable QR code.
     </p>
-</main>
-</body>
-</html>
+</x-layouts.public>

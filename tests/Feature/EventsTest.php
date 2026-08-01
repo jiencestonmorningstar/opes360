@@ -6,7 +6,6 @@ use App\Models\Company;
 use App\Models\Event;
 use App\Models\Role;
 use App\Models\Ticket;
-use App\Models\TicketType;
 use App\Models\User;
 use App\Services\SoldOutException;
 use App\Services\TicketSeller;

@@ -57,7 +57,7 @@
                     Done
                 </a>
                 <button type="button" @click="startAnother()"
-                        class="focusable h-12 flex-[1.4] rounded-xl bg-brand text-[14.5px] font-semibold text-white transition-opacity hover:opacity-90">
+                        class="focusable h-12 flex-[1.4] rounded-xl bg-fill-brand text-[14.5px] font-semibold text-white transition-opacity hover:opacity-90">
                     Add Another
                 </button>
             </div>
@@ -164,7 +164,7 @@
            x-show="error('form')" x-text="error('form')"></p>
 
         <button type="button" @click="save()" :disabled="saving"
-                class="focusable flex h-12 w-full items-center justify-center rounded-xl bg-brand text-[15px] font-semibold text-white transition-opacity hover:opacity-90 disabled:opacity-60">
+                class="focusable flex h-12 w-full items-center justify-center rounded-xl bg-fill-brand text-[15px] font-semibold text-white transition-opacity hover:opacity-90 disabled:opacity-60">
             <span x-show="! saving">{{ $item ? 'Save Changes' : 'Add '.ucfirst($type) }}</span>
             <span x-show="saving" x-cloak>Saving…</span>
         </button>

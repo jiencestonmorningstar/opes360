@@ -139,7 +139,7 @@
                             @endif
 
                             <button type="button" wire:click="pay" wire:loading.attr="disabled" wire:target="pay"
-                                    class="focusable flex h-12 w-full items-center justify-center rounded-xl bg-brand text-[14.5px] font-semibold text-white hover:opacity-90 disabled:opacity-60">
+                                    class="focusable flex h-12 w-full items-center justify-center rounded-xl bg-fill-brand text-[14.5px] font-semibold text-white hover:opacity-90 disabled:opacity-60">
                                 <span wire:loading.remove wire:target="pay">
                                     Pay {{ \App\Support\Money::format($prices[$plan][$billingCycle], 'XAF', false) }}
                                 </span>

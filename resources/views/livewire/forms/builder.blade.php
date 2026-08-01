@@ -24,7 +24,7 @@
         <div class="mt-4 flex flex-wrap items-center gap-2.5">
             @if (! $form->isOpen())
                 <button type="button" wire:click="setStatus('open')"
-                        class="tap focusable flex h-11 items-center gap-1.5 rounded-xl bg-brand px-4 text-[13.5px] font-semibold text-white transition-opacity hover:opacity-90">
+                        class="tap focusable flex h-11 items-center gap-1.5 rounded-xl bg-fill-brand px-4 text-[13.5px] font-semibold text-white transition-opacity hover:opacity-90">
                     <x-icon name="check-circle" class="size-[17px]" stroke-width="2" />
                     Open for responses
                 </button>

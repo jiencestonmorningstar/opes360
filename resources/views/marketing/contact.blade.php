@@ -1,28 +1,4 @@
-<!DOCTYPE html>
-<html lang="{{ str_replace('_', '-', app()->getLocale()) }}" class="h-full">
-<head>
-    <meta charset="utf-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-    <title>Contact · {{ config('opes.brand.name') }}</title>
-
-    <script @cspNonce>
-        (function () {
-            try {
-                var stored = localStorage.getItem('opes-theme');
-                var system = window.matchMedia('(prefers-color-scheme: dark)').matches;
-                document.documentElement.classList.toggle('dark', stored === 'dark' || (stored !== 'light' && system));
-            } catch (e) {}
-        })();
-    </script>
-
-    @vite(['resources/css/app.css', 'resources/js/app.js'])
-</head>
-
-<body class="min-h-full">
-
-@include('marketing.partials.nav')
-
-<main>
+<x-layouts.marketing title="Contact">
     <section class="mx-auto max-w-5xl px-5 py-16 sm:py-20">
         <div class="text-center">
             <h1 class="text-[30px] font-bold tracking-[-0.02em] text-ink sm:text-[36px]">Get in touch</h1>
@@ -119,7 +95,7 @@
                 </div>
 
                 <button type="submit"
-                        class="tap focusable mt-2 flex h-12 w-full items-center justify-center rounded-xl bg-brand text-[15px] font-semibold text-white transition-opacity hover:opacity-90">
+                        class="tap focusable mt-2 flex h-12 w-full items-center justify-center rounded-xl bg-fill-brand text-[15px] font-semibold text-white transition-opacity hover:opacity-90">
                     Send message
                 </button>
             </form>
@@ -131,9 +107,5 @@
             <a href="{{ route('demo.request') }}" class="font-semibold text-brand hover:underline">Try a demo</a>
         </p>
     </section>
-</main>
-
-@include('marketing.partials.footer')
-
-</body>
-</html>
+</div>
+</x-layouts.marketing>

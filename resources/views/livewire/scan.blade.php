@@ -68,7 +68,7 @@
                     </div>
 
                     <button type="button" x-show="! scanning" @click="start()"
-                            class="focusable flex h-12 w-full items-center justify-center gap-2 rounded-xl bg-brand text-[15px] font-semibold text-white hover:opacity-90">
+                            class="focusable flex h-12 w-full items-center justify-center gap-2 rounded-xl bg-fill-brand text-[15px] font-semibold text-white hover:opacity-90">
                         <x-icon name="qr-code" class="size-[19px]" stroke-width="2" />
                         Start camera
                     </button>
@@ -96,7 +96,7 @@
                        placeholder="Code or verification link"
                        class="h-12 min-w-0 flex-1 rounded-xl border border-border bg-surface px-3.5 text-[14.5px] text-ink placeholder:text-faint focus:border-brand focus:outline-none focus:ring-2 focus:ring-brand/20">
                 <button type="button" wire:click="lookup"
-                        class="tap focusable flex shrink-0 items-center justify-center rounded-xl bg-brand px-5 text-[14.5px] font-semibold text-white hover:opacity-90">
+                        class="tap focusable flex shrink-0 items-center justify-center rounded-xl bg-fill-brand px-5 text-[14.5px] font-semibold text-white hover:opacity-90">
                     Check
                 </button>
             </div>

@@ -40,7 +40,7 @@
                 rename them and add their own subdivisions afterwards.
             </p>
             <button type="button" wire:click="seedChart"
-                    class="focusable mx-auto mt-5 flex h-12 items-center justify-center rounded-xl bg-brand px-5 text-[14.5px] font-semibold text-white hover:opacity-90">
+                    class="focusable mx-auto mt-5 flex h-12 items-center justify-center rounded-xl bg-fill-brand px-5 text-[14.5px] font-semibold text-white hover:opacity-90">
                 Set up the chart
             </button>
         </div>
@@ -64,7 +64,7 @@
                 <button type="button" wire:click="setTab('{{ $key }}')"
                         @if ($tab === $key) aria-current="page" @endif
                         class="focusable rounded-lg px-3.5 py-2 text-[13px] font-semibold transition-colors
-                               {{ $tab === $key ? 'bg-brand text-white' : 'bg-surface-2 text-ink-2 hover:bg-tint-blue hover:text-brand' }}">
+                               {{ $tab === $key ? 'bg-fill-brand text-white' : 'bg-surface-2 text-ink-2 hover:bg-tint-blue hover:text-brand' }}">
                     {{ $label }}
                 </button>
             @endforeach
@@ -321,7 +321,7 @@
                         </label>
                         <div class="flex items-end">
                             <button type="button" wire:click="addAccount"
-                                    class="focusable h-11 rounded-lg bg-brand px-4 text-[13.5px] font-semibold text-white hover:opacity-90">
+                                    class="focusable h-11 rounded-lg bg-fill-brand px-4 text-[13.5px] font-semibold text-white hover:opacity-90">
                                 Add
                             </button>
                         </div>

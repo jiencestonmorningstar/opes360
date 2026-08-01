@@ -28,7 +28,7 @@
                 </label>
 
                 <button type="submit"
-                        class="tap focusable flex h-12 w-full items-center justify-center rounded-xl bg-brand text-[15px] font-semibold text-white hover:opacity-90">
+                        class="tap focusable flex h-12 w-full items-center justify-center rounded-xl bg-fill-brand text-[15px] font-semibold text-white hover:opacity-90">
                     Verify
                 </button>
             </form>

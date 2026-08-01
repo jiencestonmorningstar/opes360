@@ -10,7 +10,7 @@
         @php $isActive = request()->routeIs($tab['route']); @endphp
         <a href="{{ route($tab['route']) }}"
            class="focusable flex h-10 shrink-0 items-center gap-2 rounded-full px-4 text-[13.5px] font-semibold transition-colors
-                  {{ $isActive ? 'bg-brand text-white' : 'border border-border bg-surface text-ink-2 hover:bg-surface-2' }}">
+                  {{ $isActive ? 'bg-fill-brand text-white' : 'border border-border bg-surface text-ink-2 hover:bg-surface-2' }}">
             <x-icon :name="$tab['icon']" class="size-[16px]" />
             {{ $tab['label'] }}
         </a>

@@ -1,30 +1,5 @@
-<!DOCTYPE html>
-<html lang="{{ str_replace('_', '-', app()->getLocale()) }}" class="h-full">
-<head>
-    <meta charset="utf-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-    <title>{{ config('opes.brand.name') }} — {{ config('opes.brand.tagline') }}</title>
-    <meta name="description" content="{{ config('opes.brand.name') }} is a business identity and operations suite: sales, invoicing, customers, documents and QR verification in one place.">
-    <link rel="manifest" href="{{ url('/manifest.webmanifest') }}">
-
-    <script @cspNonce>
-        (function () {
-            try {
-                var stored = localStorage.getItem('opes-theme');
-                var system = window.matchMedia('(prefers-color-scheme: dark)').matches;
-                document.documentElement.classList.toggle('dark', stored === 'dark' || (stored !== 'light' && system));
-            } catch (e) {}
-        })();
-    </script>
-
-    @vite(['resources/css/app.css', 'resources/js/app.js'])
-</head>
-
-<body class="min-h-full">
-
-@include('marketing.partials.nav')
-
-<main>
+<x-layouts.marketing :title="config('opes.brand.tagline')"
+                     description="Sales, invoicing, customers, inventory and verified business documents in one suite — built to keep working when the connection doesn't.">
     {{-- Hero --}}
     @php
         // Four slides of three cards apiece — every module in the product
@@ -69,7 +44,7 @@
 
                 <div class="mt-8 flex flex-col items-center justify-center gap-3 sm:flex-row lg:justify-start">
                     <a href="{{ route('demo.request') }}"
-                       class="tap focusable flex h-12 w-full items-center justify-center rounded-xl bg-brand px-6 text-[15px] font-semibold text-white transition-opacity hover:opacity-90 sm:w-auto">
+                       class="tap focusable flex h-12 w-full items-center justify-center rounded-xl bg-fill-brand px-6 text-[15px] font-semibold text-white transition-opacity hover:opacity-90 sm:w-auto">
                         Try a demo
                     </a>
                     <a href="{{ route('marketing.pricing') }}"
@@ -124,7 +99,7 @@
                         @foreach ($heroSlides as $index => $cards)
                             <button type="button" @click="slide = {{ $index }}" aria-label="Go to slide {{ $index + 1 }}"
                                     class="focusable size-2 rounded-full transition-colors"
-                                    :class="slide === {{ $index }} ? 'bg-brand' : 'bg-border'"></button>
+                                    :class="slide === {{ $index }} ? 'bg-fill-brand' : 'bg-border'"></button>
                         @endforeach
                     </div>
                     <button type="button" @click="next()" aria-label="Next slide"
@@ -179,7 +154,7 @@
 
             <div class="mt-8 text-center">
                 <a href="{{ route('marketing.pricing') }}"
-                   class="tap focusable inline-flex h-12 items-center justify-center rounded-xl bg-brand px-6 text-[15px] font-semibold text-white transition-opacity hover:opacity-90">
+                   class="tap focusable inline-flex h-12 items-center justify-center rounded-xl bg-fill-brand px-6 text-[15px] font-semibold text-white transition-opacity hover:opacity-90">
                     See full pricing
                 </a>
             </div>
@@ -207,7 +182,7 @@
             <p class="mt-3 text-[15px] text-muted">Set up your business in a few minutes — no card required.</p>
             <div class="mt-7 flex flex-col items-center justify-center gap-3 sm:flex-row">
                 <a href="{{ route('demo.request') }}"
-                   class="tap focusable flex h-12 w-full items-center justify-center rounded-xl bg-brand px-6 text-[15px] font-semibold text-white transition-opacity hover:opacity-90 sm:w-auto">
+                   class="tap focusable flex h-12 w-full items-center justify-center rounded-xl bg-fill-brand px-6 text-[15px] font-semibold text-white transition-opacity hover:opacity-90 sm:w-auto">
                     Try a demo
                 </a>
                 <a href="{{ route('marketing.contact') }}"
@@ -217,9 +192,4 @@
             </div>
         </div>
     </section>
-</main>
-
-@include('marketing.partials.footer')
-
-</body>
-</html>
+</x-layouts.marketing>

@@ -5,7 +5,7 @@
             aria-label="Notifications{{ $unreadCount > 0 ? ', '.$unreadCount.' unread' : '' }}">
         <x-icon name="bell" class="size-[25px]" />
         @if ($unreadCount > 0)
-            <span class="absolute right-1.5 top-1.5 size-[9px] rounded-full bg-brand ring-2 ring-canvas"></span>
+            <span class="absolute right-1.5 top-1.5 size-[9px] rounded-full bg-fill-brand ring-2 ring-canvas"></span>
         @endif
     </button>
 
@@ -26,7 +26,7 @@
                 <a href="{{ $notification->data['url'] ?? '#' }}" wire:key="n-{{ $notification->id }}"
                    wire:click="markRead('{{ $notification->id }}')"
                    class="focusable flex items-start gap-3 border-b border-border px-4 py-3 last:border-0 hover:bg-surface-2 {{ $notification->read_at ? '' : 'bg-tint-blue/40' }}">
-                    <span class="mt-1 size-[7px] shrink-0 rounded-full {{ $notification->read_at ? 'bg-transparent' : 'bg-brand' }}"></span>
+                    <span class="mt-1 size-[7px] shrink-0 rounded-full {{ $notification->read_at ? 'bg-transparent' : 'bg-fill-brand' }}"></span>
                     <span class="min-w-0 flex-1">
                         <span class="block truncate text-[13.5px] font-semibold text-ink">{{ $notification->data['title'] ?? 'Notification' }}</span>
                         <span class="block truncate text-[12.5px] text-muted">{{ $notification->data['body'] ?? '' }}</span>

@@ -74,7 +74,7 @@
                     Done
                 </a>
                 <button type="button" @click="startAnother()"
-                        class="focusable h-12 flex-[1.4] rounded-xl bg-brand text-[14.5px] font-semibold text-white transition-opacity hover:opacity-90">
+                        class="focusable h-12 flex-[1.4] rounded-xl bg-fill-brand text-[14.5px] font-semibold text-white transition-opacity hover:opacity-90">
                     New {{ $docType->label() }}
                 </button>
             </div>
@@ -238,7 +238,7 @@
                         Save Draft
                     </button>
                     <button type="button" @click="saveAndIssue()" :disabled="saving"
-                            class="focusable h-12 flex-[1.4] rounded-xl bg-brand text-[14.5px] font-semibold text-white transition-opacity hover:opacity-90 disabled:opacity-60 lg:flex-1">
+                            class="focusable h-12 flex-[1.4] rounded-xl bg-fill-brand text-[14.5px] font-semibold text-white transition-opacity hover:opacity-90 disabled:opacity-60 lg:flex-1">
                         <span x-show="! saving">Issue {{ $docType->label() }}</span>
                         <span x-show="saving" x-cloak>Issuing…</span>
                     </button>

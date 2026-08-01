@@ -29,7 +29,7 @@
                     </p>
                     <div class="mt-3 flex gap-2">
                         <button type="button" wire:click="publish('{{ $review->id }}')"
-                                class="focusable flex h-9 items-center rounded-full bg-brand px-4 text-[13px] font-semibold text-white hover:opacity-90">
+                                class="focusable flex h-9 items-center rounded-full bg-fill-brand px-4 text-[13px] font-semibold text-white hover:opacity-90">
                             Publish
                         </button>
                         <button type="button" wire:click="delete('{{ $review->id }}')" wire:confirm="Delete this review permanently?"

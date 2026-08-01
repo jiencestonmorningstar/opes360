@@ -23,7 +23,7 @@
                 Sign in
             </a>
             <a href="{{ route('demo.request') }}"
-               class="tap focusable inline-flex h-11 items-center rounded-xl bg-brand px-4 text-[14px] font-semibold text-white transition-opacity hover:opacity-90">
+               class="tap focusable inline-flex h-11 items-center rounded-xl bg-fill-brand px-4 text-[14px] font-semibold text-white transition-opacity hover:opacity-90">
                 Try a demo
             </a>
         </div>
@@ -54,7 +54,7 @@
                     Sign in
                 </a>
                 <a href="{{ route('demo.request') }}"
-                   class="tap focusable flex h-11 items-center justify-center rounded-xl bg-brand text-[14.5px] font-semibold text-white">
+                   class="tap focusable flex h-11 items-center justify-center rounded-xl bg-fill-brand text-[14.5px] font-semibold text-white">
                     Try a demo
                 </a>
             </div>

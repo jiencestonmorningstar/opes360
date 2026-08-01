@@ -41,7 +41,7 @@
         @foreach (['all' => 'All', 'draft' => 'Drafts', 'issued' => 'Issued'] as $key => $label)
             <button type="button" wire:click="setState('{{ $key }}')" wire:key="f-{{ $key }}"
                     class="focusable flex h-9 shrink-0 items-center gap-1.5 rounded-full px-3.5 text-[13.5px] font-semibold transition-colors
-                           {{ $state === $key ? 'bg-brand text-white' : 'border border-border bg-surface text-ink-2 hover:bg-surface-2' }}">
+                           {{ $state === $key ? 'bg-fill-brand text-white' : 'border border-border bg-surface text-ink-2 hover:bg-surface-2' }}">
                 {{ $label }}
                 <span class="tnum {{ $state === $key ? 'text-white/75' : 'text-faint' }}">{{ $counts[$key] }}</span>
             </button>

@@ -1,27 +1,4 @@
-<!DOCTYPE html>
-<html lang="{{ str_replace('_', '-', app()->getLocale()) }}" class="h-full">
-<head>
-    <meta charset="utf-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-    <title>Pricing · {{ config('opes.brand.name') }}</title>
-
-    <script @cspNonce>
-        (function () {
-            try {
-                var stored = localStorage.getItem('opes-theme');
-                var system = window.matchMedia('(prefers-color-scheme: dark)').matches;
-                document.documentElement.classList.toggle('dark', stored === 'dark' || (stored !== 'light' && system));
-            } catch (e) {}
-        })();
-    </script>
-
-    @vite(['resources/css/app.css', 'resources/js/app.js'])
-</head>
-
-<body class="min-h-full">
-
-@include('marketing.partials.nav')
-
+<x-layouts.marketing title="Pricing">
 @php
     // Every annual price is ten times the monthly price — twelve months for the
     // price of ten, a flat ~17% discount that is the same across every tier.
@@ -90,7 +67,6 @@
     ];
 @endphp
 
-<main>
     <section class="mx-auto max-w-3xl px-5 pb-4 pt-16 text-center sm:pt-20">
         <h1 class="text-[30px] font-bold tracking-[-0.02em] text-ink sm:text-[36px]">Simple, honest pricing</h1>
         <p class="mt-4 text-[15.5px] leading-relaxed text-muted">
@@ -104,7 +80,7 @@
             @foreach ($tiers as $tier)
                 <div class="card relative flex flex-col p-6 {{ $tier['highlight'] ? 'border-brand ring-1 ring-brand' : '' }}">
                     @if ($tier['highlight'])
-                        <span class="absolute -top-3 left-6 rounded-full bg-brand px-3 py-1 text-[11.5px] font-semibold text-white">Most popular</span>
+                        <span class="absolute -top-3 left-6 rounded-full bg-fill-brand px-3 py-1 text-[11.5px] font-semibold text-white">Most popular</span>
                     @endif
 
                     <h2 class="text-[19px] font-bold tracking-[-0.02em] text-ink">{{ $tier['name'] }}</h2>
@@ -128,7 +104,7 @@
                     </ul>
 
                     <a href="{{ route('demo.request') }}"
-                       class="tap focusable mt-7 flex h-12 w-full items-center justify-center rounded-xl text-[15px] font-semibold transition-opacity hover:opacity-90 {{ $tier['highlight'] ? 'bg-brand text-white' : 'border border-border bg-surface text-ink' }}">
+                       class="tap focusable mt-7 flex h-12 w-full items-center justify-center rounded-xl text-[15px] font-semibold transition-opacity hover:opacity-90 {{ $tier['highlight'] ? 'bg-fill-brand text-white' : 'border border-border bg-surface text-ink' }}">
                         Get started
                     </a>
                 </div>
@@ -184,14 +160,10 @@
         <p class="mx-auto mt-3 max-w-md text-[14.5px] text-muted">We're happy to talk you through which plan fits.</p>
         <div class="mt-7">
             <a href="{{ route('marketing.contact') }}"
-               class="tap focusable inline-flex h-12 items-center justify-center rounded-xl bg-brand px-6 text-[15px] font-semibold text-white transition-opacity hover:opacity-90">
+               class="tap focusable inline-flex h-12 items-center justify-center rounded-xl bg-fill-brand px-6 text-[15px] font-semibold text-white transition-opacity hover:opacity-90">
                 Contact us
             </a>
         </div>
     </section>
-</main>
-
-@include('marketing.partials.footer')
-
-</body>
-</html>
+</div>
+</x-layouts.marketing>

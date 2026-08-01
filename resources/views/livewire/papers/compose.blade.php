@@ -142,7 +142,7 @@
             </button>
             @can('papers.issue')
                 <button type="button" wire:click="saveAndIssue" wire:loading.attr="disabled"
-                        class="focusable h-12 flex-[1.4] rounded-xl bg-brand text-[14.5px] font-semibold text-white transition-opacity hover:opacity-90">
+                        class="focusable h-12 flex-[1.4] rounded-xl bg-fill-brand text-[14.5px] font-semibold text-white transition-opacity hover:opacity-90">
                     <span wire:loading.remove wire:target="saveAndIssue">Issue Document</span>
                     <span wire:loading wire:target="saveAndIssue">Issuing…</span>
                 </button>

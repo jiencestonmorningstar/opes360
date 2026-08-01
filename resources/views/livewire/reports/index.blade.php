@@ -23,7 +23,7 @@
         @foreach (['week' => 'This Week', 'month' => 'This Month', 'quarter' => 'Quarter', 'year' => 'This Year'] as $key => $label)
             <button type="button" wire:click="setRange('{{ $key }}')"
                     class="focusable h-10 shrink-0 rounded-full px-4 text-[13.5px] font-semibold transition-colors
-                           {{ $range === $key ? 'bg-brand text-white' : 'border border-border bg-surface text-ink-2 hover:bg-surface-2' }}">
+                           {{ $range === $key ? 'bg-fill-brand text-white' : 'border border-border bg-surface text-ink-2 hover:bg-surface-2' }}">
                 {{ $label }}
             </button>
         @endforeach
@@ -62,7 +62,7 @@
                         <span class="tnum font-semibold text-ink-2">{{ Money::format($row['amount'], $currency) }} · {{ $row['share'] }}%</span>
                     </div>
                     <div class="mt-1.5 h-2 overflow-hidden rounded-full bg-surface-2">
-                        <div class="h-full rounded-full bg-brand" style="width: {{ max(2, $row['share']) }}%"></div>
+                        <div class="h-full rounded-full bg-fill-brand" style="width: {{ max(2, $row['share']) }}%"></div>
                     </div>
                 </div>
             @empty

@@ -15,7 +15,7 @@
 
         @can('sales.create')
             <a href="{{ route('documents.create', ['type' => $type]) }}"
-               class="tap focusable flex shrink-0 items-center gap-2 rounded-full bg-brand px-5 text-[14.5px] font-semibold text-white transition-opacity hover:opacity-90">
+               class="tap focusable flex shrink-0 items-center gap-2 rounded-full bg-fill-brand px-5 text-[14.5px] font-semibold text-white transition-opacity hover:opacity-90">
                 <x-icon name="plus" class="size-[18px]" stroke-width="2.4" />
                 <span class="hidden min-[420px]:inline">New {{ DocumentType::from($type)->label() }}</span>
                 <span class="min-[420px]:hidden">New</span>
@@ -38,7 +38,7 @@
             <button type="button" wire:click="setType('{{ $docType->value }}')" role="tab"
                     aria-selected="{{ $isActive ? 'true' : 'false' }}"
                     class="focusable flex h-10 shrink-0 items-center gap-2 rounded-full px-4 text-[13.5px] font-semibold transition-colors
-                           {{ $isActive ? 'bg-brand text-white' : 'border border-border bg-surface text-ink-2 hover:bg-surface-2' }}">
+                           {{ $isActive ? 'bg-fill-brand text-white' : 'border border-border bg-surface text-ink-2 hover:bg-surface-2' }}">
                 {{ $docType->label() }}
                 @if (($typeCounts[$docType->value] ?? 0) > 0)
                     <span class="tnum rounded-full px-1.5 text-[11.5px] {{ $isActive ? 'bg-white/20' : 'bg-surface-2 text-muted' }}">

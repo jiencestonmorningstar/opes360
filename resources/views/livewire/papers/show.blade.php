@@ -84,7 +84,7 @@
 
                 <div class="mt-5 space-y-2.5">
                     <a href="{{ route('papers.print', $paper) }}" target="_blank"
-                       class="focusable flex h-11 w-full items-center justify-center gap-2 rounded-xl bg-brand text-[14px] font-semibold text-white transition-opacity hover:opacity-90">
+                       class="focusable flex h-11 w-full items-center justify-center gap-2 rounded-xl bg-fill-brand text-[14px] font-semibold text-white transition-opacity hover:opacity-90">
                         <x-icon name="printer" class="size-[18px]" stroke-width="2" />
                         Print / PDF
                     </a>
@@ -142,7 +142,7 @@
                             Cancel
                         </button>
                         <button type="button" wire:click="voidPaper"
-                                class="focusable h-11 flex-1 rounded-xl bg-negative text-[14px] font-semibold text-white hover:opacity-90">
+                                class="focusable h-11 flex-1 rounded-xl bg-fill-negative text-[14px] font-semibold text-white hover:opacity-90">
                             Void
                         </button>
                     </div>

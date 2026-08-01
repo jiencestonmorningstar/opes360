@@ -1,27 +1,4 @@
-<!DOCTYPE html>
-<html lang="{{ str_replace('_', '-', app()->getLocale()) }}" class="h-full">
-<head>
-    <meta charset="utf-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-    <title>Sign in · {{ config('opes.brand.name') }}</title>
-    <link rel="manifest" href="{{ url('/manifest.webmanifest') }}">
-
-    <script @cspNonce>
-        (function () {
-            try {
-                var stored = localStorage.getItem('opes-theme');
-                var system = window.matchMedia('(prefers-color-scheme: dark)').matches;
-                document.documentElement.classList.toggle('dark', stored === 'dark' || (stored !== 'light' && system));
-            } catch (e) {}
-        })();
-    </script>
-
-    @vite(['resources/css/app.css', 'resources/js/app.js'])
-</head>
-
-<body class="flex h-full items-center justify-center px-5 py-10">
-<div class="w-full max-w-[400px]">
-
+<x-layouts.public title="Sign in" width="max-w-[400px]">
     <div class="text-center">
         <div class="text-[30px] font-bold leading-none tracking-[-0.02em]">
             <span class="text-ink">{{ config('opes.brand.name_prefix') }}</span><span
@@ -76,7 +53,7 @@
             </div>
 
             <button type="submit"
-                    class="tap focusable mt-2 flex h-12 w-full items-center justify-center rounded-xl bg-brand text-[15px] font-semibold text-white transition-opacity hover:opacity-90">
+                    class="tap focusable mt-2 flex h-12 w-full items-center justify-center rounded-xl bg-fill-brand text-[15px] font-semibold text-white transition-opacity hover:opacity-90">
                 Sign in
             </button>
         </form>
@@ -123,6 +100,4 @@
         Built by <a href="{{ config('opes.brand.vendor_url') }}" class="font-medium text-brand hover:underline">{{ config('opes.brand.vendor') }}</a>
         · <a href="{{ route('admin.login') }}" class="hover:text-ink-2">Platform admin</a>
     </p>
-</div>
-</body>
-</html>
+</x-layouts.public>
