@@ -1,29 +1,28 @@
-# Deploying OPES360 to Namecheap Stellar Plus (cPanel)
+# Deploying OPES360 to Namecheap shared hosting (cPanel)
 
-Written for shared hosting specifically. The generic guide in
-[`DEPLOYMENT.md`](DEPLOYMENT.md) assumes a server you control; this one assumes
-cPanel, no root, and no long-running processes.
+**No SSH. No command line on the server. Everything through cPanel and a browser.**
 
-**Verified:** the full 516-test suite passes against MariaDB 10.11 as well as
-MySQL, so the database difference costs nothing, and all 39 migrations apply
-cleanly to an empty MariaDB schema. The release archive was extracted, migrated
-and served in production mode — every page 200, CSP enforced, no console errors.
+Written for a cPanel account where you have File Manager, MySQL Databases and
+Cron Jobs, and nothing else. If you *do* have SSH and prefer it, the artisan
+commands are in [`DEPLOYMENT.md`](DEPLOYMENT.md) — but none of them are required.
 
-**Not verified:** anything specific to Namecheap's account (their PHP build,
-their limits, their mail server). Those are checked by `opes:doctor` on the
-server, not here.
+**Verified:** the whole of this guide was rehearsed against a real MariaDB 10.11
+in the split `public_html` layout described below — installed through the browser
+installer, every page 200, assets and fonts served, administrator signed in.
+The 521-test suite passes on MariaDB as well as MySQL, and all 39 migrations
+apply cleanly to an empty schema.
 
 ---
 
 ## Before you start
 
-| Requirement | Where | Notes |
+| Requirement | Where in cPanel | Notes |
 |---|---|---|
-| SSH access | cPanel → **SSH Access** | **Required.** Migrations, key generation and cache building all run through `php artisan`. Without a shell there is no safe way to do them. |
-| PHP 8.2, 8.3 or 8.4 | cPanel → **MultiPHP Manager** | Laravel 12 needs 8.2 minimum. |
-| PHP extensions | cPanel → **Select PHP Extensions** | `pdo_mysql`, `mbstring`, `gd`, `bcmath`, `zip`, `fileinfo`, `openssl`, `intl` |
-| A MySQL database | cPanel → **MySQL Databases** | cPanel prefixes names: asking for `opes360` gives you `youruser_opes360`. Use the full prefixed name in `.env`. |
-| An email account | cPanel → **Email Accounts** | e.g. `no-reply@yourdomain.com`. Its SMTP details go in `.env`. |
+| PHP 8.2, 8.3 or 8.4 | **MultiPHP Manager** | Laravel 12 needs 8.2 minimum. |
+| PHP extensions | **Select PHP Extensions** | `pdo_mysql`, `mbstring`, `openssl`, `fileinfo`, `ctype`, `json`. The installer checks these and names anything missing. |
+| A MySQL database | **MySQL Databases** | Create the database, create a user, then **add the user to the database with All Privileges**. cPanel prefixes both names. |
+| An email account | **Email Accounts** | e.g. `no-reply@yourdomain.com`. Its SMTP details go in `.env` at the end. |
+| An SSL certificate | **SSL/TLS Status** | Namecheap issues a free one. The app must be served over `https://`. |
 
 ### One honest caveat about shared hosting
 
@@ -35,235 +34,211 @@ business depends on it.
 
 ---
 
-## 1. Build the release (on your machine, not the server)
+## 1. Build the release, on your own PC
 
-Shared hosting has no Node and unreliable Composer, so both run locally and ship
-inside the archive:
+Shared hosting has no Node and unreliable Composer, so both run on your machine
+and ship inside the archive. From the project folder:
+
+**Windows** (PowerShell, or Laragon's Terminal — it has php, composer and npm on
+PATH):
+
+```powershell
+.\scripts\windows\build-release.ps1
+```
+
+**macOS or Linux:**
 
 ```bash
 ./scripts/build-release.sh
 ```
 
-Produces `build/opes360-YYYYMMDD-HHMM.zip`, about 27 MB. It contains the vendor
-directory and the compiled front-end, and deliberately excludes `.env`, tests
-and `node_modules`. The script fails rather than producing a broken archive if
-the assets did not build or a `.env` crept in.
+Either produces `build/opes360-YYYYMMDD-HHMM.zip`, about 28 MB. It contains the
+vendor directory and the compiled front-end, and refuses to package a `.env`.
+Both scripts put your development dependencies back when they finish.
 
 ---
 
 ## 2. Upload and extract
 
-1. cPanel → **File Manager** → your home directory (*not* `public_html`).
-2. Upload the zip, then **Extract**. You get `~/opes360-YYYYMMDD-HHMM/`.
-3. Rename it to `~/opes360`.
+1. cPanel → **File Manager** → your **home** directory (the one containing
+   `public_html`, *not* `public_html` itself).
+2. **Upload** the zip, then select it and choose **Extract**.
+3. Rename the extracted folder to exactly **`opes360`**.
 
-The application lives **outside** `public_html` on purpose. `.env` holds the key
-that decrypts every stored tax ID; if the app root were web-served, a single
+The application lives outside `public_html` on purpose. `.env` holds the key
+that decrypts every stored tax ID; if the app root were web-served, one
 misconfigured rule would expose it.
 
 ---
 
-## 3. Point the document root at `public/`
+## 3. Move the public folder into place
 
-Over SSH:
+Without SSH there is no symlink, so the contents of the app's `public` folder go
+into `public_html` instead. In File Manager:
 
-```bash
-cd ~
-mv public_html public_html.bak      # keep whatever was there
-ln -s ~/opes360/public public_html
-```
+1. Open `opes360/public`.
+2. **Select all** (including the hidden `.htaccess` — turn on *Show Hidden
+   Files* in File Manager's settings first).
+3. **Move** them to `public_html`.
 
-If symlinks are refused, use the fallback instead — copy the contents of
-`~/opes360/public` into `public_html` and edit its `index.php`, changing the two
-`__DIR__.'/../'` paths to `__DIR__.'/../opes360/'`. The symlink is preferable:
-with the copy, every deploy has to repeat it.
+You do **not** need to edit `index.php`. It works out where the application
+lives, and tells the framework where the public folder ended up.
 
----
-
-## 4. Configure
-
-```bash
-cd ~/opes360
-cp .env.example .env
-php artisan key:generate
-nano .env
-```
-
-```dotenv
-APP_NAME=OPES360
-APP_ENV=production
-APP_DEBUG=false
-APP_URL=https://yourdomain.com
-
-DB_CONNECTION=mysql
-DB_HOST=127.0.0.1
-DB_PORT=3306
-DB_DATABASE=youruser_opes360
-DB_USERNAME=youruser_opes
-DB_PASSWORD=the-password-you-set
-
-# cPanel mail. Port 465 with SSL is the most reliable on Namecheap; 587 with TLS
-# also works. The from-address must be a real mailbox on this domain, or the
-# server will refuse to relay it.
-MAIL_MAILER=smtp
-MAIL_HOST=mail.yourdomain.com
-MAIL_PORT=465
-MAIL_SCHEME=smtps
-MAIL_USERNAME=no-reply@yourdomain.com
-MAIL_PASSWORD=the-mailbox-password
-MAIL_FROM_ADDRESS=no-reply@yourdomain.com
-MAIL_FROM_NAME="${APP_NAME}"
-
-QUEUE_CONNECTION=database
-SESSION_DRIVER=database
-CACHE_STORE=database
-```
-
-**`APP_KEY` is generated once and never changed.** Encrypted tax IDs and 2FA
-secrets are unreadable without the key that wrote them; rotating it destroys them
-silently. Copy it somewhere safe — off this server.
-
-`APP_URL` must be the `https://` address. Every QR code and the service worker
-are built from it, so an `http://` value prints codes that resolve to nothing.
+> If `public_html` already has a default `index.html` or `index.php` from your
+> host, delete it first — otherwise it wins and your site never appears.
 
 ---
 
-## 5. Set it up
+## 4. Install, in your browser
 
-```bash
-cd ~/opes360
+Visit:
 
-php artisan migrate --force
-php artisan opes:install          # reference data + your first administrator
-php artisan storage:link
-
-php artisan config:cache
-php artisan route:cache
-php artisan view:cache
-
-chmod -R 775 storage bootstrap/cache
+```
+https://yourdomain.com/install.php
 ```
 
-**`opes:install` is not optional.** `migrate` creates the tables but leaves them
-empty, and registration assigns the owner role by looking it up — so on a
-migrated-but-unseeded database every business that signs up gets a null role and
-an account that can do nothing. The command seeds roles and permissions, then
-prompts for the email, name and password of your first platform administrator.
+Two short steps:
 
-Do **not** run `php artisan db:seed` on production. The default seeder also
-creates the demo company and a platform admin whose password is `password`.
+1. **Your database** — the name, user and password you created in cPanel. Use
+   the **full prefixed names**: asking for `opes360` gives you
+   `youruser_opes360`. The installer tests the connection before continuing, so
+   a typo shows up here rather than as a blank page later. It writes `.env`,
+   generates the application key, and switches the app into production mode with
+   the demo logins turned off.
+2. **Your administrator** — name, email and a password of at least 12 characters
+   with letters, numbers and a symbol. This step also creates the database
+   tables and the roles the app needs, so give it up to a minute.
 
-The command prompts for the password rather than taking it on the command line,
-so it stays out of your shell history; it insists on at least 12 characters with
-letters, numbers and symbols, and rejects passwords found in known breaches. It
-is safe to re-run — reference data is idempotent, and it asks before touching an
-existing administrator.
+When it finishes, the installer locks itself: visiting it again just says the
+app is already installed. Delete `install.php` from `public_html` afterwards as
+tidying up.
 
-Sign in at `https://yourdomain.com/admin/login` and enrol two-factor
-authentication before you do anything else.
+> **Why the roles matter.** Registration assigns the owner role by looking it
+> up, so on a database with no roles every business that signs up would get an
+> account that can do nothing. The installer seeds them. This is also why you
+> must never run the demo seeder here — it would create a demo company and an
+> administrator whose password is literally `password`.
 
-Then confirm before letting anyone in:
-
-```bash
-php artisan opes:doctor --mail=you@youremail.com
-```
-
-It exits non-zero on anything blocking and sends a real test message. Do not skip
-this — it catches mail still pointed at the log file, debug mode left on, a
-missing storage link, and a queue with no worker, all of which look fine in a
-browser.
+Sign in at `https://yourdomain.com/admin/login` and **turn on two-factor
+authentication straight away**.
 
 ---
 
-## 6. Cron jobs — the part shared hosting gets wrong
+## 5. Cron jobs — the part shared hosting gets wrong
 
-There are no daemons here, so both background jobs run from cron.
-cPanel → **Cron Jobs**. Replace `youruser` and check `which php` for the right
-binary — cPanel often has several and the default is not always the one
-MultiPHP selected.
+There are no daemons here, so background work runs from cron. cPanel → **Cron
+Jobs**. Replace `youruser` with your cPanel username.
 
-**Scheduler** — every minute:
+Set **Common Settings** to *Once Per Minute* for both.
 
-```
-* * * * * cd /home/youruser/opes360 && /usr/local/bin/php artisan schedule:run >> /dev/null 2>&1
-```
-
-**Queue** — every minute:
+**Scheduler:**
 
 ```
-* * * * * cd /home/youruser/opes360 && /usr/local/bin/php artisan queue:work --stop-when-empty --tries=3 --max-time=50 >> /dev/null 2>&1
+cd /home/youruser/opes360 && /usr/local/bin/php artisan schedule:run >> /dev/null 2>&1
+```
+
+**Queue:**
+
+```
+cd /home/youruser/opes360 && /usr/local/bin/php artisan queue:work --stop-when-empty --tries=3 --max-time=50 >> /dev/null 2>&1
 ```
 
 `--stop-when-empty` is what makes this work without a daemon: the process drains
-the queue and exits rather than sitting resident, which shared hosting would kill
-anyway. `--max-time=50` keeps it inside the minute so two runs never overlap.
+the queue and exits rather than sitting resident, which shared hosting would
+kill anyway. `--max-time=50` keeps it inside the minute so two runs never
+overlap.
 
-The cost is latency: a password reset email arrives within a minute rather than
-instantly. That is acceptable. **No queue worker at all is not** — the mail is
-queued, so without cron nobody can ever reset a password and nothing anywhere
-reports an error.
+**If the PHP path is wrong**, the cron mail will say "command not found". cPanel
+often has several PHP binaries and the default is not always the one MultiPHP
+selected — check under **MultiPHP Manager**, or try `/usr/local/bin/ea-php83`.
 
-> If Namecheap limits cron to every 5 minutes on your plan, use `*/5` for both.
-> The scheduler's own jobs are hourly and daily, so nothing is missed; only the
-> mail delay grows.
+**No queue worker means no email.** Account mail is queued, so without this cron
+nobody can ever reset a password, and nothing anywhere reports an error.
+
+> If your plan limits cron to every 5 minutes, use that for both. The
+> scheduler's own jobs are hourly and daily, so nothing is missed; only the mail
+> delay grows.
+
+---
+
+## 6. Email
+
+File Manager → `opes360` → right-click `.env` → **Edit**, and set the SMTP
+details from the email account you created:
+
+```dotenv
+MAIL_MAILER=smtp
+MAIL_HOST=mail.yourdomain.com
+MAIL_PORT=465
+MAIL_USERNAME=no-reply@yourdomain.com
+MAIL_PASSWORD=the-mailbox-password
+MAIL_ENCRYPTION=ssl
+MAIL_FROM_ADDRESS=no-reply@yourdomain.com
+MAIL_FROM_NAME="Your Business"
+```
+
+Publish **SPF and DKIM** for the domain (cPanel → **Email Deliverability**).
+Mail that lands in spam is indistinguishable from mail that was never sent.
+
+After editing `.env`, the cached config must be rebuilt or the change is
+ignored. The scheduler does not do this for you — the simplest way without a
+shell is a **one-off cron job**: add one, set it to every minute, let it run
+once, then delete it:
+
+```
+cd /home/youruser/opes360 && /usr/local/bin/php artisan config:cache >> /dev/null 2>&1
+```
+
+The same trick runs any artisan command you ever need without SSH.
 
 ---
 
 ## 7. Check it works
 
 - Visit `https://yourdomain.com` — the login page loads over HTTPS.
-- Register a business, or sign in if you seeded the demo.
-- Issue an invoice, print it, scan the QR — the verification page says **Verified**.
+- Register a business. If the account can create an invoice, the roles seeded
+  correctly.
+- Issue an invoice, print it, scan the QR — the verification page says
+  **Verified**.
+- Open **Business → Stationery → Business Card**, print one, and scan its QR —
+  it should open your public business profile.
 - Request a password reset and confirm the email **arrives at an external
-  address**, not just your own domain.
-- Install the PWA on a real phone. Then turn the phone's data off, issue an
-  invoice, turn it back on, and confirm it syncs carrying the number it printed.
+  address** (a Gmail account, not your own domain).
+- Install the PWA on a real phone, turn its data off, issue an invoice, then
+  bring it back online and confirm it syncs with the number it printed.
 
 That last one is the whole product working end to end.
 
 ---
 
-## 8. Deploying an update
+## Troubleshooting
 
-```bash
-# On your machine
-./scripts/build-release.sh
+**A blank white page.** Almost always the `.env` or a cache. Add the one-off
+cron trick from §6 running `php artisan optimize:clear`, then reload.
 
-# Upload and extract to ~/opes360-NEW, then on the server:
-cd ~
-cp opes360/.env opes360-NEW/.env
-cp -R opes360/storage/app/public/. opes360-NEW/storage/app/public/
+**"OPES360 could not find its application files."** The app folder is not named
+`opes360`, or is not in your home directory beside `public_html`.
 
-mv opes360 opes360-OLD && mv opes360-NEW opes360
+**500 error after editing `.env`.** A value containing a space or `#` needs
+quoting: `MAIL_FROM_NAME="Your Business"`.
 
-cd opes360
-php artisan migrate --force
-php artisan storage:link
-php artisan config:cache && php artisan route:cache && php artisan view:cache
-chmod -R 775 storage bootstrap/cache
-php artisan opes:doctor
-```
+**The site shows a directory listing or your host's default page.** `public_html`
+still has its original `index.html` — delete it.
 
-Keep `opes360-OLD` until the new release has been used for a day. Rolling back is
-then a `mv` — the fastest recovery you will have on this kind of hosting.
-
-**Uploaded files and the database are not in the archive**, which is the point:
-a bad deploy cannot destroy them. Back both up before migrating anyway.
+**Card QR codes point at the wrong address.** `APP_URL` in `.env` is wrong.
+Fix it, then rebuild the config cache (§6).
 
 ---
 
-## What shared hosting costs you
+## Updating later
 
-Worth knowing up front rather than discovering:
+1. Build a new release on your PC (§1).
+2. Upload and extract it in your home directory.
+3. Copy your existing `.env` from `opes360` into the new folder.
+4. Rename the old folder to `opes360-old`, the new one to `opes360`.
+5. Move the new `public` contents into `public_html`, replacing what is there.
+6. Run a one-off cron (§6) for `php artisan migrate --force`, then another for
+   `php artisan optimize:clear`.
 
-- **Mail is delayed by up to a minute** (or five), because the queue runs from
-  cron rather than a resident worker.
-- **No error tracking.** A 500 appears in `storage/logs/laravel.log` and nowhere
-  else. Check it after deploying.
-- **No zero-downtime deploy.** The `mv` in §8 is a brief interruption. At pilot
-  scale that is fine.
-- **Uploads live on local disk.** Moving to S3 later means setting
-  `FILESYSTEM_DISK=s3` and migrating the existing files.
-- **Resource limits are per-account.** Namecheap counts entry processes and CPU;
-  a Laravel app serving a pilot sits well inside them, but a marketing spike can
-  trip the limit and return 508s. Watch cPanel → **Resource Usage** after launch.
+Keep `opes360-old` until the new one is proven. Rolling back is renaming two
+folders.
