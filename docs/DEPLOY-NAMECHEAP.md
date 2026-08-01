@@ -99,12 +99,18 @@ https://yourdomain.com/install.php
 
 Two short steps:
 
-1. **Your database** — the name, user and password you created in cPanel. Use
-   the **full prefixed names**: asking for `opes360` gives you
-   `youruser_opes360`. The installer tests the connection before continuing, so
-   a typo shows up here rather than as a blank page later. It writes `.env`,
-   generates the application key, and switches the app into production mode with
-   the demo logins turned off.
+1. **Your database and email** — the database name, user and password you
+   created in cPanel, and the mailbox the app should send from. Use the **full
+   prefixed names**: asking for `opes360` gives you `youruser_opes360`. The
+   installer tests the database connection before continuing, so a typo shows
+   up here rather than as a blank page later. It writes `.env`, generates the
+   application key, and switches the app into production mode with the demo
+   logins turned off.
+
+   Entering the mail settings here rather than editing `.env` by hand matters
+   more than it looks: a password containing `#` is silently truncated at that
+   character unless the value is quoted, which then reads as a wrong password
+   with nothing in any log to explain it. The installer quotes correctly.
 2. **Your administrator** — name, email and a password of at least 12 characters
    with letters, numbers and a symbol. This step also creates the database
    tables and the roles the app needs, so give it up to a minute.
@@ -163,22 +169,26 @@ nobody can ever reset a password, and nothing anywhere reports an error.
 
 ## 6. Email
 
-File Manager → `opes360` → right-click `.env` → **Edit**, and set the SMTP
-details from the email account you created:
+The installer already wrote these if you filled in the email fields in §4.
+Publish **SPF and DKIM** for the domain as well (cPanel → **Email
+Deliverability**) — mail that lands in spam is indistinguishable from mail that
+was never sent.
+
+To change the settings later, File Manager → `opes360` → right-click `.env` →
+**Edit**. Keep every password **in double quotes**: unquoted, a value is
+truncated at the first `#`, and the resulting login failure looks exactly like a
+wrong password.
 
 ```dotenv
 MAIL_MAILER=smtp
-MAIL_HOST=mail.yourdomain.com
+MAIL_HOST=yourdomain.com
 MAIL_PORT=465
-MAIL_USERNAME=no-reply@yourdomain.com
-MAIL_PASSWORD=the-mailbox-password
-MAIL_ENCRYPTION=ssl
-MAIL_FROM_ADDRESS=no-reply@yourdomain.com
+MAIL_SCHEME=smtps
+MAIL_USERNAME=notifications@yourdomain.com
+MAIL_PASSWORD="the-mailbox-password"
+MAIL_FROM_ADDRESS=notifications@yourdomain.com
 MAIL_FROM_NAME="Your Business"
 ```
-
-Publish **SPF and DKIM** for the domain (cPanel → **Email Deliverability**).
-Mail that lands in spam is indistinguishable from mail that was never sent.
 
 After editing `.env`, the cached config must be rebuilt or the change is
 ignored. The scheduler does not do this for you — the simplest way without a

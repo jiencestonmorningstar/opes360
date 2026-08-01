@@ -147,6 +147,9 @@ if ($action === 'configure') {
     $dbName = post('db_name');
     $dbUser = post('db_user');
     $dbPass = $_POST['db_pass'] ?? '';
+    $mailHost = post('mail_host');
+    $mailUser = post('mail_user');
+    $mailPass = $_POST['mail_pass'] ?? '';
 
     if ($appUrl === '' || ! preg_match('#^https?://#', $appUrl)) {
         $errors[] = 'The website address must start with http:// or https://.';
@@ -188,6 +191,21 @@ if ($action === 'configure') {
             'CACHE_STORE' => 'database',
             'OPES_DEMO_LOGINS' => 'false',
         ];
+
+        if ($mailHost !== '' && $mailUser !== '') {
+            $values += [
+                'MAIL_MAILER' => 'smtp',
+                'MAIL_HOST' => $mailHost,
+                'MAIL_PORT' => '465',
+                // Port 465 is implicit TLS. Without this the connection is
+                // attempted in the clear and the server simply drops it.
+                'MAIL_SCHEME' => 'smtps',
+                'MAIL_USERNAME' => $mailUser,
+                'MAIL_PASSWORD' => '"'.str_replace('"', '\"', (string) $mailPass).'"',
+                'MAIL_FROM_ADDRESS' => $mailUser,
+                'MAIL_FROM_NAME' => '"'.str_replace('"', '', $appName).'"',
+            ];
+        }
 
         foreach ($values as $k => $v) {
             $template = preg_match("/^{$k}=.*/m", $template)
@@ -307,6 +325,16 @@ if ($stage === 'configure') {
             <input name="db_user" value="'.e(post('db_user')).'" placeholder="youruser_opes" required></label>
           <label>Database password
             <input type="password" name="db_pass"></label>
+
+          <p style="margin-top:22px;font-weight:700;font-size:14px">Email <span style="font-weight:500;color:#64748b">— optional, but password resets do not work without it</span></p>
+          <label>Mail server
+            <input name="mail_host" value="'.e(post('mail_host', $_SERVER['HTTP_HOST'] ?? '')).'" placeholder="yourdomain.com">
+            <span class="hint">From cPanel → Email Accounts → Connect Devices. Port 465 with SSL is used.</span></label>
+          <label>Mailbox address
+            <input type="email" name="mail_user" value="'.e(post('mail_user')).'" placeholder="notifications@yourdomain.com"></label>
+          <label>Mailbox password
+            <input type="password" name="mail_pass"></label>
+
           <button type="submit">Test connection and continue</button>
         </form>', 'Step 1 of 2');
     exit;
