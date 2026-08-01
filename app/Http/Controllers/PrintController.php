@@ -189,7 +189,7 @@ class PrintController extends Controller
             // producing whatever the business currently has chosen. The picker
             // may ask to render a specific design (?design=…) — that overrides
             // this one request only and never saves anything.
-            'cardDesign' => in_array($d = $request->string('design')->toString(), Company::CARD_DESIGNS, true)
+            'cardDesign' => in_array($d = $request->string('design')->toString(), Company::cardDesigns(), true)
                 ? $d
                 : $company->cardDesign(),
             // Embedded on the stationery page: no print bar, sheet scaled to

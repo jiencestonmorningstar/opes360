@@ -5,6 +5,7 @@ namespace Tests\Feature;
 use App\Livewire\Business\Stationery;
 use App\Models\Company;
 use App\Models\User;
+use App\Support\CardCatalog;
 use App\Support\CurrentCompany;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Livewire\Livewire;
@@ -64,6 +65,51 @@ class CardDesignsTest extends TestCase
             // The QR is non-negotiable: every design must stay verifiable.
             $this->assertStringContainsString('<svg', $content, "{$design} card should carry a QR");
         }
+    }
+
+    public function test_each_catalogue_design_prints_both_faces_with_the_qr(): void
+    {
+        foreach (CardCatalog::keys() as $design) {
+            $this->company->update(['card_design' => $design]);
+            app(CurrentCompany::class)->set($this->company->fresh());
+
+            $content = $this->actingAs($this->user)
+                ->get(route('stationery.print', ['asset' => 'card']))
+                ->assertOk()
+                ->assertSee('Acme Ltd')
+                ->getContent();
+
+            $family = CardCatalog::design($design)['family'];
+            if ($family === 'spotlight') {
+                $this->assertStringContainsString('class="sc"', $content, "{$design} front");
+                $this->assertStringContainsString('class="scb"', $content, "{$design} back");
+                $this->assertStringContainsString('Scan to view', $content);
+            }
+            $this->assertStringContainsString('<svg', $content, "{$design} card should carry a QR");
+            // The catalogue back replaces the legacy shared dark back.
+            $this->assertStringNotContainsString('card-inner card-dark', $content);
+        }
+    }
+
+    public function test_the_picker_groups_designs_by_sector_and_recommends_by_industry(): void
+    {
+        // 'Technology' has no catalogue sector yet, so the picker opens on
+        // the universal set.
+        Livewire::actingAs($this->user)
+            ->test(Stationery::class)
+            ->assertSet('cardSector', 'universal')
+            ->call('setCardSector', 'Restaurant & Food')
+            ->assertSet('cardSector', 'Restaurant & Food')
+            ->call('setCardSector', 'nope')
+            ->assertSet('cardSector', 'universal');
+
+        // A restaurant opens straight onto its recommended sector.
+        $this->company->update(['industry' => 'Restaurant']);
+        app(CurrentCompany::class)->set($this->company->fresh());
+
+        Livewire::actingAs($this->user)
+            ->test(Stationery::class)
+            ->assertSet('cardSector', 'Restaurant & Food');
     }
 
     public function test_an_unset_or_unknown_design_prints_the_classic_card(): void

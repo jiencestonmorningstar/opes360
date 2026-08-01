@@ -109,12 +109,32 @@
                     </label>
 
                     {{-- Card design — saved on the company, so the print link picks it up.
-                         Each tile embeds the real print renderer (front face, scaled to
-                         the tile), so what's on the tile IS the template. --}}
+                         Designs are grouped by sector; each tile embeds the real print
+                         renderer (front face, scaled), so the tile IS the template. --}}
+                    @php
+                        $recommendedSector = \App\Support\CardCatalog::sectorFor($company->industry);
+                        $sectorDesigns = $cardSector === 'universal'
+                            ? array_fill_keys(\App\Models\Company::CARD_DESIGNS, null)
+                            : (\App\Support\CardCatalog::bySector()[$cardSector] ?? []);
+                    @endphp
                     <div class="mt-4">
                         <span class="{{ $labelClass }}">Card design</span>
+                        <div class="mb-2 flex flex-wrap gap-1.5">
+                            @foreach (array_merge(['universal'], array_keys(\App\Support\CardCatalog::bySector())) as $sector)
+                                <button type="button" wire:click="setCardSector('{{ $sector }}')" wire:key="card-sector-{{ $sector }}"
+                                        class="focusable rounded-full px-3 py-1.5 text-[12px] font-semibold transition-colors
+                                               {{ $cardSector === $sector ? 'bg-brand text-white' : 'border border-border bg-surface text-ink-2 hover:bg-surface-2' }}">
+                                    {{ $sector === 'universal' ? 'Universal' : $sector }}@if ($sector === $recommendedSector) ★@endif
+                                </button>
+                            @endforeach
+                        </div>
+                        @if ($recommendedSector !== null && $cardSector === $recommendedSector)
+                            <p class="mb-2 text-[12px] font-medium text-brand">
+                                ★ Recommended for your industry ({{ $company->industry }}).
+                            </p>
+                        @endif
                         <div class="grid grid-cols-2 gap-2">
-                            @foreach (\App\Models\Company::CARD_DESIGNS as $design)
+                            @foreach (array_keys($sectorDesigns) as $design)
                                 <button type="button" wire:click="setCardDesign('{{ $design }}')" wire:key="card-design-{{ $design }}"
                                         aria-pressed="{{ $cardDesign === $design ? 'true' : 'false' }}"
                                         class="focusable rounded-xl border p-2 text-left transition-colors
@@ -124,7 +144,9 @@
                                                 class="absolute inset-0 h-full w-full" scrolling="no" tabindex="-1"
                                                 loading="lazy" aria-hidden="true" title=""></iframe>
                                     </span>
-                                    <p class="mt-1.5 text-[12px] font-semibold {{ $cardDesign === $design ? 'text-brand' : 'text-ink-2' }}">{{ ucfirst($design) }}</p>
+                                    <p class="mt-1.5 text-[12px] font-semibold {{ $cardDesign === $design ? 'text-brand' : 'text-ink-2' }}">
+                                        {{ \App\Support\CardCatalog::design($design)['label'] ?? ucfirst($design) }}
+                                    </p>
                                 </button>
                             @endforeach
                         </div>

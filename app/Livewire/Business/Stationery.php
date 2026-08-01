@@ -4,6 +4,7 @@ namespace App\Livewire\Business;
 
 use App\Models\Company;
 use App\Models\VerificationToken;
+use App\Support\CardCatalog;
 use App\Support\CurrentCompany;
 use Illuminate\Contracts\View\View;
 use Illuminate\Foundation\Auth\Access\AuthorizesRequests;
@@ -34,6 +35,9 @@ class Stationery extends Component
 
     public string $cardDesign = 'classic';
 
+    /** Which card-design category is open: 'universal' or a catalogue sector. */
+    public string $cardSector = 'universal';
+
     public string $stampShape = 'circular';
 
     public const ASSETS = [
@@ -59,7 +63,16 @@ class Stationery extends Component
 
         $this->cardName = auth()->user()->name;
         $this->cardTitle = 'Business Owner';
-        $this->cardDesign = app(CurrentCompany::class)->get()?->cardDesign() ?? 'classic';
+
+        $company = app(CurrentCompany::class)->get();
+        $this->cardDesign = $company?->cardDesign() ?? 'classic';
+
+        // Open on the category of the saved design; a company whose industry
+        // matches a catalogue sector starts there instead — the recommendation.
+        $saved = CardCatalog::design($this->cardDesign);
+        $this->cardSector = $saved['sector']
+            ?? CardCatalog::sectorFor($company?->industry)
+            ?? 'universal';
 
         $design = app(CurrentCompany::class)->get()?->letterhead_design;
         $this->letterheadDesign = array_key_exists((string) $design, self::LETTERHEAD_DESIGNS) ? $design : 'rule';
@@ -87,6 +100,13 @@ class Stationery extends Component
         $this->asset = array_key_exists($asset, self::ASSETS) ? $asset : 'letterhead';
     }
 
+    public function setCardSector(string $sector): void
+    {
+        $this->cardSector = $sector === 'universal' || array_key_exists($sector, CardCatalog::bySector())
+            ? $sector
+            : 'universal';
+    }
+
     /**
      * Persisted on the company rather than kept as screen state: the print
      * route reads the design from the record, so a saved print link keeps
@@ -94,7 +114,7 @@ class Stationery extends Component
      */
     public function setCardDesign(string $design): void
     {
-        if (! in_array($design, Company::CARD_DESIGNS, true)) {
+        if (! in_array($design, Company::cardDesigns(), true)) {
             return;
         }
 

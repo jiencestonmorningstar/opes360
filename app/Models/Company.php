@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Support\CardCatalog;
 use Illuminate\Database\Eloquent\Concerns\HasUlids;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -18,16 +19,23 @@ class Company extends Model
     use SoftDeletes;
 
     /**
-     * Business-card designs the stationery module can print.
+     * The universal business-card designs the stationery module can print.
      *
      * The first four are the original set; the six that follow reproduce the
      * premium template sheet (docs/image templates/cards1.png, designs 01-06)
-     * — each with its own front and back.
+     * — each with its own front and back. The industry designs live in
+     * App\Support\CardCatalog; cardDesigns() merges both.
      */
     public const CARD_DESIGNS = [
         'classic', 'bold', 'minimal', 'split',
         'azure', 'onyx', 'jade', 'cyber', 'violet', 'sunrise',
     ];
+
+    /** Every printable card design: the universal set plus the industry catalogue. */
+    public static function cardDesigns(): array
+    {
+        return array_merge(self::CARD_DESIGNS, CardCatalog::keys());
+    }
 
     protected $guarded = ['id'];
 
@@ -175,7 +183,7 @@ class Company extends Model
      */
     public function cardDesign(): string
     {
-        return in_array($this->card_design, self::CARD_DESIGNS, true) ? $this->card_design : 'classic';
+        return in_array($this->card_design, self::cardDesigns(), true) ? $this->card_design : 'classic';
     }
 
     public function initials(): string
