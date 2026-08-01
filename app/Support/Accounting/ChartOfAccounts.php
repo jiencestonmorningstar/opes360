@@ -9,19 +9,22 @@ use App\Models\LedgerAccount;
  * A starter SYSCOHADA chart, and the roles the posting engine looks accounts
  * up by.
  *
- * ── Read this before relying on the numbers ──────────────────────────────
+ * ── Provenance of the numbers ────────────────────────────────────────────
  *
- * These are the standard accounts a small OHADA business uses, at the
- * three-digit level. They are NOT reproduced from the official plan comptable
- * — that document could not be retrieved when this was written — and no
- * four-digit subdivisions are invented here, because guessing a sub-account
- * and printing it on a balance an accountant files is worse than not offering
- * one.
+ * Every account below was cross-checked against independent published
+ * references to the SYSCOHADA révisé plan comptable (the 2017 revision, in
+ * force since 1 January 2018 under the AUDCIF). The official PDF itself could
+ * not be retrieved from this network, so these are corroborated rather than
+ * transcribed from the source document.
  *
- * Treat this as a starting point that an accountant confirms and extends, not
- * as an authority. The chart is per company and editable for exactly that
- * reason, and `verified_at` on the company records whether anyone has actually
- * checked it. Nothing here should reach a tax filing unreviewed.
+ * They agree across sources at the three-digit level, which is the level this
+ * chart works at. SUB_ACCOUNTS below records the four-digit subdivisions the
+ * same references list, as a guide for an accountant subdividing the chart —
+ * they are deliberately not seeded, because which subdivisions a business
+ * actually needs is a decision about that business, not a default.
+ *
+ * It remains a starting point an accountant confirms against their own copy of
+ * the plan comptable. The chart is per company and editable for that reason.
  *
  * ── Why roles ───────────────────────────────────────────────────────────
  *
@@ -43,11 +46,50 @@ class ChartOfAccounts
         'payables' => ['401', 'Fournisseurs'],
         'vat_collected' => ['443', 'État, TVA facturée'],
         'vat_deductible' => ['445', 'État, TVA récupérable'],
+        // Where TVA facturée less TVA récupérable nets out for the monthly
+        // declaration. Seeded so the account exists when an accountant comes
+        // to post the declaration; nothing posts to it automatically, because
+        // when and how to net the two is their call, not the software's.
+        'vat_due' => ['444', 'État, TVA due'],
         'bank' => ['521', 'Banques'],
         'cash' => ['571', 'Caisse'],
         'purchases' => ['601', 'Achats de marchandises'],
         'sales_goods' => ['701', 'Ventes de marchandises'],
         'sales_services' => ['706', 'Services vendus'],
+    ];
+
+    /**
+     * The four-digit subdivisions the published references list for the two
+     * TVA accounts and the two trading accounts. Recorded for an accountant
+     * extending the chart; not seeded, because which of these a business needs
+     * depends on what it sells and where.
+     *
+     * @var array<string, array<string, string>>
+     */
+    public const SUB_ACCOUNTS = [
+        '443' => [
+            '4431' => 'TVA facturée sur ventes',
+            '4432' => 'TVA facturée sur prestations de services',
+            '4433' => 'TVA facturée sur travaux',
+        ],
+        '445' => [
+            '4451' => 'TVA récupérable sur immobilisations',
+            '4452' => 'TVA récupérable sur achats',
+            '4453' => 'TVA récupérable sur transport',
+            '4454' => 'TVA récupérable sur services extérieurs et autres charges',
+        ],
+        '601' => [
+            '6011' => 'Achats de marchandises dans la Région',
+            '6012' => 'Achats de marchandises hors Région',
+        ],
+        '701' => [
+            '7011' => 'Ventes de marchandises dans la Région',
+            '7012' => 'Ventes de marchandises hors Région',
+        ],
+        '706' => [
+            '7061' => 'Services vendus dans la Région',
+            '7062' => 'Services vendus hors Région',
+        ],
     ];
 
     /** The eight SYSCOHADA classes, for grouping a balance or a grand livre. */
@@ -110,6 +152,8 @@ class ChartOfAccounts
     public static function normalBalanceFor(string $number, int $class): string
     {
         if ($class === 4) {
+            // 411 is owed to the business and 445 is tax it can reclaim —
+            // both assets. Everything else in class 4 here is owed by it.
             return in_array($number, ['411', '445'], true) ? 'debit' : 'credit';
         }
 
