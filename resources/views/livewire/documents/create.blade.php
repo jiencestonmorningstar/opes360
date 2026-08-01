@@ -6,6 +6,7 @@
 <div class="px-5 pb-32 lg:px-6 lg:pt-6 lg:pb-8"
      x-data="opesDocumentForm({
         currency: @js($currency),
+        vat: @js($vat),
         docLabel: @js($docType->label()),
         entityType: @js($type),
         canIssueOffline: @js($canIssueOffline),
@@ -309,15 +310,23 @@
                             </tbody>
                         </table>
 
-                        {{-- Totals --}}
+                        {{-- Totals. Split the same way the printed sheet splits
+                             them, so the preview is not quietly a different
+                             document from the one that comes out of the printer. --}}
                         <div class="ml-auto mt-2.5 max-w-[220px]">
                             <div class="flex items-baseline justify-between gap-4 py-0.5 text-[11px]">
-                                <span class="text-muted">Subtotal</span>
-                                <span class="tnum text-ink-2" x-text="format(total)"></span>
+                                <span class="text-muted" x-text="vat.registered ? 'Total HT' : 'Subtotal'"></span>
+                                <span class="tnum text-ink-2" x-text="format(totals.subtotal)"></span>
                             </div>
+                            <template x-if="vat.registered">
+                                <div class="flex items-baseline justify-between gap-4 py-0.5 text-[11px]">
+                                    <span class="text-muted" x-text="`TVA ${vat.rate}%`"></span>
+                                    <span class="tnum text-ink-2" x-text="format(totals.tax)"></span>
+                                </div>
+                            </template>
                             <div class="mt-1 flex items-baseline justify-between gap-4 border-t-2 border-ink pt-1.5 text-[12.5px] font-extrabold text-ink">
-                                <span>Total</span>
-                                <span class="tnum" x-text="format(total)"></span>
+                                <span x-text="vat.registered ? 'Total TTC' : 'Total'"></span>
+                                <span class="tnum" x-text="format(totals.total)"></span>
                             </div>
                         </div>
 

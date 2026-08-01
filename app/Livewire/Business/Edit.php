@@ -2,12 +2,14 @@
 
 namespace App\Livewire\Business;
 
+use App\Enums\TaxRegime;
 use App\Models\Company;
 use App\Models\CompanyReview;
 use App\Models\VerificationToken;
 use App\Support\CurrentCompany;
 use Illuminate\Contracts\View\View;
 use Illuminate\Foundation\Auth\Access\AuthorizesRequests;
+use Illuminate\Validation\Rule;
 use Livewire\Component;
 use Livewire\WithFileUploads;
 
@@ -64,6 +66,12 @@ class Edit extends Component
             'registration_number' => $company->registration_number,
             'tax_id' => $company->tax_id,
             'vat_number' => $company->vat_number,
+            'tax_regime' => $company->tax_regime,
+            'tax_centre' => $company->tax_centre,
+            'capital_social' => $company->capital_social,
+            'vat_registered' => (bool) $company->vat_registered,
+            'vat_rate' => (string) ($company->vat_rate ?: '19.25'),
+            'prices_include_tax' => (bool) $company->prices_include_tax,
             'email' => $company->email,
             'website' => $company->website,
             'phone1' => data_get($company->phones, 0),
@@ -94,6 +102,12 @@ class Edit extends Component
             'form.website' => ['nullable', 'string', 'max:160'],
             'form.currency' => ['required', 'in:'.implode(',', config('opes.currencies'))],
             'form.country' => ['nullable', 'string', 'max:2'],
+            'form.tax_regime' => ['nullable', Rule::enum(TaxRegime::class)],
+            'form.tax_centre' => ['nullable', 'string', 'max:120'],
+            'form.capital_social' => ['nullable', 'numeric', 'min:0'],
+            // Capped well above any real rate: a typo of 1925 for 19.25 would
+            // otherwise multiply every invoice in the business by twenty.
+            'form.vat_rate' => ['nullable', 'numeric', 'min:0', 'max:100'],
             'logoUpload' => ['nullable', 'image', 'max:4096'],
         ]);
 
@@ -115,6 +129,12 @@ class Edit extends Component
                 ? hash('sha256', preg_replace('/\W+/', '', $this->form['tax_id']))
                 : null,
             'vat_number' => $this->form['vat_number'] ?: null,
+            'tax_regime' => $this->form['tax_regime'] ?: null,
+            'tax_centre' => $this->form['tax_centre'] ?: null,
+            'capital_social' => $this->form['capital_social'] !== '' ? $this->form['capital_social'] : null,
+            'vat_registered' => (bool) $this->form['vat_registered'],
+            'vat_rate' => $this->form['vat_rate'] !== '' ? $this->form['vat_rate'] : 19.25,
+            'prices_include_tax' => (bool) $this->form['prices_include_tax'],
             'email' => $this->form['email'] ?: null,
             'website' => $this->form['website'] ?: null,
             'phones' => array_values(array_filter([$this->form['phone1'], $this->form['phone2']])),

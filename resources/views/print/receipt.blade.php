@@ -47,6 +47,17 @@
         <div class="muted">
             {{ implode(' · ', array_filter([data_get($company->phones, 0), $company->email])) }}
         </div>
+        {{-- A till receipt is a fiscal document too, and the NIU is the mention
+             an inspector looks for first. Kept to one compact line: thermal
+             paper is 58mm wide and every line costs roll. --}}
+        @if ($company->tax_id || $company->registration_number)
+            <div class="muted">
+                {{ implode(' · ', array_filter([
+                    $company->tax_id ? 'NIU '.$company->tax_id : null,
+                    $company->registration_number ? 'RCCM '.$company->registration_number : null,
+                ])) }}
+            </div>
+        @endif
     </div>
 
     <div class="rule"></div>
@@ -69,6 +80,27 @@
     <div class="rule"></div>
 
     <div class="row big"><span>PAID</span><span>{{ Money::format($receipt->total, $receipt->currency) }}</span></div>
+
+    @if ($company->vat_registered)
+        {{-- The amount paid is TTC, so the TVA inside it is shown rather than
+             added: a customer cannot reclaim tax that the receipt never names. --}}
+        @php
+            $receiptVat = \App\Support\Vat::compute(
+                [['quantity' => 1, 'unit_price' => $receipt->total]],
+                (float) $company->vat_rate,
+                true,
+                true,
+                $receipt->currency,
+            );
+        @endphp
+        <div class="row"><span>Total HT</span><span>{{ Money::format($receiptVat['subtotal'], $receipt->currency) }}</span></div>
+        <div class="row">
+            <span>dont TVA {{ rtrim(rtrim(number_format((float) $company->vat_rate, 2, '.', ''), '0'), '.') }}%</span>
+            <span>{{ Money::format($receiptVat['tax_total'], $receipt->currency) }}</span>
+        </div>
+    @else
+        <div class="center muted" style="margin-top:4px">{{ \App\Support\Vat::exemptionNotice($company) }}</div>
+    @endif
 
     <div class="rule"></div>
 

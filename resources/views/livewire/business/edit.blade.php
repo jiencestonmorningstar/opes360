@@ -91,11 +91,11 @@
             <x-ui.panel title="Registration & Tax">
                 <div class="grid gap-4 min-[560px]:grid-cols-3">
                     <label>
-                        <span class="{{ $labelClass }}">Registration no.</span>
+                        <span class="{{ $labelClass }}">RCCM / Registration no.</span>
                         <input type="text" wire:model="form.registration_number" class="{{ $inputClass }}">
                     </label>
                     <label>
-                        <span class="{{ $labelClass }}">Tax ID</span>
+                        <span class="{{ $labelClass }}">NIU / Tax ID</span>
                         <input type="text" wire:model="form.tax_id" class="{{ $inputClass }}">
                     </label>
                     <label>
@@ -103,6 +103,70 @@
                         <input type="text" wire:model="form.vat_number" class="{{ $inputClass }}">
                     </label>
                 </div>
+
+                <div class="mt-4 grid gap-4 min-[560px]:grid-cols-3">
+                    <label>
+                        <span class="{{ $labelClass }}">Tax regime</span>
+                        <select wire:model.live="form.tax_regime" class="{{ $inputClass }}">
+                            <option value="">Not set</option>
+                            @foreach (\App\Enums\TaxRegime::all() as $regime)
+                                <option value="{{ $regime->value }}">{{ $regime->label() }} — {{ $regime->turnoverBand() }}</option>
+                            @endforeach
+                        </select>
+                    </label>
+                    <label>
+                        <span class="{{ $labelClass }}">Tax centre</span>
+                        <input type="text" wire:model="form.tax_centre" placeholder="Centre des impôts" class="{{ $inputClass }}">
+                        @error('form.tax_centre') <p class="mt-1 text-[12.5px] font-medium text-warning">{{ $message }}</p> @enderror
+                    </label>
+                    <label>
+                        <span class="{{ $labelClass }}">Share capital</span>
+                        <input type="number" step="any" min="0" inputmode="decimal" wire:model="form.capital_social" class="{{ $inputClass }}">
+                        @error('form.capital_social') <p class="mt-1 text-[12.5px] font-medium text-warning">{{ $message }}</p> @enderror
+                    </label>
+                </div>
+
+                {{-- VAT. Only the régime du réel collects it, so the toggle is
+                     kept separate from the regime rather than derived from it —
+                     a business can sit between regimes or hold an exemption,
+                     and invoicing VAT you are not registered for is an offence. --}}
+                <div class="mt-4 rounded-xl border border-border p-4">
+                    <label class="flex items-start gap-3">
+                        <input type="checkbox" wire:model.live="form.vat_registered"
+                               class="mt-0.5 size-[18px] shrink-0 rounded border-border text-brand focus:ring-brand/30">
+                        <span>
+                            <span class="block text-[14px] font-semibold text-ink">This business is registered for VAT</span>
+                            <span class="block text-[12.5px] text-muted">
+                                In Cameroon only the régime du réel collects TVA, above 50M FCFA turnover.
+                                Leave this off and documents carry a “TVA non applicable” mention instead.
+                            </span>
+                        </span>
+                    </label>
+
+                    @if ($form['vat_registered'] ?? false)
+                        <div class="mt-4 grid gap-4 min-[560px]:grid-cols-2">
+                            <label>
+                                <span class="{{ $labelClass }}">VAT rate (%)</span>
+                                <input type="number" step="any" min="0" max="100" inputmode="decimal"
+                                       wire:model="form.vat_rate" class="{{ $inputClass }}">
+                                <span class="mt-1 block text-[12px] text-muted">Cameroon: 19.25 (17.5% TVA + 10% CAC).</span>
+                                @error('form.vat_rate') <p class="mt-1 text-[12.5px] font-medium text-warning">{{ $message }}</p> @enderror
+                            </label>
+                            <label class="flex items-start gap-3 pt-6">
+                                <input type="checkbox" wire:model="form.prices_include_tax"
+                                       class="mt-0.5 size-[18px] shrink-0 rounded border-border text-brand focus:ring-brand/30">
+                                <span>
+                                    <span class="block text-[14px] font-semibold text-ink">Prices already include VAT</span>
+                                    <span class="block text-[12.5px] text-muted">
+                                        Tick this if you key the shelf price. VAT is then taken out of it
+                                        rather than added on top.
+                                    </span>
+                                </span>
+                            </label>
+                        </div>
+                    @endif
+                </div>
+
                 <p class="mt-3 text-[12.5px] text-muted">Tax identifiers are encrypted at rest and never shown on your public page.</p>
             </x-ui.panel>
 

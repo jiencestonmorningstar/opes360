@@ -224,6 +224,16 @@ class Create extends Component
         return view('livewire.documents.create', [
             'docType' => $docType,
             'currency' => $company?->currency ?? 'USD',
+            // The composer computes its own totals so it works with no signal,
+            // and an offline-issued invoice is still handed to a customer — so
+            // the client needs the same tax settings the server applies, or the
+            // two paths produce different documents for the same input.
+            'vat' => [
+                'rate' => (float) ($company?->vat_rate ?? 0),
+                'registered' => (bool) $company?->vat_registered,
+                'inclusive' => (bool) $company?->prices_include_tax,
+                'decimals' => Vat::decimalsFor($company?->currency),
+            ],
             // The preview's letterhead. Injected once at render — the sheet's
             // header never changes while typing, so it costs no round trips
             // and the preview keeps working offline.

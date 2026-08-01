@@ -11,6 +11,7 @@ import { money } from '../support/money.js';
 export default function documentForm(config) {
     return {
         currency: config.currency,
+        vat: config.vat,
         docLabel: config.docLabel,
         entityType: config.entityType,
         canIssueOffline: config.canIssueOffline,
@@ -98,8 +99,52 @@ export default function documentForm(config) {
             return (parseFloat(line.quantity) || 0) * (parseFloat(line.unit_price) || 0);
         },
 
+        /**
+         * Mirrors App\Support\Vat, including its rounding order — per line
+         * first, then summed — so the preview, an offline save and the server
+         * all reach the same figure. An invoice issued with no signal is still
+         * handed to a customer, and one carrying no TVA when the business
+         * charges TVA is not a document anyone can file.
+         */
+        taxedLines() {
+            const rate = parseFloat(this.vat.rate) || 0;
+            const applies = this.vat.registered && rate > 0;
+            const factor = 10 ** this.vat.decimals;
+            const round = (n) => Math.round(n * factor) / factor;
+
+            return this.lines.map((line) => {
+                const amount = (parseFloat(line.quantity) || 0) * (parseFloat(line.unit_price) || 0);
+
+                if (! applies) {
+                    const net = round(amount);
+
+                    return { net, tax: 0, gross: net };
+                }
+
+                if (this.vat.inclusive) {
+                    const gross = round(amount);
+                    const net = round(gross / (1 + rate / 100));
+
+                    return { net, tax: round(gross - net), gross };
+                }
+
+                const net = round(amount);
+                const tax = round(net * rate / 100);
+
+                return { net, tax, gross: round(net + tax) };
+            });
+        },
+
+        get totals() {
+            const factor = 10 ** this.vat.decimals;
+            const taxed = this.taxedLines();
+            const sum = (key) => Math.round(taxed.reduce((s, l) => s + l[key], 0) * factor) / factor;
+
+            return { subtotal: sum('net'), tax: sum('tax'), total: sum('gross') };
+        },
+
         get total() {
-            return this.lines.reduce((sum, line) => sum + this.lineTotal(line), 0);
+            return this.totals.total;
         },
 
         format(amount) {
@@ -333,11 +378,16 @@ export default function documentForm(config) {
                 quantity: parseFloat(line.quantity),
                 unit: 'unit',
                 unit_price: parseFloat(line.unit_price),
-                line_total: Math.round(this.lineTotal(line) * 100) / 100,
+                // Net of tax, matching what the server stores, so a document
+                // that syncs later does not disagree with the one printed at
+                // the counter.
+                tax_amount: this.taxedLines()[index]?.tax ?? 0,
+                line_total: this.taxedLines()[index]?.net ?? 0,
                 sort_order: index,
             }));
 
-            const subtotal = Math.round(lines.reduce((sum, line) => sum + line.line_total, 0) * 100) / 100;
+            const totals = this.totals;
+            const subtotal = totals.subtotal;
 
             const record = await sync.writer.create(
                 'document',
@@ -349,9 +399,10 @@ export default function documentForm(config) {
                     due_date: this.dueDate || null,
                     currency: this.currency,
                     subtotal,
-                    total: subtotal,
+                    tax_total: totals.tax,
+                    total: totals.total,
                     amount_paid: 0,
-                    balance: subtotal,
+                    balance: totals.total,
                     notes: this.notes || null,
                 },
                 { lines, assigned_number: number },
@@ -359,7 +410,7 @@ export default function documentForm(config) {
 
             this.savedOffline = {
                 number,
-                total: this.format(subtotal),
+                total: this.format(totals.total),
                 customer: this.contact?.name ?? 'Customer',
                 id: record.id,
             };

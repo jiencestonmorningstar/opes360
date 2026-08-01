@@ -86,8 +86,25 @@
                 ])) }}<br>
                 {{ implode(' · ', array_filter([data_get($company->phones, 0), $company->email, $company->website])) }}
             </div>
+            {{-- The fiscal identity a DGI-acceptable invoice has to state. The
+                 NIU is the mention most closely checked: without the supplier's,
+                 a customer cannot deduct the TVA they were charged. --}}
             @if ($company->registration_number)
-                <div class="muted small">Reg. {{ $company->registration_number }}</div>
+                <div class="muted small">RCCM {{ $company->registration_number }}</div>
+            @endif
+            @if ($company->tax_id)
+                <div class="muted small">NIU {{ $company->tax_id }}</div>
+            @endif
+            @if ($company->tax_regime || $company->tax_centre)
+                <div class="muted small">
+                    {{ implode(' · ', array_filter([
+                        \App\Enums\TaxRegime::tryFrom((string) $company->tax_regime)?->label(),
+                        $company->tax_centre ? 'CDI '.$company->tax_centre : null,
+                    ])) }}
+                </div>
+            @endif
+            @if ($company->capital_social)
+                <div class="muted small">Capital social {{ Money::format($company->capital_social, $company->currency, false) }}</div>
             @endif
         </div>
         <div>
@@ -107,6 +124,11 @@
             <div class="muted small">
                 {{ implode(' · ', array_filter([$document->contact?->email, data_get($document->contact?->phones, 0)])) }}
             </div>
+            @if ($document->contact?->tax_id)
+                {{-- A business buyer needs its own NIU on the invoice to deduct
+                     the TVA it was charged. --}}
+                <div class="muted small">NIU {{ $document->contact->tax_id }}</div>
+            @endif
         </div>
         <div style="text-align:right">
             <div class="label">Status</div>
@@ -136,18 +158,39 @@
     </table>
 
     <div class="totals">
-        <div class="row"><span class="muted">Subtotal</span><span class="num">{{ Money::format($document->subtotal, $document->currency) }}</span></div>
+        <div class="row"><span class="muted">Total HT</span><span class="num">{{ Money::format($document->subtotal, $document->currency) }}</span></div>
         @if ((float) $document->discount_total > 0)
-            <div class="row"><span class="muted">Discount</span><span class="num">−{{ Money::format($document->discount_total, $document->currency) }}</span></div>
+            <div class="row"><span class="muted">Remise</span><span class="num">−{{ Money::format($document->discount_total, $document->currency) }}</span></div>
         @endif
-        @if ((float) $document->tax_total > 0)
-            <div class="row"><span class="muted">Tax</span><span class="num">{{ Money::format($document->tax_total, $document->currency) }}</span></div>
+        @if ($company->vat_registered)
+            <div class="row">
+                <span class="muted">TVA {{ rtrim(rtrim(number_format((float) $company->vat_rate, 2, '.', ''), '0'), '.') }}%</span>
+                <span class="num">{{ Money::format($document->tax_total, $document->currency) }}</span>
+            </div>
         @endif
-        <div class="row grand"><span>Total</span><span class="num">{{ Money::format($document->total, $document->currency) }}</span></div>
+        <div class="row grand">
+            <span>{{ $company->vat_registered ? 'Total TTC' : 'Total' }}</span>
+            <span class="num">{{ Money::format($document->total, $document->currency) }}</span>
+        </div>
         @if ((float) $document->amount_paid > 0)
             <div class="row"><span class="muted">Paid</span><span class="num">−{{ Money::format($document->amount_paid, $document->currency) }}</span></div>
             <div class="row" style="font-weight:700"><span>Balance due</span><span class="num">{{ Money::format($document->balance, $document->currency) }}</span></div>
         @endif
+    </div>
+
+    {{-- Arrêté en toutes lettres. The point is tamper evidence: changing a
+         digit is easy, changing the digits and the sentence that agrees with
+         them is not. --}}
+    <div style="margin-top:16px; clear:both">
+        <div class="small">
+            Arrêtée la présente {{ strtolower($document->type->label()) }} à la somme de
+            <strong>{{ \App\Support\AmountInWords::forCurrency((float) $document->total, $document->currency) }}</strong>.
+        </div>
+        @unless ($company->vat_registered)
+            {{-- Silence would read like a forgotten tax line rather than a
+                 business that does not charge one. --}}
+            <div class="muted small" style="margin-top:4px">{{ \App\Support\Vat::exemptionNotice($company) }}</div>
+        @endunless
     </div>
 
     @if ($document->notes)
