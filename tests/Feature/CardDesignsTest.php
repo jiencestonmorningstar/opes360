@@ -82,7 +82,8 @@ class CardDesignsTest extends TestCase
             $design_config = CardCatalog::design($design);
             if ($design_config['family'] === 'spotlight') {
                 $variant = $design_config['variant'] ?? 'spot';
-                $this->assertStringContainsString('class="sc sc--'.$variant.'"', $content, "{$design} front");
+                // No closing quote: dark/solid faces append modifier classes.
+                $this->assertStringContainsString('class="sc sc--'.$variant, $content, "{$design} front");
                 $this->assertStringContainsString('class="scb scb--'.$variant.'"', $content, "{$design} back");
                 $this->assertStringContainsString('Scan to', $content);
             }
