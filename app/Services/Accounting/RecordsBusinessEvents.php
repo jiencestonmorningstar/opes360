@@ -55,8 +55,11 @@ class RecordsBusinessEvents
 
         $lines = [
             ['account' => 'receivables', 'debit' => $gross, 'narration' => $document->contact?->displayName()],
-            ['account' => 'sales_goods', 'credit' => $net],
         ];
+
+        foreach ($this->revenueByAccount($document, $net) as $role => $amount) {
+            $lines[] = ['account' => $role, 'credit' => $amount];
+        }
 
         if ($tax > 0) {
             $lines[] = ['account' => 'vat_collected', 'credit' => $tax];
@@ -72,6 +75,64 @@ class RecordsBusinessEvents
             reference: $document->number,
             actor: $actor,
         );
+    }
+
+    /**
+     * Splits a document's net across revenue accounts.
+     *
+     * A line that points at a catalogue item knows whether it sold a thing or
+     * an hour, so it books itself: services to 706, goods to 701. A line typed
+     * freehand — which the composer allows and most people use — knows nothing,
+     * and falls back to whatever the business says it mostly sells.
+     *
+     * Rounding is settled against the total rather than accumulated: the last
+     * account absorbs the difference, so the credits always sum to exactly the
+     * net the invoice shows and the entry cannot fail to balance over a franc.
+     *
+     * @return array<string, float> role => amount
+     */
+    protected function revenueByAccount(Document $document, float $net): array
+    {
+        $default = in_array($document->company?->default_sales_account, ['sales_goods', 'sales_services'], true)
+            ? $document->company->default_sales_account
+            : 'sales_goods';
+
+        $document->loadMissing('lines.item');
+
+        $lines = $document->lines;
+
+        if ($lines->isEmpty()) {
+            return [$default => $net];
+        }
+
+        $split = [];
+
+        foreach ($lines as $line) {
+            $role = match ($line->item?->type) {
+                'service' => 'sales_services',
+                'product' => 'sales_goods',
+                default => $default,
+            };
+
+            $split[$role] = round(($split[$role] ?? 0) + (float) $line->line_total, 2);
+        }
+
+        $split = array_filter($split, fn (float $amount) => $amount != 0.0);
+
+        if ($split === []) {
+            return [$default => $net];
+        }
+
+        // Reconcile to the document's own net. Line totals are already rounded
+        // individually, and the invoice total is what the customer was shown.
+        $drift = round($net - array_sum($split), 2);
+
+        if ($drift != 0.0) {
+            $last = array_key_last($split);
+            $split[$last] = round($split[$last] + $drift, 2);
+        }
+
+        return $split;
     }
 
     /**

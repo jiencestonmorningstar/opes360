@@ -167,6 +167,25 @@
                     @endif
                 </div>
 
+                {{-- Which revenue account a sale lands in. Most invoice lines are
+                     typed freehand rather than picked from the catalogue, so
+                     there is nothing on the line to tell goods from services —
+                     without this a consultancy books all its income as the sale
+                     of goods it never sold. Lines that *do* point at a catalogue
+                     item follow that item and ignore this. --}}
+                <label class="mt-4 block">
+                    <span class="{{ $labelClass }}">What this business mainly sells</span>
+                    <select wire:model="form.default_sales_account" class="{{ $inputClass }}">
+                        <option value="sales_goods">Goods — revenue posts to 701 Ventes de marchandises</option>
+                        <option value="sales_services">Services — revenue posts to 706 Services vendus</option>
+                    </select>
+                    <span class="mt-1 block text-[12px] text-muted">
+                        Used for invoice lines typed by hand. Lines added from your product list
+                        follow the product's own type.
+                    </span>
+                    @error('form.default_sales_account') <p class="mt-1 text-[12.5px] font-medium text-warning">{{ $message }}</p> @enderror
+                </label>
+
                 <p class="mt-3 text-[12.5px] text-muted">Tax identifiers are encrypted at rest and never shown on your public page.</p>
             </x-ui.panel>
 

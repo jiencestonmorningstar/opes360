@@ -72,6 +72,7 @@ class Edit extends Component
             'vat_registered' => (bool) $company->vat_registered,
             'vat_rate' => (string) ($company->vat_rate ?: '19.25'),
             'prices_include_tax' => (bool) $company->prices_include_tax,
+            'default_sales_account' => $company->default_sales_account ?: 'sales_goods',
             'email' => $company->email,
             'website' => $company->website,
             'phone1' => data_get($company->phones, 0),
@@ -108,6 +109,7 @@ class Edit extends Component
             // Capped well above any real rate: a typo of 1925 for 19.25 would
             // otherwise multiply every invoice in the business by twenty.
             'form.vat_rate' => ['nullable', 'numeric', 'min:0', 'max:100'],
+            'form.default_sales_account' => ['required', 'in:sales_goods,sales_services'],
             'logoUpload' => ['nullable', 'image', 'max:4096'],
         ]);
 
@@ -135,6 +137,7 @@ class Edit extends Component
             'vat_registered' => (bool) $this->form['vat_registered'],
             'vat_rate' => $this->form['vat_rate'] !== '' ? $this->form['vat_rate'] : 19.25,
             'prices_include_tax' => (bool) $this->form['prices_include_tax'],
+            'default_sales_account' => $this->form['default_sales_account'],
             'email' => $this->form['email'] ?: null,
             'website' => $this->form['website'] ?: null,
             'phones' => array_values(array_filter([$this->form['phone1'], $this->form['phone2']])),

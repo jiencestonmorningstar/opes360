@@ -8,11 +8,14 @@ use App\Livewire\Documents\Create;
 use App\Models\Company;
 use App\Models\Contact;
 use App\Models\Document;
+use App\Models\Item;
 use App\Models\JournalEntry;
+use App\Models\JournalLine;
 use App\Models\LedgerAccount;
 use App\Models\Role;
 use App\Models\User;
 use App\Services\Accounting\Ledger;
+use App\Services\Accounting\RecordsBusinessEvents;
 use App\Services\PaymentRecorder;
 use App\Support\Accounting\ChartOfAccounts;
 use App\Support\CurrentCompany;
@@ -213,7 +216,7 @@ class LedgerTest extends TestCase
 
         // A retry — a replayed sync envelope, a duplicated webhook — must not
         // double the books.
-        $events = app(\App\Services\Accounting\RecordsBusinessEvents::class);
+        $events = app(RecordsBusinessEvents::class);
         $events->recordIssuedDocument($document->fresh(), $this->company, $this->user);
         $events->recordIssuedDocument($document->fresh(), $this->company, $this->user);
 
@@ -240,8 +243,8 @@ class LedgerTest extends TestCase
         app(PaymentRecorder::class)->record($document, $this->user, 50000, PaymentMethod::Cash);
 
         $this->assertSame(
-            round((float) \App\Models\JournalLine::sum('debit'), 2),
-            round((float) \App\Models\JournalLine::sum('credit'), 2),
+            round((float) JournalLine::sum('debit'), 2),
+            round((float) JournalLine::sum('credit'), 2),
         );
     }
 
@@ -272,6 +275,121 @@ class LedgerTest extends TestCase
         // Bookkeeping is never the reason a sale fails.
         $this->assertNotNull($document->number);
         $this->assertSame(0, JournalEntry::count());
+    }
+
+    /*
+     * Revenue used to go to 701 Ventes de marchandises regardless, which books
+     * a consultancy's entire income as the sale of goods it never sold.
+     */
+
+    public function test_a_services_business_books_revenue_to_services_sold(): void
+    {
+        $this->company->forceFill(['default_sales_account' => 'sales_services'])->save();
+        app(CurrentCompany::class)->set($this->company->fresh());
+
+        $document = $this->issueInvoice(100000);
+        $entry = JournalEntry::with('lines.account')->where('source_id', $document->id)->firstOrFail();
+
+        $numbers = $entry->lines->map(fn ($l) => $l->account->number)->all();
+
+        $this->assertContains('706', $numbers);
+        $this->assertNotContains('701', $numbers);
+        $this->assertTrue($entry->isBalanced());
+    }
+
+    public function test_a_goods_business_still_books_revenue_to_merchandise(): void
+    {
+        $document = $this->issueInvoice(100000);
+        $entry = JournalEntry::with('lines.account')->where('source_id', $document->id)->firstOrFail();
+
+        $this->assertContains('701', $entry->lines->map(fn ($l) => $l->account->number)->all());
+    }
+
+    public function test_a_line_from_the_catalogue_follows_the_item_not_the_default(): void
+    {
+        // The business mostly sells goods, but this line is a catalogued service.
+        $service = Item::create([
+            'name' => 'Installation', 'type' => 'service', 'price' => 40000,
+        ]);
+
+        $document = $this->issueInvoice(60000);
+        $document->lines()->first()->forceFill(['item_id' => $service->id])->save();
+
+        // Re-post from scratch now the line points at a catalogued service.
+        JournalEntry::where('source_id', $document->id)->delete();
+        app(RecordsBusinessEvents::class)
+            ->recordIssuedDocument($document->fresh(), $this->company, $this->user);
+
+        $entry = JournalEntry::with('lines.account')->where('source_id', $document->id)->firstOrFail();
+        $numbers = $entry->lines->map(fn ($l) => $l->account->number)->all();
+
+        $this->assertContains('706', $numbers);
+        $this->assertNotContains('701', $numbers);
+    }
+
+    public function test_a_mixed_invoice_splits_across_both_revenue_accounts(): void
+    {
+        $goods = Item::create(['name' => 'Router', 'type' => 'product', 'price' => 30000]);
+        $service = Item::create(['name' => 'Setup', 'type' => 'service', 'price' => 20000]);
+
+        $this->returned(Livewire::actingAs($this->user)
+            ->test(Create::class, ['type' => 'invoice'])
+            ->call('save', [
+                'contact_id' => $this->contact->id,
+                'issue_date' => now()->toDateString(),
+                'due_date' => null,
+                'notes' => '',
+                'lines' => [
+                    ['description' => 'Router', 'quantity' => '1', 'unit_price' => '30000'],
+                    ['description' => 'Setup', 'quantity' => '1', 'unit_price' => '20000'],
+                ],
+            ], true));
+
+        $document = Document::latest()->firstOrFail();
+        $document->lines()->orderBy('sort_order')->get()
+            ->each(fn ($l, $i) => $l->forceFill(['item_id' => $i === 0 ? $goods->id : $service->id])->save());
+
+        JournalEntry::where('source_id', $document->id)->delete();
+        app(RecordsBusinessEvents::class)
+            ->recordIssuedDocument($document->fresh(), $this->company, $this->user);
+
+        $entry = JournalEntry::with('lines.account')->where('source_id', $document->id)->firstOrFail();
+        $byAccount = $entry->lines->mapWithKeys(fn ($l) => [$l->account->number => (float) $l->credit]);
+
+        $this->assertSame(30000.0, $byAccount['701']);
+        $this->assertSame(20000.0, $byAccount['706']);
+        // The split must still add back to the net the invoice showed.
+        $this->assertTrue($entry->isBalanced());
+    }
+
+    public function test_the_revenue_split_always_adds_back_to_the_documents_net(): void
+    {
+        // Amounts chosen so the per-line rounding does not land evenly.
+        foreach ([[3333, 1], [999, 7], [12345, 3]] as [$price, $qty]) {
+            $this->returned(Livewire::actingAs($this->user)
+                ->test(Create::class, ['type' => 'invoice'])
+                ->call('save', [
+                    'contact_id' => $this->contact->id,
+                    'issue_date' => now()->toDateString(),
+                    'due_date' => null,
+                    'notes' => '',
+                    'lines' => [['description' => 'X', 'quantity' => (string) $qty, 'unit_price' => (string) $price]],
+                ], true));
+
+            $document = Document::latest()->firstOrFail();
+            $entry = JournalEntry::with('lines.account')->where('source_id', $document->id)->firstOrFail();
+
+            $revenue = $entry->lines
+                ->filter(fn ($l) => in_array($l->account->number, ['701', '706'], true))
+                ->sum(fn ($l) => (float) $l->credit);
+
+            $this->assertSame(
+                round((float) $document->subtotal, 2),
+                round($revenue, 2),
+                "Revenue did not add back to the net for {$qty} x {$price}.",
+            );
+            $this->assertTrue($entry->isBalanced());
+        }
     }
 
     protected function issueInvoice(float $amount): Document
