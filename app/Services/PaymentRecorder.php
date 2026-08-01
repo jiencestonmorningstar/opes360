@@ -12,6 +12,8 @@ use App\Models\Receipt;
 use App\Models\User;
 use App\Models\VerificationToken;
 use App\Notifications\PaymentReceivedNotification;
+use App\Services\Accounting\RecordsBusinessEvents;
+use App\Support\CurrentCompany;
 use App\Support\NotifyCompany;
 use Illuminate\Support\Facades\DB;
 use RuntimeException;
@@ -150,6 +152,17 @@ class PaymentRecorder
 
             // Keep the cached rollup the customer list sorts by in step.
             $document->contact?->decrement('balance', $amount);
+
+            // Settlement enters the books: the money moves off the customer's
+            // account and into the till or the bank. Wrapped for the same
+            // reason as the sale — bookkeeping must never be why a payment at
+            // the counter fails.
+            $events = app(RecordsBusinessEvents::class);
+            $company = app(CurrentCompany::class)->get();
+
+            if ($company !== null) {
+                $events->recordQuietly(fn () => $events->recordPayment($payment, $company, $cashier));
+            }
 
             return $payment;
         });

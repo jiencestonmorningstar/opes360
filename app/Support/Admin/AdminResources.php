@@ -13,6 +13,8 @@ use App\Models\Event;
 use App\Models\Form;
 use App\Models\FormResponse;
 use App\Models\Item;
+use App\Models\JournalEntry;
+use App\Models\LedgerAccount;
 use App\Models\LoyaltyTransaction;
 use App\Models\Payment;
 use App\Models\Receipt;
@@ -20,6 +22,7 @@ use App\Models\StockMovement;
 use App\Models\SubscriptionPayment;
 use App\Models\Ticket;
 use App\Models\User;
+use App\Support\Accounting\ChartOfAccounts;
 use App\Support\Money;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
@@ -271,6 +274,37 @@ class AdminResources
                     'Published' => fn ($r) => $r->is_published ? 'Yes' : 'No',
                     'Body' => fn ($r) => Str::limit((string) $r->body, 80),
                     'Received' => fn ($r) => self::date($r->created_at),
+                ],
+            ],
+
+            'ledger-accounts' => [
+                'label' => 'Chart of accounts',
+                'model' => LedgerAccount::class,
+                'icon' => 'chart-bar',
+                'search' => ['number', 'name'],
+                'columns' => [
+                    'Number' => fn ($r) => $r->number,
+                    'Name' => fn ($r) => $r->name,
+                    'Class' => fn ($r) => $r->class.' — '.(ChartOfAccounts::CLASSES[$r->class] ?? ''),
+                    'Normal side' => fn ($r) => ucfirst((string) $r->normal_balance),
+                    'Active' => fn ($r) => $r->is_active ? 'Yes' : 'No',
+                ],
+            ],
+
+            'journal' => [
+                'label' => 'Journal entries',
+                'model' => JournalEntry::class,
+                'icon' => 'document',
+                'withCount' => ['lines'],
+                'search' => ['reference', 'narration'],
+                'columns' => [
+                    'Date' => fn ($r) => self::date($r->entry_date),
+                    'Journal' => fn ($r) => $r->journal.' — '.$r->journalName(),
+                    'Reference' => fn ($r) => $r->reference,
+                    'Narration' => fn ($r) => $r->narration,
+                    'Lines' => fn ($r) => (string) ($r->lines_count ?? 0),
+                    'Debit' => fn ($r) => self::money($r->totalDebit(), null),
+                    'Credit' => fn ($r) => self::money($r->totalCredit(), null),
                 ],
             ],
 

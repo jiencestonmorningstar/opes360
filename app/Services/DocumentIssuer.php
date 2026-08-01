@@ -6,6 +6,8 @@ use App\Enums\DocumentStatus;
 use App\Models\Document;
 use App\Models\User;
 use App\Models\VerificationToken;
+use App\Services\Accounting\RecordsBusinessEvents;
+use App\Support\CurrentCompany;
 use Illuminate\Support\Facades\DB;
 use RuntimeException;
 
@@ -60,6 +62,17 @@ class DocumentIssuer
             ]);
 
             $document->forceFill(['verification_token_id' => $token->id])->saveQuietly();
+
+            // The sale enters the books here rather than at draft: nothing is
+            // owed until a document is issued, and a draft can still change.
+            // Wrapped so a half-configured chart of accounts cannot be the
+            // reason an invoice fails with a customer standing at the counter.
+            $events = app(RecordsBusinessEvents::class);
+            $company = app(CurrentCompany::class)->get();
+
+            if ($company !== null) {
+                $events->recordQuietly(fn () => $events->recordIssuedDocument($document, $company, $user));
+            }
 
             return $document;
         });

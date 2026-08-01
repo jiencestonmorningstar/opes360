@@ -6,6 +6,7 @@ use App\Models\Company;
 use App\Models\Role;
 use App\Models\User;
 use App\Models\VerificationToken;
+use App\Support\Accounting\ChartOfAccounts;
 use App\Support\CurrentCompany;
 use Illuminate\Contracts\View\View;
 use Illuminate\Support\Facades\Auth;
@@ -106,6 +107,12 @@ class Register extends Component
                 'status' => 'active',
                 'joined_at' => now(),
             ]);
+
+            // The books start the day the business does. Seeded here rather
+            // than lazily so an accountant opening the chart on day one finds
+            // something to work from, and so the first invoice has somewhere
+            // to post to.
+            ChartOfAccounts::seed($company);
 
             $user->forceFill(['current_company_id' => $company->id])->save();
 
