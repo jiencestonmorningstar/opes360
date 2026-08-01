@@ -72,7 +72,11 @@ Copy-Item (Join-Path $root '.env.example') (Join-Path $stageRelease '.env.exampl
 # source, and package history dwarfs package code. None is reachable at runtime,
 # and a shared host's upload limit is the binding constraint.
 Step 'Pruning non-runtime files'
-Get-ChildItem $stageRelease -Recurse -Force -Directory -Include '.git', '.github' -ErrorAction SilentlyContinue |
+# -Include is matched against the leaf name and quietly finds nothing in some
+# PowerShell versions, so filter explicitly instead of trusting it.
+Get-ChildItem $stageRelease -Recurse -Force -Directory -ErrorAction SilentlyContinue |
+    Where-Object { $_.Name -eq '.git' -or $_.Name -eq '.github' } |
+    Sort-Object { $_.FullName.Length } -Descending |
     Remove-Item -Recurse -Force -ErrorAction SilentlyContinue
 
 # --- local state ------------------------------------------------------------
@@ -105,7 +109,19 @@ Step 'Compressing'
 New-Item -ItemType Directory -Force -Path $outDir | Out-Null
 $zip = Join-Path $outDir "$release.zip"
 if (Test-Path $zip) { Remove-Item $zip -Force }
-Compress-Archive -Path $stageRelease -DestinationPath $zip -CompressionLevel Optimal
+# .NET's zipper rather than Compress-Archive: vendor is roughly ten thousand
+# files, where Compress-Archive is extremely slow and trips over paths beyond
+# the old 260-character limit. Fall back to it only if the assembly is missing.
+try {
+    Add-Type -AssemblyName System.IO.Compression.FileSystem -ErrorAction Stop
+    [System.IO.Compression.ZipFile]::CreateFromDirectory(
+        $stage, $zip, [System.IO.Compression.CompressionLevel]::Optimal, $false)
+} catch {
+    Write-Host 'Falling back to Compress-Archive (slower)...' -ForegroundColor Yellow
+    Compress-Archive -Path $stageRelease -DestinationPath $zip -CompressionLevel Optimal
+}
+
+if (-not (Test-Path $zip)) { Die 'The archive was not created.' }
 
 Remove-Item $stage -Recurse -Force -ErrorAction SilentlyContinue
 
