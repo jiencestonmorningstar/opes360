@@ -240,3 +240,28 @@
         margin-bottom: 0;
     }
 }
+
+/*
+ * Control sizing.
+ *
+ * The app had drifted to three button heights and four input variants, which
+ * is the kind of thing nobody notices on one screen and everybody feels across
+ * twenty. Two sizes, deliberately:
+ *
+ *   h-12 / rounded-xl   the default for anything a thumb aims at on its own —
+ *                       form fields, primary actions, full-width buttons
+ *   h-11 / rounded-lg   compact, for controls that sit inside a row of others:
+ *                       invoice line items, inline row actions, toolbars
+ *
+ * Both clear the 44px hit target. Anything smaller is an icon button, which
+ * uses `tap` to keep its target even when the glyph is 18px.
+ */
+@utility control {
+    height: 3rem;
+    border-radius: var(--radius-control, 0.75rem);
+}
+
+@utility control-compact {
+    height: 2.75rem;
+    border-radius: 0.5rem;
+}

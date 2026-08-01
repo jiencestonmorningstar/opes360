@@ -26,8 +26,10 @@ use App\Models\TicketType;
 use App\Models\User;
 use App\Models\VerificationToken;
 use App\Services\DocumentIssuer;
+use App\Services\LoyaltyLedger;
 use App\Services\PaymentRecorder;
 use App\Services\TicketSeller;
+use App\Support\Accounting\ChartOfAccounts;
 use App\Support\CurrentCompany;
 use Carbon\CarbonImmutable;
 use Illuminate\Database\Eloquent\Collection;
@@ -94,6 +96,15 @@ class DemoCompanySeeder extends Seeder
                 'registration_number' => 'RC-1042288',
                 'tax_id' => '12345678-0001',
                 'tax_id_index' => hash('sha256', '123456780001'),
+                // The showcase account runs on the top plan. On Basic the nav
+                // correctly hides Papers, Forms and Events — which is right for
+                // a real Basic customer and wrong for the account whose whole
+                // job is showing what the product does.
+                'plan' => 'business',
+                'tax_regime' => 'reel',
+                'tax_centre' => 'CDI Douala 1er',
+                'vat_registered' => true,
+                'vat_rate' => 19.25,
                 'address_line1' => '14 Adeola Odeku Street',
                 'city' => 'Lagos',
                 'region' => 'Lagos',
@@ -112,6 +123,9 @@ class DemoCompanySeeder extends Seeder
                 'loyalty_point_value' => 1,
             ],
         );
+
+        // The books start with the business.
+        ChartOfAccounts::seed($this->company);
 
         // A second demo account with a working-level role, so the login page's
         // demo buttons can show the product as staff see it — conditionally
@@ -197,7 +211,7 @@ class DemoCompanySeeder extends Seeder
             // Jude Nshome (OPESWARE llc.) — a real named client also seeded
             // into the commerce side, registered here for the same workshop
             // so Forms is not the only module without his activity.
-            ['Jude Nshome', 'nshomejude@gmail.com', 'Afternoon (2pm)', ['Invoicing', 'Inventory', 'Offline mode'], "Running OPESWARE llc. out of Douala — mostly interested in offline mode for spotty connections and the invoicing workflow."],
+            ['Jude Nshome', 'nshomejude@gmail.com', 'Afternoon (2pm)', ['Invoicing', 'Inventory', 'Offline mode'], 'Running OPESWARE llc. out of Douala — mostly interested in offline mode for spotty connections and the invoicing workflow.'],
         ] as [$name, $email, $session, $topics, $notes]) {
             FormResponse::create([
                 'form_id' => $form->id,
@@ -359,7 +373,7 @@ class DemoCompanySeeder extends Seeder
         // Points were already earned automatically by the payment above
         // (PaymentRecorder calls LoyaltyLedger::earn); a real client with an
         // account naturally has a physical card too.
-        app(\App\Services\LoyaltyLedger::class)->issueCard($contact->fresh());
+        app(LoyaltyLedger::class)->issueCard($contact->fresh());
     }
 
     /** Three published reviews on the public business profile. */
@@ -372,7 +386,7 @@ class DemoCompanySeeder extends Seeder
             // Jude Nshome (OPESWARE llc., opesware.com) — a real named client,
             // also seeded with a paid invoice and a ticket, leaving a review
             // in his own name.
-            ['Jude Nshome', 5, "OPES360 runs the day-to-day at OPESWARE llc. now — invoicing, receipts, the works. Set up took an afternoon and our clients in Douala get a verified invoice they can check themselves. Exactly what a small outfit like ours needed.", 1],
+            ['Jude Nshome', 5, 'OPES360 runs the day-to-day at OPESWARE llc. now — invoicing, receipts, the works. Set up took an afternoon and our clients in Douala get a verified invoice they can check themselves. Exactly what a small outfit like ours needed.', 1],
         ];
 
         foreach ($reviews as [$author, $rating, $body, $daysAgo]) {

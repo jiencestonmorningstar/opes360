@@ -24,20 +24,20 @@
         <div class="mt-4 flex flex-wrap items-center gap-2.5">
             @if (! $form->isOpen())
                 <button type="button" wire:click="setStatus('open')"
-                        class="tap focusable flex h-10 items-center gap-1.5 rounded-xl bg-brand px-4 text-[13.5px] font-semibold text-white transition-opacity hover:opacity-90">
+                        class="tap focusable flex h-11 items-center gap-1.5 rounded-xl bg-brand px-4 text-[13.5px] font-semibold text-white transition-opacity hover:opacity-90">
                     <x-icon name="check-circle" class="size-[17px]" stroke-width="2" />
                     Open for responses
                 </button>
             @else
                 <button type="button" wire:click="setStatus('closed')"
-                        class="tap focusable flex h-10 items-center rounded-xl border border-border bg-surface px-4 text-[13.5px] font-semibold text-ink-2 hover:bg-surface-2">
+                        class="tap focusable flex h-11 items-center rounded-xl border border-border bg-surface px-4 text-[13.5px] font-semibold text-ink-2 hover:bg-surface-2">
                     Stop accepting responses
                 </button>
             @endif
 
             @can('responses', $form)
                 <a href="{{ route('forms.responses', $form) }}"
-                   class="focusable flex h-10 items-center rounded-xl border border-border bg-surface px-4 text-[13.5px] font-semibold text-ink-2 hover:bg-surface-2">
+                   class="focusable flex h-11 items-center rounded-xl border border-border bg-surface px-4 text-[13.5px] font-semibold text-ink-2 hover:bg-surface-2">
                     Responses
                 </a>
             @endcan

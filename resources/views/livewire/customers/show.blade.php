@@ -129,14 +129,14 @@
                         </div>
                         @if ($contact->hasLoyaltyCard())
                             <a href="{{ route('customers.loyalty-card.print', $contact) }}" target="_blank" rel="noopener"
-                               class="focusable flex h-10 items-center gap-1.5 rounded-xl border border-border bg-surface px-3.5 text-[13px] font-semibold text-ink-2 hover:bg-surface-2">
+                               class="focusable flex h-11 items-center gap-1.5 rounded-xl border border-border bg-surface px-3.5 text-[13px] font-semibold text-ink-2 hover:bg-surface-2">
                                 <x-icon name="printer" class="size-[16px]" stroke-width="1.9" />
                                 Print card
                             </a>
                         @else
                             @can('loyalty.manage')
                                 <button type="button" wire:click="issueLoyaltyCard"
-                                        class="tap focusable flex h-10 items-center gap-1.5 rounded-xl bg-brand px-3.5 text-[13px] font-semibold text-white transition-opacity hover:opacity-90">
+                                        class="tap focusable flex h-11 items-center gap-1.5 rounded-xl bg-brand px-3.5 text-[13px] font-semibold text-white transition-opacity hover:opacity-90">
                                     Issue card
                                 </button>
                             @endcan
@@ -152,10 +152,10 @@
                             <div class="min-w-0 flex-1">
                                 <label class="mb-1 block text-[12px] font-semibold text-ink-2">Redeem points</label>
                                 <input type="number" min="1" wire:model="redeemPoints" placeholder="e.g. 50"
-                                       class="h-10 w-full rounded-lg border border-border bg-surface px-3 text-[13.5px] text-ink placeholder:text-faint focus:border-brand focus:outline-none focus:ring-1 focus:ring-brand/20">
+                                       class="h-11 w-full rounded-lg border border-border bg-surface px-3 text-[13.5px] text-ink placeholder:text-faint focus:border-brand focus:outline-none focus:ring-1 focus:ring-brand/20">
                             </div>
                             <button type="submit"
-                                    class="tap focusable h-10 shrink-0 rounded-lg border border-border bg-surface px-3.5 text-[13px] font-semibold text-ink-2 hover:bg-surface-2">
+                                    class="tap focusable h-11 shrink-0 rounded-lg border border-border bg-surface px-3.5 text-[13px] font-semibold text-ink-2 hover:bg-surface-2">
                                 Redeem
                             </button>
                         </form>

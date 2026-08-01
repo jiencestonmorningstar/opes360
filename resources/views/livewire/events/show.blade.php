@@ -30,25 +30,25 @@
         <div class="mt-4 flex flex-wrap items-center gap-2.5">
             @if (! $event->isPublished())
                 <button type="button" wire:click="publish"
-                        class="tap focusable flex h-10 items-center gap-1.5 rounded-xl bg-brand px-4 text-[13.5px] font-semibold text-white transition-opacity hover:opacity-90">
+                        class="tap focusable flex h-11 items-center gap-1.5 rounded-xl bg-brand px-4 text-[13.5px] font-semibold text-white transition-opacity hover:opacity-90">
                     <x-icon name="check-circle" class="size-[17px]" stroke-width="2" />
                     Publish & start selling
                 </button>
             @else
                 <button type="button" wire:click="unpublish"
-                        class="focusable flex h-10 items-center rounded-xl border border-border bg-surface px-4 text-[13.5px] font-semibold text-ink-2 hover:bg-surface-2">
+                        class="focusable flex h-11 items-center rounded-xl border border-border bg-surface px-4 text-[13.5px] font-semibold text-ink-2 hover:bg-surface-2">
                     Pause sales
                 </button>
             @endif
 
             <a href="{{ route('events.edit', $event) }}"
-               class="focusable flex h-10 items-center rounded-xl border border-border bg-surface px-4 text-[13.5px] font-semibold text-ink-2 hover:bg-surface-2">
+               class="focusable flex h-11 items-center rounded-xl border border-border bg-surface px-4 text-[13.5px] font-semibold text-ink-2 hover:bg-surface-2">
                 Edit
             </a>
 
             @if ($event->status !== 'cancelled')
                 <button type="button" wire:click="cancel" wire:confirm="Cancel this event? The public page will show it as cancelled."
-                        class="focusable flex h-10 items-center rounded-xl border border-border bg-surface px-4 text-[13.5px] font-semibold text-warning hover:bg-tint-orange">
+                        class="focusable flex h-11 items-center rounded-xl border border-border bg-surface px-4 text-[13.5px] font-semibold text-warning hover:bg-tint-orange">
                     Cancel event
                 </button>
             @endif
