@@ -55,6 +55,7 @@ return [
         ['key' => 'forms', 'label' => 'Forms', 'icon' => 'clipboard', 'route' => 'forms', 'ability' => 'forms.view'],
         ['key' => 'events', 'label' => 'Events', 'icon' => 'ticket', 'route' => 'events', 'ability' => 'events.view'],
         ['key' => 'reports', 'label' => 'Reports', 'icon' => 'chart-bar', 'route' => 'reports', 'ability' => 'reports.view'],
+        ['key' => 'accounting', 'label' => 'Accounting', 'icon' => 'wallet', 'route' => 'accounting', 'ability' => 'accounting.view'],
         ['key' => 'payments', 'label' => 'Payments', 'icon' => 'credit-card', 'route' => 'payments', 'ability' => 'payments.view'],
         ['key' => 'calendar', 'label' => 'Calendar', 'icon' => 'calendar', 'route' => 'calendar', 'ability' => 'sales.view'],
         ['key' => 'settings', 'label' => 'Settings', 'icon' => 'cog', 'route' => 'settings'],

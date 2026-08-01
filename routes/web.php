@@ -13,6 +13,7 @@ use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\SyncController;
 use App\Http\Controllers\TicketController;
 use App\Http\Controllers\VerificationController;
+use App\Livewire\Accounting\Index as AccountingIndex;
 use App\Livewire\Business\Artisans as BusinessArtisans;
 use App\Livewire\Business\Companies as BusinessCompanies;
 use App\Livewire\Business\Edit as BusinessEdit;
@@ -169,6 +170,7 @@ Route::middleware('auth')->group(function () {
     Route::get('/stationery/print', [PrintController::class, 'stationery'])->middleware('can:business.manage-stationery')->name('stationery.print');
     Route::get('/payments', PaymentsIndex::class)->middleware('can:payments.view')->name('payments');
     Route::get('/reports', ReportsIndex::class)->middleware('can:reports.view')->name('reports');
+    Route::get('/accounting', AccountingIndex::class)->middleware('can:accounting.view')->name('accounting');
 
     /*
      * Module 13 — generated business documents (contracts, letters,
