@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\AuthController;
+use App\Http\Controllers\Billing\SubscriptionWebhookController;
 use App\Http\Controllers\DemoRequestController;
 use App\Http\Controllers\EventPublicController;
 use App\Http\Controllers\FormExportController;
@@ -41,6 +42,7 @@ use App\Livewire\Products\Index as ProductsIndex;
 use App\Livewire\Reports\Index as ReportsIndex;
 use App\Livewire\Sales\Index as SalesIndex;
 use App\Livewire\Scan;
+use App\Livewire\Settings\Billing as SettingsBilling;
 use App\Livewire\Settings\Index as SettingsIndex;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -78,6 +80,21 @@ Route::middleware('throttle:10,1')->group(function () {
     Route::get('/demo', [DemoRequestController::class, 'show'])->name('demo.request');
     Route::post('/demo', [DemoRequestController::class, 'store'])->name('demo.store');
     Route::get('/demo/thanks', [DemoRequestController::class, 'thanks'])->name('demo.thanks');
+});
+
+/*
+ * MTN and Orange call back from their own servers, never from a signed-in
+ * browser, so these sit outside `auth` and are CSRF-exempt (see
+ * bootstrap/app.php). Neither webhook is trusted for its own content — see
+ * SubscriptionWebhookController. The Orange return/cancel routes are where
+ * the payer's browser lands after their hosted checkout, so they redirect
+ * back into the app rather than returning a bare response.
+ */
+Route::middleware('throttle:60,1')->group(function () {
+    Route::post('/webhooks/mtn-momo', [SubscriptionWebhookController::class, 'mtnCallback'])->name('billing.mtn.callback');
+    Route::post('/webhooks/orange-money', [SubscriptionWebhookController::class, 'orangeNotify'])->name('billing.orange.notify');
+    Route::get('/billing/orange/return', [SubscriptionWebhookController::class, 'orangeReturn'])->name('billing.orange.return');
+    Route::get('/billing/orange/cancel', [SubscriptionWebhookController::class, 'orangeCancel'])->name('billing.orange.cancel');
 });
 
 /*
@@ -188,6 +205,7 @@ Route::middleware('auth')->group(function () {
 
     Route::get('/calendar', CalendarIndex::class)->middleware('can:sales.view')->name('calendar');
     Route::get('/settings', SettingsIndex::class)->name('settings');
+    Route::get('/settings/billing', SettingsBilling::class)->middleware('can:business.update')->name('settings.billing');
     Route::get('/scan', Scan::class)->name('scan');
     Route::get('/two-factor/qr.svg', [AuthController::class, 'twoFactorQr'])->name('two-factor.qr');
     Route::get('/email/verify/{id}/{hash}', [AuthController::class, 'verifyEmail'])

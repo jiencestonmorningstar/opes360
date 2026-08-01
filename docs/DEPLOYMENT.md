@@ -56,6 +56,44 @@ silently destroys them.
 
 ---
 
+## 2b. Subscription billing (MTN Mobile Money / Orange Money)
+
+Company owners pay for their plan from `/settings/billing`. Both providers are
+optional — leave a provider's credentials blank and the billing page simply
+hides it, so a fresh install works with neither configured.
+
+**MTN Mobile Money** (Collections API — momodeveloper.mtn.com):
+1. Register a product subscription for "Collections" and note its
+   `Ocp-Apim-Subscription-Key`.
+2. Provision an API user and API key against that key (the sandbox self-signup
+   flow, or MTN's onboarding for a live merchant).
+3. Set `MTN_MOMO_SUBSCRIPTION_KEY`, `MTN_MOMO_API_USER`, `MTN_MOMO_API_KEY`.
+   Leave `MTN_MOMO_ENVIRONMENT=sandbox` until MTN approves the merchant for a
+   specific operator target (e.g. `mtncameroon`), then switch it and
+   `MTN_MOMO_BASE_URL` to the production values MTN gives you.
+4. In the developer portal, register this app's callback host so MTN's async
+   payment result reaches `/webhooks/mtn-momo`. The webhook is never trusted on
+   its own — it only tells the app which payment to re-check — so a missed or
+   delayed registration degrades to polling (the billing page checks status
+   itself) rather than losing a payment.
+
+**Orange Money** (Web Payment API — developer.orange.com/apis/om-webpay):
+1. Create an Orange Developer application to get `ORANGE_MONEY_CLIENT_ID` /
+   `ORANGE_MONEY_CLIENT_SECRET`.
+2. Get `ORANGE_MONEY_MERCHANT_KEY` from your Orange Money merchant account
+   (separate from the developer application above).
+3. Set `ORANGE_MONEY_COUNTRY` (`cm` for Cameroon) and `ORANGE_MONEY_LANG`.
+4. No manual webhook registration is needed — `notif_url`, `return_url` and
+   `cancel_url` are sent with every payment request and point back at this
+   app automatically.
+
+Neither provider signs its webhook calls, so `SubscriptionWebhookController`
+treats a callback purely as a "check this payment" trigger and always asks
+the provider directly (with our own API credentials) before changing a
+payment's status or activating a plan.
+
+---
+
 ## 3. Deploy with Docker (recommended)
 
 The repository ships a production image and a single-node compose file. Set the
@@ -182,3 +220,7 @@ deployment is sound.
   for one node. Multiple app servers need Redis and shared session storage.
 - **`storage/app/public` is local disk.** Moving to S3 needs
   `FILESYSTEM_DISK=s3` and a migration of existing files.
+- **No renewal reminders or dunning.** `companies.plan_renews_at` is set on a
+  successful payment and shown on the billing page, but nothing currently
+  emails an owner before it lapses or downgrades a plan after it does — a
+  paid plan stays active until a platform admin or a new payment changes it.

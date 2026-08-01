@@ -35,6 +35,7 @@ class Company extends Model
             'tax_id' => 'encrypted',
             'vat_number' => 'encrypted',
             'demo_expires_at' => 'datetime',
+            'plan_renews_at' => 'datetime',
         ];
     }
 
@@ -128,6 +129,11 @@ class Company extends Model
     public function payments(): HasMany
     {
         return $this->hasMany(Payment::class);
+    }
+
+    public function subscriptionPayments(): HasMany
+    {
+        return $this->hasMany(SubscriptionPayment::class);
     }
 
     public function receipts(): HasMany

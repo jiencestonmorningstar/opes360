@@ -20,6 +20,18 @@ class PlanEntitlements
 {
     public const PLANS = ['basic', 'growth', 'business'];
 
+    /**
+     * Monthly price in XAF (Central African CFA franc) — the currency the
+     * pricing page quotes and the one MTN/Orange Mobile Money settle in for
+     * a Cameroon-registered merchant account. Annual billing is ten months
+     * for the price of twelve, mirrored from the pricing page's discount.
+     */
+    public const MONTHLY_PRICE_XAF = [
+        'basic' => 3000,
+        'growth' => 9000,
+        'business' => 21000,
+    ];
+
     /** Lower index = included from an earlier plan. */
     protected const MODULE_MIN_PLAN = [
         'papers' => 'growth',
@@ -27,6 +39,14 @@ class PlanEntitlements
         'events' => 'business',
         'loyalty' => 'business',
     ];
+
+    /** The amount due in XAF for one plan billed on one cycle. */
+    public static function priceFor(string $plan, string $billingCycle = 'monthly'): int
+    {
+        $monthly = self::MONTHLY_PRICE_XAF[$plan] ?? 0;
+
+        return $billingCycle === 'annual' ? $monthly * 10 : $monthly;
+    }
 
     public static function allows(Company $company, string $module): bool
     {

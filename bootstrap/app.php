@@ -75,6 +75,7 @@ return Application::configure(basePath: dirname(__DIR__))
          */
         $middleware->validateCsrfTokens(except: [
             'f/*/embed',
+            'webhooks/*',
         ]);
 
         // Applied globally so public verification and profile pages — the ones a

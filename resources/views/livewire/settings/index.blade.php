@@ -195,6 +195,27 @@
             </x-ui.panel>
         </div>
 
+        {{-- Billing --}}
+        @if ($company)
+            <x-ui.panel title="Billing" action="Manage" :action-href="route('settings.billing')">
+                <div class="flex items-center gap-3">
+                    <span class="flex size-[42px] shrink-0 items-center justify-center rounded-xl bg-tint-blue">
+                        <x-icon name="credit-card" class="size-[20px] text-brand" />
+                    </span>
+                    <div>
+                        <p class="text-[14.5px] font-bold text-ink">{{ ucfirst($company->plan) }} plan</p>
+                        <p class="mt-0.5 text-[12.5px] text-muted">
+                            @if ($company->plan_renews_at)
+                                Renews {{ $company->plan_renews_at->format('d M Y') }}
+                            @else
+                                Pay with MTN Mobile Money or Orange Money.
+                            @endif
+                        </p>
+                    </div>
+                </div>
+            </x-ui.panel>
+        @endif
+
         {{-- Team --}}
         <x-ui.panel title="Team" body-class="-mx-1.5">
             @foreach ($team as $member)
