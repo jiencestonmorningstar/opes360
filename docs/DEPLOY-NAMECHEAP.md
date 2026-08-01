@@ -89,6 +89,26 @@ lives, and tells the framework where the public folder ended up.
 
 ---
 
+## 3b. Optional: import the database first
+
+`install.php` creates the tables itself, so this step is optional. It is worth
+doing when the schema step is slow or times out — building 39 tables inside a
+web request can exceed the 30-second limit some shared hosts enforce, and an
+import through phpMyAdmin has no such limit.
+
+1. cPanel → **phpMyAdmin** → select your **empty** database in the left column.
+2. **Import** tab → **Choose File** → `opes360-v1-database.sql` → **Go**.
+
+It contains the schema, already recorded as migrated, plus the 7 roles and 55
+permissions the application cannot work without. It contains no businesses, no
+users and no administrator — you still create that in `install.php`, which then
+finds the tables already in place and simply moves on.
+
+Only import into an empty database. Against one that already holds data, the
+import will fail on the existing tables.
+
+---
+
 ## 4. Install, in your browser
 
 Visit:
