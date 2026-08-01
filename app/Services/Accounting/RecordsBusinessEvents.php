@@ -30,6 +30,17 @@ use Throwable;
  *
  * Both are posted through Ledger, so both are balanced and neither can be
  * recorded twice for the same source.
+ *
+ * One knowing simplification: a payment credits 411 for its full amount even
+ * when part of it is not allocated to any document — an overpayment sitting
+ * as customer credit. Strict SYSCOHADA carries that portion in 4191 (Clients,
+ * avances et acomptes reçus) as a liability instead of netting it into the
+ * receivable. The net position is identical; the gross presentation is not.
+ * Splitting it properly means posting allocation *changes* too, since credit
+ * applied to a later invoice moves between the two accounts — a bigger
+ * machine than the figure usually justifies. So 411 here reads "what
+ * customers owe, net of credit held", and an accountant who needs the gross
+ * split can reclassify through 4191 in the journal.
  */
 class RecordsBusinessEvents
 {
@@ -41,6 +52,20 @@ class RecordsBusinessEvents
      */
     public function recordIssuedDocument(Document $document, Company $company, ?User $actor = null): ?JournalEntry
     {
+        /*
+         * Only the types that put money on a customer's account belong in the
+         * books. A quotation is an offer and a proforma is a preview — issuing
+         * one is not a sale, and posting it would invent revenue and a
+         * receivable the business does not have. Credit notes are excluded
+         * too, but for the opposite reason: they *reduce* the receivable, and
+         * posting one as a sale would double the error it exists to correct.
+         * Recording them as the reversal they are is future work; skipping is
+         * the safe side of that line.
+         */
+        if (! $document->type->isReceivable()) {
+            return null;
+        }
+
         if (! $this->chartIsReady($company)) {
             return null;
         }
@@ -52,6 +77,11 @@ class RecordsBusinessEvents
         if ($gross <= 0) {
             return null;
         }
+
+        // Loaded explicitly: lazy loading is disabled app-wide, and the guard
+        // exempts recently-created models — which is why the live issue path
+        // never trips it and a back-fill over queried rows does.
+        $document->loadMissing('contact');
 
         $lines = [
             ['account' => 'receivables', 'debit' => $gross, 'narration' => $document->contact?->displayName()],
@@ -97,7 +127,7 @@ class RecordsBusinessEvents
             ? $document->company->default_sales_account
             : 'sales_goods';
 
-        $document->loadMissing('lines.item');
+        $document->loadMissing('lines.item', 'company');
 
         $lines = $document->lines;
 
@@ -151,6 +181,8 @@ class RecordsBusinessEvents
         if ($amount <= 0) {
             return null;
         }
+
+        $payment->loadMissing('contact');
 
         $destination = in_array($payment->method, [PaymentMethod::Cash, PaymentMethod::MobileMoney], true)
             ? 'cash'

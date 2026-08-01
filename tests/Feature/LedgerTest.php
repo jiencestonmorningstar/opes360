@@ -392,6 +392,95 @@ class LedgerTest extends TestCase
         }
     }
 
+    /*
+     * Only the types that put money on a customer's account belong in the
+     * books. Until this was gated, issuing a proforma posted revenue and a
+     * receivable for a sale that had not happened.
+     */
+
+    public function test_issuing_a_proforma_or_quotation_posts_nothing(): void
+    {
+        foreach (['proforma', 'quotation'] as $type) {
+            $this->returned(Livewire::actingAs($this->user)
+                ->test(Create::class, ['type' => $type])
+                ->call('save', [
+                    'contact_id' => $this->contact->id,
+                    'issue_date' => now()->toDateString(),
+                    'due_date' => null,
+                    'notes' => '',
+                    'lines' => [['description' => 'Offer', 'quantity' => '1', 'unit_price' => '50000']],
+                ], true));
+        }
+
+        // The offers were issued and numbered — but no revenue exists yet.
+        $this->assertSame(0, JournalEntry::count());
+    }
+
+    public function test_the_backfill_command_reconstructs_the_books_at_original_dates(): void
+    {
+        $document = $this->issueInvoice(100000);
+        app(PaymentRecorder::class)->record($document, $this->user, 50000, PaymentMethod::Cash);
+
+        // An install that predates the ledger: history exists, books do not.
+        JournalLine::query()->delete();
+        JournalEntry::query()->delete();
+
+        $this->artisan('opes:backfill-ledger', ['--company' => 'acme'])
+            ->expectsOutputToContain('1 document(s), 1 payment(s) posted, 0 already in the books, 0 failed')
+            ->assertSuccessful();
+
+        // The receivable reads what is genuinely outstanding, and the sale
+        // sits at its own issue date, not at the date of the back-fill.
+        $this->assertSame(69250.0, LedgerAccount::where('number', '411')->firstOrFail()->balance());
+        $this->assertSame(
+            $document->fresh()->issue_date->toDateString(),
+            JournalEntry::where('source_id', $document->id)->firstOrFail()->entry_date->toDateString(),
+        );
+
+        // Running it again finds everything already recorded.
+        $this->artisan('opes:backfill-ledger', ['--company' => 'acme'])
+            ->expectsOutputToContain('0 document(s), 0 payment(s) posted')
+            ->assertSuccessful();
+
+        $this->assertSame(2, JournalEntry::count());
+    }
+
+    public function test_the_backfill_skips_drafts_voids_and_offers(): void
+    {
+        // One real invoice, one proforma, one draft — only the first belongs
+        // in the books.
+        $this->issueInvoice(100000);
+
+        $this->returned(Livewire::actingAs($this->user)
+            ->test(Create::class, ['type' => 'proforma'])
+            ->call('save', [
+                'contact_id' => $this->contact->id,
+                'issue_date' => now()->toDateString(),
+                'due_date' => null,
+                'notes' => '',
+                'lines' => [['description' => 'Offer', 'quantity' => '1', 'unit_price' => '9000']],
+            ], true));
+
+        $this->returned(Livewire::actingAs($this->user)
+            ->test(Create::class, ['type' => 'invoice'])
+            ->call('save', [
+                'contact_id' => $this->contact->id,
+                'issue_date' => now()->toDateString(),
+                'due_date' => null,
+                'notes' => '',
+                'lines' => [['description' => 'Draft', 'quantity' => '1', 'unit_price' => '7000']],
+            ], false));
+
+        JournalLine::query()->delete();
+        JournalEntry::query()->delete();
+
+        $this->artisan('opes:backfill-ledger', ['--company' => 'acme'])
+            ->expectsOutputToContain('1 document(s), 0 payment(s) posted')
+            ->assertSuccessful();
+
+        $this->assertSame(1, JournalEntry::count());
+    }
+
     protected function issueInvoice(float $amount): Document
     {
         $this->returned(Livewire::actingAs($this->user)
