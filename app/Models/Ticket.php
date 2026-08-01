@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use App\Models\Concerns\BelongsToCompany;
+use App\Support\UniqueId;
 use Illuminate\Database\Eloquent\Concerns\HasUlids;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -27,10 +28,24 @@ class Ticket extends Model
         ];
     }
 
-    /** Short enough to read out at a door with a dead scanner. */
-    public static function newSerial(): string
+    /**
+     * Short enough to read out at a door with a dead scanner — which is also
+     * why it needs the retry. Upper-casing folds base62 down to 36 usable
+     * symbols, so eight characters is nearer 2.8e12 combinations than the
+     * 2.2e14 the length suggests. A busy organiser can reach the range where
+     * a collision stops being hypothetical, and the serial is unique per
+     * company, so the clash would abort an entire order mid-transaction.
+     */
+    public static function newSerial(string $companyId): string
     {
-        return 'TKT-'.Str::upper(Str::random(8));
+        return UniqueId::make(
+            fn () => 'TKT-'.Str::upper(Str::random(8)),
+            fn (string $serial) => static::query()
+                ->withoutGlobalScopes()
+                ->where('company_id', $companyId)
+                ->where('serial', $serial)
+                ->exists(),
+        );
     }
 
     public function event(): BelongsTo

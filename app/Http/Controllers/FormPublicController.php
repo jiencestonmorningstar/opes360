@@ -2,14 +2,15 @@
 
 namespace App\Http\Controllers;
 
+use App\Http\Controllers\Concerns\AbortsForSuspendedCompany;
 use App\Models\Form;
 use App\Models\FormResponse;
 use App\Models\Scopes\CompanyScope;
+use App\Notifications\FormResponseReceivedNotification;
 use App\Support\FormFields;
+use App\Support\NotifyCompany;
 use Illuminate\Http\Request;
 use Illuminate\Routing\Controller;
-use App\Notifications\FormResponseReceivedNotification;
-use App\Support\NotifyCompany;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\ViewErrorBag;
 
@@ -21,6 +22,8 @@ use Illuminate\Support\ViewErrorBag;
  */
 class FormPublicController extends Controller
 {
+    use AbortsForSuspendedCompany;
+
     public function show(string $token)
     {
         $form = $this->findForm($token);
@@ -51,25 +54,11 @@ class FormPublicController extends Controller
         $fields = $form->fieldDefinitions();
         ['rules' => $rules, 'attributes' => $attributes] = FormFields::submissionRules($fields);
 
+        // The full-page variant can rely on the session, so a failure here
+        // throws and Laravel redirects back with the errors as usual.
         $validated = Validator::make($request->all(), $rules, [], $attributes)->validate();
 
-        // Only catalogued field ids are stored — extra keys in the request are
-        // dropped, so a crafted POST cannot smuggle payload into the answers.
-        $answers = collect($fields)
-            ->mapWithKeys(fn (array $field) => [$field['id'] => $validated['answers'][$field['id']] ?? null])
-            ->filter(fn ($answer) => $answer !== null && $answer !== '' && $answer !== [])
-            ->all();
-
-        FormResponse::create([
-            'company_id' => $form->company_id,
-            'form_id' => $form->id,
-            'answers' => $answers,
-        ]);
-
-        try {
-            NotifyCompany::about($form->company, 'forms.responses', new FormResponseReceivedNotification($form));
-        } catch (\Throwable) {
-        }
+        $this->recordResponse($form, $fields, $validated);
 
         return redirect()->to('/f/'.$token.'/thanks');
     }
@@ -132,23 +121,7 @@ class FormPublicController extends Controller
             ], 422);
         }
 
-        $validated = $validator->validated();
-
-        $answers = collect($fields)
-            ->mapWithKeys(fn (array $field) => [$field['id'] => $validated['answers'][$field['id']] ?? null])
-            ->filter(fn ($answer) => $answer !== null && $answer !== '' && $answer !== [])
-            ->all();
-
-        FormResponse::create([
-            'company_id' => $form->company_id,
-            'form_id' => $form->id,
-            'answers' => $answers,
-        ]);
-
-        try {
-            NotifyCompany::about($form->company, 'forms.responses', new FormResponseReceivedNotification($form));
-        } catch (\Throwable) {
-        }
+        $this->recordResponse($form, $fields, $validator->validated());
 
         return view('public.form-thanks', [
             'form' => $form,
@@ -171,11 +144,49 @@ class FormPublicController extends Controller
         ]);
     }
 
+    /**
+     * Store one submission and tell the business about it.
+     *
+     * Shared by the full-page and embedded posts, which differ only in how
+     * they report failure — everything after validation was duplicated, and
+     * had already started to drift.
+     *
+     * @param  array<int, array<string, mixed>>  $fields
+     * @param  array<string, mixed>  $validated
+     */
+    protected function recordResponse(Form $form, array $fields, array $validated): void
+    {
+        // Only catalogued field ids are stored — extra keys in the request are
+        // dropped, so a crafted POST cannot smuggle payload into the answers.
+        $answers = collect($fields)
+            ->mapWithKeys(fn (array $field) => [$field['id'] => $validated['answers'][$field['id']] ?? null])
+            ->filter(fn ($answer) => $answer !== null && $answer !== '' && $answer !== [])
+            ->all();
+
+        FormResponse::create([
+            'company_id' => $form->company_id,
+            'form_id' => $form->id,
+            'answers' => $answers,
+        ]);
+
+        // A form that collects answers but cannot reach anyone is still better
+        // than one that rejects the visitor because the mail server is down.
+        try {
+            NotifyCompany::about($form->company, 'forms.responses', new FormResponseReceivedNotification($form));
+        } catch (\Throwable) {
+        }
+    }
+
     protected function findForm(string $token): ?Form
     {
-        return Form::query()
+        $form = Form::query()
             ->withoutGlobalScope(CompanyScope::class)
+            ->with('company')
             ->where('share_token', $token)
             ->first();
+
+        $this->abortIfSuspended($form?->company);
+
+        return $form;
     }
 }

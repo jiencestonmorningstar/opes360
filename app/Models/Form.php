@@ -4,6 +4,7 @@ namespace App\Models;
 
 use App\Models\Concerns\BelongsToCompany;
 use App\Support\FormFields;
+use App\Support\UniqueId;
 use Illuminate\Database\Eloquent\Concerns\HasUlids;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -35,7 +36,13 @@ class Form extends Model
 
     public static function newShareToken(): string
     {
-        return Str::random(22);
+        return UniqueId::make(
+            fn () => Str::random(22),
+            fn (string $token) => static::query()
+                ->withoutGlobalScopes()
+                ->where('share_token', $token)
+                ->exists(),
+        );
     }
 
     public function responses(): HasMany

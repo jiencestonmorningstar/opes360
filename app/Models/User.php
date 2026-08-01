@@ -78,15 +78,18 @@ class User extends Authenticatable implements TwoFactorAuthenticatable
         return $this->belongsTo(Company::class, 'current_company_id');
     }
 
-    public function ownedCompanies(): BelongsToMany
-    {
-        return $this->companies()->wherePivot('status', 'active');
-    }
-
-    /** The user's role within a given company (roles are per-company, not global). */
+    /**
+     * The user's role within a given company (roles are per-company, not global).
+     *
+     * Only an *active* membership carries a role. Every other place that reads
+     * the pivot — the business switcher, notification recipients, the fallback
+     * in SetCurrentCompany — already filters this way; leaving it out here
+     * meant a membership marked inactive still resolved its old role, and with
+     * it every permission that role grants.
+     */
     public function roleIn(Company $company): ?Role
     {
-        $pivot = $this->companies()
+        $pivot = $this->activeMemberships()
             ->where('companies.id', $company->id)
             ->first()?->pivot;
 
@@ -95,7 +98,13 @@ class User extends Authenticatable implements TwoFactorAuthenticatable
 
     public function belongsToCompany(Company $company): bool
     {
-        return $this->companies()->where('companies.id', $company->id)->exists();
+        return $this->activeMemberships()->where('companies.id', $company->id)->exists();
+    }
+
+    /** Memberships that actually grant access, as opposed to merely existing. */
+    public function activeMemberships(): BelongsToMany
+    {
+        return $this->companies()->wherePivot('status', 'active');
     }
 
     /**
@@ -104,6 +113,26 @@ class User extends Authenticatable implements TwoFactorAuthenticatable
      */
     public function hasPermissionIn(Company $company, string $permission): bool
     {
+        $role = $this->roleIn($company);
+
+        /*
+         * The Owner is the account's ultimate authority within their plan and
+         * is never locked out of their own business — including from the
+         * screens that would let them undo a permission mistake, so this beats
+         * an explicit revoke.
+         *
+         * It lives here rather than as a `true` short-circuit in Gate::before
+         * because that form answered *every* check, policies included. It
+         * therefore skipped CompanyScopedPolicy::owns() — the cross-tenant
+         * second line of defence — and the state guards built on top of it,
+         * like "an issued document is frozen". Granting the permission and
+         * skipping the policy are not the same thing, and only the first one
+         * was ever intended.
+         */
+        if ($role?->slug === Role::OWNER) {
+            return true;
+        }
+
         $override = CompanyUserPermission::query()
             ->where('company_id', $company->id)
             ->where('user_id', $this->id)
@@ -114,7 +143,7 @@ class User extends Authenticatable implements TwoFactorAuthenticatable
             return (bool) $override->granted;
         }
 
-        return (bool) $this->roleIn($company)?->hasPermission($permission);
+        return (bool) $role?->hasPermission($permission);
     }
 
     public function firstName(): string

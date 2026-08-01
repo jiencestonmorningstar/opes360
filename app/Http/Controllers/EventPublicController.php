@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Http\Controllers\Concerns\AbortsForSuspendedCompany;
 use App\Models\Event;
 use App\Models\Scopes\CompanyScope;
 use App\Models\Ticket;
@@ -17,6 +18,8 @@ use Illuminate\Validation\ValidationException;
  */
 class EventPublicController extends Controller
 {
+    use AbortsForSuspendedCompany;
+
     public function show(string $token)
     {
         $event = $this->findEvent($token);
@@ -91,7 +94,15 @@ class EventPublicController extends Controller
 
         // The confirmation page is reached by session, not by URL: a link that
         // listed ticket ids would hand anyone who saw it someone else's tickets.
-        $request->session()->put('purchased_tickets', collect($tickets)->pluck('id')->all());
+        //
+        // Merged rather than replaced — someone who buys two more seats after
+        // realising a friend is coming should not find the first pair gone from
+        // the page holding their QR codes.
+        $request->session()->put('purchased_tickets', collect($request->session()->get('purchased_tickets', []))
+            ->merge(collect($tickets)->pluck('id'))
+            ->unique()
+            ->values()
+            ->all());
 
         return redirect()->to('/e/'.$token.'/tickets');
     }
@@ -126,10 +137,14 @@ class EventPublicController extends Controller
 
     protected function findEvent(string $token): ?Event
     {
-        return Event::query()
+        $event = Event::query()
             ->withoutGlobalScope(CompanyScope::class)
             ->with('company')
             ->where('share_token', $token)
             ->first();
+
+        $this->abortIfSuspended($event?->company);
+
+        return $event;
     }
 }

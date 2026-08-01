@@ -252,6 +252,10 @@ class DemoClientEngagementTest extends TestCase
             'name' => 'Opesware Technologies',
             'owner_id' => $owner->id,
             'currency' => 'USD',
+            // Events — and therefore door check-in — is a Business-plan module.
+            // Stated explicitly because the column defaults to Basic, and an
+            // Owner no longer bypasses the entitlement check.
+            'plan' => 'business',
         ]);
 
         $this->joinCompany($company, $owner);

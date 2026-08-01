@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Http\Controllers\Concerns\AbortsForSuspendedCompany;
 use App\Models\Artisan;
 use App\Models\Company;
 use App\Models\CompanyReview;
@@ -19,8 +20,12 @@ use Illuminate\Routing\Controller;
  */
 class ProfileController extends Controller
 {
+    use AbortsForSuspendedCompany;
+
     public function business(Company $company)
     {
+        $this->abortIfSuspended($company);
+
         // response()->view() renders immediately, so every query the template
         // runs still happens inside the company scope. Returning a View instance
         // would defer rendering to after the scope is restored, and the tenant
@@ -42,6 +47,8 @@ class ProfileController extends Controller
      */
     public function submitReview(Request $request, Company $company)
     {
+        $this->abortIfSuspended($company);
+
         // Honeypot: humans never see the field, bots fill it. Answer exactly as
         // if the review were accepted so the bot learns nothing.
         if ($request->filled('website_url')) {
@@ -80,6 +87,8 @@ class ProfileController extends Controller
 
         $company = Company::findOrFail($artisan->company_id);
 
+        $this->abortIfSuspended($company);
+
         // Rendered inside the scope for the same reason as the business profile.
         return app(CurrentCompany::class)->as($company, fn () => response()->view('profile.artisan', [
             'artisan' => $artisan->load(['testimonials' => fn ($q) => $q->where('is_published', true)]),
@@ -97,6 +106,8 @@ class ProfileController extends Controller
         abort_unless($artisan->is_published, 404);
 
         $company = Company::find($artisan->company_id);
+
+        $this->abortIfSuspended($company);
 
         $lines = array_filter([
             'BEGIN:VCARD',
@@ -120,6 +131,8 @@ class ProfileController extends Controller
 
     public function vcard(Company $company)
     {
+        $this->abortIfSuspended($company);
+
         $lines = array_filter([
             'BEGIN:VCARD',
             'VERSION:3.0',

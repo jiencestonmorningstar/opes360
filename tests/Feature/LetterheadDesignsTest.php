@@ -42,6 +42,8 @@ class LetterheadDesignsTest extends TestCase
             'address_line1' => '12 Broad Street',
             'city' => 'Lagos',
             'country' => 'NG',
+            // Papers is a Growth-plan module and the column defaults to Basic.
+            'plan' => 'growth',
         ]);
 
         $this->joinCompany($this->company, $this->user);

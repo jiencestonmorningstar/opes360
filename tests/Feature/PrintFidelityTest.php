@@ -51,6 +51,10 @@ class PrintFidelityTest extends TestCase
             'address_line1' => '12 Broad Street',
             'city' => 'Lagos',
             'country' => 'NG',
+            // Papers is a Growth-plan module and the column defaults to Basic.
+            // Stated explicitly now that an Owner no longer bypasses the
+            // entitlement check on model-backed actions.
+            'plan' => 'growth',
         ]);
 
         $this->joinCompany($this->company, $this->user);

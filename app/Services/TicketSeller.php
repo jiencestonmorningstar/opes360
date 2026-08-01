@@ -76,7 +76,7 @@ class TicketSeller
                         'company_id' => $event->company_id,
                         'event_id' => $event->id,
                         'ticket_type_id' => $type->id,
-                        'serial' => Ticket::newSerial(),
+                        'serial' => Ticket::newSerial($event->company_id),
                         'buyer_name' => $buyerName,
                         'buyer_email' => $buyerEmail,
                         'buyer_phone' => $buyerPhone,

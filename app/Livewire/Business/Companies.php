@@ -31,10 +31,13 @@ class Companies extends Component
     public function switchTo(string $companyId): void
     {
         $user = auth()->user();
-        $company = $user->companies()->where('companies.id', $companyId)->first();
+        $company = $user->activeMemberships()->where('companies.id', $companyId)->first();
 
         // Membership is re-checked here rather than trusted from the request, so
-        // a crafted id cannot switch into someone else's business.
+        // a crafted id cannot switch into someone else's business — and it has
+        // to be an *active* membership, the same test the list below renders
+        // from, or a crafted id could still reach a business this user was
+        // removed from.
         if ($company === null) {
             $this->addError('switch', 'You do not have access to that business.');
 
@@ -116,7 +119,7 @@ class Companies extends Component
         $user = auth()->user();
 
         return view('livewire.business.companies', [
-            'companies' => $user->companies()->wherePivot('status', 'active')->orderBy('name')->get(),
+            'companies' => $user->activeMemberships()->orderBy('name')->get(),
             'currentId' => $user->current_company_id,
         ])->layout('components.layouts.app', ['title' => 'Businesses', 'active' => 'business']);
     }

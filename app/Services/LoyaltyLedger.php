@@ -78,6 +78,9 @@ class LoyaltyLedger
             throw new RuntimeException('Redeem an amount greater than zero.');
         }
 
+        // A friendly early exit for the ordinary case. It is deliberately not
+        // the guard — record() re-checks under a row lock, which is the only
+        // place the answer cannot go stale between reading and writing.
         if ($points > $contact->loyalty_points) {
             throw new RuntimeException(sprintf(
                 '%s has only %d point%s available.',
@@ -117,7 +120,26 @@ class LoyaltyLedger
             // the same starting balance and silently drop one of them.
             $locked = Contact::query()->whereKey($contact->id)->lockForUpdate()->first();
 
-            $balance = max(0, $locked->loyalty_points + $points);
+            $balance = $locked->loyalty_points + $points;
+
+            /*
+             * The sufficiency check belongs here, under the lock, not in the
+             * caller: two tills redeeming the last 100 points at the same
+             * moment both pass a check made against their own stale copy of
+             * the contact. Clamping the loser to zero — which is what
+             * max(0, …) used to do — would hand out the reward twice and
+             * leave a ledger that balances to a number nobody ever had.
+             */
+            if ($balance < 0) {
+                throw new RuntimeException($type === 'adjust'
+                    ? 'That adjustment would take the balance below zero.'
+                    : sprintf(
+                        '%s has only %d point%s available.',
+                        $locked->displayName(),
+                        $locked->loyalty_points,
+                        $locked->loyalty_points === 1 ? '' : 's',
+                    ));
+            }
 
             $transaction = LoyaltyTransaction::create([
                 'company_id' => $locked->company_id,

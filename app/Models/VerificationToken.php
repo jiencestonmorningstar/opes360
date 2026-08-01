@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use App\Models\Concerns\BelongsToCompany;
+use App\Support\UniqueId;
 use Illuminate\Database\Eloquent\Concerns\HasUlids;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
@@ -35,10 +36,17 @@ class VerificationToken extends Model
      * 22 chars of base62, ~128 bits of entropy. Not derived from the record id:
      * nobody should be able to enumerate a business's invoices by incrementing
      * a URL. See docs/architecture/qr-ar.md.
+     *
+     * The uniqueness check bypasses the tenant scope because the column is
+     * unique across the whole table, not per company — a scoped lookup would
+     * happily return "free" for a token another business already holds.
      */
     public static function newToken(): string
     {
-        return Str::random(22);
+        return UniqueId::make(
+            fn () => Str::random(22),
+            fn (string $token) => static::query()->withoutGlobalScopes()->where('token', $token)->exists(),
+        );
     }
 
     public function isRevoked(): bool

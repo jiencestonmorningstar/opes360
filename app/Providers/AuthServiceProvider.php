@@ -24,8 +24,8 @@ use App\Policies\PaymentPolicy;
 use App\Policies\ReceiptPolicy;
 use App\Policies\TicketPolicy;
 use App\Support\CurrentCompany;
-use App\Support\PlanEntitlements;
 use App\Support\Permissions;
+use App\Support\PlanEntitlements;
 use Illuminate\Auth\Access\Response;
 use Illuminate\Foundation\Support\Providers\AuthServiceProvider as ServiceProvider;
 use Illuminate\Support\Facades\Gate;
@@ -66,11 +66,18 @@ class AuthServiceProvider extends ServiceProvider
         }
 
         /*
-         * Two independent questions, checked in this order: can this BUSINESS
-         * use this module at all (its plan), and can this PERSON use it (their
-         * role)? Plan denial is checked first and is absolute — unlike the
-         * owner bypass below, no role escalates past a plan the business
-         * isn't paying for. A Basic-plan Owner is still a Basic-plan Owner.
+         * Can this BUSINESS use this module at all? Plan denial is absolute and
+         * comes before every other question: no role escalates past a plan the
+         * business isn't paying for. A Basic-plan Owner is still a Basic-plan
+         * Owner.
+         *
+         * Nothing else is answered here. Whether this PERSON may act is left to
+         * the gates and policies below, including for the Owner — a `true`
+         * returned from here would satisfy the whole check and skip the policy,
+         * taking the ownership and immutability guards down with it. The Owner's
+         * blanket grant lives in User::hasPermissionIn() instead, where it
+         * answers the permission question without also answering the ones the
+         * policies exist to ask.
          */
         Gate::before(function (User $user, string $ability) {
             $company = app(CurrentCompany::class)->get();
@@ -86,12 +93,7 @@ class AuthServiceProvider extends ServiceProvider
                 return Response::deny("{$module} isn't included in the {$company->plan} plan. Upgrade to {$minPlan} to use it.");
             }
 
-            /*
-             * The Owner is the account's ultimate authority within their plan
-             * and is never locked out of their own business — including from
-             * the screens that would let them fix a permission mistake.
-             */
-            return $user->roleIn($company)?->slug === 'owner' ? true : null;
+            return null;
         });
     }
 }

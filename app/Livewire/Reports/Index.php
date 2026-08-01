@@ -9,12 +9,15 @@ use App\Models\Payment;
 use App\Support\CurrentCompany;
 use Carbon\CarbonImmutable;
 use Illuminate\Contracts\View\View;
+use Illuminate\Foundation\Auth\Access\AuthorizesRequests;
 use Livewire\Attributes\Url;
 use Livewire\Component;
 use Symfony\Component\HttpFoundation\StreamedResponse;
 
 class Index extends Component
 {
+    use AuthorizesRequests;
+
     #[Url]
     public string $range = 'month';
 
@@ -38,6 +41,13 @@ class Index extends Component
 
     public function exportCsv(): StreamedResponse
     {
+        // Reading a report on screen and walking out with the whole ledger as
+        // a file are different rights, and the catalogue has always said so —
+        // Sales Officer and Read Only are granted reports.view but not
+        // reports.export. Until this check existed the distinction was
+        // decorative: the route only gates the page.
+        $this->authorize('reports.export');
+
         [$from, $to] = $this->window();
 
         $rows = Document::query()

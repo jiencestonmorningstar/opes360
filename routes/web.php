@@ -258,13 +258,22 @@ Route::middleware('throttle:60,1')->group(function () {
     // The /embed variants render inside iframes on other websites — the only
     // routes in the product allowed to. See SecurityHeaders.
     Route::get('/f/{token}/embed', [FormPublicController::class, 'embed'])->name('form.embed');
-    Route::post('/f/{token}/embed', [FormPublicController::class, 'embedSubmit'])->name('form.embed.submit');
     Route::get('/f/{token}', [FormPublicController::class, 'show'])->name('form.public');
-    Route::post('/f/{token}', [FormPublicController::class, 'submit'])->name('form.submit');
 
     Route::get('/e/{token}/tickets', [EventPublicController::class, 'tickets'])->name('event.tickets');
     Route::get('/e/{token}/embed', [EventPublicController::class, 'embed'])->name('event.embed');
     Route::get('/e/{token}', [EventPublicController::class, 'show'])->name('event.public');
+});
+
+/*
+ * The writes get a tighter limit than the reads, for the same reason review
+ * submissions do: reading a form page costs a query, but submitting one writes
+ * a row and emails every member who can see responses. At sixty a minute one
+ * visitor could fill an inbox faster than anyone could empty it.
+ */
+Route::middleware('throttle:10,1')->group(function () {
+    Route::post('/f/{token}/embed', [FormPublicController::class, 'embedSubmit'])->name('form.embed.submit');
+    Route::post('/f/{token}', [FormPublicController::class, 'submit'])->name('form.submit');
     Route::post('/e/{token}', [EventPublicController::class, 'purchase'])->name('event.purchase');
 });
 
