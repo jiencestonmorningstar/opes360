@@ -53,4 +53,42 @@ enum DocumentType: string
     {
         return in_array($this, [self::Invoice, self::DebitNote], true);
     }
+
+    /**
+     * A credit note is the one document that moves money the other way: it
+     * cancels part or all of an invoice the customer has already been given.
+     */
+    public function isCreditNote(): bool
+    {
+        return $this === self::CreditNote;
+    }
+
+    /**
+     * Whether issuing this changes what a customer owes — in either direction.
+     *
+     * A quotation is an offer and a delivery note is a receipt for goods; both
+     * can be issued all day without a franc moving. These three cannot.
+     */
+    public function affectsCustomerAccount(): bool
+    {
+        return $this->isReceivable() || $this->isCreditNote();
+    }
+
+    /**
+     * +1 when issuing it adds to what the customer owes, -1 when it takes
+     * away, 0 when it does neither.
+     *
+     * Everything that has to treat invoices and credit notes as mirror images
+     * — the journal entry, the stock movement, the customer's balance — reads
+     * this rather than carrying its own `if credit note` branch, which is how
+     * the three of them stay consistent with each other.
+     */
+    public function customerAccountSign(): int
+    {
+        return match (true) {
+            $this->isReceivable() => 1,
+            $this->isCreditNote() => -1,
+            default => 0,
+        };
+    }
 }

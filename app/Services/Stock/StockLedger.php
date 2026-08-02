@@ -32,7 +32,15 @@ class StockLedger
     public function __construct(protected LocationLedger $locations) {}
 
     /**
-     * Take a sold document's goods off the shelf.
+     * Move a document's goods.
+     *
+     * An invoice takes them off the shelf; a credit note puts them back, which
+     * is what a credit note usually means — the customer returned something.
+     * It is not always what it means: a note issued purely to correct an
+     * overcharge restocks goods that never left. Erring towards restocking is
+     * the recoverable mistake of the two, because the next inventory finds it,
+     * whereas stock silently missing from the shelf is discovered by running
+     * out of something the system said was there.
      *
      * Only tracked products move. A service line has nothing to take away, and
      * a line typed freehand does not say what it sold — the composer allows
@@ -43,30 +51,63 @@ class StockLedger
      */
     public function recordSale(Document $document, Company $company, ?User $actor = null): int
     {
-        return $this->move($document, $company, $actor, -1, 'sale');
+        $sign = $document->type->customerAccountSign();
+
+        if ($sign === 0) {
+            return 0;
+        }
+
+        return $this->move($document, $company, $actor, -$sign, $sign > 0 ? 'sale' : 'credit');
     }
 
     /**
-     * Put a voided document's goods back.
+     * Undo whatever a document did to the shelf.
      *
-     * Guarded against running twice: a second void would restock the shelf a
-     * second time, and the returning movements are how it knows.
+     * Computed from the movements the document actually wrote rather than from
+     * its lines a second time: the lines can no longer be trusted to produce
+     * the same answer — an item may have had stock tracking switched off since
+     * — and the movements are the record of what really happened.
+     *
+     * Guarded against running twice. A second void would restock the shelf
+     * again, and the reversing movements are how it knows not to.
      */
     public function reverseSale(Document $document, Company $company, ?User $actor = null): int
     {
-        $alreadyReturned = StockMovement::query()
+        $written = StockMovement::query()
             ->withoutGlobalScopes()
             ->where('company_id', $company->id)
             ->where('reference_type', Document::class)
             ->where('reference_id', $document->id)
-            ->where('reason', 'return')
-            ->exists();
+            ->get();
 
-        if ($alreadyReturned) {
+        if ($written->contains(fn (StockMovement $m) => $m->reason === 'document-void')) {
             return 0;
         }
 
-        return $this->move($document, $company, $actor, 1, 'return');
+        $original = $written->filter(fn (StockMovement $m) => in_array($m->reason, ['sale', 'credit'], true));
+
+        if ($original->isEmpty()) {
+            return 0;
+        }
+
+        return DB::transaction(function () use ($original, $document, $company, $actor) {
+            foreach ($original as $movement) {
+                StockMovement::create([
+                    'company_id' => $company->id,
+                    'item_id' => $movement->item_id,
+                    'stock_location_id' => $movement->stock_location_id,
+                    'quantity' => round(-1 * (float) $movement->quantity, 3),
+                    'unit_cost' => null,
+                    'reason' => 'document-void',
+                    'reference_type' => Document::class,
+                    'reference_id' => $document->id,
+                    'user_id' => $actor?->id,
+                    'occurred_at' => now(),
+                ]);
+            }
+
+            return $original->count();
+        });
     }
 
     /**

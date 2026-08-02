@@ -2,6 +2,7 @@
 
 namespace App\Livewire\Documents;
 
+use App\Enums\DocumentType;
 use App\Enums\PaymentMethod;
 use App\Models\Document;
 use App\Models\Payment;
@@ -22,6 +23,12 @@ class Show extends Component
     public bool $voidingOpen = false;
 
     public string $voidReason = '';
+
+    public bool $creditingOpen = false;
+
+    public string $creditAmount = '';
+
+    public string $creditReason = '';
 
     public function mount(Document $document): void
     {
@@ -97,6 +104,57 @@ class Show extends Component
         $this->redirectRoute('documents.show', $created);
     }
 
+    /**
+     * Credit part of this invoice.
+     *
+     * Separate from `convert()` because they are different acts: converting
+     * cancels the invoice outright, and this gives back an agreed amount of a
+     * bill the customer is still otherwise paying.
+     */
+    public function openCredit(): void
+    {
+        $this->authorize('convert', $this->document);
+
+        $this->creditAmount = number_format(
+            app(DocumentConverter::class)->creditableAmount($this->document), 2, '.', ''
+        );
+        $this->creditReason = '';
+        $this->resetErrorBag();
+        $this->creditingOpen = true;
+    }
+
+    public function closeCredit(): void
+    {
+        $this->creditingOpen = false;
+    }
+
+    public function issueCredit(): void
+    {
+        $this->authorize('convert', $this->document);
+
+        $this->validate([
+            'creditAmount' => ['required', 'numeric', 'gt:0'],
+            'creditReason' => ['nullable', 'string', 'max:200'],
+        ], [
+            'creditAmount.gt' => 'A credit note for nothing is not a credit note.',
+        ]);
+
+        try {
+            $note = app(DocumentConverter::class)->creditNote(
+                $this->document,
+                auth()->user(),
+                (float) $this->creditAmount,
+                $this->creditReason !== '' ? $this->creditReason : null,
+            );
+        } catch (RuntimeException $e) {
+            $this->addError('creditAmount', $e->getMessage());
+
+            return;
+        }
+
+        $this->redirectRoute('documents.show', $note);
+    }
+
     public function openVoid(): void
     {
         $this->voidingOpen = true;
@@ -142,9 +200,25 @@ class Show extends Component
     {
         $converter = app(DocumentConverter::class);
 
+        $isInvoice = $this->document->type === DocumentType::Invoice;
+
         return view('livewire.documents.show', [
             'canConvert' => $converter->canConvert($this->document),
             'convertTarget' => $converter->targetType($this->document),
+            // What has been given back on this invoice, and what is left to
+            // give. Shown on the invoice itself, because "why does this say
+            // 100 000 when we agreed 80 000" is answered by the credit note
+            // that nobody thinks to look for.
+            'creditedTotal' => $isInvoice ? $converter->creditedTotal($this->document) : 0.0,
+            'creditableAmount' => $isInvoice ? $converter->creditableAmount($this->document) : 0.0,
+            'creditNotes' => $isInvoice
+                ? Document::query()
+                    ->where('parent_document_id', $this->document->id)
+                    ->ofType(DocumentType::CreditNote)
+                    ->issued()
+                    ->orderBy('issue_date')
+                    ->get(['id', 'number', 'issue_date', 'total', 'notes'])
+                : collect(),
         ])->layout('components.layouts.app', [
             'title' => $this->document->number ?? 'Document',
             'active' => 'sales',

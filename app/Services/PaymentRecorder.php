@@ -162,8 +162,10 @@ class PaymentRecorder
                 ])->id,
             ])->saveQuietly();
 
-            // Keep the cached rollup the customer list sorts by in step.
-            $document->contact?->decrement('balance', $amount);
+            // Keep the cached rollup the customer list sorts by in step. From
+            // the documents themselves rather than by subtracting this payment
+            // — see Contact::recomputeBalance.
+            $document->contact?->recomputeBalance();
 
             // Settlement enters the books: the money moves off the customer's
             // account and into the till or the bank. Wrapped for the same

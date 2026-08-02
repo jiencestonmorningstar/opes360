@@ -215,7 +215,7 @@ class StockInTheBooksTest extends TestCase
         app(DocumentConverter::class)->void($document, $this->owner);
 
         $this->assertSame(1, StockMovement::query()->where('reason', 'sale')->count());
-        $this->assertSame(1, StockMovement::query()->where('reason', 'return')->count());
+        $this->assertSame(1, StockMovement::query()->where('reason', 'document-void')->count());
     }
 
     public function test_stock_cannot_be_returned_twice_by_voiding_twice(): void

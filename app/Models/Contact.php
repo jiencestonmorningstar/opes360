@@ -56,6 +56,41 @@ class Contact extends Model
         return $this->hasMany(Document::class);
     }
 
+    /**
+     * Recompute what this customer owes, from the documents themselves.
+     *
+     * `balance` is a cached rollup — the customers list sorts and pages on it,
+     * which a computed column cannot do — but it is derived here rather than
+     * nudged up and down at each event. Incremental maintenance was already
+     * wrong in a way nobody could miss for long: payments and voids decremented
+     * it and *nothing* incremented it, so a customer invoiced 1 000 and paying
+     * 400 was recorded as owing minus 400, the "owing" badge (which shows only
+     * above zero) never appeared, and the list sorted by amount owed put the
+     * worst debtors last.
+     *
+     * Recomputing from truth is also self-healing: a missed call leaves the
+     * figure stale for a moment rather than permanently skewed, and any later
+     * event on that customer puts it right.
+     *
+     * Credit notes subtract. An issued credit note is money the business has
+     * said in writing it is no longer owed.
+     */
+    public function recomputeBalance(): void
+    {
+        $documents = Document::query()
+            ->withoutGlobalScopes()
+            ->where('company_id', $this->company_id)
+            ->where('contact_id', $this->id)
+            ->issued()
+            ->get(['type', 'balance']);
+
+        $owed = $documents->sum(
+            fn (Document $document) => $document->type->customerAccountSign() * (float) $document->balance
+        );
+
+        $this->forceFill(['balance' => round($owed, 2)])->save();
+    }
+
     public function payments(): HasMany
     {
         return $this->hasMany(Payment::class);

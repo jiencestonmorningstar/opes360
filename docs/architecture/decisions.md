@@ -271,3 +271,32 @@ is visible and one action closes it. A business that wants the books right month
 **Uncounted is not zero.** A blank box on a count sheet stays blank and the line keeps its book quantity.
 Reading it as an empty shelf would write off everything whoever was counting did not reach before closing
 time, which is the single most expensive way this feature could be wrong.
+
+---
+
+## 15. A customer's balance is recomputed, never nudged
+
+**Decision:** `contacts.balance` stays a stored column, but every event that could change it calls
+`Contact::recomputeBalance()`, which sums the customer's issued documents — receivables positive, credit
+notes negative. Nothing increments or decrements it.
+
+**Why the column stays:** the customers list sorts and pages on "who owes the most". A computed value cannot
+be an `ORDER BY` on a paginated query without a subquery on every row, and this list is one of the first
+screens a business opens in the morning.
+
+**Why not incremental:** it had already failed. Payments decremented the column and voids decremented it and
+*nothing anywhere incremented it*, so a customer invoiced 1 000 who paid 400 was stored as owing minus 400.
+The "owing" badge renders only above zero, so it silently never appeared; the list sorts by balance
+descending, so the worst debtors sorted last. That is the failure mode of incremental maintenance in
+general — one missing hook is permanent and invisible, because nothing ever recomputes to contradict it.
+Recomputing from the documents is idempotent, self-healing, and costs one small indexed query per event.
+
+**Consequence for credit notes:** they subtract, which is the whole of "allocating a credit note against the
+customer's account". No allocation table, no matching step. An issued credit note is money the business has
+said in writing it is no longer owed, and the customer's account says so from that moment. The invoice it
+came from is untouched and still reads what it read when it was printed — which is the point of a credit
+note as opposed to an edit.
+
+**Guard:** an invoice cannot be credited beyond its own total. Without it, the "Convert to Credit Note"
+button was a full-value credit note every time it was pressed, and pressing it twice would have recorded the
+business as owing its customer the entire amount of a bill it had raised correctly.

@@ -164,11 +164,22 @@
                     @endif
 
                     @if ($canConvert && $convertTarget && auth()->user()->can('convert', $document))
-                        <button type="button" wire:click="convert" wire:loading.attr="disabled"
-                                class="focusable flex h-11 w-full items-center justify-center gap-2 rounded-xl bg-surface-2 text-[14px] font-semibold text-ink-2 transition-colors hover:bg-tint-blue hover:text-brand">
-                            <x-icon name="document-plus" class="size-[18px]" stroke-width="2" />
-                            Convert to {{ $convertTarget->label() }}
-                        </button>
+                        {{-- An invoice offers "credit", not "convert": the word
+                             a business uses, and the panel lets it credit part
+                             rather than only the whole bill. --}}
+                        @if ($document->type === \App\Enums\DocumentType::Invoice)
+                            <button type="button" wire:click="openCredit"
+                                    class="focusable flex h-11 w-full items-center justify-center gap-2 rounded-xl bg-surface-2 text-[14px] font-semibold text-ink-2 transition-colors hover:bg-tint-blue hover:text-brand">
+                                <x-icon name="document-plus" class="size-[18px]" stroke-width="2" />
+                                Issue a Credit Note
+                            </button>
+                        @else
+                            <button type="button" wire:click="convert" wire:loading.attr="disabled"
+                                    class="focusable flex h-11 w-full items-center justify-center gap-2 rounded-xl bg-surface-2 text-[14px] font-semibold text-ink-2 transition-colors hover:bg-tint-blue hover:text-brand">
+                                <x-icon name="document-plus" class="size-[18px]" stroke-width="2" />
+                                Convert to {{ $convertTarget->label() }}
+                            </button>
+                        @endif
                     @endif
 
                     @if ($document->verificationToken)
@@ -188,6 +199,98 @@
                     @endif
                 </div>
             </x-ui.panel>
+
+            {{-- What has already been given back on this invoice. Shown on the
+                 invoice rather than only on the notes themselves, because the
+                 question it answers — "why does this say 100 000 when we agreed
+                 80 000" — gets asked while looking at the invoice. --}}
+            @if ($creditNotes->isNotEmpty())
+                <x-ui.panel title="Credited">
+                    <div class="space-y-2">
+                        @foreach ($creditNotes as $note)
+                            <a href="{{ route('documents.show', $note) }}" wire:navigate wire:key="cn-{{ $note->id }}"
+                               class="focusable flex items-center gap-3 rounded-xl px-3 py-2.5 hover:bg-surface-2">
+                                <div class="min-w-0 flex-1">
+                                    <p class="truncate text-[14px] font-semibold text-ink">{{ $note->number }}</p>
+                                    <p class="truncate text-[12.5px] text-muted">
+                                        {{ $note->issue_date?->format('j M Y') }}{{ $note->notes ? ' · '.$note->notes : '' }}
+                                    </p>
+                                </div>
+                                <p class="tnum shrink-0 text-[14px] font-semibold text-negative">
+                                    −{{ \App\Support\Money::format($note->total, $document->currency) }}
+                                </p>
+                            </a>
+                        @endforeach
+                    </div>
+
+                    <p class="mt-3 border-t border-border pt-3 text-[13px] text-muted">
+                        {{ \App\Support\Money::format($creditedTotal, $document->currency) }} credited of
+                        {{ \App\Support\Money::format($document->total, $document->currency) }}.
+                        @if ($creditableAmount > 0.005)
+                            {{ \App\Support\Money::format($creditableAmount, $document->currency) }} left.
+                        @else
+                            This invoice has been credited in full.
+                        @endif
+                    </p>
+                </x-ui.panel>
+            @endif
+
+            {{-- Credit note panel, revealed in place --}}
+            @if ($creditingOpen)
+                <x-ui.panel title="Issue a credit note">
+                    <x-slot:actions>
+                        <button type="button" wire:click="closeCredit"
+                                class="focusable text-[14px] font-semibold text-muted hover:text-ink">Cancel</button>
+                    </x-slot:actions>
+
+                    <p class="text-[13.5px] leading-relaxed text-muted">
+                        This gives back part or all of {{ $document->number }}. It is a document in its own right with
+                        its own number — the invoice you already gave the customer is not altered. The books and the
+                        customer's account both follow, and any goods on it go back into stock.
+                    </p>
+
+                    <div class="mt-4 space-y-3">
+                        <div>
+                            <label for="credit-amount" class="mb-1.5 block text-[13px] font-semibold text-ink-2">
+                                Amount to credit
+                            </label>
+                            <input id="credit-amount" type="number" step="any" min="0" inputmode="decimal"
+                                   wire:model="creditAmount"
+                                   class="tnum h-12 w-full rounded-xl border border-border bg-surface px-3.5 text-[15px] text-ink focus:border-brand focus:outline-none focus:ring-2 focus:ring-brand/20">
+                            <p class="mt-1.5 text-[12.5px] text-faint">
+                                Up to {{ \App\Support\Money::format($creditableAmount, $document->currency) }}, tax
+                                included. The TVA is split back out at this invoice's own rate.
+                            </p>
+                            @error('creditAmount')
+                                <p class="mt-1.5 text-[13px] font-medium text-negative">{{ $message }}</p>
+                            @enderror
+                        </div>
+
+                        <div>
+                            <label for="credit-reason" class="mb-1.5 block text-[13px] font-semibold text-ink-2">
+                                Reason <span class="font-normal text-faint">(printed on the note)</span>
+                            </label>
+                            <input id="credit-reason" type="text" wire:model="creditReason" maxlength="200"
+                                   placeholder="Goods returned, agreed discount…"
+                                   class="h-12 w-full rounded-xl border border-border bg-surface px-3.5 text-[15px] text-ink placeholder:text-faint focus:border-brand focus:outline-none focus:ring-2 focus:ring-brand/20">
+                            @error('creditReason')
+                                <p class="mt-1.5 text-[13px] font-medium text-negative">{{ $message }}</p>
+                            @enderror
+                        </div>
+                    </div>
+
+                    <div class="mt-5 flex flex-col gap-3 sm:flex-row-reverse">
+                        <button type="button" wire:click="issueCredit" wire:loading.attr="disabled"
+                                class="tap focusable flex h-11 items-center justify-center rounded-xl bg-fill-brand px-5 text-[14.5px] font-semibold text-white hover:opacity-90">
+                            Issue the credit note
+                        </button>
+                        <button type="button" wire:click="closeCredit"
+                                class="tap focusable flex h-11 items-center justify-center rounded-xl border border-border bg-surface px-5 text-[14.5px] font-semibold text-ink">
+                            Cancel
+                        </button>
+                    </div>
+                </x-ui.panel>
+            @endif
 
             {{-- Void confirmation, revealed in place --}}
             @if ($voidingOpen)

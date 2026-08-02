@@ -22,8 +22,12 @@ use Throwable;
  *   443 État, TVA facturée              C   19 250    tax collected on the state's behalf
  *
  * The TVA is split out rather than folded into income for the reason it is
- * split out on the invoice: it was never the business's money. Taking payment
- * moves the same total from the customer to the till or the bank:
+ * split out on the invoice: it was never the business's money.
+ *
+ * A credit note is the same entry with every side reversed — 411 credited,
+ * 701 and 443 debited — because that is what it is: the invoice, unwound to
+ * the extent of the credit. Taking payment moves the same total from the
+ * customer to the till or the bank:
  *
  *   571 Caisse               119 250 D
  *   411 Clients                         C  119 250
@@ -53,16 +57,21 @@ class RecordsBusinessEvents
     public function recordIssuedDocument(Document $document, Company $company, ?User $actor = null): ?JournalEntry
     {
         /*
-         * Only the types that put money on a customer's account belong in the
+         * Only the types that move money on a customer's account belong in the
          * books. A quotation is an offer and a proforma is a preview — issuing
          * one is not a sale, and posting it would invent revenue and a
-         * receivable the business does not have. Credit notes are excluded
-         * too, but for the opposite reason: they *reduce* the receivable, and
-         * posting one as a sale would double the error it exists to correct.
-         * Recording them as the reversal they are is future work; skipping is
-         * the safe side of that line.
+         * receivable the business does not have.
+         *
+         * A credit note is posted, and posted as the mirror of the invoice it
+         * corrects: the same three accounts, the same amounts, every side the
+         * other way round. Revenue is taken back, the TVA the business would
+         * have owed the state on that sale is taken back with it, and the
+         * customer stops owing. Anything less leaves the books claiming income
+         * from a sale the business has cancelled in writing.
          */
-        if (! $document->type->isReceivable()) {
+        $sign = $document->type->customerAccountSign();
+
+        if ($sign === 0) {
             return null;
         }
 
@@ -83,16 +92,23 @@ class RecordsBusinessEvents
         // never trips it and a back-fill over queried rows does.
         $document->loadMissing('contact');
 
+        // An invoice debits the customer and credits income; a credit note does
+        // exactly the opposite. One variable rather than two code paths, so the
+        // two can never drift into disagreeing about which accounts are
+        // involved.
+        $customerSide = $sign > 0 ? 'debit' : 'credit';
+        $incomeSide = $sign > 0 ? 'credit' : 'debit';
+
         $lines = [
-            ['account' => 'receivables', 'debit' => $gross, 'narration' => $document->contact?->displayName()],
+            ['account' => 'receivables', $customerSide => $gross, 'narration' => $document->contact?->displayName()],
         ];
 
         foreach ($this->revenueByAccount($document, $net) as $role => $amount) {
-            $lines[] = ['account' => $role, 'credit' => $amount];
+            $lines[] = ['account' => $role, $incomeSide => $amount];
         }
 
         if ($tax > 0) {
-            $lines[] = ['account' => 'vat_collected', 'credit' => $tax];
+            $lines[] = ['account' => 'vat_collected', $incomeSide => $tax];
         }
 
         return $this->ledger->post(

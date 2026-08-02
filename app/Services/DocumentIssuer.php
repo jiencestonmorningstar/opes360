@@ -82,10 +82,14 @@ class DocumentIssuer
                  * anything — a quotation is an offer, and taking stock off for
                  * one would empty a shelf nobody had bought from.
                  */
-                if ($document->type->isReceivable()) {
+                if ($document->type->affectsCustomerAccount()) {
                     $events->recordQuietly(
                         fn () => app(StockLedger::class)->recordSale($document, $company, $user)
                     );
+
+                    // The cached figure the customers list sorts and pages on.
+                    // Recomputed rather than incremented — see the method.
+                    $document->contact?->recomputeBalance();
                 }
             }
 

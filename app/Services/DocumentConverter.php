@@ -49,12 +49,123 @@ class DocumentConverter
                 ->exists();
         }
 
+        /*
+         * An invoice can be credited until it has been credited in full, and
+         * not a franc further. Without this an invoice could be converted over
+         * and over, each one a full-value credit note, and a customer who owed
+         * 100 000 would end up recorded as being owed 200 000 by a business
+         * that had done nothing wrong except click twice.
+         */
+        if ($document->type === DocumentType::Invoice) {
+            return $this->creditableAmount($document) > 0.005;
+        }
+
         return array_key_exists($document->type->value, self::TARGETS);
     }
 
     public function targetType(Document $document): ?DocumentType
     {
         return self::TARGETS[$document->type->value] ?? null;
+    }
+
+    /** What the live credit notes against an invoice come to. */
+    public function creditedTotal(Document $invoice): float
+    {
+        return round((float) Document::query()
+            ->where('parent_document_id', $invoice->id)
+            ->ofType(DocumentType::CreditNote)
+            ->issued()
+            ->sum('total'), 2);
+    }
+
+    /** How much of an invoice is still open to being credited. */
+    public function creditableAmount(Document $invoice): float
+    {
+        return round((float) $invoice->total - $this->creditedTotal($invoice), 2);
+    }
+
+    /**
+     * Credit part of an invoice.
+     *
+     * The whole-invoice case goes through `convert()`, which copies the lines,
+     * because a full credit note should read like the invoice it cancels — the
+     * customer needs to recognise it. A partial credit cannot: there is no
+     * honest way to spread 15 000 F across seven lines without inventing which
+     * of them the customer was overcharged on. So it is a single line saying
+     * what it is, against the invoice it belongs to.
+     *
+     * The amount is what the customer sees — TTC — split back into net and tax
+     * at the invoice's own effective rate, so a 19.25% invoice produces a
+     * 19.25% credit note and the TVA the business reclaims is exactly the TVA
+     * it charged.
+     *
+     * @param  float  $amount  gross, in the invoice's currency
+     */
+    public function creditNote(Document $invoice, User $user, float $amount, ?string $reason = null): Document
+    {
+        if ($invoice->type !== DocumentType::Invoice) {
+            throw new RuntimeException('Only an invoice can be credited.');
+        }
+
+        if ($invoice->status === DocumentStatus::Draft || $invoice->status === DocumentStatus::Void) {
+            throw new RuntimeException('A draft or voided invoice has nothing to credit.');
+        }
+
+        $amount = round($amount, 2);
+
+        if ($amount <= 0) {
+            throw new RuntimeException('A credit note for nothing is not a credit note.');
+        }
+
+        $available = $this->creditableAmount($invoice);
+
+        if ($amount - $available > 0.005) {
+            throw new RuntimeException(sprintf(
+                'That is more than is left to credit on this invoice (%s).',
+                number_format($available, 2)
+            ));
+        }
+
+        // Whole invoice, nothing credited yet: copy it, so the credit note is
+        // the invoice's mirror image on paper as well as in the books.
+        if (abs($amount - (float) $invoice->total) < 0.005 && $this->creditedTotal($invoice) < 0.005) {
+            return $this->convert($invoice, $user);
+        }
+
+        $gross = (float) $invoice->total;
+        $tax = $gross > 0 ? round($amount * ((float) $invoice->tax_total / $gross), 2) : 0.0;
+        $net = round($amount - $tax, 2);
+
+        return DB::transaction(function () use ($invoice, $user, $amount, $net, $tax, $reason) {
+            $note = Document::create([
+                'type' => DocumentType::CreditNote,
+                'contact_id' => $invoice->contact_id,
+                'status' => DocumentStatus::Draft,
+                'issue_date' => now()->toDateString(),
+                'currency' => $invoice->currency,
+                'exchange_rate' => $invoice->exchange_rate,
+                'subtotal' => $net,
+                'tax_total' => $tax,
+                'total' => $amount,
+                'balance' => $amount,
+                'notes' => $reason,
+                'parent_document_id' => $invoice->id,
+                'created_by' => $user->id,
+            ]);
+
+            DocumentLine::create([
+                'document_id' => $note->id,
+                'description' => trim('Avoir sur facture '.($invoice->number ?? '').($reason ? ' — '.$reason : '')),
+                'quantity' => 1,
+                'unit' => 'unit',
+                'unit_price' => $net,
+                'tax_amount' => $tax,
+                'line_total' => $net,
+                'sort_order' => 0,
+            ]);
+
+            return $this->issuer->issue($note, $user);
+        });
     }
 
     public function convert(Document $source, User $user): Document
@@ -65,6 +176,19 @@ class DocumentConverter
 
         $target = $this->targetType($source);
 
+        /*
+         * A full-value copy is only honest while nothing has been credited yet.
+         * Once part of an invoice has been credited, copying it whole would
+         * credit more than was ever charged — so that case has to name its
+         * amount, which is what creditNote() is for.
+         */
+        if ($target === DocumentType::CreditNote && $this->creditedTotal($source) > 0.005) {
+            throw new RuntimeException(sprintf(
+                'Part of this invoice has already been credited. Credit the remaining %s instead.',
+                number_format($this->creditableAmount($source), 2)
+            ));
+        }
+
         return DB::transaction(function () use ($source, $target, $user) {
             $source->loadMissing('lines');
 
@@ -73,7 +197,11 @@ class DocumentConverter
                 'contact_id' => $source->contact_id,
                 'status' => DocumentStatus::Draft,
                 'issue_date' => now()->toDateString(),
-                'due_date' => now()->addDays($source->contact?->payment_terms_days ?? 14)->toDateString(),
+                // A credit note is not owed on a date — it is money the
+                // business already accepts it is not owed.
+                'due_date' => $target === DocumentType::CreditNote
+                    ? null
+                    : now()->addDays($source->contact?->payment_terms_days ?? 14)->toDateString(),
                 'currency' => $source->currency,
                 'exchange_rate' => $source->exchange_rate,
                 'subtotal' => $source->subtotal,
@@ -149,12 +277,13 @@ class DocumentConverter
                 'created_at' => now(),
             ]);
 
-            // The customer no longer owes this amount.
-            if ($document->contact && $document->type->isReceivable()) {
-                $document->contact->decrement('balance', (float) $document->total);
-            }
-
             $this->undoIssue($document, $user);
+
+            // The voided document is out of the `issued` scope by now, so this
+            // simply stops counting it — in whichever direction it counted.
+            if ($document->contact && $document->type->affectsCustomerAccount()) {
+                $document->contact->recomputeBalance();
+            }
 
             return $document;
         });
@@ -178,7 +307,7 @@ class DocumentConverter
     {
         $company = app(CurrentCompany::class)->get();
 
-        if ($company === null || ! $document->type->isReceivable()) {
+        if ($company === null || ! $document->type->affectsCustomerAccount()) {
             return;
         }
 
