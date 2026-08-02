@@ -98,12 +98,21 @@ web request can exceed the 30-second limit some shared hosts enforce, and an
 import through phpMyAdmin has no such limit.
 
 1. cPanel → **phpMyAdmin** → select your **empty** database in the left column.
-2. **Import** tab → **Choose File** → `opes360-v1-database.sql` → **Go**.
+2. **Import** tab → **Choose File** → `opes360-install.sql` → **Go**.
 
-It contains the schema, already recorded as migrated, plus the 7 roles and 55
+That file sits **next to the zip** in `build/`, not inside it — you select it
+from your own machine, so it would be no use buried in an archive you have
+already uploaded. The build script puts it there.
+
+It contains the schema, already recorded as migrated, plus the roles and
 permissions the application cannot work without. It contains no businesses, no
 users and no administrator — you still create that in `install.php`, which then
 finds the tables already in place and simply moves on.
+
+It is generated from the migrations by `php artisan opes:export-schema` against
+a real MySQL, and a test fails if a migration has been added without
+regenerating it — so it cannot quietly fall behind the code the way a
+hand-maintained dump does.
 
 Only import into an empty database. Against one that already holds data, the
 import will fail on the existing tables.
@@ -270,6 +279,10 @@ Fix it, then rebuild the config cache (§6).
 5. Move the new `public` contents into `public_html`, replacing what is there.
 6. Run a one-off cron (§6) for `php artisan migrate --force`, then another for
    `php artisan optimize:clear`.
+
+**Upgrading to the release with the partner programme** adds four tables and
+three columns to `companies`, so step 6 is not optional for that one — the
+secretariat pages 500 without it.
 
 Keep `opes360-old` until the new one is proven. Rolling back is renaming two
 folders.

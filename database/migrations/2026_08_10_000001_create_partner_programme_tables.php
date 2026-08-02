@@ -92,7 +92,10 @@ return new class extends Migration
             $table->string('status')->default('billed'); // billed|void
             $table->text('void_reason')->nullable();
 
-            $table->foreignUlid('issued_by')->nullable()->constrained('users')->nullOnDelete();
+            // foreignId, not foreignUlid: users.id is an auto-increment bigint.
+            // SQLite ignores the type mismatch on a foreign key; MySQL rejects
+            // the table outright with errno 150.
+            $table->foreignId('issued_by')->nullable()->constrained('users')->nullOnDelete();
             $table->timestamps();
 
             $table->index(['company_id', 'created_at']);
@@ -140,7 +143,7 @@ return new class extends Migration
             $table->string('destination')->nullable();
             $table->text('note')->nullable();
 
-            $table->foreignUlid('requested_by')->nullable()->constrained('users')->nullOnDelete();
+            $table->foreignId('requested_by')->nullable()->constrained('users')->nullOnDelete();
             $table->timestamp('settled_at')->nullable();
 
             $table->timestamps();

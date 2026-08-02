@@ -78,6 +78,15 @@ foreach ($item in $include) {
 
 Copy-Item (Join-Path $root '.env.example') (Join-Path $app '.env.example') -Force
 
+# The phpMyAdmin import is copied beside the finished archive further down, not
+# into it: it has to be selected from this machine during the install, and
+# fishing it back out of a 28 MB zip that has already been uploaded is a small
+# indignity a deployment guide does not need.
+$schema = Join-Path $root 'database\schema\opes360-install.sql'
+if (-not (Test-Path $schema)) {
+    Write-Host 'WARNING: database\schema\opes360-install.sql is missing. Run: php artisan opes:export-schema' -ForegroundColor Yellow
+}
+
 # -Force so the dotfiles come too: .htaccess is what makes every URL beyond the
 # homepage work at all.
 Copy-Item (Join-Path $root 'public\*') -Destination $web -Recurse -Force
@@ -144,6 +153,9 @@ try {
 }
 
 if (-not (Test-Path $zip)) { Die 'The archive was not created.' }
+
+# Beside the zip, ready to be selected in phpMyAdmin's Import tab.
+if (Test-Path $schema) { Copy-Item $schema (Join-Path $outDir 'opes360-install.sql') -Force }
 
 Remove-Item $stage -Recurse -Force -ErrorAction SilentlyContinue
 

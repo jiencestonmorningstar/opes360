@@ -62,6 +62,15 @@ done
 
 cp .env.example "$APP/.env.example"
 
+# The phpMyAdmin import is copied beside the finished archive further down
+# rather than into it: it has to be selected from the installer's own machine,
+# and fishing it back out of a 28 MB zip they have already uploaded is the sort
+# of small indignity that makes a deployment guide feel wrong.
+if [ ! -f database/schema/opes360-install.sql ]; then
+    echo "WARNING: database/schema/opes360-install.sql is missing." >&2
+    echo "         Run: php artisan opes:export-schema" >&2
+fi
+
 # The public half, including the dotfiles — .htaccess is what makes every URL
 # beyond the homepage work at all.
 cp -R public/. "$STAGE/$RELEASE/public_html/"
@@ -116,6 +125,11 @@ rm -f "$ARCHIVE"
 
 echo "==> Compressing"
 (cd "$STAGE/$RELEASE" && zip -qr "$ARCHIVE" opes360 public_html)
+
+# Beside the zip, ready to be selected in phpMyAdmin's Import tab.
+if [ -f database/schema/opes360-install.sql ]; then
+    cp database/schema/opes360-install.sql "$(dirname "$ARCHIVE")/opes360-install.sql"
+fi
 
 echo
 # Put the development dependencies back, so the working copy is usable the
