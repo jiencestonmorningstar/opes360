@@ -7,6 +7,7 @@ use App\Models\Payslip;
 use App\Services\Payroll\PayrollRunner;
 use App\Support\CurrentCompany;
 use Illuminate\Contracts\View\View;
+use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Gate;
 use Livewire\Component;
 use RuntimeException;
@@ -108,6 +109,25 @@ class Show extends Component
         }
     }
 
+    /**
+     * Only worth saying when it actually applies: the levy was withheld from
+     * somebody on this run, and nobody has confirmed the bands. A warning on a
+     * run that withheld nothing is noise, and noise is how a real warning gets
+     * ignored.
+     *
+     * @param  Collection<int, Payslip>  $payslips
+     */
+    protected function ravIsUnverified($payslips): bool
+    {
+        $settings = (array) (app(CurrentCompany::class)->get()?->payroll_settings ?? []);
+
+        if (($settings['rav_confirmed'] ?? false) === true) {
+            return false;
+        }
+
+        return $payslips->contains(fn (Payslip $slip) => (float) $slip->rav > 0);
+    }
+
     public function render(): View
     {
         $payslips = Payslip::query()
@@ -133,6 +153,13 @@ class Show extends Component
                     + (float) $p->tdl + (float) $p->rav + (float) $p->fne),
                 2
             ),
+            /*
+             * Whether this run withheld an audiovisual levy on a scale nobody
+             * has checked. Said here rather than only in a config comment,
+             * because this is the screen where money is about to leave an
+             * employee's wages and the last moment anyone would want to know.
+             */
+            'ravUnverified' => $this->ravIsUnverified($payslips),
             'currency' => app(CurrentCompany::class)->get()?->currency ?? 'XAF',
         ])->layout('components.layouts.app', [
             'title' => 'Payroll — '.$this->run->periodLabel(),

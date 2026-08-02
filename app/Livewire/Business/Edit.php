@@ -79,6 +79,9 @@ class Edit extends Component
             // never touched the setting withholds what the law asks for.
             'withhold_tdl' => (bool) (($company->payroll_settings['tdl'] ?? null) ?? true),
             'withhold_rav' => (bool) (($company->payroll_settings['rav'] ?? null) ?? true),
+            // Whether anyone has actually checked the RAV band amounts. False
+            // until someone says otherwise, and the payroll screen says so.
+            'rav_confirmed' => (bool) ($company->payroll_settings['rav_confirmed'] ?? false),
             'vat_registered' => (bool) $company->vat_registered,
             'vat_rate' => (string) ($company->vat_rate ?: '19.25'),
             'prices_include_tax' => (bool) $company->prices_include_tax,
@@ -121,6 +124,7 @@ class Edit extends Component
             'form.cnps_family_regime' => ['required', 'in:general,agricultural,teaching'],
             'form.withhold_tdl' => ['boolean'],
             'form.withhold_rav' => ['boolean'],
+            'form.rav_confirmed' => ['boolean'],
             // Capped well above any real rate: a typo of 1925 for 19.25 would
             // otherwise multiply every invoice in the business by twenty.
             'form.vat_rate' => ['nullable', 'numeric', 'min:0', 'max:100'],
@@ -155,6 +159,7 @@ class Edit extends Component
             'payroll_settings' => [
                 'tdl' => (bool) $this->form['withhold_tdl'],
                 'rav' => (bool) $this->form['withhold_rav'],
+                'rav_confirmed' => (bool) $this->form['rav_confirmed'],
             ],
             'vat_registered' => (bool) $this->form['vat_registered'],
             'vat_rate' => $this->form['vat_rate'] !== '' ? $this->form['vat_rate'] : 19.25,

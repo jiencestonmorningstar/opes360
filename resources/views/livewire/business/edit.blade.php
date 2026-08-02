@@ -183,7 +183,7 @@
                             </label>
 
                             <label class="flex items-start gap-3">
-                                <input type="checkbox" wire:model="form.withhold_rav"
+                                <input type="checkbox" wire:model.live="form.withhold_rav"
                                        class="mt-0.5 size-[20px] shrink-0 rounded border-border text-brand focus:ring-brand/30">
                                 <span>
                                     <span class="block text-[14px] font-semibold text-ink">Redevance audiovisuelle</span>
@@ -194,6 +194,59 @@
                                 </span>
                             </label>
                         </div>
+
+                        {{-- The scale itself, on screen.
+                             Its legal instrument, its floor, its structure and
+                             its base are all confirmed; the amount in each band
+                             comes from a secondary source. Leaving that in a
+                             config comment meant the one person who could check
+                             it — an accountant — would never see it. Ten seconds
+                             of their time here is worth more than any amount of
+                             hedging in the code. --}}
+                        @if ($form['withhold_rav'])
+                            <details class="mt-4 rounded-xl bg-surface-2 p-4" @if (! $form['rav_confirmed']) open @endif>
+                                <summary class="focusable cursor-pointer text-[13px] font-semibold text-ink-2">
+                                    The bands this uses
+                                    @unless ($form['rav_confirmed'])
+                                        <span class="ml-1 font-medium text-warning">— not yet checked</span>
+                                    @endunless
+                                </summary>
+
+                                <table class="tnum mt-3 w-full text-[12.5px]">
+                                    <thead>
+                                        <tr class="text-left text-muted">
+                                            <th class="pb-1.5 font-medium">Gross taxable salary</th>
+                                            <th class="pb-1.5 text-right font-medium">Per month</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        @php $from = config('payroll.rav.floor'); @endphp
+                                        @foreach (config('payroll.rav.bands') as $band)
+                                            <tr class="border-t border-border">
+                                                <td class="py-1.5 text-ink-2">
+                                                    {{ number_format($from) }}
+                                                    @if ($band['upto']) – {{ number_format($band['upto']) }} @else and above @endif
+                                                </td>
+                                                <td class="py-1.5 text-right font-semibold text-ink">{{ number_format($band['amount']) }} F</td>
+                                            </tr>
+                                            @php $from = $band['upto'] ? $band['upto'] + 1 : $from; @endphp
+                                        @endforeach
+                                    </tbody>
+                                </table>
+
+                                <label class="mt-4 flex items-start gap-3">
+                                    <input type="checkbox" wire:model="form.rav_confirmed"
+                                           class="mt-0.5 size-[20px] shrink-0 rounded border-border text-brand focus:ring-brand/30">
+                                    <span class="text-[12.5px] leading-relaxed text-ink-2">
+                                        These figures have been checked against the current schedule.
+                                        <span class="block text-muted">
+                                            Until this is ticked, every payroll run says the scale is unverified.
+                                            Correct any band in <span class="tnum">config/payroll.php</span>.
+                                        </span>
+                                    </span>
+                                </label>
+                            </details>
+                        @endif
                     </div>
                 @endcan
 

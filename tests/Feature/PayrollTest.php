@@ -610,6 +610,63 @@ class PayrollTest extends TestCase
         $this->assertTrue($this->company->fresh()->payroll_settings['rav']);
     }
 
+    /**
+     * The run says so when it has withheld a levy on an unchecked scale.
+     *
+     * The band amounts are the one figure in this module that could not be
+     * verified against a primary source, so the software says that where the
+     * money is — not only in a comment in the config file.
+     */
+    public function test_a_run_flags_an_unchecked_audiovisual_scale(): void
+    {
+        $this->hire('Yvonne', 'Ngo Bell', 300000);
+        $run = $this->runner()->build($this->runner()->open(now()->toDateString(), $this->owner), $this->owner);
+
+        Livewire::actingAs($this->owner)
+            ->test(PayrollShow::class, ['run' => $run])
+            ->assertViewHas('ravUnverified', true)
+            ->assertSee('has not been checked');
+    }
+
+    public function test_confirming_the_scale_silences_the_flag(): void
+    {
+        $this->company->forceFill(['payroll_settings' => ['rav_confirmed' => true]])->save();
+        app(CurrentCompany::class)->set($this->company->fresh());
+
+        $this->hire('Yvonne', 'Ngo Bell', 300000);
+        $run = $this->runner()->build($this->runner()->open(now()->toDateString(), $this->owner), $this->owner);
+
+        Livewire::actingAs($this->owner)
+            ->test(PayrollShow::class, ['run' => $run])
+            ->assertViewHas('ravUnverified', false);
+    }
+
+    /** A warning on a run that withheld nothing is noise. */
+    public function test_a_run_that_withheld_no_levy_says_nothing_about_it(): void
+    {
+        // Under the 50 000 F floor, so no levy and nothing to warn about.
+        $this->hire('Ibrahim', 'Sali', 40000);
+        $run = $this->runner()->build($this->runner()->open(now()->toDateString(), $this->owner), $this->owner);
+
+        $this->assertSame('0.00', Payslip::query()->firstOrFail()->rav);
+
+        Livewire::actingAs($this->owner)
+            ->test(PayrollShow::class, ['run' => $run])
+            ->assertViewHas('ravUnverified', false);
+    }
+
+    /** And the confirmation is reachable from the settings screen. */
+    public function test_the_business_screen_records_that_the_scale_was_checked(): void
+    {
+        Livewire::actingAs($this->owner)
+            ->test(Edit::class)
+            ->set('form.rav_confirmed', true)
+            ->call('save')
+            ->assertHasNoErrors();
+
+        $this->assertTrue($this->company->fresh()->payroll_settings['rav_confirmed']);
+    }
+
     /** A business that has never touched the setting withholds what the law asks. */
     public function test_the_withholdings_default_to_on(): void
     {

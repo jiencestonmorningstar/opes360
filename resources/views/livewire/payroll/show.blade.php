@@ -38,6 +38,25 @@
         <div class="mt-5 rounded-xl bg-tint-red px-4 py-3 text-[13.5px] font-medium text-negative">{{ session('error') }}</div>
     @endif
 
+    {{-- Money is about to leave somebody's wages on a figure nobody has
+         checked. This is the last screen where anyone would want to hear it. --}}
+    @if ($ravUnverified)
+        <div class="mt-5 rounded-xl bg-tint-amber px-4 py-3.5">
+            <p class="text-[13.5px] font-semibold text-warning">The audiovisual levy scale has not been checked</p>
+            <p class="mt-1 text-[13px] leading-relaxed text-muted">
+                This run withholds a redevance audiovisuelle from staff earning over
+                {{ number_format(config('payroll.rav.floor')) }} F. The levy is due under ordonnance 89/004 and the
+                arithmetic is right, but the amount in each band has not been confirmed against the current schedule.
+                @can('business.update')
+                    <a href="{{ route('business') }}" wire:navigate class="font-semibold text-brand underline">
+                        Check the bands in Business settings</a>, or switch the levy off there until you can.
+                @else
+                    Ask whoever manages the business settings to check it.
+                @endcan
+            </p>
+        </div>
+    @endif
+
     {{-- The four figures the month comes down to. `total cost` is the one a
          business owner rarely has and always wants. --}}
     <div class="mt-5 grid grid-cols-2 gap-3 lg:grid-cols-4">
