@@ -43,6 +43,7 @@
             @foreach ([
                 ['key' => 'dashboard', 'label' => 'Dashboard', 'icon' => 'chart-bar', 'route' => 'admin.dashboard'],
                 ['key' => 'companies', 'label' => 'Companies', 'icon' => 'briefcase', 'route' => 'admin.companies'],
+                ['key' => 'partners', 'label' => 'Partners', 'icon' => 'printer', 'route' => 'admin.partners'],
                 ['key' => 'records', 'label' => 'Records', 'icon' => 'document', 'route' => 'admin.records', 'params' => ['resource' => 'documents']],
                 ['key' => 'activity', 'label' => 'Activity', 'icon' => 'clock', 'route' => 'admin.activity'],
                 ['key' => 'admins', 'label' => 'Admins', 'icon' => 'users', 'route' => 'admin.admins'],

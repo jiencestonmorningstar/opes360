@@ -14,5 +14,10 @@ class DatabaseSeeder extends Seeder
         $this->call(PlatformAdminSeeder::class);
 
         $this->call(DemoCompanySeeder::class);
+
+        // A worked example of the partner programme. Without it the feature is
+        // unreachable from a demo login, since a plain business account is
+        // denied every partner ability by design.
+        $this->call(DemoSecretariatSeeder::class);
     }
 }

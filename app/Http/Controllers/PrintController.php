@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Enums\DocumentType;
+use App\Livewire\Business\Stationery;
 use App\Models\BusinessDocument;
 use App\Models\Company;
 use App\Models\Contact;
@@ -252,10 +253,22 @@ class PrintController extends Controller
         ]);
 
         $asset = $request->string('asset')->toString() === 'letterhead' ? 'letterhead' : 'card';
+        $requested = $request->string('design')->toString();
 
-        $design = in_array($d = $request->string('design')->toString(), Company::cardDesigns(), true)
-            ? $d
-            : 'classic';
+        /*
+         * Cards and letterheads have separate design sets, and the sheet reads
+         * the letterhead's choice off the company rather than from the request.
+         * The stand-in has no stored preference, so the request's choice is
+         * written onto it here — without which every client letterhead printed
+         * as 'rule' no matter what was picked.
+         */
+        $design = in_array($requested, Company::cardDesigns(), true) ? $requested : 'classic';
+
+        if ($asset === 'letterhead') {
+            $subject->letterhead_design = in_array($requested, Stationery::LETTERHEAD_DESIGNS_KEYS, true)
+                ? $requested
+                : 'rule';
+        }
 
         return view('print.stationery', [
             'company' => $subject,

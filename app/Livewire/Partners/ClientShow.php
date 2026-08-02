@@ -2,6 +2,7 @@
 
 namespace App\Livewire\Partners;
 
+use App\Livewire\Business\Stationery;
 use App\Models\CardIssuance;
 use App\Models\Company;
 use App\Models\PartnerClient;
@@ -25,6 +26,9 @@ class ClientShow extends Component
     public PartnerClient $client;
 
     public string $design = 'classic';
+
+    /** Letterheads have their own four designs; the card set does not apply. */
+    public string $letterheadDesign = 'rule';
 
     public string $asset = 'card';
 
@@ -92,6 +96,20 @@ class ClientShow extends Component
         }
     }
 
+    public function selectLetterhead(string $design): void
+    {
+        if (array_key_exists($design, Stationery::LETTERHEAD_DESIGNS)) {
+            $this->letterheadDesign = $design;
+            $this->issuedUrl = null;
+        }
+    }
+
+    /** Whichever design applies to the asset currently being printed. */
+    public function activeDesign(): string
+    {
+        return $this->asset === 'letterhead' ? $this->letterheadDesign : $this->design;
+    }
+
     public function startIssue(): void
     {
         Gate::authorize('partners.issue');
@@ -119,7 +137,7 @@ class ClientShow extends Component
         $programme->recordIssuance(
             partner: $partner,
             asset: $this->asset,
-            design: $this->design,
+            design: $this->activeDesign(),
             subjectName: $this->client->name,
             client: $this->client,
             issuer: auth()->user(),
@@ -129,13 +147,37 @@ class ClientShow extends Component
         $this->issuedUrl = route('partners.clients.print', [
             'client' => $this->client,
             'asset' => $this->asset,
-            'design' => $this->design,
+            'design' => $this->activeDesign(),
             'name' => $this->holderName,
             'title' => $this->holderTitle,
             'print' => 1,
         ]);
 
         session()->flash('status', 'Card issued and charged. Open the print sheet to produce it.');
+    }
+
+    /**
+     * Cancel the charge for a card that was printed wrong.
+     *
+     * The row stays and is marked void rather than being deleted: a partner
+     * querying their statement needs to see that the charge existed and why it
+     * was dropped, not find a hole where it used to be.
+     */
+    public function voidIssuance(string $id, string $reason = ''): void
+    {
+        Gate::authorize('partners.manage');
+
+        $issuance = CardIssuance::query()
+            ->where('partner_client_id', $this->client->id)
+            ->find($id);
+
+        if ($issuance === null || ! $issuance->isBilled()) {
+            return;
+        }
+
+        $issuance->void($reason !== '' ? $reason : 'Voided by the partner');
+
+        session()->flash('status', 'Charge cancelled.');
     }
 
     public function render(): View
@@ -151,11 +193,12 @@ class ClientShow extends Component
             'sectorDesigns' => array_keys($sectorDesigns),
             'sectors' => array_merge(['universal'], array_keys(CardCatalog::bySector())),
             'recommendedSector' => CardCatalog::sectorFor($this->client->industry ?? ''),
+            'letterheadDesigns' => Stationery::LETTERHEAD_DESIGNS,
             'fee' => (int) config('opes.partners.card_fee'),
             'previewUrl' => route('partners.clients.print', [
                 'client' => $this->client,
                 'asset' => $this->asset,
-                'design' => $this->design,
+                'design' => $this->activeDesign(),
                 'name' => $this->holderName,
                 'title' => $this->holderTitle,
                 'preview' => 1,

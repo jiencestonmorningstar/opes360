@@ -11,10 +11,12 @@ use App\Models\Company;
 use App\Models\PartnerClient;
 use App\Models\PartnerCommission;
 use App\Models\PartnerPayout;
+use App\Models\PlatformAdmin;
 use App\Models\Role;
 use App\Models\SubscriptionPayment;
 use App\Models\User;
 use App\Notifications\PartnerCommissionEarnedNotification;
+use App\Notifications\PartnerPayoutSettledNotification;
 use App\Services\Partners\PartnerLedger;
 use App\Services\Partners\PartnerProgramme;
 use App\Support\CurrentCompany;
@@ -579,5 +581,150 @@ class PartnerProgrammeTest extends TestCase
         $this->assertSame(21000, $payout->amount);
         $this->assertSame('requested', $payout->status);
         $this->assertSame(0, app(PartnerLedger::class)->balance($this->partner));
+    }
+    // ────────────────────────────────────────── the platform admin ──
+
+    protected function platformAdmin(string $role = 'admin'): PlatformAdmin
+    {
+        return PlatformAdmin::create([
+            'name' => 'Platform Admin',
+            'email' => $role.'@opes360.test',
+            'password' => 'password',
+            'role' => $role,
+        ]);
+    }
+
+    /**
+     * The summary is read by the admin screen, which has no current company.
+     * Counting clients through $partner->partnerClients() would go through the
+     * tenant scope, and that scope fails closed — so every partner would show
+     * zero clients rather than raising anything.
+     */
+    public function test_the_ledger_summary_is_correct_from_outside_the_tenant(): void
+    {
+        PartnerClient::create(['name' => 'Boulangerie Nkolbisson']);
+        PartnerClient::create(['name' => 'Garage Akwa']);
+        app(PartnerProgramme::class)->recordIssuance($this->partner, 'card', 'azure', 'A');
+
+        // No current company at all, as on the admin side.
+        app(CurrentCompany::class)->set(null);
+
+        $summary = app(PartnerLedger::class)->summary($this->partner);
+
+        $this->assertSame(2, $summary['clients']);
+        $this->assertSame(1, $summary['cards']);
+        $this->assertSame(500, $summary['fees']);
+    }
+
+    public function test_the_admin_partner_page_lists_partners_and_what_they_are_owed(): void
+    {
+        Notification::fake();
+
+        $business = $this->makeCompany('Boulangerie Nkolbisson');
+        app(PartnerProgramme::class)->attribute($business, $this->partner->partnerCode());
+        app(PartnerProgramme::class)->creditCommission($this->settledPayment($business, 210000));
+        PartnerClient::create(['name' => 'Garage Akwa']);
+
+        $this->actingAs($this->platformAdmin(), 'admin')
+            ->get(route('admin.partners'))
+            ->assertOk()
+            ->assertSee('Secretariat Bonamoussadi')
+            ->assertSee($this->partner->partnerCode())
+            ->assertSee('21,000', false);   // 10% of 210,000
+    }
+
+    public function test_an_admin_can_mark_a_payout_sent_and_the_partner_is_told(): void
+    {
+        Notification::fake();
+
+        $payout = PartnerPayout::create(['amount' => 12000, 'status' => 'requested', 'currency' => 'XAF', 'method' => 'mtn']);
+
+        $this->actingAs($this->platformAdmin(), 'admin')
+            ->post(route('admin.partners.payouts.settle', $payout), ['decision' => 'paid'])
+            ->assertRedirect();
+
+        $this->assertSame('paid', $payout->fresh()->status);
+        $this->assertNotNull($payout->fresh()->settled_at);
+
+        Notification::assertSentTo($this->partnerOwner, PartnerPayoutSettledNotification::class);
+    }
+
+    /** A rejected payout releases the balance it was holding. */
+    public function test_rejecting_a_payout_returns_the_money_to_the_balance(): void
+    {
+        Notification::fake();
+
+        $business = $this->makeCompany('Boulangerie Nkolbisson');
+        app(PartnerProgramme::class)->attribute($business, $this->partner->partnerCode());
+        app(PartnerProgramme::class)->creditCommission($this->settledPayment($business, 210000));
+
+        $payout = PartnerPayout::create(['amount' => 21000, 'status' => 'requested', 'currency' => 'XAF']);
+        $this->assertSame(0, app(PartnerLedger::class)->balance($this->partner));
+
+        $this->actingAs($this->platformAdmin(), 'admin')
+            ->post(route('admin.partners.payouts.settle', $payout), ['decision' => 'rejected', 'note' => 'Wrong number']);
+
+        $this->assertSame(21000, app(PartnerLedger::class)->balance($this->partner));
+    }
+
+    /**
+     * A payout marked paid has money behind it; settling it twice invites a
+     * second transfer against the same balance.
+     */
+    public function test_a_settled_payout_cannot_be_settled_again(): void
+    {
+        Notification::fake();
+
+        $payout = PartnerPayout::create(['amount' => 12000, 'status' => 'requested', 'currency' => 'XAF']);
+        $admin = $this->platformAdmin();
+
+        $this->actingAs($admin, 'admin')->post(route('admin.partners.payouts.settle', $payout), ['decision' => 'paid']);
+        $this->actingAs($admin, 'admin')
+            ->post(route('admin.partners.payouts.settle', $payout), ['decision' => 'rejected'])
+            ->assertStatus(409);
+    }
+
+    /** Money leaving the business is an Admin action, not a Support one. */
+    public function test_support_staff_cannot_settle_a_payout(): void
+    {
+        $payout = PartnerPayout::create(['amount' => 12000, 'status' => 'requested', 'currency' => 'XAF']);
+
+        $this->actingAs($this->platformAdmin('support'), 'admin')
+            ->post(route('admin.partners.payouts.settle', $payout), ['decision' => 'paid'])
+            ->assertForbidden();
+
+        $this->assertSame('requested', $payout->fresh()->status);
+    }
+
+    // ────────────────────────────────────────────────── letterhead ──
+
+    /**
+     * Cards and letterheads have separate design sets, and the sheet reads the
+     * letterhead's choice off the company. A partner client has no company row,
+     * so every client letterhead printed as 'rule' whatever was picked.
+     */
+    public function test_a_client_letterhead_honours_the_chosen_design(): void
+    {
+        $client = PartnerClient::create(['name' => 'Garage Akwa']);
+        $this->partnerOwner->forceFill(['current_company_id' => $this->partner->id])->save();
+
+        $this->actingAs($this->partnerOwner)
+            ->get(route('partners.clients.print', ['client' => $client, 'asset' => 'letterhead', 'design' => 'crest']))
+            ->assertOk()
+            ->assertSee('lh-crest', false);
+    }
+
+    public function test_voiding_a_charge_from_the_client_page_leaves_the_row(): void
+    {
+        $client = PartnerClient::create(['name' => 'Garage Akwa']);
+        $issuance = app(PartnerProgramme::class)
+            ->recordIssuance($this->partner, 'card', 'azure', 'Garage Akwa', $client);
+
+        Livewire::actingAs($this->partnerOwner)
+            ->test(ClientShow::class, ['client' => $client])
+            ->call('voidIssuance', $issuance->id, 'Printed on the wrong stock');
+
+        $this->assertSame('void', $issuance->fresh()->status);
+        $this->assertSame(0, app(PartnerLedger::class)->fees($this->partner));
     }
 }

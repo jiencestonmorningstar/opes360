@@ -4,6 +4,7 @@ use App\Http\Controllers\Admin\ActivityController as AdminActivityController;
 use App\Http\Controllers\Admin\AuthController as AdminAuthController;
 use App\Http\Controllers\Admin\CompanyController as AdminCompanyController;
 use App\Http\Controllers\Admin\DashboardController as AdminDashboardController;
+use App\Http\Controllers\Admin\PartnerController as AdminPartnerController;
 use App\Http\Controllers\Admin\PlatformAdminsController;
 use App\Http\Controllers\Admin\ResourceController;
 use App\Http\Controllers\Admin\TwoFactorController as AdminTwoFactorController;
@@ -62,6 +63,15 @@ Route::prefix('admin')->name('admin.')->group(function () {
         Route::post('/companies/{company}/extend-demo', [AdminCompanyController::class, 'extendDemo'])->name('companies.extend-demo');
         Route::post('/companies/{company}/end-demo', [AdminCompanyController::class, 'endDemo'])->name('companies.end-demo');
         Route::post('/companies/{company}/notes', [AdminCompanyController::class, 'addNote'])->name('companies.notes.store');
+
+        /*
+         * The secretariat programme. Settling a payout is money leaving the
+         * business, so it sits behind the 'admin' role alongside plan changes —
+         * support staff can read the list but not close a request.
+         */
+        Route::get('/partners', [AdminPartnerController::class, 'index'])->name('partners');
+        Route::post('/partners/payouts/{payout}/settle', [AdminPartnerController::class, 'settle'])
+            ->name('partners.payouts.settle')->middleware('admin.role');
 
         Route::get('/admins', [PlatformAdminsController::class, 'index'])->name('admins');
         Route::post('/admins', [PlatformAdminsController::class, 'store'])->name('admins.store')->middleware('admin.role');

@@ -4,6 +4,7 @@ namespace App\Services\Partners;
 
 use App\Models\CardIssuance;
 use App\Models\Company;
+use App\Models\PartnerClient;
 use App\Models\PartnerCommission;
 use App\Models\PartnerPayout;
 
@@ -87,8 +88,17 @@ class PartnerLedger
             'balance' => $balance,
             'minimum' => (int) config('opes.partners.payout_minimum'),
             'can_request' => $balance >= (int) config('opes.partners.payout_minimum'),
-            'clients' => $partner->partnerClients()->count(),
-            'converted' => $partner->partnerClients()->whereNotNull('converted_company_id')->count(),
+            /*
+             * Counted the same way as the sums above rather than through
+             * $partner->partnerClients(), which carries the tenant scope. That
+             * scope fails closed, so a caller outside the partner's own context
+             * — the platform admin screen, a console command — would silently
+             * read zero clients for every partner rather than erroring.
+             */
+            'clients' => PartnerClient::query()->acrossAllCompanies()
+                ->where('company_id', $partner->id)->count(),
+            'converted' => PartnerClient::query()->acrossAllCompanies()
+                ->where('company_id', $partner->id)->whereNotNull('converted_company_id')->count(),
             'cards' => CardIssuance::query()->acrossAllCompanies()
                 ->where('company_id', $partner->id)->where('status', 'billed')->count(),
         ];

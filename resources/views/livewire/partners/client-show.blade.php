@@ -92,6 +92,21 @@
             </x-ui.panel>
 
             <x-ui.panel title="Design">
+                @if ($asset === 'letterhead')
+                    {{-- A letterhead has four designs of its own; the card
+                         catalogue does not apply to it. Showing the card tiles
+                         here printed 'rule' whatever was clicked. --}}
+                    <div class="grid grid-cols-2 gap-2">
+                        @foreach ($letterheadDesigns as $key => $label)
+                            <button type="button" wire:click="selectLetterhead('{{ $key }}')" wire:key="lh-{{ $key }}"
+                                    aria-pressed="{{ $letterheadDesign === $key ? 'true' : 'false' }}"
+                                    class="focusable h-11 rounded-xl text-[13.5px] font-semibold transition-colors
+                                           {{ $letterheadDesign === $key ? 'bg-tint-blue text-brand ring-1 ring-brand/40' : 'border border-border bg-surface text-ink-2 hover:bg-surface-2' }}">
+                                {{ $label }}
+                            </button>
+                        @endforeach
+                    </div>
+                @else
                 {{-- The client's own trade is preselected and starred. Each tile
                      embeds the real print renderer, so the tile IS the card —
                      which is also why only one sector's worth is on the page at
@@ -129,6 +144,7 @@
                         </button>
                     @endforeach
                 </div>
+                @endif
             </x-ui.panel>
 
             @can('partners.issue')
@@ -190,6 +206,17 @@
                         <span class="tnum shrink-0 text-[13.5px] font-semibold {{ $issuance->isBilled() ? 'text-ink-2' : 'text-faint line-through' }}">
                             {{ $money($issuance->fee) }}
                         </span>
+                        @can('partners.manage')
+                            @if ($issuance->isBilled())
+                                <button type="button" wire:click="voidIssuance('{{ $issuance->id }}')"
+                                        wire:confirm="Cancel the {{ $money($issuance->fee) }} charge for this card?"
+                                        class="focusable shrink-0 text-[12.5px] font-semibold text-negative hover:underline">
+                                    Void
+                                </button>
+                            @else
+                                <span class="shrink-0 text-[12px] text-faint">Voided</span>
+                            @endif
+                        @endcan
                     </div>
                 @empty
                     <p class="py-4 text-center text-[13.5px] text-muted">Nothing printed for this client yet.</p>

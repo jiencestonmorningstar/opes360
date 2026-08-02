@@ -55,6 +55,9 @@ class Stationery extends Component
         'crest' => 'Crest',
     ];
 
+    /** The same set as a flat list, for anything validating a request value. */
+    public const LETTERHEAD_DESIGNS_KEYS = ['rule', 'banner', 'sidebar', 'crest'];
+
     public function mount(): void
     {
         if (! array_key_exists($this->asset, self::ASSETS)) {
