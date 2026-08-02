@@ -1,52 +1,95 @@
-<x-layouts.marketing title="Features">
-    <section class="mx-auto max-w-3xl px-5 pb-4 pt-16 text-center sm:pt-20">
-        <h1 class="text-[30px] font-bold tracking-[-0.02em] text-ink sm:text-[36px]">Every module, in one suite</h1>
-        <p class="mt-4 text-[15.5px] leading-relaxed text-muted">
-            {{ config('opes.brand.name') }} covers the whole business day — from a quotation to a paid,
-            verified receipt — without switching apps.
-        </p>
-    </section>
+@php
+    /*
+     * Grouped by the part of the day they belong to rather than listed flat.
+     * Twelve identical cards told a visitor how many modules there are and
+     * nothing about how they fit together, which is the actual question.
+     */
+    $groups = [
+        [
+            'eyebrow' => 'Selling',
+            'title' => 'From the first quotation to the money in hand',
+            'accent' => 'blue',
+            'modules' => [
+                ['document-plus', 'Sales & invoicing', 'Quotations, proforma, invoices and receipts — numbered in sequence, issued in a few taps, tracked from first draft to paid.'],
+                ['users', 'Customers & CRM', 'A record and running balance for every customer, with the full document history behind it.'],
+                ['receipt', 'Statement of account', 'A shareable, printable statement of every invoice, payment and balance — the answer to "what do I owe you".'],
+                ['banknotes', 'Payments & receipts', 'Record a payment against any invoice and issue the receipt while the customer is still standing there.'],
+                ['cube', 'Inventory', 'Stock that moves as sales go out the door, with every manual adjustment logged and attributable.'],
+                ['spark', 'Loyalty program', 'Customers earn points automatically and carry a printed card whose QR proves the balance.'],
+            ],
+        ],
+        [
+            'eyebrow' => 'Proving',
+            'title' => 'Documents anyone holding them can check',
+            'accent' => 'teal',
+            'modules' => [
+                ['qr-code', 'QR verification', 'Every invoice, receipt and contract carries a QR that opens a verification page on your own domain.'],
+                ['document', 'Business documents', '26 templates — contracts, letters, payslips, certificates — generated on your letterhead and numbered like any other document.'],
+                ['briefcase', 'Cards & letterheads', '98 business-card designs organised by trade, plus letterheads and a stamp, all generated from your business profile.'],
+                ['check-circle', 'Public profile & reviews', 'A verified page customers can find, review, and save your contact details from.'],
+            ],
+        ],
+        [
+            'eyebrow' => 'Keeping the books',
+            'title' => 'Compliant here, not merely tidy',
+            'accent' => 'green',
+            'modules' => [
+                ['wallet', 'SYSCOHADA accounting', 'A real double-entry journal, ledgers and financial statements on the OHADA chart of accounts.'],
+                ['chart-bar', 'Reports', 'Sales, customer and product reports, exportable to CSV whenever your accountant asks.'],
+                ['document-plus', 'DGI-compliant invoicing', 'TVA computed at the rate you are registered for, with the mandatory mentions printed on every document.'],
+                ['calendar', 'Calendar', 'What shipped, what is due, and what still needs following up — day by day.'],
+            ],
+        ],
+        [
+            'eyebrow' => 'Reaching people',
+            'title' => 'The parts that happen outside the shop',
+            'accent' => 'orange',
+            'modules' => [
+                ['clipboard', 'Opes Forms', 'Build a form, share the link or embed it on your own website, and watch responses arrive.'],
+                ['ticket', 'Opes Events', 'Sell tickets with QR check-in at the door. The count is enforced, so an event cannot oversell.'],
+                ['bell', 'Notifications', 'Email and in-app alerts for payments, low stock, reviews and renewals — no external service in the way.'],
+                ['offline', 'Offline mode', 'Install it like an app. Numbers are leased to the device in advance, so it keeps issuing through an outage.'],
+            ],
+        ],
+    ];
+@endphp
 
-    <section class="mx-auto max-w-6xl px-5 py-12 sm:py-16">
-        <div class="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3">
-            @foreach ([
-                ['icon' => 'document-plus', 'title' => 'Sales & Invoicing', 'body' => 'Quotations, invoices and receipts — numbered, issued and tracked from first draft to paid.'],
-                ['icon' => 'document', 'title' => 'Proforma & Sales Documents', 'body' => 'Proformas and other sales documents that convert straight into an invoice once accepted.'],
-                ['icon' => 'cube', 'title' => 'Inventory', 'body' => 'Products and stock levels that move automatically as sales go out, with adjustments logged.'],
-                ['icon' => 'users', 'title' => 'Customers & CRM', 'body' => 'A record and balance for every customer, plus the full document history behind it.'],
-                ['icon' => 'receipt', 'title' => 'Statement of Account', 'body' => 'A shareable, printable statement of every invoice, receipt and balance for a customer.'],
-                ['icon' => 'briefcase', 'title' => 'Business Documents & Letters', 'body' => 'Contracts, letters and certificates generated from a library of ready-made templates.'],
-                ['icon' => 'qr-code', 'title' => 'QR Verification', 'body' => 'Every document and receipt carries a QR that proves it is genuine, scannable offline or on.'],
-                ['icon' => 'wallet', 'title' => 'Payments & Receipts', 'body' => 'Record payments against any invoice and issue receipts the moment money lands.'],
-                ['icon' => 'chart-bar', 'title' => 'Reports', 'body' => 'Sales, customer and product reports, exportable to CSV whenever they are needed.'],
-                ['icon' => 'briefcase', 'title' => 'Business Card & Letterhead', 'body' => 'Branded stationery — letterhead, business card and stamp — generated from your profile.'],
-                ['icon' => 'offline', 'title' => 'Offline-first', 'body' => 'Keep working with no connection; changes sync the moment the device is back online.'],
-                ['icon' => 'calendar', 'title' => 'Calendar', 'body' => 'A day-by-day view of what has shipped, what is due, and what still needs following up.'],
-            ] as $feature)
-                <div class="card p-5">
-                    <span class="flex size-10 items-center justify-center rounded-lg bg-tint-blue">
-                        <x-icon :name="$feature['icon']" class="size-[19px] text-brand" stroke-width="1.9" />
-                    </span>
-                    <h3 class="mt-3.5 text-[15.5px] font-semibold text-ink">{{ $feature['title'] }}</h3>
-                    <p class="mt-1 text-[13.5px] leading-relaxed text-muted">{{ $feature['body'] }}</p>
-                </div>
-            @endforeach
+<x-layouts.marketing title="Features"
+                     description="Every module in Opes360: sales and invoicing, verified documents, SYSCOHADA accounting, forms, events and offline mode.">
+
+<x-marketing.page-header eyebrow="Features" title="Every module, in one suite"
+    lead="Opes360 covers the whole business day — from a quotation to a paid, verified receipt — without switching apps or paying for an add-on." />
+
+@foreach ($groups as $index => $group)
+    @php
+        // Written out rather than interpolated: Tailwind scans source text, so
+        // text-accent-{$x} would never be generated.
+        $eyebrowClass = ['blue' => 'text-accent-blue', 'teal' => 'text-accent-teal', 'green' => 'text-accent-green', 'orange' => 'text-accent-orange'][$group['accent']];
+        $tintClass = ['blue' => 'bg-tint-blue', 'teal' => 'bg-tint-teal', 'green' => 'bg-tint-green', 'orange' => 'bg-tint-orange'][$group['accent']];
+    @endphp
+
+    <section class="py-14 sm:py-18 {{ $index % 2 === 1 ? 'border-y border-border bg-surface-2/60' : '' }}">
+        <div class="mx-auto max-w-6xl px-5">
+            <div class="max-w-2xl">
+                <p class="text-[12.5px] font-semibold uppercase tracking-[0.08em] {{ $eyebrowClass }}">{{ $group['eyebrow'] }}</p>
+                <h2 class="mt-3 text-[24px] font-bold leading-tight tracking-[-0.025em] text-ink sm:text-[30px]">{{ $group['title'] }}</h2>
+            </div>
+
+            <div class="mt-8 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+                @foreach ($group['modules'] as [$icon, $title, $body])
+                    <div class="card p-5">
+                        <span class="flex size-10 items-center justify-center rounded-lg {{ $tintClass }}">
+                            <x-icon :name="$icon" class="size-[19px] {{ $eyebrowClass }}" stroke-width="1.9" />
+                        </span>
+                        <h3 class="mt-3.5 text-[15.5px] font-semibold text-ink">{{ $title }}</h3>
+                        <p class="mt-1.5 text-[13.5px] leading-relaxed text-muted">{{ $body }}</p>
+                    </div>
+                @endforeach
+            </div>
         </div>
     </section>
+@endforeach
 
-    <section class="border-t border-border py-16 text-center sm:py-20">
-        <h2 class="text-[24px] font-bold tracking-[-0.02em] text-ink sm:text-[28px]">Ready to get started?</h2>
-        <p class="mx-auto mt-3 max-w-md text-[14.5px] text-muted">Set up your business in a few minutes — no card required.</p>
-        <div class="mt-7 flex flex-col items-center justify-center gap-3 sm:flex-row">
-            <a href="{{ route('demo.request') }}"
-               class="tap focusable flex h-12 w-full items-center justify-center rounded-xl bg-fill-brand px-6 text-[15px] font-semibold text-white transition-opacity hover:opacity-90 sm:w-auto">
-                Try a demo
-            </a>
-            <a href="{{ route('marketing.pricing') }}"
-               class="tap focusable flex h-12 w-full items-center justify-center rounded-xl border border-border bg-surface px-6 text-[15px] font-semibold text-ink transition-colors hover:border-brand/40 sm:w-auto">
-                See pricing
-            </a>
-        </div>
-    </section>
-</div>
+<x-marketing.cta secondary="pricing" />
+
 </x-layouts.marketing>

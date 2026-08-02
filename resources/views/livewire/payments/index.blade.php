@@ -10,8 +10,13 @@
         <p class="mt-1 text-[14.5px] text-muted">Every payment received, with its receipt.</p>
     </div>
 
-    {{-- Period totals --}}
-    <div class="mt-5 grid grid-cols-3 gap-3">
+    {{-- Period totals.
+
+         Three across needs about 100px a tile, and a currency amount has no
+         break opportunity in it: "FCFA1,250,000" does not fit, and rather than
+         scroll, the browser quietly shrinks the entire page to make room.
+         Stacked below 400px, three across above it. --}}
+    <div class="mt-5 grid grid-cols-1 gap-3 min-[400px]:grid-cols-3">
         @foreach (['today' => 'Today', 'week' => 'This week', 'month' => 'This month'] as $key => $label)
             <div class="card p-4">
                 <p class="text-[12.5px] font-medium text-muted">{{ $label }}</p>

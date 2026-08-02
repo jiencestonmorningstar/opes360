@@ -1,9 +1,10 @@
 <x-layouts.marketing title="Terms of Service">
-<div class="mx-auto max-w-3xl px-5 py-16 sm:py-20">
-    <h1 class="text-[30px] font-bold tracking-[-0.02em] text-ink sm:text-[36px]">Terms of Service</h1>
-    <p class="mt-2 text-[13.5px] text-faint">Last updated {{ now()->format('F Y') }}</p>
+<x-marketing.page-header eyebrow="Legal" title="Terms of Service"
+    :lead="'Last updated '.now()->format('F Y').'.'" />
 
-    <div class="mt-10 space-y-8 text-[15px] leading-relaxed text-ink-2">
+<div class="mx-auto max-w-3xl px-5 py-14 sm:py-20">
+
+    <div class="space-y-8 text-[15px] leading-relaxed text-ink-2">
         <section>
             <h2 class="text-[17px] font-bold text-ink">The service</h2>
             <p class="mt-2">

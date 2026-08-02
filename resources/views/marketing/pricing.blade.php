@@ -209,5 +209,4 @@
             </a>
         </div>
     </section>
-</div>
 </x-layouts.marketing>

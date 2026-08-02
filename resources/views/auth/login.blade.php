@@ -41,13 +41,16 @@
                        placeholder="••••••••">
             </div>
 
-            <div class="flex items-center justify-between gap-3 pt-1">
+            {{-- Two lines under 400px. Side by side, the label wrapped to two
+                 rows beside the link and the two ran into each other on the
+                 narrow phones this is mostly signed into. --}}
+            <div class="flex flex-col gap-3 pt-1 min-[400px]:flex-row min-[400px]:items-center min-[400px]:justify-between">
                 <label class="flex items-center gap-2.5 text-[14px] text-ink-2">
                     <input type="checkbox" name="remember" value="1"
-                           class="size-[18px] rounded border-border-strong text-brand focus:ring-brand/30">
+                           class="size-[18px] shrink-0 rounded border-border-strong text-brand focus:ring-brand/30">
                     Keep me signed in
                 </label>
-                <a href="{{ route('password.request') }}" class="text-[13.5px] font-semibold text-brand hover:underline">
+                <a href="{{ route('password.request') }}" class="shrink-0 text-[13.5px] font-semibold text-brand hover:underline">
                     Forgot password?
                 </a>
             </div>

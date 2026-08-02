@@ -1,11 +1,7 @@
 <x-layouts.marketing title="Blog"
                      :description="'Notes on offline-first commerce, QR verification, loyalty and running a business on '.config('opes.brand.name').'.'">
-    <section class="mx-auto max-w-3xl px-5 pb-4 pt-16 text-center sm:pt-20">
-        <h1 class="text-[30px] font-bold tracking-[-0.02em] text-ink sm:text-[36px]">Blog</h1>
-        <p class="mt-4 text-[15.5px] leading-relaxed text-muted">
-            Notes on offline-first commerce, verification, loyalty, and running a business on {{ config('opes.brand.name') }}.
-        </p>
-    </section>
+<x-marketing.page-header eyebrow="Blog" title="Notes from building this"
+    :lead="'Offline-first commerce, what a QR on an invoice actually proves, loyalty that people use, and running a business on '.config('opes.brand.name').'.'" />
 
     <section class="mx-auto max-w-3xl px-5 py-12 sm:py-16">
         <div class="space-y-5">
@@ -26,5 +22,4 @@
             @endforeach
         </div>
     </section>
-</div>
 </x-layouts.marketing>

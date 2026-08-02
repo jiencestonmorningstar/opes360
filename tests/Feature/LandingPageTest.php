@@ -88,12 +88,22 @@ class LandingPageTest extends TestCase
             ->assertSee('Opesware Technologies');
     }
 
-    public function test_the_features_page_renders(): void
+    /**
+     * Modules are grouped by the part of the day they belong to rather than
+     * listed flat: twelve identical cards told a visitor how many modules there
+     * are and nothing about how they fit together.
+     */
+    public function test_the_features_page_groups_every_module(): void
     {
-        $this->get(route('marketing.features'))
-            ->assertOk()
-            ->assertSee('Sales &amp; Invoicing', false)
-            ->assertSee('QR Verification', false);
+        $response = $this->get(route('marketing.features'))->assertOk();
+
+        foreach (['Selling', 'Proving', 'Keeping the books', 'Reaching people'] as $group) {
+            $response->assertSee($group, false);
+        }
+
+        $response->assertSee('Sales &amp; invoicing', false)
+            ->assertSee('QR verification', false)
+            ->assertSee('SYSCOHADA accounting', false);
     }
 
     public function test_the_pricing_page_shows_all_tiers_and_figures(): void

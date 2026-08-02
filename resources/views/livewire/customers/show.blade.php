@@ -48,7 +48,9 @@
                     </div>
                 </div>
 
-                <div class="mt-5 grid grid-cols-3 gap-3 border-t border-border pt-4">
+                {{-- See the note in payments/index: a currency figure cannot be
+                     broken, so three of them do not fit a 360px screen. --}}
+                <div class="mt-5 grid grid-cols-1 gap-3 border-t border-border pt-4 min-[400px]:grid-cols-3">
                     @foreach ([
                         ['Total billed', $stats['billed'], 'text-ink'],
                         ['Paid', $stats['paid'], 'text-positive'],
