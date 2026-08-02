@@ -42,7 +42,14 @@ class AuthController extends Controller
 
         $user = User::where('email', Str::lower($credentials['email']))->first();
 
-        if ($user === null || ! Auth::getProvider()->validateCredentials($user, $credentials)) {
+        /*
+         * An invited account has no password until its owner accepts. The
+         * hasher already refuses an empty stored hash, so this is belt and
+         * braces — but a password check is not a place to rely on a library's
+         * null handling being what you remember it being.
+         */
+        if ($user === null || $user->password === null
+            || ! Auth::getProvider()->validateCredentials($user, $credentials)) {
             RateLimiter::hit($key, 900);
 
             return back()

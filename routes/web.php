@@ -37,6 +37,7 @@ use App\Livewire\Expenses\Index as ExpensesIndex;
 use App\Livewire\Forms\Builder as FormsBuilder;
 use App\Livewire\Forms\Index as FormsIndex;
 use App\Livewire\Forms\Responses as FormsResponses;
+use App\Livewire\Invitations\Accept as InvitationAccept;
 use App\Livewire\Onboarding\Register;
 use App\Livewire\Papers\Compose as PapersCompose;
 use App\Livewire\Papers\Index as PapersIndex;
@@ -96,6 +97,16 @@ Route::middleware('throttle:10,1')->group(function () {
     Route::post('/demo', [DemoRequestController::class, 'store'])->name('demo.store');
     Route::get('/demo/thanks', [DemoRequestController::class, 'thanks'])->name('demo.thanks');
 });
+
+/*
+ * Accepting an invitation. Outside the guest group on purpose: an accountant
+ * already signed in to their own business is exactly who gets invited to
+ * somebody else's, and bouncing them to the dashboard would strand the link.
+ * Throttled because the token is the only thing guarding it.
+ */
+Route::get('/invitations/{token}', InvitationAccept::class)
+    ->middleware('throttle:20,1')
+    ->name('invitations.show');
 
 /*
  * MTN and Orange call back from their own servers, never from a signed-in

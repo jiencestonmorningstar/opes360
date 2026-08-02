@@ -218,28 +218,147 @@
 
         {{-- Team --}}
         <x-ui.panel title="Team" body-class="-mx-1.5">
+            @can('users.invite')
+                <x-slot:actions>
+                    <button type="button" wire:click="startInviting"
+                            class="focusable text-[14px] font-semibold text-brand hover:opacity-80">Invite</button>
+                </x-slot:actions>
+            @endcan
+
+            @if (session('teamStatus'))
+                <div class="mx-1.5 mb-3 rounded-xl bg-tint-green px-4 py-2.5 text-[13px] font-semibold text-positive">
+                    {{ session('teamStatus') }}
+                </div>
+            @endif
+            @if (session('teamError'))
+                <div class="mx-1.5 mb-3 rounded-xl bg-tint-red px-4 py-2.5 text-[13px] font-semibold text-negative">
+                    {{ session('teamError') }}
+                </div>
+            @endif
+
+            @if ($inviting)
+                <div class="mx-1.5 mb-4 rounded-xl border border-brand bg-surface p-4">
+                    <p class="text-[13.5px] leading-relaxed text-muted">
+                        They get an email with a link. Nothing changes for them until they open it, and the link stops
+                        working after {{ \App\Services\TeamInvitations::VALID_FOR_DAYS }} days.
+                    </p>
+
+                    <div class="mt-3.5 space-y-3">
+                        <div>
+                            <label for="invite-email" class="mb-1.5 block text-[13px] font-semibold text-ink-2">Email</label>
+                            <input id="invite-email" type="email" wire:model="inviteEmail" autocomplete="off"
+                                   placeholder="marie@example.com"
+                                   class="h-12 w-full rounded-xl border border-border bg-surface px-3.5 text-[15px] text-ink placeholder:text-faint focus:border-brand focus:outline-none focus:ring-2 focus:ring-brand/20">
+                            @error('inviteEmail') <p class="mt-1.5 text-[13px] font-medium text-negative">{{ $message }}</p> @enderror
+                        </div>
+
+                        <div class="grid gap-3 sm:grid-cols-2">
+                            <div>
+                                <label for="invite-role" class="mb-1.5 block text-[13px] font-semibold text-ink-2">Role</label>
+                                <select id="invite-role" wire:model="inviteRole"
+                                        class="h-12 w-full rounded-xl border border-border bg-surface px-3.5 text-[15px] text-ink focus:border-brand focus:outline-none focus:ring-2 focus:ring-brand/20">
+                                    @foreach ($assignableRoles as $role)
+                                        <option value="{{ $role->id }}">{{ $role->name }}</option>
+                                    @endforeach
+                                </select>
+                            </div>
+                            <div>
+                                <label for="invite-title" class="mb-1.5 block text-[13px] font-semibold text-ink-2">
+                                    Job title <span class="font-normal text-faint">(optional)</span>
+                                </label>
+                                <input id="invite-title" type="text" wire:model="inviteJobTitle" maxlength="80"
+                                       class="h-12 w-full rounded-xl border border-border bg-surface px-3.5 text-[15px] text-ink focus:border-brand focus:outline-none focus:ring-2 focus:ring-brand/20">
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="mt-4 flex flex-col gap-3 sm:flex-row-reverse">
+                        <button type="button" wire:click="sendInvite" wire:loading.attr="disabled"
+                                class="tap focusable flex h-11 items-center justify-center rounded-xl bg-fill-brand px-5 text-[14.5px] font-semibold text-white hover:opacity-90">
+                            Send the invitation
+                        </button>
+                        <button type="button" wire:click="$set('inviting', false)"
+                                class="tap focusable flex h-11 items-center justify-center rounded-xl border border-border bg-surface px-5 text-[14.5px] font-semibold text-ink">
+                            Cancel
+                        </button>
+                    </div>
+                </div>
+            @endif
+
             @foreach ($team as $member)
                 @php
                     $accent = Accent::forKey((string) $member->id);
-                    $roleId = $member->companies->first()?->pivot?->role_id;
+                    $pivot = $member->companies->first()?->pivot;
+                    $roleId = $pivot?->role_id;
+                    $pending = $pivot?->status === 'invited';
+                    $isOwner = $company?->owner_id === $member->id;
+                    $isSelf = auth()->id() === $member->id;
                 @endphp
+                {{-- Two rows on a phone, one from `sm`. Side by side at 360px
+                     the role select took its width first and the name column
+                     collapsed to "S.." — a team list whose whole job is saying
+                     who somebody is. --}}
                 <div wire:key="member-{{ $member->id }}"
-                     class="flex items-center gap-3 rounded-lg px-1.5 py-2.5 {{ ! $loop->first ? 'border-t border-border' : '' }}">
+                     class="flex flex-wrap items-center gap-x-3 gap-y-2 rounded-lg px-1.5 py-2.5 {{ ! $loop->first ? 'border-t border-border' : '' }}">
                     <span class="flex size-[38px] shrink-0 items-center justify-center rounded-full {{ Accent::tint($accent) }} text-[12.5px] font-bold {{ Accent::text($accent) }}">
                         {{ $member->initials() }}
                     </span>
                     <span class="min-w-0 flex-1">
-                        <span class="block truncate text-[14.5px] font-semibold text-ink">{{ $member->name }}</span>
+                        <span class="block truncate text-[14.5px] font-semibold text-ink">
+                            {{ $member->name }}@if ($isSelf) <span class="font-normal text-faint">(you)</span> @endif
+                        </span>
                         <span class="block truncate text-[12.5px] text-muted">{{ $member->email }}</span>
                     </span>
-                    <span class="shrink-0 rounded-full bg-tint-blue px-2.5 py-1 text-[11.5px] font-semibold text-brand">
-                        {{ $roles[$roleId]->name ?? 'Member' }}
-                    </span>
+
+                    @if ($pending)
+                        <span class="shrink-0 rounded-full bg-tint-amber px-2.5 py-1 text-[11.5px] font-semibold text-warning">
+                            Invited
+                        </span>
+                    @endif
+
+                    <div class="flex w-full items-center justify-end gap-2 sm:w-auto">
+                        {{-- The owner's role and your own are shown, never
+                             offered: an administrator who demotes themselves has
+                             locked the business out of its own settings. --}}
+                        @if ($isOwner || $isSelf || ! auth()->user()->can('users.update-role'))
+                            <span class="shrink-0 rounded-full bg-tint-blue px-2.5 py-1 text-[11.5px] font-semibold text-brand">
+                                {{ $roles[$roleId]->name ?? 'Member' }}
+                            </span>
+                        @else
+                            <label class="sr-only" for="role-{{ $member->id }}">{{ $member->name }}’s role</label>
+                            <select id="role-{{ $member->id }}"
+                                    wire:change="changeRole({{ $member->id }}, $event.target.value)"
+                                    class="h-10 min-w-0 rounded-xl border border-border bg-surface px-2.5 text-[13px] font-semibold text-ink-2 focus:border-brand focus:outline-none focus:ring-2 focus:ring-brand/20">
+                                @foreach ($assignableRoles as $role)
+                                    <option value="{{ $role->id }}" @selected($role->id === $roleId)>{{ $role->name }}</option>
+                                @endforeach
+                            </select>
+                        @endif
+
+                        @if ($pending && auth()->user()->can('users.invite'))
+                            <button type="button" wire:click="resendInvite({{ $member->id }})"
+                                    class="focusable flex h-10 shrink-0 items-center rounded-xl px-2.5 text-[13px] font-semibold text-brand hover:bg-tint-blue">
+                                Resend
+                            </button>
+                        @endif
+
+                        {{-- Worded, not an icon: the icon set has no unambiguous
+                             "remove", and the nearest one reads as a warning
+                             rather than an action. --}}
+                        @if (! $isOwner && ! $isSelf && auth()->user()->can('users.remove'))
+                            <button type="button" wire:click="removeMember({{ $member->id }})"
+                                    wire:confirm="Remove {{ $member->name }} from {{ $company?->name }}? They lose access immediately. Everything they created stays."
+                                    class="focusable flex h-10 shrink-0 items-center rounded-xl px-2.5 text-[13px] font-semibold text-negative hover:bg-tint-red">
+                                Remove
+                            </button>
+                        @endif
+                    </div>
                 </div>
             @endforeach
 
-            <p class="mt-3 px-1.5 text-[12.5px] text-muted">
-                Invitations and role changes arrive with the full user-management module.
+            <p class="mt-3 px-1.5 text-[12.5px] leading-relaxed text-muted">
+                Ownership is not assigned from here. Everything a member creates — invoices, receipts, journal entries —
+                keeps their name on it after they leave.
             </p>
         </x-ui.panel>
 

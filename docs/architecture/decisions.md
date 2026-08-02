@@ -300,3 +300,36 @@ note as opposed to an edit.
 **Guard:** an invoice cannot be credited beyond its own total. Without it, the "Convert to Credit Note"
 button was a full-value credit note every time it was pressed, and pressing it twice would have recorded the
 business as owing its customer the entire amount of a bill it had raised correctly.
+
+---
+
+## 16. An invitation is a membership in the `invited` state
+
+**Decision:** inviting somebody writes the `company_user` row immediately — status `invited`, with a secret
+and an expiry on the row itself — rather than queueing a message and creating the membership when they
+accept. Accepting is a state change.
+
+**Why:** the team list can then show pending people straight away, which answers "did I actually invite
+Marie or did I only mean to". There is no window in which two half-invitations exist for one person, because
+the unique index on `(company_id, user_id)` already forbids it. And revoking is deleting a row rather than
+hunting for an unsent message.
+
+**Why the token lives on the pivot:** there is exactly one live invitation per person per business, which is
+the same thing that index says. A separate `invitations` table could hold two rows disagreeing about who had
+been invited to what, and the reconciliation would be somebody's afternoon.
+
+**Somebody with no account gets one, with no password.** `users.password` is now nullable, which is the
+honest representation of "has not chosen one yet": the accept screen asks for a password only when it is
+missing, and an existing user invited to a second business is never prompted to change theirs from a link
+that may have been forwarded. Laravel's hasher already refuses an empty stored hash before comparing, and
+the login controller refuses such an account explicitly as well.
+
+**What the service will not do:** nobody may change their own role or remove themselves, and the owner is
+untouchable through it. Both are mistakes with no route back from inside the product — an administrator who
+demotes themselves can no longer reach the screen that would undo it. Ownership is likewise not assignable
+from a dropdown: it carries the billing and the responsibility for what the books say, and moving it is a
+different act than changing a permission.
+
+**Removal detaches rather than flags.** A membership row is a claim on this business's data, and a `status`
+column is one forgotten `wherePivot` away from still honouring it. The person and everything they made stay
+— an invoice keeps saying who issued it.

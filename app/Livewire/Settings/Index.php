@@ -5,6 +5,7 @@ namespace App\Livewire\Settings;
 use App\Models\Device;
 use App\Models\Role;
 use App\Models\User;
+use App\Services\TeamInvitations;
 use App\Services\TwoFactor;
 use App\Support\CurrentCompany;
 use App\Support\Modules;
@@ -13,6 +14,7 @@ use Illuminate\Foundation\Auth\Access\AuthorizesRequests;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Validation\Rule;
 use Livewire\Component;
+use RuntimeException;
 
 class Index extends Component
 {
@@ -31,6 +33,15 @@ class Index extends Component
     public string $newPasswordConfirmation = '';
 
     public bool $enrolling = false;
+
+    // ── Team ────────────────────────────────────────────────────────────
+    public bool $inviting = false;
+
+    public string $inviteEmail = '';
+
+    public string $inviteRole = '';
+
+    public string $inviteJobTitle = '';
 
     public string $twoFactorSecret = '';
 
@@ -188,6 +199,130 @@ class Index extends Component
         session()->flash('deviceStatus', 'Device revoked. It can no longer sync.');
     }
 
+    // ── Team ────────────────────────────────────────────────────────────
+
+    public function startInviting(): void
+    {
+        $this->authorize('users.invite');
+
+        $this->reset(['inviteEmail', 'inviteJobTitle']);
+        $this->resetValidation();
+        // Sales Officer: the role most people are invited as, and the one that
+        // can do a day's work without being able to change what the business is.
+        $this->inviteRole = (string) Role::where('slug', Role::SALES_OFFICER)->value('id');
+        $this->inviting = true;
+    }
+
+    public function sendInvite(): void
+    {
+        $this->authorize('users.invite');
+
+        $this->validate([
+            'inviteEmail' => ['required', 'email', 'max:160'],
+            'inviteRole' => ['required', 'exists:roles,id'],
+            'inviteJobTitle' => ['nullable', 'string', 'max:80'],
+        ], [
+            'inviteEmail.required' => 'An email address is how the invitation reaches them.',
+        ]);
+
+        $company = app(CurrentCompany::class)->get();
+
+        if ($company === null) {
+            return;
+        }
+
+        try {
+            app(TeamInvitations::class)->invite(
+                $company,
+                $this->inviteEmail,
+                Role::findOrFail($this->inviteRole),
+                $this->inviteJobTitle ?: null,
+                auth()->user(),
+            );
+        } catch (RuntimeException $e) {
+            $this->addError('inviteEmail', $e->getMessage());
+
+            return;
+        }
+
+        $this->inviting = false;
+        session()->flash('teamStatus', 'Invitation sent to '.strtolower(trim($this->inviteEmail)).'.');
+    }
+
+    public function changeRole(int $userId, string $roleId): void
+    {
+        $this->authorize('users.update-role');
+
+        $this->runTeamAction(
+            fn (TeamInvitations $team, $company, User $member) => $team->changeRole(
+                $company, $member, Role::findOrFail($roleId), auth()->user()
+            ),
+            $userId,
+            'Role changed.'
+        );
+    }
+
+    public function resendInvite(int $userId): void
+    {
+        $this->authorize('users.invite');
+
+        $this->runTeamAction(
+            fn (TeamInvitations $team, $company, User $member) => $team->resend($company, $member, auth()->user()),
+            $userId,
+            'Invitation sent again.'
+        );
+    }
+
+    public function removeMember(int $userId): void
+    {
+        $this->authorize('users.remove');
+
+        $this->runTeamAction(
+            function (TeamInvitations $team, $company, User $member) {
+                $pending = $company->users()->where('users.id', $member->id)->first()?->pivot->status === 'invited';
+
+                $pending
+                    ? $team->cancelInvitation($company, $member, auth()->user())
+                    : $team->remove($company, $member, auth()->user());
+            },
+            $userId,
+            'Removed from the team.'
+        );
+    }
+
+    /**
+     * The shape every team action shares: find the member in *this* company,
+     * do the thing, report what happened. Looking the member up through the
+     * company rather than by id is what stops a crafted user id reaching
+     * somebody else's staff.
+     */
+    protected function runTeamAction(callable $action, int $userId, string $success): void
+    {
+        $company = app(CurrentCompany::class)->get();
+
+        if ($company === null) {
+            return;
+        }
+
+        $member = $company->users()->where('users.id', $userId)->first();
+
+        if ($member === null) {
+            session()->flash('teamError', 'That person is not on this team.');
+
+            return;
+        }
+
+        try {
+            $action(app(TeamInvitations::class), $company, $member);
+        } catch (RuntimeException $e) {
+            session()->flash('teamError', $e->getMessage());
+
+            return;
+        }
+
+        session()->flash('teamStatus', $success);
+    }
+
     public function render(): View
     {
         $company = app(CurrentCompany::class)->get();
@@ -206,6 +341,10 @@ class Index extends Component
                     ->get()
                 : collect(),
             'roles' => Role::orderBy('level')->get()->keyBy('id'),
+            // Everything except Owner: ownership carries the billing and the
+            // legal responsibility for what the books say, and handing it over
+            // is not a dropdown. See TeamInvitations.
+            'assignableRoles' => Role::where('slug', '!=', Role::OWNER)->orderBy('level')->get(),
             'devices' => Device::query()->with('user')->latest('last_synced_at')->get(),
             'modules' => Modules::switchable(),
             'enabledModules' => $company ? Modules::enabledFor($company) : [],
