@@ -67,9 +67,16 @@
                         <input type="text" wire:model="form.name" class="{{ $inputClass }}">
                         @error('form.name') <p class="mt-1 text-[12.5px] font-medium text-warning">{{ $message }}</p> @enderror
                     </label>
+                    {{-- Declared not-a-credential here too. This page has no
+                         password field of its own, but a manager that has
+                         mis-learned "Motto" once will offer to fill it
+                         anywhere the label appears. See the signup form. --}}
                     <label>
                         <span class="{{ $labelClass }}">Motto</span>
-                        <input type="text" wire:model="form.motto" placeholder="Business made simple" class="{{ $inputClass }}">
+                        <input type="text" wire:model="form.motto" placeholder="Business made simple"
+                               autocomplete="off" data-form-type="other"
+                               data-1p-ignore data-lpignore="true" data-bwignore
+                               class="{{ $inputClass }}">
                     </label>
                     <label>
                         <span class="{{ $labelClass }}">Industry</span>
