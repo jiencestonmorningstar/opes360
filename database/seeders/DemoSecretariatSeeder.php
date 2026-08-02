@@ -62,7 +62,11 @@ class DemoSecretariatSeeder extends Seeder
             'currency' => 'XAF',
             'owner_id' => $owner->id,
             'account_type' => 'active',
-            'plan' => 'growth',
+            // Top plan, like the other demo: payroll is a Business-tier module
+            // and this is the account whose staff, payslips and asset register
+            // exist to show it working. A Growth-plan showcase would seed four
+            // employees and a paid payroll run behind a 403.
+            'plan' => 'business',
             'kind' => 'secretariat',
             'email' => 'secretariat@opesware.com',
             'phones' => ['+237 6 70 41 62 38'],

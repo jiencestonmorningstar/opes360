@@ -75,6 +75,10 @@ class Edit extends Component
             'cnps_employer_number' => $company->cnps_employer_number,
             'cnps_risk_group' => $company->cnps_risk_group ?: 'a',
             'cnps_family_regime' => $company->cnps_family_regime ?: 'general',
+            // Default on, matching config/payroll.php: a business that has
+            // never touched the setting withholds what the law asks for.
+            'withhold_tdl' => (bool) (($company->payroll_settings['tdl'] ?? null) ?? true),
+            'withhold_rav' => (bool) (($company->payroll_settings['rav'] ?? null) ?? true),
             'vat_registered' => (bool) $company->vat_registered,
             'vat_rate' => (string) ($company->vat_rate ?: '19.25'),
             'prices_include_tax' => (bool) $company->prices_include_tax,
@@ -115,6 +119,8 @@ class Edit extends Component
             'form.cnps_employer_number' => ['nullable', 'string', 'max:40'],
             'form.cnps_risk_group' => ['required', 'in:'.implode(',', array_keys(config('payroll.cnps.occupational_risk.groups')))],
             'form.cnps_family_regime' => ['required', 'in:general,agricultural,teaching'],
+            'form.withhold_tdl' => ['boolean'],
+            'form.withhold_rav' => ['boolean'],
             // Capped well above any real rate: a typo of 1925 for 19.25 would
             // otherwise multiply every invoice in the business by twenty.
             'form.vat_rate' => ['nullable', 'numeric', 'min:0', 'max:100'],
@@ -146,6 +152,10 @@ class Edit extends Component
             'cnps_employer_number' => $this->form['cnps_employer_number'] ?: null,
             'cnps_risk_group' => $this->form['cnps_risk_group'],
             'cnps_family_regime' => $this->form['cnps_family_regime'],
+            'payroll_settings' => [
+                'tdl' => (bool) $this->form['withhold_tdl'],
+                'rav' => (bool) $this->form['withhold_rav'],
+            ],
             'vat_registered' => (bool) $this->form['vat_registered'],
             'vat_rate' => $this->form['vat_rate'] !== '' ? $this->form['vat_rate'] : 19.25,
             'prices_include_tax' => (bool) $this->form['prices_include_tax'],

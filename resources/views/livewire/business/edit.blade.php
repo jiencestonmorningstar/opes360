@@ -156,6 +156,45 @@
                             @error('form.cnps_family_regime') <p class="mt-1 text-[12.5px] font-medium text-warning">{{ $message }}</p> @enderror
                         </label>
                     </div>
+
+                    {{-- Both are withheld from the employee and paid on to a
+                         council or the CRTV. Switchable because withholding a
+                         figure the business cannot justify to the person it
+                         came from is worse than not withholding it — see the
+                         provenance note in config/payroll.php. --}}
+                    <div class="mt-4 rounded-xl border border-border p-4">
+                        <p class="text-[14px] font-semibold text-ink">Payroll withholdings</p>
+                        <p class="mt-1 text-[12.5px] leading-relaxed text-muted">
+                            Both come off the employee's payslip and are paid on by you. Switch one off only if your
+                            accountant says it does not apply — the payslip will stop showing it from the next run.
+                        </p>
+
+                        <div class="mt-3 flex flex-col gap-3">
+                            <label class="flex items-start gap-3">
+                                <input type="checkbox" wire:model="form.withhold_tdl"
+                                       class="mt-0.5 size-[20px] shrink-0 rounded border-border text-brand focus:ring-brand/30">
+                                <span>
+                                    <span class="block text-[14px] font-semibold text-ink">Taxe de développement local</span>
+                                    <span class="block text-[12.5px] text-muted">
+                                        A fixed amount by salary band, paid to the council where the business sits.
+                                        Nothing is due below {{ number_format(config('payroll.tdl.floor')) }} F.
+                                    </span>
+                                </span>
+                            </label>
+
+                            <label class="flex items-start gap-3">
+                                <input type="checkbox" wire:model="form.withhold_rav"
+                                       class="mt-0.5 size-[20px] shrink-0 rounded border-border text-brand focus:ring-brand/30">
+                                <span>
+                                    <span class="block text-[14px] font-semibold text-ink">Redevance audiovisuelle</span>
+                                    <span class="block text-[12.5px] text-muted">
+                                        For the CRTV, by band on the gross taxable salary, under ordonnance 89/004.
+                                        Nothing is due below {{ number_format(config('payroll.rav.floor')) }} F.
+                                    </span>
+                                </span>
+                            </label>
+                        </div>
+                    </div>
                 @endcan
 
                 {{-- VAT. Only the régime du réel collects it, so the toggle is

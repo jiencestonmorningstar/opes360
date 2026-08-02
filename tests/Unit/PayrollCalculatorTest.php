@@ -200,17 +200,54 @@ class PayrollCalculatorTest extends TestCase
     }
 
     /**
-     * The band is read against the base salary, so an allowance cannot push
-     * someone into a higher one.
+     * The two scales are read against different figures, and getting them the
+     * same way round would misstate one of them on every payslip carrying an
+     * allowance.
+     *
+     * The TDL's barème is a retenue sur le salaire de base, so an allowance
+     * never moves the band. The RAV's base is set by ordonnance 89/004 as the
+     * gross taxable salary — the same figure the IRPP is computed on — so a
+     * taxable allowance does move it.
      */
-    public function test_an_allowance_does_not_move_the_tdl_band(): void
+    public function test_a_taxable_allowance_moves_the_rav_band_but_not_the_tdl_band(): void
     {
         $r = $this->calculator()->compute(new PayrollInput(
             baseSalary: 145000,
-            allowances: [['label' => 'Prime', 'amount' => 60000]],
+            allowances: [['label' => 'Prime de rendement', 'amount' => 60000]],
         ));
 
         $this->assertSame(1000.0, $r->tdl, 'The 125 001–150 000 band, on the base alone.');
+        // Taxable gross is 205 000, so the 200 001–300 000 band — not the
+        // 100 001–200 000 one the base salary alone would have given.
+        $this->assertSame(3250.0, $r->rav);
+    }
+
+    /** An allowance outside the tax base is outside the RAV's base too. */
+    public function test_an_exempt_allowance_moves_neither_band(): void
+    {
+        $r = $this->calculator()->compute(new PayrollInput(
+            baseSalary: 145000,
+            allowances: [['label' => 'Transport', 'amount' => 60000, 'taxable' => false, 'cnps' => false]],
+        ));
+
+        $this->assertSame(1000.0, $r->tdl);
+        $this->assertSame(1950.0, $r->rav, 'Taxable gross is still 145 000.');
+    }
+
+    /**
+     * Someone on 45 000 with a 10 000 taxable bonus is over the 50 000 floor
+     * on the figure the ordinance names, so the RAV is due — while the TDL,
+     * read against a base salary under 62 000, is not.
+     */
+    public function test_the_rav_floor_is_tested_against_the_taxable_gross(): void
+    {
+        $r = $this->calculator()->compute(new PayrollInput(
+            baseSalary: 45000,
+            allowances: [['label' => 'Prime', 'amount' => 10000]],
+        ));
+
+        $this->assertSame(750.0, $r->rav);
+        $this->assertSame(0.0, $r->tdl);
     }
 
     /**

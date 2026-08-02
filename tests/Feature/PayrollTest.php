@@ -581,6 +581,49 @@ class PayrollTest extends TestCase
         $this->assertSame('2000.00', $slip->tdl, 'The other one is untouched.');
     }
 
+    /**
+     * And can reach that switch. A safety valve only settable by editing the
+     * database is not a safety valve.
+     */
+    public function test_the_business_screen_switches_a_withholding_off_and_on(): void
+    {
+        Livewire::actingAs($this->owner)
+            ->test(Edit::class)
+            ->set('form.withhold_rav', false)
+            ->call('save')
+            ->assertHasNoErrors();
+
+        $this->assertFalse($this->company->fresh()->payroll_settings['rav']);
+        $this->assertTrue($this->company->fresh()->payroll_settings['tdl'], 'Untouched.');
+
+        app(CurrentCompany::class)->set($this->company->fresh());
+        $this->hire('Yvonne', 'Ngo Bell', 300000);
+        $this->runner()->build($this->runner()->open(now()->toDateString(), $this->owner), $this->owner);
+
+        $this->assertSame('0.00', Payslip::query()->firstOrFail()->rav);
+
+        Livewire::actingAs($this->owner)
+            ->test(Edit::class)
+            ->set('form.withhold_rav', true)
+            ->call('save');
+
+        $this->assertTrue($this->company->fresh()->payroll_settings['rav']);
+    }
+
+    /** A business that has never touched the setting withholds what the law asks. */
+    public function test_the_withholdings_default_to_on(): void
+    {
+        $this->assertNull($this->company->payroll_settings);
+
+        $this->hire('Yvonne', 'Ngo Bell', 300000);
+        $this->runner()->build($this->runner()->open(now()->toDateString(), $this->owner), $this->owner);
+
+        $slip = Payslip::query()->firstOrFail();
+
+        $this->assertSame('3250.00', $slip->rav);
+        $this->assertSame('2000.00', $slip->tdl);
+    }
+
     // ─────────────────────────────────────────────────── who may do what ──
 
     /**

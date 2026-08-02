@@ -94,11 +94,11 @@ class PayrollCalculator
         $cfcEmployee = $this->round($taxableGross * (float) $this->get('cfc.employee', 0.01));
 
         $tdl = $in->withholdTdl && $this->get('tdl.enabled', true)
-            ? $this->banded('tdl', $base, $gross)
+            ? $this->banded('tdl', $base, $gross, $taxableGross)
             : 0.0;
 
         $rav = $in->withholdRav && $this->get('rav.enabled', true)
-            ? $this->banded('rav', $base, $gross)
+            ? $this->banded('rav', $base, $gross, $taxableGross)
             : 0.0;
 
         $other = $this->round($in->totalDeductions());
@@ -261,13 +261,28 @@ class PayrollCalculator
     /**
      * A fixed amount read off a scale — the TDL and the RAV.
      *
-     * Read against the base salary rather than the gross by default: an
-     * allowance should not push someone into a higher TDL band, and the
-     * published scales are written against the salaire de base.
+     * Which figure the scale is read against differs between the two, and it
+     * is not a detail:
+     *
+     *   TDL   the salaire de base. Its published barème is captioned as a
+     *         retenue sur le salaire de base, so an allowance never moves the
+     *         band.
+     *   RAV   the gross taxable salary. Ordonnance 89/004 defines the base as
+     *         "le montant brut des sommes retenues pour le calcul de l'impôt
+     *         proportionnel sur les salaires" — the same figure the IRPP is
+     *         computed on, which a taxable allowance does move.
+     *
+     * Reading both the same way would misstate one of them on every payslip
+     * that carries an allowance.
      */
-    protected function banded(string $key, float $base, float $gross): float
+    protected function banded(string $key, float $base, float $gross, float $taxableGross): float
     {
-        $against = $this->get("{$key}.basis", 'base') === 'gross' ? $gross : $base;
+        $against = match ($this->get("{$key}.basis", 'base')) {
+            'gross' => $gross,
+            'taxable_gross' => $taxableGross,
+            default => $base,
+        };
+
         $floor = (float) $this->get("{$key}.floor", 0);
 
         if ($against < $floor) {

@@ -31,9 +31,12 @@
  * NOT independently confirmed, and the one thing to check before a first
  * real payroll run:
  *
- *   • the redevance audiovisuelle band amounts below. The exemption floor of
- *     50 000 F is confirmed and the banded structure is confirmed; the amount
- *     in each band is from a secondary source. `rav.enabled` is here so a
+ *   • the redevance audiovisuelle band amounts below. Its legal instrument
+ *     (ordonnance 89/004 du 12 décembre 1989), its exemption floor of
+ *     50 000 F, its banded structure and its base — the gross taxable salary,
+ *     not the salaire de base — are all confirmed; one band amount (1 950 F)
+ *     is corroborated by a published payslip, and the rest of the scale comes
+ *     from a secondary source quoting it as a set. `rav.enabled` is here so a
  *     business whose accountant has not confirmed them can switch the line
  *     off rather than withhold a figure it cannot stand behind.
  *
@@ -178,16 +181,31 @@ return [
     /*
      * Redevance audiovisuelle, withheld for the CRTV.
      *
-     * The floor and the banded shape are confirmed; the amounts are from a
-     * secondary source and are the one block in this file to have an
-     * accountant confirm before a first live run. See the provenance note at
-     * the top — switch `enabled` off rather than withhold a figure the
-     * business cannot justify to an employee who asks.
+     * Instituted by ordonnance n° 89/004 du 12 décembre 1989, whose article 3
+     * establishes the monthly forfait by salary band and whose article 2 sets
+     * the base: "le montant brut des sommes retenues pour le calcul de
+     * l'impôt proportionnel sur les salaires" — the gross taxable salary, the
+     * same figure the IRPP is computed on. That is `taxable_gross` below, and
+     * it is the one thing that genuinely differs from the TDL: an allowance
+     * inside the tax base CAN move somebody into a higher RAV band, and
+     * cannot move them into a higher TDL one.
+     *
+     * Salaries under 50 000 F and domestic workers are exempt (article 4).
+     *
+     * The band amounts are the least-verified figures in this file. The
+     * ordinance's own text is behind a paywall and the DGI's site is not
+     * reachable from here; 1 950 F for the 100 001–200 000 band is
+     * corroborated by a published Cameroonian payslip ("515 Redevance
+     * audio-visuelle (c.r.t.v) 1950"), and the rest of the scale is from a
+     * secondary source that quotes it as a set. Worth an accountant's
+     * confirmation before a first live run — and `enabled` is here so a
+     * business can stop withholding rather than take money it cannot justify
+     * to an employee who asks.
      */
     'rav' => [
         'enabled' => true,
         'floor' => 50000,
-        'basis' => 'base',
+        'basis' => 'taxable_gross',
         'bands' => [
             ['upto' => 100000, 'amount' => 750],
             ['upto' => 200000, 'amount' => 1950],
