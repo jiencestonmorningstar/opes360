@@ -74,7 +74,9 @@ return [
         'Professional Services', 'Other',
     ],
 
-    'currencies' => ['USD', 'EUR', 'GBP', 'NGN', 'GHS', 'KES', 'ZAR', 'XOF', 'XAF'],
+    // CFA-zone first: these are the currencies this product's businesses
+    // actually trade in, and a select is read from the top.
+    'currencies' => ['XAF', 'XOF', 'NGN', 'GHS', 'KES', 'ZAR', 'USD', 'EUR', 'GBP'],
 
     /*
      * Where the public contact form's messages go. Defaults to the mail

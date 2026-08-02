@@ -139,7 +139,7 @@
                     </label>
                     <label class="block">
                         <span class="{{ $labelClass }}">Country</span>
-                        <input type="text" wire:model="country" maxlength="2" placeholder="NG" class="{{ $inputClass }} uppercase">
+                        <input type="text" wire:model="country" maxlength="2" placeholder="CM" class="{{ $inputClass }} uppercase">
                     </label>
                 </div>
                 <label class="block">

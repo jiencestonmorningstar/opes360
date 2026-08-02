@@ -40,7 +40,13 @@ class Register extends Component
 
     public string $motto = '';
 
-    public string $currency = 'USD';
+    /*
+     * XAF, not USD. Every price on the site is quoted in FCFA, mobile money
+     * settles in it, and the TVA rules the documents follow are Cameroonian —
+     * a business that accepted the default was issuing invoices in a currency
+     * it does not trade in.
+     */
+    public string $currency = 'XAF';
 
     public string $country = '';
 

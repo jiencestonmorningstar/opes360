@@ -28,3 +28,6 @@ Thumbs.db
 
 # Agent worktrees and local Claude Code state — never project code.
 /.claude/
+
+# Output of scripts/audit/ui-audit.mjs
+/audit-report.json

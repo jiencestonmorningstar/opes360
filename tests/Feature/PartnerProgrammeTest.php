@@ -772,4 +772,32 @@ class PartnerProgrammeTest extends TestCase
             ->post(route('admin.partners.payouts.settle', '01no-such-payout'), ['decision' => 'paid'])
             ->assertNotFound();
     }
+
+    /**
+     * The product quotes in FCFA, settles through MTN and Orange Money, and
+     * computes TVA to Cameroonian rules. A business that accepted the default
+     * was issuing invoices in a currency it does not trade in.
+     */
+    public function test_a_new_business_defaults_to_the_currency_it_actually_trades_in(): void
+    {
+        app(CurrentCompany::class)->set(null);
+
+        Livewire::test(Register::class)
+            ->assertSet('currency', 'XAF')
+            ->set('name', 'Paul Etoa')
+            ->set('email', 'paul.default@example.cm')
+            ->set('password', 'correct-horse-battery')
+            ->set('passwordConfirmation', 'correct-horse-battery')
+            ->call('continueToBusiness')
+            ->set('businessName', 'Etoa Trading')
+            ->call('finish');
+
+        $this->assertSame('XAF', Company::where('name', 'Etoa Trading')->firstOrFail()->currency);
+    }
+
+    public function test_the_currency_list_leads_with_the_cfa_zone(): void
+    {
+        $this->assertSame('XAF', config('opes.currencies')[0]);
+        $this->assertSame('XOF', config('opes.currencies')[1]);
+    }
 }
