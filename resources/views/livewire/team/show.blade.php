@@ -65,10 +65,10 @@
         </div>
     </div>
 
-    <div class="no-scrollbar -mx-5 mt-5 flex gap-2 overflow-x-auto px-5 lg:mx-0 lg:px-0" role="tablist">
+    <div class="no-scrollbar -mx-5 mt-5 flex gap-2 overflow-x-auto px-5 lg:mx-0 lg:px-0" role="group" aria-label="Choose a section">
         @foreach (['profile' => 'Profile', 'contracts' => 'Contracts', 'pay' => 'Pay', 'leave' => 'Leave'] as $key => $label)
-            <button type="button" wire:click="$set('panel', '{{ $key }}')" role="tab"
-                    aria-selected="{{ $panel === $key ? 'true' : 'false' }}"
+            <button type="button" wire:click="$set('panel', '{{ $key }}')"
+                    aria-pressed="{{ $panel === $key ? 'true' : 'false' }}"
                     class="focusable flex h-10 shrink-0 items-center rounded-full px-4 text-[13.5px] font-semibold transition-colors
                            {{ $panel === $key ? 'bg-fill-brand text-white' : 'border border-border bg-surface text-ink-2 hover:bg-surface-2' }}">
                 {{ $label }}

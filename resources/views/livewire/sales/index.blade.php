@@ -17,7 +17,7 @@
             <a href="{{ route('documents.create', ['type' => $type]) }}"
                class="tap focusable flex shrink-0 items-center gap-2 rounded-full bg-fill-brand px-5 text-[14.5px] font-semibold text-white transition-opacity hover:opacity-90">
                 <x-icon name="plus" class="size-[18px]" stroke-width="2.4" />
-                <span class="hidden min-[420px]:inline">New {{ DocumentType::from($type)->label() }}</span>
+                <span class="sr-only min-[420px]:not-sr-only">New {{ DocumentType::from($type)->label() }}</span>
                 <span class="min-[420px]:hidden">New</span>
             </a>
         @endcan
@@ -32,16 +32,16 @@
     </div>
 
     {{-- Document type tabs --}}
-    <div class="no-scrollbar -mx-5 mt-4 flex gap-2 overflow-x-auto px-5 lg:mx-0 lg:px-0" role="tablist">
+    <div class="no-scrollbar -mx-5 mt-4 flex gap-2 overflow-x-auto px-5 lg:mx-0 lg:px-0" role="group" aria-label="Filter invoices">
         @foreach (DocumentType::cases() as $docType)
             @php $isActive = $type === $docType->value; @endphp
-            <button type="button" wire:click="setType('{{ $docType->value }}')" role="tab"
-                    aria-selected="{{ $isActive ? 'true' : 'false' }}"
+            <button type="button" wire:click="setType('{{ $docType->value }}')"
+                    aria-pressed="{{ $isActive ? 'true' : 'false' }}"
                     class="focusable flex h-10 shrink-0 items-center gap-2 rounded-full px-4 text-[13.5px] font-semibold transition-colors
                            {{ $isActive ? 'bg-fill-brand text-white' : 'border border-border bg-surface text-ink-2 hover:bg-surface-2' }}">
                 {{ $docType->label() }}
                 @if (($typeCounts[$docType->value] ?? 0) > 0)
-                    <span class="tnum rounded-full px-1.5 text-[11.5px] {{ $isActive ? 'bg-white/20' : 'bg-surface-2 text-muted' }}">
+                    <span class="tnum rounded-full px-1.5 text-[11.5px] {{ $isActive ? 'bg-black/20' : 'bg-surface-2 text-muted' }}">
                         {{ $typeCounts[$docType->value] }}
                     </span>
                 @endif

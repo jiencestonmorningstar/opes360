@@ -366,3 +366,31 @@ which a stored quantity column would undo.
 catches an N+1 — that ten times the rows costs the same number of queries. Removing `withStock()` from the
 products list makes it fail with "went from 13 queries on a handful of rows to 47 on ten times as many",
 which was verified by doing exactly that.
+
+---
+
+## 18. Filter chips are toggle buttons, not tabs
+
+**Decision:** the chip rows across Sales, Customers, Products, Expenses, Assets, Banking, Team, Partners,
+Stationery and Stock locations use `role="group"` with an `aria-label`, and each chip is a plain button
+carrying `aria-pressed`. They used to be `role="tablist"` with `role="tab"` and `aria-selected`.
+
+**Why:** there was never a tab panel. Nothing is revealed or hidden — the list underneath re-queries and
+redraws itself. The tab pattern promises a screen-reader user that arrow keys will move between tabs and
+that a panel exists whose content changes; none of that was true, and axe flagged it as
+`aria-required-children`. A group of toggle buttons is what these are, and `aria-pressed` says exactly what
+a user needs to know: which filters are on.
+
+**The related fix:** the count badge on an active chip was `bg-white/20` over the brand fill. White at 20%
+*lightens* blue, so white text on the badge came out under 4.5:1 — the badge was the least readable thing
+on a chip whose whole job is carrying a number. `bg-black/20` darkens the same amount and clears it easily.
+
+**And the labels:** ten "add" buttons hid their word below 420px with `hidden`, which is `display: none` —
+gone from the accessibility tree as well as the screen, leaving an icon with no accessible name at all on a
+phone. They use `sr-only min-[420px]:not-sr-only` now: the word takes no space and stays announceable, and
+because the visible and announced label are the same string they cannot drift apart.
+
+**Measured against the right criterion.** `ui-audit.mjs` checks target size against 44×44, which is WCAG
+2.5.5 — an **AAA** criterion this product does not claim — and reported 526 failures, almost all inline
+links in a paragraph that 2.5.8 explicitly exempts. `a11y.mjs` measures 2.5.8 as written (24×24, with the
+spacing and inline-text exceptions) and finds none. A number nobody can act on is a number nobody reads.

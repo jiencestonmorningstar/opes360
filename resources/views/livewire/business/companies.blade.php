@@ -18,7 +18,7 @@
             <button type="button" wire:click="startCreating"
                     class="tap focusable flex shrink-0 items-center gap-2 rounded-full bg-fill-brand px-5 text-[14.5px] font-semibold text-white hover:opacity-90">
                 <x-icon name="plus" class="size-[18px]" stroke-width="2.4" />
-                <span class="hidden min-[420px]:inline">Add Business</span>
+                <span class="sr-only min-[420px]:not-sr-only">Add Business</span>
                 <span class="min-[420px]:hidden">Add</span>
             </button>
         @endunless

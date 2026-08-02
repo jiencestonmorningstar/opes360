@@ -24,7 +24,7 @@
         <button type="button" wire:click="startAdding"
                 class="tap focusable flex shrink-0 items-center gap-2 rounded-full bg-fill-brand px-5 text-[14.5px] font-semibold text-white transition-opacity hover:opacity-90">
             <x-icon name="plus" class="size-[18px]" stroke-width="2.4" />
-            <span class="hidden min-[420px]:inline">Add</span>
+            <span class="sr-only min-[420px]:not-sr-only">Add</span>
         </button>
     </div>
 
@@ -192,10 +192,10 @@
             </div>
         @endif
 
-        <div class="no-scrollbar -mx-5 mt-5 flex gap-2 overflow-x-auto px-5 lg:mx-0 lg:px-0" role="tablist">
+        <div class="no-scrollbar -mx-5 mt-5 flex gap-2 overflow-x-auto px-5 lg:mx-0 lg:px-0" role="group" aria-label="Choose a location">
             @foreach ($locations as $location)
-                <button type="button" wire:click="$set('locationId', '{{ $location->id }}')" role="tab"
-                        aria-selected="{{ $selected?->id === $location->id ? 'true' : 'false' }}"
+                <button type="button" wire:click="$set('locationId', '{{ $location->id }}')"
+                        aria-pressed="{{ $selected?->id === $location->id ? 'true' : 'false' }}"
                         class="focusable flex h-10 shrink-0 items-center gap-2 rounded-full px-4 text-[13.5px] font-semibold transition-colors
                                {{ $selected?->id === $location->id ? 'bg-fill-brand text-white' : 'border border-border bg-surface text-ink-2 hover:bg-surface-2' }}">
                     {{ $location->name }}

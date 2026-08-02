@@ -82,7 +82,7 @@
         {{-- Balance générale --}}
         @if ($tab === 'balance')
             <div class="card mt-5 overflow-hidden p-0">
-                <div class="overflow-x-auto">
+                <div class="overflow-x-auto" tabindex="0" role="region" aria-label="Trial balance table">
                     <table class="w-full min-w-[640px] text-left">
                         <thead>
                             <tr class="border-b border-border bg-surface-2">
@@ -144,7 +144,7 @@
 
             @if ($ledger)
                 <div class="card mt-4 overflow-hidden p-0">
-                    <div class="overflow-x-auto">
+                    <div class="overflow-x-auto" tabindex="0" role="region" aria-label="Account ledger table">
                         <table class="w-full min-w-[720px] text-left">
                             <thead>
                                 <tr class="border-b border-border bg-surface-2">
@@ -359,7 +359,7 @@
             @endcan
 
             <div class="card mt-5 overflow-hidden p-0">
-                <div class="overflow-x-auto">
+                <div class="overflow-x-auto" tabindex="0" role="region" aria-label="Journal table">
                     <table class="w-full min-w-[720px] text-left">
                         <thead>
                             <tr class="border-b border-border bg-surface-2">

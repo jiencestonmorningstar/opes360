@@ -19,7 +19,7 @@
             <a href="{{ route('customers.create', ['type' => $type]) }}"
                class="tap focusable flex shrink-0 items-center gap-2 rounded-full bg-fill-brand px-5 text-[14.5px] font-semibold text-white transition-opacity hover:opacity-90">
                 <x-icon name="user-plus" class="size-[18px]" stroke-width="2" />
-                <span class="hidden min-[420px]:inline">Add Customer</span>
+                <span class="sr-only min-[420px]:not-sr-only">Add Customer</span>
                 <span class="min-[420px]:hidden">Add</span>
             </a>
         @endcan
@@ -32,16 +32,16 @@
                class="h-12 w-full rounded-xl border border-border bg-surface pl-11 pr-4 text-[15px] text-ink placeholder:text-faint focus:border-brand focus:outline-none focus:ring-2 focus:ring-brand/20">
     </div>
 
-    <div class="no-scrollbar -mx-5 mt-4 flex gap-2 overflow-x-auto px-5 lg:mx-0 lg:px-0" role="tablist">
+    <div class="no-scrollbar -mx-5 mt-4 flex gap-2 overflow-x-auto px-5 lg:mx-0 lg:px-0" role="group" aria-label="Filter customers">
         @foreach (Index::TYPES as $key => $label)
             @php $isActive = $type === $key; @endphp
-            <button type="button" wire:click="setType('{{ $key }}')" role="tab"
-                    aria-selected="{{ $isActive ? 'true' : 'false' }}"
+            <button type="button" wire:click="setType('{{ $key }}')"
+                    aria-pressed="{{ $isActive ? 'true' : 'false' }}"
                     class="focusable flex h-10 shrink-0 items-center gap-2 rounded-full px-4 text-[13.5px] font-semibold transition-colors
                            {{ $isActive ? 'bg-fill-brand text-white' : 'border border-border bg-surface text-ink-2 hover:bg-surface-2' }}">
                 {{ $label }}
                 @if (($typeCounts[$key] ?? 0) > 0)
-                    <span class="tnum rounded-full px-1.5 text-[11.5px] {{ $isActive ? 'bg-white/20' : 'bg-surface-2 text-muted' }}">
+                    <span class="tnum rounded-full px-1.5 text-[11.5px] {{ $isActive ? 'bg-black/20' : 'bg-surface-2 text-muted' }}">
                         {{ $typeCounts[$key] }}
                     </span>
                 @endif

@@ -21,7 +21,7 @@
             <button type="button" wire:click="startAdding"
                     class="tap focusable flex shrink-0 items-center gap-2 rounded-full bg-fill-brand px-5 text-[14.5px] font-semibold text-white transition-opacity hover:opacity-90">
                 <x-icon name="plus" class="size-[18px]" stroke-width="2.4" />
-                <span class="hidden min-[420px]:inline">Add</span>
+                <span class="sr-only min-[420px]:not-sr-only">Add</span>
             </button>
         @endcan
     </div>
@@ -147,10 +147,10 @@
                class="h-12 w-full rounded-xl border border-border bg-surface pl-11 pr-4 text-[15px] text-ink placeholder:text-faint focus:border-brand focus:outline-none focus:ring-2 focus:ring-brand/20">
     </div>
 
-    <div class="no-scrollbar -mx-5 mt-4 flex gap-2 overflow-x-auto px-5 lg:mx-0 lg:px-0" role="tablist">
+    <div class="no-scrollbar -mx-5 mt-4 flex gap-2 overflow-x-auto px-5 lg:mx-0 lg:px-0" role="group" aria-label="Filter the team">
         @foreach (['active' => 'Active', 'ended' => 'Left', 'all' => 'Everyone'] as $key => $label)
-            <button type="button" wire:click="$set('filter', '{{ $key }}')" role="tab"
-                    aria-selected="{{ $filter === $key ? 'true' : 'false' }}"
+            <button type="button" wire:click="$set('filter', '{{ $key }}')"
+                    aria-pressed="{{ $filter === $key ? 'true' : 'false' }}"
                     class="focusable flex h-10 shrink-0 items-center rounded-full px-4 text-[13.5px] font-semibold transition-colors
                            {{ $filter === $key ? 'bg-fill-brand text-white' : 'border border-border bg-surface text-ink-2 hover:bg-surface-2' }}">
                 {{ $label }}
