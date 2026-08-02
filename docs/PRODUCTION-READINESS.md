@@ -1,8 +1,10 @@
 # OPES360 — Production Readiness Assessment
 
-**Assessed:** 29 July 2026 · 203 tests, 61 routes, 23 commits
-**Verdict:** ready for a **supervised pilot**. The launch blockers are closed;
-what remains before an open launch is operational, not structural.
+**Assessed:** 2 August 2026 · 932 tests, 163 routes, 138 commits
+**Verdict:** ready for a **supervised pilot**. Every launch blocker that is code
+has been closed. What remains is three pieces of configuration that need a host
+and credentials this repository does not have, and one browser sweep that needs
+a machine able to install Firefox and WebKit.
 
 This document is deliberately blunt about what would break first. Everything in
 §3 is real work that has not been done, not polish.
@@ -35,6 +37,17 @@ Verified by the automated suite plus a browser sweep of every page.
 | Deployment tooling | **Good** | `opes:doctor` pre-flight check, CI on SQLite *and* MySQL 8.4, scheduled lease expiry and receipt pruning, DEPLOYMENT.md |
 | PWA | **Good** | Installable, app-shell precache, offline page, live sync-status indicator |
 | Design system | **Solid** | One token set drives light and dark; no page has a dead link or console error |
+| SYSCOHADA books | **Solid** | Double-entry ledger fed by issuing, settling, spending and payroll; trial balance, grand livre, income statement, balance sheet. Voiding an invoice now extournes its entry rather than leaving revenue posted for a cancelled sale |
+| Stock in the books | **Solid** | Issuing a document takes the goods off the shelf and voiding puts them back — neither happened before. Stocktakes value what is left at weighted average cost, carry it to 31 and post the movement to 6031, so achats less variation is the real cost of goods |
+| Credit notes | **Solid** | Issuable in full or in part against an invoice, posted as the mirror of the sale including the TVA, goods returned to stock, guarded against crediting past the invoice total |
+| Purchases & expenses | **Solid** | Supplier bills and direct spending with recoverable TVA, part-settlement, void with reversal |
+| Fixed assets | **Good** | Capitalisation by category, straight-line depreciation posted monthly, disposal through 812/822 so the gain or loss falls out rather than being worked out |
+| Bank reconciliation | **Good** | Statement import, matching against the ledger, opening balance so a business with history can start reconciling this month rather than from its first ever entry |
+| Multiple stock locations | **Good** | Per-location quantities from the same append-only ledger, transfers that move stock without changing how much there is |
+| HR & payroll | **Solid** | Employees separate from users, contracts that make June's payslip still say June's salary, CNPS/IRPP/CAC/CFC/FNE/TDL/RAV computed from `config/payroll.php` with each run keeping its own copy of the rates |
+| Tax declarations | **Good** | TVA and the levies on wages worked out from the books, with every TVA entry listed so a figure can be traced. A worksheet, and it says so before it shows a number |
+| Team & invitations | **Solid** | Invite by email, accept sets a password, roles changed and members removed — with the two irreversible mistakes (demoting yourself, removing the owner) refused outright |
+| Modules | **Solid** | Sixteen modules switchable per business, enforced in one `Gate::before` so the navigation, routes and `@can` blocks cannot drift |
 
 ---
 
@@ -102,6 +115,14 @@ all of it needs a host that does not exist yet.
 importantly — that the restore must be *rehearsed* before launch. Neither is
 automated, because both depend on the hosting choice.
 
+### 3.4 Firefox and Safari have not been run
+
+Not a code risk in the way the three above are, and not dismissible either. The
+static evidence says the stylesheet degrades rather than breaks (§6, Browsers),
+but nobody has watched Gecko or WebKit paint this. One run of
+`scripts/audit/engines.mjs` on a machine that can install them closes it, and it
+should happen before the pilot rather than after.
+
 ---
 
 ## 4. Known limitations worth stating plainly
@@ -152,15 +173,33 @@ obligation prints that notice into the document itself.
 
 | Step | Work | Rough size |
 |---|---|---|
-| ~~—~~ | ~~Enforce permissions~~ · ~~Run against MySQL~~ · ~~Wire the offline engine~~ · ~~Ship a CSP~~ · ~~CI~~ — *done* | — |
+| ~~—~~ | ~~Enforce permissions~~ · ~~Run against MySQL~~ · ~~Wire the offline engine~~ · ~~Ship a CSP~~ · ~~CI~~ · ~~The books~~ · ~~Payroll~~ · ~~Performance~~ · ~~Accessibility~~ — *done* | — |
 | 1 | **Configure mail** and confirm with `opes:doctor --mail=…` | 1 day |
-| 2 | **Provision the host** — queue worker, cron, error tracking, backups + a rehearsed restore | 3–4 days |
-| 3 | → **Supervised pilot** with 5–10 friendly businesses | — |
-| 4 | **Security review / pen test** | 1 week |
-| 5 | → **Open launch** | — |
+| 2 | **Run the engine sweep** in Firefox and WebKit — `npx playwright install firefox webkit && node scripts/audit/engines.mjs` | 1 hour, plus whatever it finds |
+| 3 | **Provision the host** — queue worker, cron, error tracking, backups + a rehearsed restore | 3–4 days |
+| 4 | → **Supervised pilot** with 5–10 friendly businesses | — |
+| 5 | **Security review / pen test** | 1 week |
+| 6 | → **Open launch** | — |
 
-Steps 1–2 are the gate to letting anyone outside the room use it. Nothing else
+Steps 1–3 are the gate to letting anyone outside the room use it. Nothing else
 on this list blocks a pilot.
+
+### What is still open in the code
+
+None of these blocks a pilot; all of them are named rather than left to be
+discovered.
+
+- **The demo business charges no TVA** while being marked registered at 19.25% —
+  a business that cannot exist. Fixing it moves the pinned design figures the
+  dashboard test asserts, so the seeder targets and the test change together.
+- **Two CSP violations per `wire:navigate`**, from Livewire re-injecting head
+  scripts whose per-request nonce no longer matches the enforcing header.
+  Console noise, not broken behaviour — but noise is how a real violation gets
+  missed.
+- **Purchases do not add stock quantities.** Under intermittent inventory the
+  books are right either way, and the count corrects the shelf; but a business
+  that wants stock to rise when a delivery arrives has to record it by hand or
+  wait for the next inventory.
 
 ---
 
@@ -198,5 +237,53 @@ mode**. What they actually protect:
   per-request nonce that is never reused, and no un-nonced inline script on the
   page
 
-**Not covered:** load and performance, browser compatibility beyond Chromium,
-and an accessibility audit.
+### Load and performance
+
+`tests/Feature/QueryBudgetTest.php` holds a query ceiling per screen **and** the
+rule that actually catches an N+1: ten times the rows must cost the same number
+of queries. Two were live when it was written. Every ability check re-read the
+user's membership, role and overrides, so the dashboard ran **137 queries** to
+draw itself and every other screen about **88**; memoising the lookup for the
+request took those to 29 and 10–19. And every product in a list ran its own
+`SUM` over the stock ledger. Both are pinned — removing the aggregate makes the
+test fail with *"went from 13 queries on a handful of rows to 47 on ten times as
+many"*, which was verified by doing it.
+
+Over HTTP, each screen is 6 requests and 84–247 KB with a time-to-first-byte of
+51–81 ms on a cold PHP process. `route:cache` and `view:cache` both work and
+neither made a measurable difference, so the deploy guide still recommends
+`config:cache` alone — which it needs for correctness after an `.env` edit, not
+for speed.
+
+### Browsers
+
+`scripts/audit/engines.mjs` sweeps every page in Chromium, Firefox and WebKit:
+console errors, sideways scroll, thirteen feature probes asked of the engine
+itself, and the geometry of the layout anchors compared across engines.
+
+**Chromium 141 is clean across 27 pages. Firefox and WebKit have not been run** —
+Playwright's browser CDN is blocked by this build environment's network policy
+and no distribution Firefox is installable there either. The static analysis in
+`docs/BROWSER-SUPPORT.md` is real evidence about what ships — the palette is hex
+so nothing paints with `oklch()`, all 114 `color-mix()` uses sit inside
+`@supports` guards, `backdrop-filter` carries its prefix — and it is not the same
+as watching those two engines paint it. Treat them as unverified until the sweep
+has been run somewhere it can install them; it is four commands.
+
+### Accessibility
+
+`scripts/audit/a11y.mjs` runs axe-core over every page in **both colour schemes**,
+measures target size against WCAG 2.5.8, and walks the keyboard. All three pass:
+zero axe violations, zero targets under the criterion, zero elements that take
+focus without showing it, zero backward jumps in focus order.
+
+Four real defects were found and fixed getting there: ten icon buttons whose
+label was `display: none` below 420px and so had no accessible name at all;
+eleven filter rows claiming `role="tablist"` with no tab panel anywhere; a count
+badge whose `bg-white/20` over the brand fill fell under 4.5:1; and three
+scrolling tables on Accounting with no way in from the keyboard.
+
+Note that `scripts/audit/ui-audit.mjs` measures targets against 44×44 — WCAG
+2.5.5, an **AAA** criterion this product does not claim — and so reports ~526
+"failures" that are almost all inline links in a paragraph, which 2.5.8
+explicitly exempts. Read `a11y.mjs` for the AA verdict.
