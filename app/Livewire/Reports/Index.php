@@ -138,8 +138,13 @@ class Index extends Component
                 'key' => (string) $i,
             ]);
 
+            // floor, not intdiv: Carbon 3 returns a float from diffInDays, and
+            // intdiv on it raises a deprecation on every document in the range.
+            // floor is also the right rounding for a bucket index — truncation
+            // toward zero would put the day before the window in week 0
+            // alongside the day after it.
             $grouped = $documents->groupBy(
-                fn ($d) => (string) intdiv($from->diffInDays($d->issue_date), 7)
+                fn ($d) => (string) (int) floor($from->diffInDays($d->issue_date) / 7)
             );
         }
 

@@ -72,7 +72,31 @@ class Item extends Model
      */
     public function stockOnHand(): float
     {
+        /*
+         * A list is where this is most often called, and a list of items each
+         * running its own SUM is the N+1 it is easiest to write by accident —
+         * it was live on the products list and on the dashboard's low-stock
+         * count. `withStock()` puts one grouped aggregate on the query and
+         * this reads it, so the same call costs one query for the whole page
+         * instead of one per row.
+         */
+        if (array_key_exists('stock_on_hand', $this->attributes)) {
+            return round((float) $this->attributes['stock_on_hand'], 3);
+        }
+
         return (float) $this->movements()->sum('quantity');
+    }
+
+    /**
+     * Load each item's stock on hand alongside it, in one aggregate.
+     *
+     * Still a sum of the movement ledger, not a stored column — the whole
+     * point of the ledger is that two offline devices can both sell the last
+     * unit and be reconciled, which a mutable quantity would undo.
+     */
+    public function scopeWithStock(Builder $query): Builder
+    {
+        return $query->withSum('movements as stock_on_hand', 'quantity');
     }
 
     public function isLowStock(): bool

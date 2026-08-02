@@ -45,6 +45,9 @@ class Index extends Component
     protected function query(): Builder
     {
         return Item::query()
+            // One aggregate for the page rather than a SUM per row: the list
+            // shows "n in stock" against every product.
+            ->withStock()
             ->where('type', $this->type)
             ->when($this->search !== '', function (Builder $query) {
                 $term = '%'.str_replace(['%', '_'], ['\%', '\_'], trim($this->search)).'%';

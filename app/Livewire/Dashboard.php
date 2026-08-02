@@ -273,7 +273,13 @@ class Dashboard extends Component
             ->where('created_at', '>=', $now->startOfMonth())
             ->count();
 
-        $lowStock = Item::query()->products()->active()->where('track_stock', true)->get()
+        // withStock, or this is one SUM per tracked product every time anybody
+        // opens the dashboard — which on the demo alone was ten of them.
+        $lowStock = Item::query()->products()->active()
+            ->where('track_stock', true)
+            ->whereNotNull('reorder_level')
+            ->withStock()
+            ->get()
             ->filter(fn (Item $item) => $item->isLowStock())
             ->count();
 

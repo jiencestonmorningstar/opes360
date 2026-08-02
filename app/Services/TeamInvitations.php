@@ -226,6 +226,10 @@ class TeamInvitations
         $this->membership($company, $member);
 
         $company->users()->updateExistingPivot($member->id, ['role_id' => $role->id]);
+
+        // The member's resolved role is memoised for the request. Anything
+        // still holding this instance must not go on answering from before.
+        $member->forgetRoleCache();
     }
 
     /**
@@ -251,6 +255,8 @@ class TeamInvitations
                 ->where('company_id', $company->id)
                 ->where('user_id', $member->id)
                 ->delete();
+
+            $member->forgetRoleCache();
 
             if ($member->current_company_id === $company->id) {
                 $member->forceFill([

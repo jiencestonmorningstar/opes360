@@ -40,6 +40,20 @@ class User extends Authenticatable implements TwoFactorAuthenticatable
         'remember_token',
     ];
 
+    /**
+     * Per-request memos for the permission lookups.
+     *
+     * Not persisted and not serialised — they answer questions about rows in
+     * other tables, and a stale copy carried into a queued job would be a
+     * permission decision made from history. See roleIn().
+     *
+     * @var array<string, ?Role>
+     */
+    protected array $roleCache = [];
+
+    /** @var array<string, bool> "companyId|ability" => allowed */
+    protected array $permissionCache = [];
+
     protected function casts(): array
     {
         return [
@@ -87,13 +101,55 @@ class User extends Authenticatable implements TwoFactorAuthenticatable
      * meant a membership marked inactive still resolved its old role, and with
      * it every permission that role grants.
      */
+    /**
+     * This user's role in a company, resolved once per request.
+     *
+     * The memo is the whole point. Every `@can` in a template, every navigation
+     * entry and every route middleware asks the gate, the gate asks
+     * hasPermissionIn, and that asked this — so a page with forty ability
+     * checks ran forty membership joins, forty role lookups and forty override
+     * queries for an answer that cannot change while the page is being built.
+     * On the dashboard that was over a hundred of the hundred and thirty-seven
+     * queries the page made.
+     *
+     * Scoped to the model instance, which is scoped to the request: the
+     * authenticated user is one object for the life of a request, and a role
+     * changed by somebody else is picked up on the next one. `forgetRoleCache`
+     * exists for the one case that changes a role and then keeps going.
+     */
     public function roleIn(Company $company): ?Role
     {
+        if (array_key_exists($company->id, $this->roleCache)) {
+            return $this->roleCache[$company->id];
+        }
+
         $pivot = $this->activeMemberships()
             ->where('companies.id', $company->id)
             ->first()?->pivot;
 
-        return $pivot ? Role::find($pivot->role_id) : null;
+        return $this->roleCache[$company->id] = $pivot ? Role::find($pivot->role_id) : null;
+    }
+
+    /** Drop the memo after something changes what it answered. */
+    public function forgetRoleCache(): void
+    {
+        $this->roleCache = [];
+        $this->permissionCache = [];
+    }
+
+    /**
+     * Re-reading the row re-reads the permissions with it.
+     *
+     * `refresh()` is the idiomatic "this model may be out of date" signal, and
+     * a memo that survived it would go on answering from before a membership
+     * was suspended — which is the one direction a permission cache must never
+     * be wrong in.
+     */
+    public function refresh()
+    {
+        $this->forgetRoleCache();
+
+        return parent::refresh();
     }
 
     public function belongsToCompany(Company $company): bool
@@ -112,6 +168,17 @@ class User extends Authenticatable implements TwoFactorAuthenticatable
      * override applied on top. An explicit revoke beats a role grant.
      */
     public function hasPermissionIn(Company $company, string $permission): bool
+    {
+        $key = $company->id.'|'.$permission;
+
+        if (array_key_exists($key, $this->permissionCache)) {
+            return $this->permissionCache[$key];
+        }
+
+        return $this->permissionCache[$key] = $this->resolvePermissionIn($company, $permission);
+    }
+
+    protected function resolvePermissionIn(Company $company, string $permission): bool
     {
         $role = $this->roleIn($company);
 

@@ -333,3 +333,36 @@ different act than changing a permission.
 **Removal detaches rather than flags.** A membership row is a claim on this business's data, and a `status`
 column is one forgotten `wherePivot` away from still honouring it. The person and everything they made stay
 — an invoice keeps saying who issued it.
+
+---
+
+## 17. Permission lookups are memoised for the request
+
+**Decision:** `User::roleIn()` and `User::hasPermissionIn()` cache their answers on the model instance for
+the life of the request. `refresh()` drops the memo, and so does anything that changes a membership.
+
+**Why:** a page asks the gate dozens of times. The sidebar is twenty entries, each behind an ability; the
+quick actions are fifteen more; every button in every panel is a `@can`. Each of those calls went to the
+database for the user's membership, then for the role, then for any per-user override — three queries for
+an answer that cannot change while a single page is being rendered. The dashboard ran **137 queries** to
+draw itself and every other screen ran **around 88**. With the memo they run 29 and 10–19.
+
+**Why on the model and not in a cache store:** the authenticated user is one object for the life of a
+request, which is exactly the scope the answer is valid for. A shared cache would need invalidating across
+processes the moment an owner changed somebody's role, and "the permission you removed took effect a minute
+later" is not a trade worth a few queries.
+
+**The direction that matters:** a permission cache may be stale in the permissive direction for no time at
+all. `refresh()` — the idiomatic "this may be out of date" signal — clears it, `TeamInvitations` clears it
+after a role change or a removal, and `QueryBudgetTest` pins both the budget and the invalidation.
+
+**The other half of the audit:** `Item::stockOnHand()` ran a `SUM` over the movement ledger per item, so a
+list of products ran one query per row. It now reads a `withSum` aggregate when the query loaded one
+(`Item::scopeWithStock`), and falls back to its own query when it did not. Still a sum of the append-only
+ledger — the point of that ledger is that two offline devices can both sell the last unit and be reconciled,
+which a stored quantity column would undo.
+
+**How it stays fixed:** `QueryBudgetTest` asserts a ceiling per screen *and* — the part that actually
+catches an N+1 — that ten times the rows costs the same number of queries. Removing `withStock()` from the
+products list makes it fail with "went from 13 queries on a handful of rows to 47 on ten times as many",
+which was verified by doing exactly that.
