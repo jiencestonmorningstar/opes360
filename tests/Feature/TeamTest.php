@@ -46,7 +46,8 @@ class TeamTest extends TestCase
             'name' => 'Acme Sarl',
             'owner_id' => $this->owner->id,
             'currency' => 'XAF',
-            'plan' => 'basic',
+            // On the top plan because the staff file is a Growth-plan module.
+            'plan' => 'business',
             'account_type' => 'active',
         ]);
 

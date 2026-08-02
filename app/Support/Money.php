@@ -25,13 +25,35 @@ class Money
     }
 
     /**
+     * Currencies with no minor unit.
+     *
+     * The CFA franc has no centime in circulation, so "FCFA1,250.00" is not a
+     * more precise figure than "FCFA1,250" — it is three characters of noise
+     * on a phone, and it was clipping the dashboard's stat cards. The ISO 4217
+     * minor unit for XAF and XOF is zero; this is that, not a display
+     * preference.
+     */
+    protected const NO_MINOR_UNIT = ['XAF', 'XOF'];
+
+    /**
      * Null currency falls back to USD: a model created without an explicit
      * currency holds null until the database default is read back, and a
      * formatting helper must never turn that into a fatal.
+     *
+     * `$decimals` left null asks the currency, which is almost always what a
+     * caller means. Passing false forces the compact form for a tight column
+     * whatever the currency is.
      */
-    public static function format(float|int|string|null $amount, ?string $currency = 'USD', bool $decimals = true): string
+    public static function format(float|int|string|null $amount, ?string $currency = 'USD', ?bool $decimals = null): string
     {
+        $decimals ??= ! self::hasNoMinorUnit($currency);
+
         return self::symbol($currency).number_format((float) $amount, $decimals ? 2 : 0);
+    }
+
+    public static function hasNoMinorUnit(?string $currency): bool
+    {
+        return in_array(strtoupper($currency ?: 'USD'), self::NO_MINOR_UNIT, true);
     }
 
     /** Compact form for chart axes and tight columns: $1.3k, $2.4M. */

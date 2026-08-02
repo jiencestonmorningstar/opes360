@@ -15,6 +15,7 @@ use App\Notifications\PaymentReceivedNotification;
 use App\Services\Accounting\RecordsBusinessEvents;
 use App\Support\CurrentCompany;
 use App\Support\NotifyCompany;
+use Carbon\CarbonInterface;
 use Illuminate\Support\Facades\DB;
 use RuntimeException;
 
@@ -48,12 +49,23 @@ class PaymentRecorder
         ?string $receiptNumber = null,
         ?Device $device = null,
         ?string $paymentId = null,
+        /*
+         * When the money actually changed hands, if that was not now — a
+         * business entering last week's cash on Monday, or a device syncing a
+         * payment taken offline. It has to be a parameter rather than
+         * something a caller patches on afterwards, because the receipt's
+         * content hash covers `issued_at`: stamping now and correcting it
+         * later produces a receipt that fails its own QR verification.
+         */
+        ?CarbonInterface $receivedAt = null,
     ): Payment {
         if ($amount <= 0) {
             throw new RuntimeException('Payment amount must be greater than zero.');
         }
 
-        return DB::transaction(function () use ($document, $cashier, $amount, $method, $reference, $receiptFormat, $receiptNumber, $device, $paymentId) {
+        $receivedAt ??= now();
+
+        return DB::transaction(function () use ($document, $cashier, $amount, $method, $reference, $receiptFormat, $receiptNumber, $device, $paymentId, $receivedAt) {
             // Re-read under a row lock: two cashiers recording against the same
             // invoice at once must not both pass the balance check on stale data.
             $document = Document::query()->lockForUpdate()->findOrFail($document->getKey());
@@ -89,7 +101,7 @@ class PaymentRecorder
                 'amount' => $amount,
                 'currency' => $document->currency,
                 'reference' => $reference,
-                'received_at' => now(),
+                'received_at' => $receivedAt,
                 'received_by' => $cashier->id,
                 'device_id' => $device?->id,
             ])->save();
@@ -134,7 +146,7 @@ class PaymentRecorder
                 'total' => $amount,
                 'currency' => $document->currency,
                 'status' => 'issued',
-                'issued_at' => now(),
+                'issued_at' => $receivedAt,
                 'cashier_id' => $cashier->id,
             ]);
 

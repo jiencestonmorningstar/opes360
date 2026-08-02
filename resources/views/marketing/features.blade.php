@@ -15,6 +15,7 @@
                 ['receipt', 'Statement of account', 'A shareable, printable statement of every invoice, payment and balance — the answer to "what do I owe you".'],
                 ['banknotes', 'Payments & receipts', 'Record a payment against any invoice and issue the receipt while the customer is still standing there.'],
                 ['cube', 'Inventory', 'Stock that moves as sales go out the door, with every manual adjustment logged and attributable.'],
+                ['cube', 'Multiple stock locations', 'A shop, a store room and a van, each counted separately, with transfers between them that never change the total.'],
                 ['spark', 'Loyalty program', 'Customers earn points automatically and carry a printed card whose QR proves the balance.'],
             ],
         ],
@@ -35,9 +36,23 @@
             'accent' => 'green',
             'modules' => [
                 ['wallet', 'SYSCOHADA accounting', 'A real double-entry journal, ledgers and financial statements on the OHADA chart of accounts.'],
+                ['banknotes', 'Purchases & expenses', 'Supplier bills and day-to-day spending, with the TVA you can reclaim kept separate from the cost.'],
+                ['briefcase', 'Fixed assets', 'A van is not an expense. Its cost is spread over the years you use it, which is also how the DGI sees it.'],
+                ['credit-card', 'Bank reconciliation', 'Import the statement, match it against the books, and find out which of the two balances is telling the truth.'],
                 ['chart-bar', 'Reports', 'Sales, customer and product reports, exportable to CSV whenever your accountant asks.'],
                 ['document-plus', 'DGI-compliant invoicing', 'TVA computed at the rate you are registered for, with the mandatory mentions printed on every document.'],
                 ['calendar', 'Calendar', 'What shipped, what is due, and what still needs following up — day by day.'],
+            ],
+        ],
+        [
+            'eyebrow' => 'Paying people',
+            'title' => 'Payroll that knows where it is',
+            'accent' => 'purple',
+            'modules' => [
+                ['users', 'Team & HR', 'Staff records, contracts and allowances. Nobody has to be given a login to be paid.'],
+                ['banknotes', 'Payroll', 'Monthly payslips with CNPS, IRPP and the centimes additionnels worked out — and a straight answer to what your staff actually cost.'],
+                ['printer', 'Bulletins de paie', 'A proper French payslip, itemised line by line, with the employer’s charges shown beside what was withheld.'],
+                ['clock', 'Leave', 'Requests, approvals and a running balance that accrues from the hire date.'],
             ],
         ],
         [
@@ -64,8 +79,8 @@
     @php
         // Written out rather than interpolated: Tailwind scans source text, so
         // text-accent-{$x} would never be generated.
-        $eyebrowClass = ['blue' => 'text-accent-blue', 'teal' => 'text-accent-teal', 'green' => 'text-accent-green', 'orange' => 'text-accent-orange'][$group['accent']];
-        $tintClass = ['blue' => 'bg-tint-blue', 'teal' => 'bg-tint-teal', 'green' => 'bg-tint-green', 'orange' => 'bg-tint-orange'][$group['accent']];
+        $eyebrowClass = ['blue' => 'text-accent-blue', 'teal' => 'text-accent-teal', 'green' => 'text-accent-green', 'purple' => 'text-accent-purple', 'orange' => 'text-accent-orange'][$group['accent']];
+        $tintClass = ['blue' => 'bg-tint-blue', 'teal' => 'bg-tint-teal', 'green' => 'bg-tint-green', 'purple' => 'bg-tint-purple', 'orange' => 'bg-tint-orange'][$group['accent']];
     @endphp
 
     <section class="py-14 sm:py-18 {{ $index % 2 === 1 ? 'border-y border-border bg-surface-2/60' : '' }}">

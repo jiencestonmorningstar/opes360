@@ -2,8 +2,13 @@
 
 namespace Tests\Feature;
 
+use App\Enums\DocumentStatus;
+use App\Enums\DocumentType;
 use App\Livewire\Dashboard;
+use App\Models\Contact;
+use App\Models\Document;
 use App\Models\User;
+use App\Support\CurrentCompany;
 use Database\Seeders\DemoCompanySeeder;
 use Database\Seeders\RolePermissionSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -50,14 +55,14 @@ class DashboardTest extends TestCase
             ->test(Dashboard::class)
             ->assertOk()
             ->assertSee('Good morning, John', false)
-            ->assertSee('$1,250.00')   // Total Sales, today
-            ->assertSee('$820.00')     // Paid, today
-            ->assertSee('$430.00')     // Outstanding, running balance
-            ->assertSee('$5,760.00')   // Sales Overview, this week
+            ->assertSee('FCFA1,250')   // Total Sales, today
+            ->assertSee('FCFA820')     // Paid, today
+            ->assertSee('FCFA430')     // Outstanding, running balance
+            ->assertSee('FCFA5,760')   // Sales Overview, this week
             ->assertSee('129')         // Customers (128 crafted + the seeded demo client)
             ->assertSee('56')          // Products
             ->assertSee('24')          // Receipts today
-            ->assertSee('$210.00');    // Expenses this month
+            ->assertSee('FCFA210');    // Expenses this month
     }
 
     public function test_the_stat_card_deltas_compare_against_the_previous_window(): void
@@ -98,20 +103,42 @@ class DashboardTest extends TestCase
     }
 
     /**
-     * The seeded demo now includes a real XAF invoice and payment (the Jude
-     * Nshome / OPESWARE llc. account). It sits outside the crafted today/
-     * week/month windows, but even if it fell inside one, the dashboard's
-     * USD totals must not silently absorb a foreign-currency figure.
+     * A Douala business with one export client invoiced in dollars. The
+     * dashboard totals in the company's own currency, so a foreign figure must
+     * not be summed into them — 40,000 USD is not 40,000 FCFA, and a query
+     * that added them would overstate the month by an order of magnitude.
+     *
+     * Built here rather than leaned on in the seeder: the demo is a Cameroonian
+     * business billing Cameroonian clients in francs, and inventing a dollar
+     * invoice for it to make a test work would be contorting the demo to suit
+     * the test.
      */
     public function test_a_foreign_currency_invoice_does_not_inflate_home_currency_totals(): void
     {
+        app(CurrentCompany::class)->set($this->user->currentCompany);
+
+        $contact = Contact::create(['type' => 'customer', 'name' => 'Export Partner']);
+
+        Document::create([
+            'type' => DocumentType::Invoice,
+            'contact_id' => $contact->id,
+            'status' => DocumentStatus::Issued,
+            'number' => 'INV-FX-0001',
+            'issue_date' => now()->toDateString(),
+            'due_date' => now()->addDays(14)->toDateString(),
+            'currency' => 'USD',
+            'subtotal' => 40000,
+            'total' => 40000,
+            'amount_paid' => 0,
+            'balance' => 40000,
+            'created_by' => $this->user->id,
+        ]);
+
         Livewire::actingAs($this->user)
             ->test(Dashboard::class)
             ->call('setRange', 'month')
             ->assertOk()
-            // 30,000 XAF is not 30,000 USD — if the query summed both
-            // currencies together this month's total would balloon past it.
-            ->assertDontSee('$30,000.00');
+            ->assertDontSee('FCFA40,000');
     }
 
     public function test_changing_the_range_recomputes_the_window(): void

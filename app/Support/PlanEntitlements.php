@@ -32,12 +32,34 @@ class PlanEntitlements
         'business' => 21000,
     ];
 
-    /** Lower index = included from an earlier plan. */
+    /**
+     * Lower index = included from an earlier plan.
+     *
+     * Keyed by the permission group an ability starts with, not by the module
+     * key in config/modules.php — the two mostly coincide, and where they do
+     * not (stock locations live under `products`) the module follows whatever
+     * its group is gated at, which is the right answer: a business paying for
+     * products has paid for knowing where they are.
+     *
+     * Kept in step with the module table on the pricing page. That table is
+     * what a customer read before paying, so it is the specification and this
+     * is the enforcement — not the other way round.
+     */
     protected const MODULE_MIN_PLAN = [
         'papers' => 'growth',
         'forms' => 'growth',
+        // What the business owns and what it banks with: the accountant's
+        // ground, and the point at which a business has outgrown one person.
+        'assets' => 'growth',
+        'banking' => 'growth',
+        'employees' => 'growth',
+        'leave' => 'growth',
         'events' => 'business',
         'loyalty' => 'business',
+        // Payroll is the single most valuable thing here — CNPS, IRPP and the
+        // centimes additionnels worked out monthly — and the one a business
+        // only needs once it has real staff.
+        'payroll' => 'business',
     ];
 
     /** The amount due in XAF for one plan billed on one cycle. */

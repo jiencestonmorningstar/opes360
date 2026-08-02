@@ -54,7 +54,8 @@ class PayrollTest extends TestCase
             'name' => 'Acme Sarl',
             'owner_id' => $this->owner->id,
             'currency' => 'XAF',
-            'plan' => 'basic',
+            // On the top plan because payroll is a Business-plan module.
+            'plan' => 'business',
             'account_type' => 'active',
         ]);
 
@@ -618,6 +619,26 @@ class PayrollTest extends TestCase
             ->test(PayrollShow::class, ['run' => $run])
             ->call('approve')
             ->assertForbidden();
+    }
+
+    /**
+     * Payroll is what the top plan is for. A Basic-plan Owner is still a
+     * Basic-plan Owner — no role escalates past what the business pays for.
+     */
+    public function test_payroll_is_refused_on_a_plan_that_does_not_include_it(): void
+    {
+        $this->company->forceFill(['plan' => 'basic'])->save();
+        app(CurrentCompany::class)->set($this->company->fresh());
+
+        $this->actingAs($this->owner)->get(route('payroll'))->assertForbidden();
+        // The staff file comes one tier lower, so it is refused here too.
+        $this->actingAs($this->owner)->get(route('team'))->assertForbidden();
+
+        $this->company->forceFill(['plan' => 'growth'])->save();
+        app(CurrentCompany::class)->set($this->company->fresh());
+
+        $this->actingAs($this->owner)->get(route('team'))->assertOk();
+        $this->actingAs($this->owner)->get(route('payroll'))->assertForbidden();
     }
 
     public function test_a_run_belongs_to_its_company_alone(): void

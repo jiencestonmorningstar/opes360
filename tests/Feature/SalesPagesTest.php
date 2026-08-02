@@ -84,7 +84,7 @@ class SalesPagesTest extends TestCase
             ->test(CustomersIndex::class)
             ->assertOk()
             // Alpha Builders owes 340 and sorts to the top of the list.
-            ->assertSeeInOrder(['Alpha Builders', '$340.00', 'owing']);
+            ->assertSeeInOrder(['Alpha Builders', 'FCFA340', 'owing']);
     }
 
     public function test_customer_search_matches_names(): void
@@ -109,7 +109,7 @@ class SalesPagesTest extends TestCase
             ->assertOk()
             ->assertSee("INV-{$year}-00018")
             ->assertSee('Tech Core Ltd')
-            ->assertSee('$250.00')
+            ->assertSee('FCFA250')
             ->assertSee('Verified authentic');
     }
 

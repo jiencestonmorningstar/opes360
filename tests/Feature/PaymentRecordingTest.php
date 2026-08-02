@@ -154,6 +154,46 @@ class PaymentRecordingTest extends TestCase
         $this->assertSame(DocumentStatus::Paid, $invoice->fresh()->status);
     }
 
+    /**
+     * Money that changed hands last week, entered on Monday.
+     *
+     * The date has to reach the service rather than be patched on afterwards:
+     * the receipt's content hash covers `issued_at`, so correcting it later
+     * produces a receipt that fails its own QR verification — which is how
+     * this was found.
+     */
+    public function test_a_payment_can_be_recorded_for_the_day_it_actually_happened(): void
+    {
+        $invoice = $this->makeInvoice(500);
+        $when = now()->subMonths(2)->startOfDay();
+
+        $payment = app(PaymentRecorder::class)->record(
+            document: $invoice,
+            cashier: $this->user,
+            amount: 500.0,
+            method: PaymentMethod::Cash,
+            receivedAt: $when,
+        );
+
+        $this->assertSame($when->toDateTimeString(), $payment->received_at->toDateTimeString());
+
+        $receipt = $payment->receipt;
+
+        $this->assertSame($when->toDateTimeString(), $receipt->issued_at->toDateTimeString());
+        // And it still verifies, which a hash computed over a later-corrected
+        // date would not.
+        $this->assertFalse($receipt->fresh()->isTampered());
+    }
+
+    public function test_a_payment_with_no_date_is_recorded_as_now(): void
+    {
+        $payment = app(PaymentRecorder::class)->record(
+            $this->makeInvoice(500), $this->user, 500.0, PaymentMethod::Cash
+        );
+
+        $this->assertTrue($payment->received_at->isToday());
+    }
+
     public function test_the_document_page_surfaces_service_errors_in_place(): void
     {
         $invoice = $this->makeInvoice(100);

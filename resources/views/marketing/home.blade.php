@@ -12,11 +12,17 @@
         ['icon' => 'document-plus', 'label' => 'Sales & invoicing'],
         ['icon' => 'users', 'label' => 'Customers & CRM'],
         ['icon' => 'cube', 'label' => 'Inventory'],
+        ['icon' => 'cube', 'label' => 'Stock locations'],
         ['icon' => 'document', 'label' => 'Business documents'],
         ['icon' => 'qr-code', 'label' => 'QR verification'],
         ['icon' => 'briefcase', 'label' => 'Cards & letterheads'],
         ['icon' => 'banknotes', 'label' => 'Payments & receipts'],
         ['icon' => 'wallet', 'label' => 'SYSCOHADA accounting'],
+        ['icon' => 'banknotes', 'label' => 'Purchases & expenses'],
+        ['icon' => 'briefcase', 'label' => 'Fixed assets'],
+        ['icon' => 'credit-card', 'label' => 'Bank reconciliation'],
+        ['icon' => 'users', 'label' => 'Team & HR'],
+        ['icon' => 'banknotes', 'label' => 'Payroll'],
         ['icon' => 'chart-bar', 'label' => 'Reports'],
         ['icon' => 'clipboard', 'label' => 'Opes Forms'],
         ['icon' => 'ticket', 'label' => 'Opes Events'],
@@ -237,7 +243,7 @@
         <div class="max-w-2xl">
             <p class="text-[12.5px] font-semibold uppercase tracking-[0.08em] text-brand">Everything included</p>
             <h2 class="mt-3 text-[27px] font-bold leading-tight tracking-[-0.025em] text-ink sm:text-[32px]">
-                Sixteen modules, one login
+                {{ count($modules) }} modules, one login
             </h2>
             <p class="mt-3 text-[15px] leading-relaxed text-muted">
                 Nothing to buy as an add-on, and nothing that only works on a laptop.

@@ -117,7 +117,7 @@ class DemoClientAccountTest extends TestCase
             ->assertOk()
             ->assertSee('OPESWARE llc.')
             ->assertSee($receipt->number)
-            ->assertSee('FCFA30,000.00');
+            ->assertSee('FCFA30,000');
     }
 
     public function test_the_receipt_prints_in_thermal80_format_without_error(): void
@@ -138,7 +138,7 @@ class DemoClientAccountTest extends TestCase
             ->assertOk()
             ->assertSee('OPESWARE llc.')
             ->assertSee($thermal->number)
-            ->assertSee('FCFA30,000.00');
+            ->assertSee('FCFA30,000');
     }
 
     public function test_the_receipt_verification_page_renders_publicly(): void

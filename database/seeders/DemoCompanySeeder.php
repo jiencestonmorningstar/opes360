@@ -45,9 +45,9 @@ use Illuminate\Support\Str;
  * number here changes, the dashboard changes with it.
  *
  * Target figures (range = today):
- *   Total Sales $1,250.00 · Paid $820.00 · Outstanding $430.00 · Invoices 18
- *   Sales Overview (this week) $5,760.00
- *   Customers 128 · Products 56 · Receipts today 24 · Expenses this month $210.00
+ *   Total Sales FCFA1,250 · Paid FCFA820 · Outstanding FCFA430 · Invoices 18
+ *   Sales Overview (this week) FCFA5,760
+ *   Customers 128 · Products 56 · Receipts today 24 · Expenses this month FCFA210
  */
 class DemoCompanySeeder extends Seeder
 {
@@ -80,7 +80,7 @@ class DemoCompanySeeder extends Seeder
                 'name' => 'John Doe',
                 'password' => Hash::make('password'),
                 'email_verified_at' => now(),
-                'phone' => '+234 801 234 5678',
+                'phone' => '+237 6 70 41 62 38',
                 'avatar_path' => null,
                 'theme' => 'system',
             ],
@@ -105,18 +105,25 @@ class DemoCompanySeeder extends Seeder
                 'tax_centre' => 'CDI Douala 1er',
                 'vat_registered' => true,
                 'vat_rate' => 19.25,
-                'address_line1' => '14 Adeola Odeku Street',
-                'city' => 'Lagos',
-                'region' => 'Lagos',
-                'country' => 'NG',
-                'latitude' => 6.4281,
-                'longitude' => 3.4219,
+                /*
+                 * Douala, in francs. The demo used to trade from Lagos in
+                 * dollars while carrying a Douala tax centre and a 19.25% TVA
+                 * rate — a business that cannot exist, showing "$" against
+                 * every figure on a product whose invoices, payroll and
+                 * accounting are all built for Cameroon.
+                 */
+                'address_line1' => 'Rue Njo-Njo, Bonapriso',
+                'city' => 'Douala',
+                'region' => 'Littoral',
+                'country' => 'CM',
+                'latitude' => 4.0383,
+                'longitude' => 9.7085,
                 'website' => 'https://opesware.com',
                 'email' => 'hello@opesware.com',
-                'phones' => ['+234 801 234 5678'],
+                'phones' => ['+237 6 70 41 62 38'],
                 'socials' => ['x' => 'opesware', 'linkedin' => 'opesware'],
-                'currency' => 'USD',
-                'timezone' => 'UTC',
+                'currency' => 'XAF',
+                'timezone' => 'Africa/Douala',
                 'owner_id' => $this->owner->id,
                 'loyalty_enabled' => true,
                 'loyalty_points_per_amount' => 100,
@@ -136,7 +143,7 @@ class DemoCompanySeeder extends Seeder
                 'name' => 'Sarah Okafor',
                 'password' => Hash::make('password'),
                 'email_verified_at' => now(),
-                'phone' => '+234 802 345 6789',
+                'phone' => '+237 6 99 82 14 07',
                 'avatar_path' => null,
                 'theme' => 'system',
             ],
@@ -305,10 +312,10 @@ class DemoCompanySeeder extends Seeder
      */
     protected function seedJudeNshomeAccount(): void
     {
-        // Dated a couple of months back, and in XAF rather than the company's
-        // USD: a real client outside the crafted today/week/month figures the
-        // rest of this seeder targets, so it adds a genuine account without
-        // shifting any of those numbers out from under the dashboard tests.
+        // Dated a couple of months back: a real client outside the crafted
+        // today/week/month figures the rest of this seeder targets, so it adds
+        // a genuine account without shifting any of those numbers out from
+        // under the dashboard tests.
         $signedUp = $this->today->subMonths(2);
 
         $contact = Contact::create([
@@ -361,6 +368,13 @@ class DemoCompanySeeder extends Seeder
         // Full payment through the real recorder, so the invoice is marked
         // Paid, the contact balance is decremented, and a real numbered,
         // hashed, verifiable receipt is issued alongside it.
+        /*
+         * Paid when the invoice was raised, not when the seeder ran. Recording
+         * it as "now" put 30 000 into today's takings and moved every delta on
+         * the dashboard — which went unnoticed only while the demo traded in
+         * dollars and this figure was in francs, so the totals dropped it as a
+         * foreign currency. A bug hidden behind another bug.
+         */
         app(PaymentRecorder::class)->record(
             document: $invoice,
             cashier: $this->owner,
@@ -368,6 +382,7 @@ class DemoCompanySeeder extends Seeder
             method: PaymentMethod::MobileMoney,
             reference: 'Annual plan — OPES 360 subscription',
             receiptFormat: 'a4',
+            receivedAt: $signedUp,
         );
 
         // Points were already earned automatically by the payment above
