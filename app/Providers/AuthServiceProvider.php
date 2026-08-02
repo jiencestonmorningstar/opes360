@@ -61,7 +61,22 @@ class AuthServiceProvider extends ServiceProvider
                 $company = app(CurrentCompany::class)->get();
 
                 // No company means no company-scoped permission, ever.
-                return $company !== null && $user->hasPermissionIn($company, $ability);
+                if ($company === null) {
+                    return false;
+                }
+
+                /*
+                 * The partner programme is a property of the account, not of
+                 * the person: a plain business has no client book to manage and
+                 * no balance to withdraw, so no role inside it can reach these.
+                 * Checked here rather than route-by-route so the navigation,
+                 * the routes and the components all inherit one answer.
+                 */
+                if (str_starts_with($ability, 'partners.') && ! $company->isSecretariat()) {
+                    return false;
+                }
+
+                return $user->hasPermissionIn($company, $ability);
             });
         }
 

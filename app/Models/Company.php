@@ -53,6 +53,7 @@ class Company extends Model
             'vat_number' => 'encrypted',
             'demo_expires_at' => 'datetime',
             'plan_renews_at' => 'datetime',
+            'referred_at' => 'datetime',
             'renewal_reminder_for' => 'date',
             'vat_registered' => 'boolean',
             'prices_include_tax' => 'boolean',
@@ -89,6 +90,72 @@ class Company extends Model
     public function isSuspended(): bool
     {
         return $this->suspended_at !== null;
+    }
+
+    /**
+     * A secretariat or print shop on the partner programme.
+     *
+     * Separate from account_type on purpose: that column carries the lifecycle
+     * — demo, trial, active — and PlanEntitlements reads it, so a secretariat
+     * is also one of those at any moment. See the programme migration.
+     */
+    public function isSecretariat(): bool
+    {
+        return $this->kind === 'secretariat';
+    }
+
+    /**
+     * The code a partner hands out, minted on demand rather than at
+     * registration so an account converted to a secretariat later still gets
+     * one. Shaped to be read down a phone line: no vowels, so it cannot spell
+     * anything, and no characters that are ambiguous in handwriting.
+     */
+    public function partnerCode(): string
+    {
+        if ($this->partner_code !== null) {
+            return $this->partner_code;
+        }
+
+        do {
+            $code = 'OPS-'.collect(str_split('123456789BCDFGHJKLMNPQRSTVWXYZ'))
+                ->shuffle()->take(5)->implode('');
+        } while (self::query()->withTrashed()->where('partner_code', $code)->exists());
+
+        $this->forceFill(['partner_code' => $code])->save();
+
+        return $code;
+    }
+
+    public function partnerClients(): HasMany
+    {
+        return $this->hasMany(PartnerClient::class);
+    }
+
+    public function cardIssuances(): HasMany
+    {
+        return $this->hasMany(CardIssuance::class);
+    }
+
+    public function partnerCommissions(): HasMany
+    {
+        return $this->hasMany(PartnerCommission::class);
+    }
+
+    public function partnerPayouts(): HasMany
+    {
+        return $this->hasMany(PartnerPayout::class);
+    }
+
+    /** The secretariat that enrolled this business, if one did. */
+    public function referrer(): BelongsTo
+    {
+        return $this->belongsTo(self::class, 'referred_by_company_id');
+    }
+
+    /** Businesses this secretariat enrolled. */
+    public function referrals(): HasMany
+    {
+        return $this->hasMany(self::class, 'referred_by_company_id');
     }
 
     public function platformAdminActivity(): MorphMany

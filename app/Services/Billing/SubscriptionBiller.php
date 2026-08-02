@@ -7,6 +7,7 @@ use App\Models\SubscriptionPayment;
 use App\Models\User;
 use App\Notifications\SubscriptionPaymentFailedNotification;
 use App\Notifications\SubscriptionPaymentSucceededNotification;
+use App\Services\Partners\PartnerProgramme;
 use App\Support\PlanEntitlements;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
@@ -126,5 +127,14 @@ class SubscriptionBiller
         ])->save();
 
         $company->owner?->notify(new SubscriptionPaymentSucceededNotification($payment));
+
+        /*
+         * If a secretariat enrolled this business, their share of the payment is
+         * credited here — after the money actually settled, never against an
+         * invoice that might not be paid. The call is idempotent on the payment
+         * id, so the webhook and a manual status check racing each other cannot
+         * pay a partner twice.
+         */
+        app(PartnerProgramme::class)->creditCommission($payment->fresh());
     }
 }

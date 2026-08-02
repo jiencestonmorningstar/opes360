@@ -28,6 +28,11 @@ class Permissions
         'Loyalty' => ['view', 'manage', 'redeem'],
         'Reports' => ['view', 'export'],
         'Accounting' => ['view', 'export', 'manage'],
+        // The secretariat programme. Not plan-gated — it is how a partner pays
+        // the platform, so putting it behind a tier would be self-defeating —
+        // but it is only reachable at all on a secretariat account. See
+        // AuthServiceProvider, which adds that second condition to these gates.
+        'Partners' => ['view', 'manage', 'issue', 'withdraw'],
         'Users' => ['view', 'invite', 'update-role', 'remove'],
         'Devices' => ['view', 'revoke'],
         'Settings' => ['view', 'update'],

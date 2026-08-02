@@ -37,6 +37,9 @@ use App\Livewire\Onboarding\Register;
 use App\Livewire\Papers\Compose as PapersCompose;
 use App\Livewire\Papers\Index as PapersIndex;
 use App\Livewire\Papers\Show as PapersShow;
+use App\Livewire\Partners\Clients as PartnerClients;
+use App\Livewire\Partners\ClientShow as PartnerClientShow;
+use App\Livewire\Partners\Earnings as PartnerEarnings;
 use App\Livewire\Payments\Index as PaymentsIndex;
 use App\Livewire\Products\Form as ProductForm;
 use App\Livewire\Products\Index as ProductsIndex;
@@ -169,6 +172,16 @@ Route::middleware('auth')->group(function () {
     Route::get('/businesses', BusinessCompanies::class)->name('businesses');
     Route::get('/artisans', BusinessArtisans::class)->middleware('can:business.view')->name('artisans');
     Route::get('/stationery/print', [PrintController::class, 'stationery'])->middleware('can:business.manage-stationery')->name('stationery.print');
+
+    /*
+     * The secretariat programme. Every gate here also requires the account to
+     * be a secretariat — see AuthServiceProvider — so a plain business gets a
+     * 403 rather than an empty client book.
+     */
+    Route::get('/partners/clients', PartnerClients::class)->middleware('can:partners.view')->name('partners.clients');
+    Route::get('/partners/clients/{client}', PartnerClientShow::class)->middleware('can:partners.view')->name('partners.clients.show');
+    Route::get('/partners/clients/{client}/print', [PrintController::class, 'partnerCard'])->middleware('can:partners.issue')->name('partners.clients.print');
+    Route::get('/partners/earnings', PartnerEarnings::class)->middleware('can:partners.view')->name('partners.earnings');
     Route::get('/payments', PaymentsIndex::class)->middleware('can:payments.view')->name('payments');
     Route::get('/reports', ReportsIndex::class)->middleware('can:reports.view')->name('reports');
     Route::get('/accounting', AccountingIndex::class)->middleware('can:accounting.view')->name('accounting');

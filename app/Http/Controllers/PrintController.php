@@ -7,6 +7,7 @@ use App\Models\BusinessDocument;
 use App\Models\Company;
 use App\Models\Contact;
 use App\Models\Document;
+use App\Models\PartnerClient;
 use App\Models\Payment;
 use App\Models\Receipt;
 use App\Models\VerificationToken;
@@ -20,6 +21,7 @@ use BaconQrCode\Common\ErrorCorrectionLevel;
 use Carbon\CarbonImmutable;
 use Illuminate\Http\Request;
 use Illuminate\Routing\Controller;
+use Illuminate\Support\Facades\Gate;
 
 /**
  * Print-ready views — the browser-print path from the architecture plan.
@@ -210,6 +212,64 @@ class PrintController extends Controller
                 // A card's QR sits on a white chip whose padding already gives
                 // the code its quiet zone, so the SVG spends none of its width
                 // on one; the letterhead and stamp keep the default.
+                margin: $asset === 'card' ? 0 : 2,
+                level: $asset === 'card' ? ErrorCorrectionLevel::M() : null,
+            ),
+        ]);
+    }
+
+    /**
+     * The same stationery sheet, printed for a secretariat's client.
+     *
+     * A partner client is not a company and never will be unless they sign up,
+     * so there is no record here to hand the template. It gets an unsaved
+     * Company built from the client's details instead — the sheet only ever
+     * reads attributes off it — which means all ninety-eight designs work for a
+     * client exactly as they do for the partner's own business, with no second
+     * copy of the templates to keep in step.
+     *
+     * The QR points at the partner's invite link for that client rather than at
+     * a public profile the client does not have. Scanning a card the partner
+     * printed is then the shortest possible path from "nice card" to "sign up",
+     * which is the whole commercial point of the programme.
+     */
+    public function partnerCard(Request $request, PartnerClient $client, QrCodes $qr)
+    {
+        Gate::authorize('partners.issue');
+
+        $partner = app(CurrentCompany::class)->get();
+        abort_if($partner === null || $client->company_id !== $partner->id, 404);
+
+        $subject = new Company([
+            'name' => $client->name,
+            'slug' => 'partner-client',
+            'industry' => $client->industry,
+            'city' => $client->city,
+            'email' => $client->email,
+            'phones' => array_values(array_filter([$client->phone])),
+            'country' => $partner->country,
+            'currency' => $partner->currency,
+        ]);
+
+        $asset = $request->string('asset')->toString() === 'letterhead' ? 'letterhead' : 'card';
+
+        $design = in_array($d = $request->string('design')->toString(), Company::cardDesigns(), true)
+            ? $d
+            : 'classic';
+
+        return view('print.stationery', [
+            'company' => $subject,
+            'asset' => $asset,
+            'size' => 'a4',
+            'shape' => 'circular',
+            'name' => $request->string('name')->toString() ?: ($client->contact_name ?: $client->name),
+            'title' => $request->string('title')->toString() ?: 'Proprietor',
+            'cardDesign' => $design,
+            'preview' => $request->boolean('preview'),
+            'face' => in_array($f = $request->string('face')->toString(), ['front', 'back'], true) ? $f : null,
+            'qrSvg' => $qr->svg(
+                $client->inviteUrl(),
+                $asset === 'letterhead' ? 150 : 110,
                 margin: $asset === 'card' ? 0 : 2,
                 level: $asset === 'card' ? ErrorCorrectionLevel::M() : null,
             ),

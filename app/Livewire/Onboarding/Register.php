@@ -7,12 +7,14 @@ use App\Models\Role;
 use App\Models\User;
 use App\Models\VerificationToken;
 use App\Notifications\WelcomeNotification;
+use App\Services\Partners\PartnerProgramme;
 use App\Support\Accounting\ChartOfAccounts;
 use App\Support\CurrentCompany;
 use Illuminate\Contracts\View\View;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
+use Livewire\Attributes\Url;
 use Livewire\Component;
 
 /**
@@ -43,6 +45,41 @@ class Register extends Component
     public string $country = '';
 
     public string $phone = '';
+
+    /**
+     * Referral and account kind, both carried in the URL.
+     *
+     * `ref` is a partner's code or a client's personal invite token; `type` is
+     * how someone arrives from the partner programme page wanting a secretariat
+     * account rather than a plain business. Neither is trusted: an unknown ref
+     * simply produces an unattributed signup, and any type other than
+     * 'secretariat' falls back to a normal business.
+     */
+    #[Url]
+    public string $ref = '';
+
+    #[Url]
+    public string $type = '';
+
+    /**
+     * Resolved once on mount, so the form can say who invited you.
+     *
+     * A string rather than the Company itself: Livewire round-trips public
+     * properties through the browser, and the only thing this needs on the far
+     * side is a name to show.
+     */
+    public string $referrerName = '';
+
+    public function mount(): void
+    {
+        $this->referrerName = app(PartnerProgramme::class)
+            ->resolveReferral($this->ref)['partner']->name ?? '';
+    }
+
+    public function isSecretariatSignup(): bool
+    {
+        return $this->type === 'secretariat';
+    }
 
     public function continueToBusiness(): void
     {
@@ -100,6 +137,7 @@ class Register extends Component
                 'phones' => array_values(array_filter([$this->phone])),
                 'email' => strtolower(trim($this->email)),
                 'owner_id' => $user->id,
+                'kind' => $this->isSecretariatSignup() ? 'secretariat' : 'business',
             ]);
 
             $company->users()->attach($user->id, [
@@ -127,6 +165,13 @@ class Register extends Component
 
             return [$user, $company];
         });
+
+        // Attribution is outside the transaction and deliberately cannot fail
+        // the registration: a mistyped or expired ref must leave someone with
+        // an account, not an error page. Written once — see PartnerProgramme.
+        if ($this->ref !== '') {
+            app(PartnerProgramme::class)->attribute($company, $this->ref);
+        }
 
         // Outside the transaction: a queued welcome message must never be the
         // reason a registration rolls back, and it has nothing to add to one.

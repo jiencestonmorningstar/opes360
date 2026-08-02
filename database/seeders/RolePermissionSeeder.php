@@ -33,6 +33,10 @@ class RolePermissionSeeder extends Seeder
             'Loyalty' => ['view', 'manage', 'redeem'],
             'Reports' => ['view', 'export'],
             'Accounting' => ['view', 'export', 'manage'],
+            // Runs the counter in a secretariat: adds clients and prints their
+            // stationery. Withdrawing the balance is not a counter job, so
+            // 'withdraw' stays with the Owner and Administrator.
+            'Partners' => ['view', 'manage', 'issue'],
             'Users' => ['view'],
             'Devices' => ['view'],
             'Settings' => ['view'],
@@ -65,6 +69,7 @@ class RolePermissionSeeder extends Seeder
             'Events' => ['view', 'create', 'update', 'check-in'],
             'Loyalty' => ['view', 'redeem'],
             'Reports' => ['view'],
+            'Partners' => ['view', 'issue'],
         ]],
         // No Papers for a Cashier: a till operator has no reason to read the
         // business's employment letters and contracts. Read Only does get them,

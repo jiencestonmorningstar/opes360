@@ -879,8 +879,8 @@ class CardCatalog
         $needle = mb_strtolower($industry);
 
         $synonyms = [
-            'Restaurant & Food' => ['restaurant', 'food', 'catering', 'café', 'cafe', 'bakery', 'bar', 'chef', 'cuisine', 'coffee'],
-            'Fitness & Sport' => ['fitness', 'gym', 'sport', 'coach', 'wellness'],
+            'Restaurant & Food' => ['restaurant', 'food', 'catering', 'café', 'cafe', 'bakery', 'bar', 'chef', 'cuisine', 'coffee', 'hospitality', 'hotel'],
+            'Fitness & Sport' => ['fitness', 'gym', 'sport', 'coach'],
             'Legal' => ['law', 'legal', 'avocat', 'attorney', 'notaire', 'juridique'],
             'Architecture' => ['architect', 'design studio', 'urbanis'],
             'Photography' => ['photo', 'studio', 'video', 'film', 'media'],
@@ -891,16 +891,25 @@ class CardCatalog
             'Travel & Tours' => ['travel', 'tour', 'voyage', 'tourism', 'agence de voyage'],
             'Health & Pharmacy' => ['health', 'pharma', 'clinic', 'medical', 'hospital', 'doctor', 'santé', 'dental'],
             'Construction' => ['construction', 'building', 'btp', 'civil', 'contractor', 'architecture', 'engineering'],
-            'Beauty & Salon' => ['beauty', 'salon', 'spa', 'hair', 'barber', 'coiffure', 'esthéti', 'makeup', 'nails'],
-            'Automotive' => ['auto', 'car', 'garage', 'mechanic', 'vehicle', 'moto'],
+            'Beauty & Salon' => ['beauty', 'salon', 'spa', 'hair', 'barber', 'coiffure', 'esthéti', 'makeup', 'nails', 'wellness'],
+            'Automotive' => ['auto', 'car', 'garage', 'mechanic', 'vehicle', 'moto', 'transport', 'logistic', 'freight', 'haulage'],
             'Fashion' => ['fashion', 'boutique', 'clothing', 'tailor', 'couture', 'textile', 'mode'],
             'Education' => ['education', 'school', 'training', 'academy', 'college', 'université', 'formation', 'tutor'],
             'Real Estate' => ['real estate', 'estate', 'property', 'immobili', 'realty', 'land', 'housing'],
         ];
 
+        /*
+         * Matched at a word boundary, not anywhere in the string.
+         *
+         * A plain str_contains() sent every haulier to the gym: "Transport &
+         * Logistics" contains "sport". Anchoring to \b keeps the stems that
+         * genuinely need prefix matching — "pharma" still finds "pharmacie",
+         * "immobili" still finds "immobilier" — while refusing matches buried
+         * inside a longer word.
+         */
         foreach ($synonyms as $sector => $words) {
             foreach ($words as $word) {
-                if (str_contains($needle, $word)) {
+                if (preg_match('/\b'.preg_quote($word, '/').'/u', $needle) === 1) {
                     return $sector;
                 }
             }

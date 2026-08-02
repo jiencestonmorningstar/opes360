@@ -32,9 +32,10 @@ class SecurityHeaders
         // headers. Everything else stays locked to this origin.
         $embeddable = $request->routeIs('form.embed', 'form.embed.submit', 'event.embed');
 
-        // The stationery print view is framed by this app's own stationery
-        // page as the live preview; 'self' keeps every other origin out.
-        $selfEmbeddable = $request->routeIs('stationery.print');
+        // The stationery print views are framed by this app's own pages as the
+        // live preview — the business's own on Stationery, a client's on the
+        // secretariat's client page. 'self' keeps every other origin out.
+        $selfEmbeddable = $request->routeIs('stationery.print', 'partners.clients.print');
 
         if (! $embeddable) {
             // Superseded by the policy's frame-ancestors, kept for browsers
