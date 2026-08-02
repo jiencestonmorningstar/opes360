@@ -176,6 +176,26 @@
         background-color: var(--color-canvas);
     }
 
+    /*
+     * A grid item's automatic minimum size is its min-content width, and a grid
+     * track is never allowed to be smaller than that. One un-shrinkable child —
+     * an input, a long word, a fixed-width tile — therefore forces its whole
+     * track wider than the page, and the page scrolls sideways with nothing on
+     * screen visibly out of place.
+     *
+     * Forty-six grids in this app declare their columns only from a breakpoint
+     * up (`grid gap-4 lg:grid-cols-2`), which leaves an implicit `auto` track
+     * below it and every one of them exposed. Settings was doing it at 360px:
+     * a 690px document on a 360px phone. Rather than annotate every call site
+     * with min-w-0 and rely on the next one remembering, the floor is set here.
+     *
+     * Anything that genuinely needs to overflow — a wide table, a design picker
+     * — scrolls inside its own overflow-x container, which this does not touch.
+     */
+    :where(.grid) > * {
+        min-width: 0;
+    }
+
     body {
         /*
          * Mobile puts cards straight onto a white page, separated by their
