@@ -30,6 +30,18 @@ return [
         'accounts' => [
             ['label' => 'Business Owner', 'detail' => 'Full access to everything', 'email' => 'john@opesware.com'],
             ['label' => 'Sales Officer', 'detail' => 'Day-to-day sales and customers', 'email' => 'sales@opesware.com'],
+            /*
+             * The secretariat. DemoSecretariatSeeder has always built this
+             * account in full — a client book, issued cards, earnings, four
+             * employees and a paid payroll run — and the login page never
+             * offered it, so the only way in was knowing the address by heart.
+             * A demo nobody can reach is a demo that does not exist.
+             *
+             * "Partner" and "secretariat" are the same thing in this product:
+             * the partner programme is what a secretariat account gets, which
+             * is why there is one entry here and not two.
+             */
+            ['label' => 'Secretariat', 'detail' => 'Client book, cards and earnings', 'email' => 'secretariat@opesware.com'],
         ],
         // Seeded by PlatformAdminSeeder — shares the flag and password above so
         // turning demo logins off hides this one-tap sign-in too.
