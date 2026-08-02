@@ -24,6 +24,16 @@ class Permissions
         // a cashier who may take a customer's money has no business recording
         // what the company spends.
         'Expenses' => ['view', 'create', 'update', 'pay', 'void'],
+        /*
+         * People and pay. Three groups rather than one, because they are three
+         * different jobs: a manager keeps the staff file, an accountant runs
+         * the payroll, and only an owner should be able to approve a month and
+         * post it to the books. Salaries are also the one thing in this system
+         * that everybody is curious about and almost nobody should see.
+         */
+        'Employees' => ['view', 'create', 'update', 'delete'],
+        'Payroll' => ['view', 'run', 'approve', 'pay', 'void'],
+        'Leave' => ['view', 'request', 'approve'],
         'Customers' => ['view', 'create', 'update', 'delete'],
         'Products' => ['view', 'create', 'update', 'delete', 'adjust-stock'],
         'Papers' => ['view', 'create', 'issue', 'void'],

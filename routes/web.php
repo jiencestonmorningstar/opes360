@@ -8,6 +8,7 @@ use App\Http\Controllers\FormExportController;
 use App\Http\Controllers\FormPublicController;
 use App\Http\Controllers\LoyaltyController;
 use App\Http\Controllers\MarketingController;
+use App\Http\Controllers\PayrollExportController;
 use App\Http\Controllers\PrintController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\SyncController;
@@ -42,6 +43,8 @@ use App\Livewire\Partners\Clients as PartnerClients;
 use App\Livewire\Partners\ClientShow as PartnerClientShow;
 use App\Livewire\Partners\Earnings as PartnerEarnings;
 use App\Livewire\Payments\Index as PaymentsIndex;
+use App\Livewire\Payroll\Index as PayrollIndex;
+use App\Livewire\Payroll\Show as PayrollShow;
 use App\Livewire\Products\Form as ProductForm;
 use App\Livewire\Products\Index as ProductsIndex;
 use App\Livewire\Reports\Index as ReportsIndex;
@@ -49,6 +52,8 @@ use App\Livewire\Sales\Index as SalesIndex;
 use App\Livewire\Scan;
 use App\Livewire\Settings\Billing as SettingsBilling;
 use App\Livewire\Settings\Index as SettingsIndex;
+use App\Livewire\Team\Index as TeamIndex;
+use App\Livewire\Team\Show as TeamShow;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Route;
@@ -185,6 +190,19 @@ Route::middleware('auth')->group(function () {
     Route::get('/partners/earnings', PartnerEarnings::class)->middleware('can:partners.view')->name('partners.earnings');
     Route::get('/payments', PaymentsIndex::class)->middleware('can:payments.view')->name('payments');
     Route::get('/expenses', ExpensesIndex::class)->middleware('can:expenses.view')->name('expenses');
+
+    /*
+     * People and pay. The team file is separate from Users: an employee is
+     * somebody the business pays, a user is somebody who logs in, and most
+     * staff here are only ever the first.
+     */
+    Route::get('/team', TeamIndex::class)->middleware('can:employees.view')->name('team');
+    Route::get('/team/{employee}', TeamShow::class)->middleware('can:employees.view')->name('team.show');
+    Route::get('/payroll', PayrollIndex::class)->middleware('can:payroll.view')->name('payroll');
+    Route::get('/payroll/{run}', PayrollShow::class)->middleware('can:payroll.view')->name('payroll.show');
+    Route::get('/payroll/{run}/register.csv', [PayrollExportController::class, 'register'])
+        ->middleware('can:payroll.view')->name('payroll.register');
+    Route::get('/payslips/{payslip}/print', [PrintController::class, 'payslip'])->middleware('can:payroll.view')->name('payslips.print');
     Route::get('/reports', ReportsIndex::class)->middleware('can:reports.view')->name('reports');
     Route::get('/accounting', AccountingIndex::class)->middleware('can:accounting.view')->name('accounting');
 

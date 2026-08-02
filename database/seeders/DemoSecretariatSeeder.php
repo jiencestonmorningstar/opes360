@@ -3,11 +3,15 @@
 namespace Database\Seeders;
 
 use App\Models\Company;
+use App\Models\Employee;
+use App\Models\EmploymentContract;
 use App\Models\PartnerClient;
 use App\Models\Role;
+use App\Models\SalaryComponent;
 use App\Models\User;
 use App\Models\VerificationToken;
 use App\Services\Partners\PartnerProgramme;
+use App\Services\Payroll\PayrollRunner;
 use App\Support\Accounting\ChartOfAccounts;
 use App\Support\CurrentCompany;
 use Illuminate\Database\Seeder;
@@ -103,6 +107,91 @@ class DemoSecretariatSeeder extends Seeder
                     );
                 }
             }
+
+            $this->seedTeam($partner, $owner);
         });
+    }
+
+    /**
+     * Four staff and last month's payroll, run and paid.
+     *
+     * This lives on the secretariat rather than the main demo company because
+     * the payroll is Cameroonian — CNPS, IRPP, centimes additionnels — and the
+     * other demo business trades from Lagos in dollars. Showing a Douala print
+     * shop's payslips is the honest version; showing the same deductions
+     * against a Nigerian company would be a demo that teaches the wrong thing.
+     */
+    protected function seedTeam(Company $partner, User $owner): void
+    {
+        $partner->forceFill([
+            'cnps_employer_number' => '9-01-2019-0004821',
+            // A print shop is a workshop, not an office: group B.
+            'cnps_risk_group' => 'b',
+            'cnps_family_regime' => 'general',
+        ])->save();
+
+        $hired = now()->subYears(2)->startOfMonth();
+
+        $staff = [
+            ['Sylvie', 'Ekwalla', 'Infographiste', 185000, 'mobile_money'],
+            ['Bertrand', 'Mballa', 'Opérateur PAO', 140000, 'cash'],
+            ['Nadège', 'Fotso', 'Accueil et caisse', 95000, 'cash'],
+            ['Ibrahim', 'Sali', 'Coursier', 70000, 'cash'],
+        ];
+
+        foreach ($staff as $index => [$first, $last, $title, $salary, $method]) {
+            $employee = Employee::create([
+                'company_id' => $partner->id,
+                'number' => 'SB-'.str_pad((string) ($index + 1), 3, '0', STR_PAD_LEFT),
+                'first_name' => $first,
+                'last_name' => $last,
+                'job_title' => $title,
+                'phone' => '+237 6 '.random_int(50, 99).' '.random_int(10, 99).' '.random_int(10, 99).' '.random_int(10, 99),
+                'cnps_number' => (string) random_int(100000000, 999999999),
+                'hired_on' => $hired->copy()->addMonths($index * 3)->toDateString(),
+                'status' => 'active',
+                'payment_method' => $method,
+                'created_by' => $owner->id,
+            ]);
+
+            EmploymentContract::create([
+                'company_id' => $partner->id,
+                'employee_id' => $employee->id,
+                'type' => $index === 3 ? 'cdd' : 'cdi',
+                'job_title' => $title,
+                'starts_on' => $employee->hired_on->toDateString(),
+                'ends_on' => $index === 3 ? now()->addMonths(4)->toDateString() : null,
+                'base_salary' => $salary,
+                'currency' => 'XAF',
+                'status' => 'active',
+            ]);
+
+            // A transport allowance outside both bases, which is the case that
+            // makes the three-base distinction visible on a payslip.
+            if ($index < 2) {
+                SalaryComponent::create([
+                    'company_id' => $partner->id,
+                    'employee_id' => $employee->id,
+                    'name' => 'Prime de transport',
+                    'kind' => 'allowance',
+                    'amount' => 20000,
+                    'taxable' => false,
+                    'cnps_liable' => false,
+                    'active' => true,
+                ]);
+            }
+        }
+
+        $runner = app(PayrollRunner::class);
+        $lastMonth = now()->subMonth()->startOfMonth();
+
+        $run = $runner->build($runner->open($lastMonth->toDateString(), $owner), $owner);
+        $run = $runner->approve($run, $owner);
+
+        $runner->markPaid($run, [
+            'method' => 'bank',
+            'paid_on' => $lastMonth->copy()->endOfMonth()->toDateString(),
+            'reference' => 'VIR-'.$lastMonth->format('Ym'),
+        ], $owner);
     }
 }

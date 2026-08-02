@@ -162,3 +162,43 @@ everywhere; secrets in the environment, never in the database.
 
 **Trade-off:** encrypted columns cannot be searched or indexed. Where lookup is needed (e.g. finding a
 customer by tax ID), store a blind index — a keyed hash of the normalised value — alongside the ciphertext.
+
+---
+
+## 11. Statutory rates live in config, and a payroll run keeps its own copy
+
+**Decision:** every Cameroonian payroll figure — the CNPS ceiling, the IRPP bands, the TDL and RAV scales,
+the CAC, CFC and FNE rates — is read from `config/payroll.php`. `PayrollCalculator` holds no numbers of its
+own; it is constructed with a rates array. When a run is approved, the rates in force are copied onto the
+run, and the payslips it produced store their computed figures rather than recomputing on read.
+
+**Why:** these numbers are revised by finance act. A rate hard-coded in a service is a rate nobody can find
+in January, and payroll arithmetic that is quietly a year out of date produces declarations the business
+signs and is liable for. Equally, once a month is approved its payslips exist outside this database — the
+employee has a copy, the CNPS has a declaration built from it — so recomputing them the day the config is
+edited would rewrite documents already in other people's hands.
+
+**Trade-off:** the same figure is stored in three places (the payslip's columns, its lines, and the run's
+rates snapshot) rather than derived once. That redundancy is the point: it is what makes a payslip from two
+years ago still explainable line by line. The cost is that a correction is a void-and-rerun, never an edit.
+
+**What is deliberately *not* in config:** a business's CNPS risk group and family-allowance regime. Those
+differ per business rather than per country, so they sit on the companies table — editing a shared config
+file for one business would change the employer's bill for all of them.
+
+---
+
+## 12. An employee is not a user
+
+**Decision:** `employees` is its own table with a nullable `user_id`, and pay history lives on
+`employment_contracts` rather than on the employee.
+
+**Why:** a small business here has a driver, two shop assistants and a night watchman. None of them will
+ever log in and several have no email address, so modelling an employee as a `users` row would mean
+inventing credentials for people who do not want them, and would tie the payroll to the seat count.
+Separating contracts is what makes June's payslip still say June's salary after a July promotion: a run
+reads the contract in force on its own period, not the latest one.
+
+**Trade-off:** two records to keep in step for the minority of staff who do also have a login, and a raise
+is a new contract rather than an edited field — which reads as ceremony until the first time somebody has
+to produce last year's payroll.

@@ -10,6 +10,7 @@ use App\Models\Contact;
 use App\Models\Document;
 use App\Models\PartnerClient;
 use App\Models\Payment;
+use App\Models\Payslip;
 use App\Models\Receipt;
 use App\Models\VerificationToken;
 use App\Services\DocumentComposer;
@@ -321,6 +322,25 @@ class PrintController extends Controller
             'qrSvg' => $receipt->verificationToken
                 ? $qr->svg($receipt->verificationToken->publicUrl(), 120)
                 : null,
+            'autoprint' => $request->boolean('print'),
+        ]);
+    }
+
+    /**
+     * A bulletin de paie.
+     *
+     * Deliberately printed from the payslip's own stored figures and its
+     * stored lines, never recomputed: the employee's copy, the CNPS
+     * declaration and this sheet all have to say the same thing years after
+     * the rates that produced them have changed.
+     */
+    public function payslip(Request $request, Payslip $payslip)
+    {
+        $payslip->load(['lines' => fn ($q) => $q->orderBy('sort_order'), 'run', 'employee']);
+
+        return view('print.payslip', [
+            'payslip' => $payslip,
+            'company' => app(CurrentCompany::class)->get(),
             'autoprint' => $request->boolean('print'),
         ]);
     }

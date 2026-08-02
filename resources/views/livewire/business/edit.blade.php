@@ -126,6 +126,38 @@
                     </label>
                 </div>
 
+                {{-- Payroll registration. The two classifications below change
+                     what the business pays on top of every salary without
+                     changing a single payslip's net, which is exactly why they
+                     belong to the business rather than to a shared config. --}}
+                @can('payroll.view')
+                    <div class="mt-4 grid gap-4 min-[560px]:grid-cols-3">
+                        <label>
+                            <span class="{{ $labelClass }}">CNPS employer number</span>
+                            <input type="text" wire:model="form.cnps_employer_number" class="{{ $inputClass }}">
+                            @error('form.cnps_employer_number') <p class="mt-1 text-[12.5px] font-medium text-warning">{{ $message }}</p> @enderror
+                        </label>
+                        <label>
+                            <span class="{{ $labelClass }}">Occupational risk group</span>
+                            <select wire:model="form.cnps_risk_group" class="{{ $inputClass }}">
+                                @foreach (config('payroll.cnps.occupational_risk.groups') as $key => $group)
+                                    <option value="{{ $key }}">{{ $group['label'] }}</option>
+                                @endforeach
+                            </select>
+                            @error('form.cnps_risk_group') <p class="mt-1 text-[12.5px] font-medium text-warning">{{ $message }}</p> @enderror
+                        </label>
+                        <label>
+                            <span class="{{ $labelClass }}">Family allowance regime</span>
+                            <select wire:model="form.cnps_family_regime" class="{{ $inputClass }}">
+                                <option value="general">General — 7%</option>
+                                <option value="agricultural">Agricultural — 5.65%</option>
+                                <option value="teaching">Teaching &amp; domestic — 3.7%</option>
+                            </select>
+                            @error('form.cnps_family_regime') <p class="mt-1 text-[12.5px] font-medium text-warning">{{ $message }}</p> @enderror
+                        </label>
+                    </div>
+                @endcan
+
                 {{-- VAT. Only the régime du réel collects it, so the toggle is
                      kept separate from the regime rather than derived from it —
                      a business can sit between regimes or hold an exemption,

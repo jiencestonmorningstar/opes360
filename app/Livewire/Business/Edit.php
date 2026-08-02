@@ -69,6 +69,12 @@ class Edit extends Component
             'tax_regime' => $company->tax_regime,
             'tax_centre' => $company->tax_centre,
             'capital_social' => $company->capital_social,
+            // Payroll. Kept beside the fiscal identity because that is what
+            // they are: the business's registration with the CNPS, and the
+            // two classifications the CNPS assigns it.
+            'cnps_employer_number' => $company->cnps_employer_number,
+            'cnps_risk_group' => $company->cnps_risk_group ?: 'a',
+            'cnps_family_regime' => $company->cnps_family_regime ?: 'general',
             'vat_registered' => (bool) $company->vat_registered,
             'vat_rate' => (string) ($company->vat_rate ?: '19.25'),
             'prices_include_tax' => (bool) $company->prices_include_tax,
@@ -106,6 +112,9 @@ class Edit extends Component
             'form.tax_regime' => ['nullable', Rule::enum(TaxRegime::class)],
             'form.tax_centre' => ['nullable', 'string', 'max:120'],
             'form.capital_social' => ['nullable', 'numeric', 'min:0'],
+            'form.cnps_employer_number' => ['nullable', 'string', 'max:40'],
+            'form.cnps_risk_group' => ['required', 'in:'.implode(',', array_keys(config('payroll.cnps.occupational_risk.groups')))],
+            'form.cnps_family_regime' => ['required', 'in:general,agricultural,teaching'],
             // Capped well above any real rate: a typo of 1925 for 19.25 would
             // otherwise multiply every invoice in the business by twenty.
             'form.vat_rate' => ['nullable', 'numeric', 'min:0', 'max:100'],
@@ -134,6 +143,9 @@ class Edit extends Component
             'tax_regime' => $this->form['tax_regime'] ?: null,
             'tax_centre' => $this->form['tax_centre'] ?: null,
             'capital_social' => $this->form['capital_social'] !== '' ? $this->form['capital_social'] : null,
+            'cnps_employer_number' => $this->form['cnps_employer_number'] ?: null,
+            'cnps_risk_group' => $this->form['cnps_risk_group'],
+            'cnps_family_regime' => $this->form['cnps_family_regime'],
             'vat_registered' => (bool) $this->form['vat_registered'],
             'vat_rate' => $this->form['vat_rate'] !== '' ? $this->form['vat_rate'] : 19.25,
             'prices_include_tax' => (bool) $this->form['prices_include_tax'],

@@ -64,6 +64,22 @@ class ChartOfAccounts
         'purchases' => ['601', 'Achats de marchandises'],
         'sales_goods' => ['701', 'Ventes de marchandises'],
         'sales_services' => ['706', 'Services vendus'],
+
+        /*
+         * Payroll. A run touches seven accounts at once, which is why they are
+         * roles: the gross is a charge, the employer's contributions are a
+         * second and larger charge nobody sees on a payslip, and what actually
+         * leaves the bank is only the net — the rest sits in 431 and 447 until
+         * the CNPS and the DGI are paid, which is a different month.
+         */
+        'wages' => ['661', 'Rémunérations directes versées au personnel national'],
+        'staff_allowances' => ['663', 'Indemnités forfaitaires versées au personnel'],
+        'social_charges' => ['664', 'Charges sociales'],
+        'payroll_taxes' => ['641', 'Impôts et taxes directs'],
+        'staff_payable' => ['422', 'Personnel, rémunérations dues'],
+        'staff_advances' => ['421', 'Personnel, avances et acomptes'],
+        'social_payable' => ['431', 'Sécurité sociale'],
+        'tax_withheld' => ['447', 'État, impôts retenus à la source'],
     ];
 
     /**
@@ -234,12 +250,16 @@ class ChartOfAccounts
     public static function normalBalanceFor(string $number, int $class): string
     {
         if ($class === 4) {
-            // 411 is owed to the business and 445 is tax it can reclaim —
-            // both assets, and so are their subdivisions (4111, 4452…), which
-            // is why this matches on prefix. 4191 Clients avances reçues
+            // 411 is owed to the business, 445 is tax it can reclaim, and 421
+            // is money advanced to a member of staff and not yet recovered —
+            // all three are assets, as are their subdivisions (4111, 4452…),
+            // which is why this matches on prefix. 4191 Clients avances reçues
             // deliberately does not match: it starts 419, and money a
-            // customer paid in advance is owed *by* the business.
-            return str_starts_with($number, '411') || str_starts_with($number, '445')
+            // customer paid in advance is owed *by* the business. 422 is
+            // likewise excluded — wages due are a debt, not an advance.
+            return str_starts_with($number, '411')
+                || str_starts_with($number, '445')
+                || str_starts_with($number, '421')
                 ? 'debit'
                 : 'credit';
         }

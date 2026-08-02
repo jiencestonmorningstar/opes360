@@ -26,6 +26,12 @@ class RolePermissionSeeder extends Seeder
             'Receipts' => ['view', 'create'],
             'Payments' => ['view', 'record'],
             'Expenses' => ['view', 'create', 'update', 'pay'],
+            // Keeps the staff file and decides leave — the day-to-day of
+            // managing people. Approving a month's payroll and posting it to
+            // the books is not that job, so 'approve' and 'pay' stay above.
+            'Employees' => ['view', 'create', 'update'],
+            'Payroll' => ['view', 'run'],
+            'Leave' => ['view', 'request', 'approve'],
             'Customers' => ['view', 'create', 'update'],
             'Products' => ['view', 'create', 'update', 'adjust-stock'],
             'Papers' => ['view', 'create', 'issue'],
@@ -49,6 +55,12 @@ class RolePermissionSeeder extends Seeder
             'Payments' => ['view', 'record', 'refund'],
             // The spending side is the accountant's before it is anyone's.
             'Expenses' => ['view', 'create', 'update', 'pay', 'void'],
+            // Running the payroll is bookkeeping. Approving it commits the
+            // business to a month's wages and the declarations that follow,
+            // which is the owner's signature, not the accountant's.
+            'Employees' => ['view', 'update'],
+            'Payroll' => ['view', 'run', 'pay'],
+            'Leave' => ['view'],
             'Customers' => ['view', 'create', 'update'],
             'Products' => ['view'],
             'Papers' => ['view', 'create'],
@@ -89,6 +101,10 @@ class RolePermissionSeeder extends Seeder
             'Events' => ['view', 'check-in'],
             'Loyalty' => ['view', 'redeem'],
         ]],
+        // No Employees or Payroll for Read Only. "Can see everything" is a
+        // reasonable description of an auditor's access right up until it
+        // includes what every colleague earns; a business that wants that
+        // grants it deliberately rather than getting it by default.
         'read-only' => ['name' => 'Read Only', 'level' => 7, 'grants' => [
             'Business' => ['view'],
             'Sales' => ['view'],
