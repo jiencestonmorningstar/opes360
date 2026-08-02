@@ -17,6 +17,17 @@
         <h1 class="min-w-0 flex-1 truncate text-[22px] font-bold leading-tight tracking-[-0.02em] text-ink lg:text-[25px]">
             {{ $contact->displayName() }}
         </h1>
+
+        {{-- The route, the form and the policy for editing a customer have all
+             existed since the CRM shipped, and nothing anywhere linked to them —
+             so a misspelled name or a changed phone number could not be fixed
+             from inside the product at all. --}}
+        @can('update', $contact)
+            <a href="{{ route('customers.edit', $contact) }}" wire:navigate
+               class="tap focusable flex h-11 shrink-0 items-center rounded-xl border border-border bg-surface px-4 text-[14px] font-semibold text-ink hover:bg-surface-2">
+                Edit
+            </a>
+        @endcan
     </div>
 
     <div class="mt-5 grid gap-4 lg:grid-cols-3">
