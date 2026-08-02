@@ -30,6 +30,7 @@ use App\Livewire\Documents\Show as DocumentShow;
 use App\Livewire\Events\Index as EventsIndex;
 use App\Livewire\Events\Manage as EventsManage;
 use App\Livewire\Events\Show as EventsShow;
+use App\Livewire\Expenses\Index as ExpensesIndex;
 use App\Livewire\Forms\Builder as FormsBuilder;
 use App\Livewire\Forms\Index as FormsIndex;
 use App\Livewire\Forms\Responses as FormsResponses;
@@ -183,6 +184,7 @@ Route::middleware('auth')->group(function () {
     Route::get('/partners/clients/{client}/print', [PrintController::class, 'partnerCard'])->middleware('can:partners.issue')->name('partners.clients.print');
     Route::get('/partners/earnings', PartnerEarnings::class)->middleware('can:partners.view')->name('partners.earnings');
     Route::get('/payments', PaymentsIndex::class)->middleware('can:payments.view')->name('payments');
+    Route::get('/expenses', ExpensesIndex::class)->middleware('can:expenses.view')->name('expenses');
     Route::get('/reports', ReportsIndex::class)->middleware('can:reports.view')->name('reports');
     Route::get('/accounting', AccountingIndex::class)->middleware('can:accounting.view')->name('accounting');
 

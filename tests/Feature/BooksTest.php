@@ -227,6 +227,6 @@ class BooksTest extends TestCase
             ->assertSee('No chart of accounts yet')
             ->call('seedChart');
 
-        $this->assertSame(count(ChartOfAccounts::ROLES), LedgerAccount::count());
+        $this->assertSame(count(ChartOfAccounts::starterAccounts()), LedgerAccount::count());
     }
 }

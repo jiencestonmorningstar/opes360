@@ -89,7 +89,7 @@ class LedgerTest extends TestCase
         $created = ChartOfAccounts::seed($this->company);
 
         $this->assertSame(0, $created);
-        $this->assertSame(count(ChartOfAccounts::ROLES), LedgerAccount::count());
+        $this->assertSame(count(ChartOfAccounts::starterAccounts()), LedgerAccount::count());
         // An accountant's edit survives a re-seed.
         $this->assertSame('Clients divers', LedgerAccount::where('number', '411')->value('name'));
     }

@@ -20,6 +20,10 @@ class Permissions
         'Sales' => ['view', 'create', 'update', 'issue', 'void', 'approve'],
         'Receipts' => ['view', 'create', 'void'],
         'Payments' => ['view', 'record', 'refund'],
+        // Money going out. Separate from Payments, which is money coming in:
+        // a cashier who may take a customer's money has no business recording
+        // what the company spends.
+        'Expenses' => ['view', 'create', 'update', 'pay', 'void'],
         'Customers' => ['view', 'create', 'update', 'delete'],
         'Products' => ['view', 'create', 'update', 'delete', 'adjust-stock'],
         'Papers' => ['view', 'create', 'issue', 'void'],

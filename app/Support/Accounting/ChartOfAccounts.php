@@ -67,6 +67,53 @@ class ChartOfAccounts
     ];
 
     /**
+     * The class-6 accounts a small business actually charges money to, keyed by
+     * the category it picks in the expense form.
+     *
+     * Seeded alongside the roles, because an expense that cannot find an
+     * account to post against is an expense that never reaches the books — and
+     * asking a shopkeeper to build a chart of accounts before they can record
+     * a tank of fuel is asking them not to bother.
+     *
+     * The order here is the order of the picker: the ones a business meets
+     * every week first, the ones an accountant reaches for last.
+     *
+     * @var array<string, array{0: string, 1: string, 2: string}>
+     *                                                            category => [account number, account name, label shown]
+     */
+    public const EXPENSE_CATEGORIES = [
+        'goods' => ['601', 'Achats de marchandises', 'Goods for resale'],
+        'materials' => ['602', 'Achats de matières premières et fournitures liées', 'Raw materials'],
+        'fuel' => ['6053', 'Autres énergies', 'Fuel & energy'],
+        'electricity' => ['6052', 'Électricité', 'Electricity'],
+        'water' => ['6051', 'Eau', 'Water'],
+        'supplies' => ['6055', 'Fournitures de bureau', 'Office supplies'],
+        'transport' => ['614', 'Transports du personnel', 'Transport'],
+        'rent' => ['622', 'Locations et charges locatives', 'Rent'],
+        'maintenance' => ['624', 'Entretien, réparations et maintenance', 'Repairs & maintenance'],
+        'insurance' => ['625', 'Primes d\'assurance', 'Insurance'],
+        'advertising' => ['627', 'Publicité, publications, relations publiques', 'Advertising'],
+        'telecoms' => ['628', 'Frais de télécommunications', 'Airtime & internet'],
+        'bank_charges' => ['631', 'Frais bancaires', 'Bank & mobile money charges'],
+        'professional_fees' => ['632', 'Rémunérations d\'intermédiaires et de conseils', 'Professional fees'],
+        'training' => ['633', 'Frais de formation du personnel', 'Training'],
+        'taxes' => ['646', 'Droits d\'enregistrement', 'Duties & licences'],
+        'other' => ['638', 'Autres charges externes', 'Other'],
+    ];
+
+    /** The SYSCOHADA account number an expense category posts to. */
+    public static function accountForCategory(string $category): string
+    {
+        return self::EXPENSE_CATEGORIES[$category][0] ?? self::EXPENSE_CATEGORIES['other'][0];
+    }
+
+    /** category => human label, for a select. */
+    public static function expenseCategoryOptions(): array
+    {
+        return array_map(fn (array $row) => $row[2], self::EXPENSE_CATEGORIES);
+    }
+
+    /**
      * The four-digit subdivisions the published references list for the two
      * TVA accounts and the two trading accounts. Recorded for an accountant
      * extending the chart; not seeded, because which of these a business needs
@@ -117,6 +164,29 @@ class ChartOfAccounts
     ];
 
     /**
+     * The starter chart, keyed by account number: the roles the engine posts
+     * against, then the expense accounts the categories map to. Keying by
+     * number is what stops a business that already has 601 from the roles
+     * getting it a second time from the categories.
+     *
+     * @return array<string, string> number => name
+     */
+    public static function starterAccounts(): array
+    {
+        $wanted = [];
+
+        foreach (self::ROLES as [$number, $name]) {
+            $wanted[(string) $number] = $name;
+        }
+
+        foreach (self::EXPENSE_CATEGORIES as [$number, $name]) {
+            $wanted[(string) $number] ??= $name;
+        }
+
+        return $wanted;
+    }
+
+    /**
      * Writes the starter chart for a company, skipping any account it already
      * has — so running it again after an accountant has edited the chart adds
      * what is missing without overwriting their work.
@@ -133,19 +203,19 @@ class ChartOfAccounts
 
         $created = 0;
 
-        foreach (self::ROLES as [$number, $name]) {
-            if (in_array($number, $existing, true)) {
+        foreach (self::starterAccounts() as $number => $name) {
+            if (in_array((string) $number, $existing, true)) {
                 continue;
             }
 
-            $class = LedgerAccount::classOf($number);
+            $class = LedgerAccount::classOf((string) $number);
 
             LedgerAccount::create([
                 'company_id' => $company->id,
-                'number' => $number,
+                'number' => (string) $number,
                 'name' => $name,
                 'class' => $class,
-                'normal_balance' => self::normalBalanceFor($number, $class),
+                'normal_balance' => self::normalBalanceFor((string) $number, $class),
             ]);
 
             $created++;
