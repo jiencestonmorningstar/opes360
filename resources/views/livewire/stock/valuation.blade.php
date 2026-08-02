@@ -23,10 +23,19 @@
         </div>
 
         @can('products.adjust-stock')
-            <button type="button" wire:click="$set('starting', true)"
-                    class="tap focusable flex h-12 shrink-0 items-center justify-center rounded-xl bg-fill-brand px-5 text-[15px] font-semibold text-white hover:opacity-90">
-                Start a count
-            </button>
+            {{-- No `shrink-0`: two buttons side by side are wider than a 360px
+                 phone, and a wrapper that refuses to shrink pushes the whole
+                 document sideways rather than letting them wrap. --}}
+            <div class="flex flex-wrap gap-2">
+                <button type="button" wire:click="startReceiving"
+                        class="tap focusable flex h-12 items-center justify-center rounded-xl bg-fill-brand px-5 text-[15px] font-semibold text-white hover:opacity-90">
+                    Receive a delivery
+                </button>
+                <button type="button" wire:click="$set('starting', true)"
+                        class="tap focusable flex h-12 items-center justify-center rounded-xl border border-border bg-surface px-5 text-[15px] font-semibold text-ink hover:bg-surface-2">
+                    Start a count
+                </button>
+            </div>
         @endcan
     </div>
 
@@ -84,6 +93,122 @@
                         and {{ $unpriced->count() - 12 }} more
                     </span>
                 @endif
+            </div>
+        </div>
+    @endif
+
+    {{-- A delivery arriving. The unit cost is the point: it is the only figure
+         the weighted average is built from, and until this existed there was
+         nowhere to put one. --}}
+    @if ($receiving)
+        <div class="card mt-4 border-brand p-5">
+            <h2 class="text-[16px] font-bold tracking-[-0.02em] text-ink">Receive a delivery</h2>
+            <p class="mt-1 text-[13.5px] leading-relaxed text-muted">
+                What arrived and what you paid for it. The quantity goes onto the shelf and the price sets what your
+                stock is worth from here — it is what the average cost is worked out from.
+            </p>
+
+            <div class="mt-4 grid gap-3 sm:grid-cols-2">
+                <div>
+                    <label class="{{ $labelClass }}" for="received-on">Received on</label>
+                    <input id="received-on" type="date" wire:model="receivedOn" class="{{ $inputClass }}">
+                    @error('receivedOn') <p class="mt-1.5 text-[13px] font-medium text-negative">{{ $message }}</p> @enderror
+                </div>
+                <div>
+                    <label class="{{ $labelClass }}" for="delivery-ref">Delivery note number</label>
+                    <input id="delivery-ref" type="text" wire:model="deliveryReference" maxlength="60"
+                           class="{{ $inputClass }}">
+                </div>
+            </div>
+
+            <div class="mt-4 space-y-3">
+                @foreach ($deliveryLines as $index => $line)
+                    <div wire:key="dl-{{ $index }}" class="rounded-xl border border-border p-3">
+                        <label class="sr-only" for="dl-item-{{ $index }}">Item on line {{ $index + 1 }}</label>
+                        <select id="dl-item-{{ $index }}" wire:model="deliveryLines.{{ $index }}.item_id"
+                                class="{{ $inputClass }}">
+                            <option value="">Choose a product…</option>
+                            @foreach ($trackedItems as $item)
+                                <option value="{{ $item->id }}">{{ $item->name }}{{ $item->sku ? ' · '.$item->sku : '' }}</option>
+                            @endforeach
+                        </select>
+
+                        <div class="mt-2.5 flex items-end gap-2">
+                            <div class="min-w-0 flex-1">
+                                <label class="{{ $labelClass }}" for="dl-qty-{{ $index }}">Quantity</label>
+                                <input id="dl-qty-{{ $index }}" type="number" step="any" min="0" inputmode="decimal"
+                                       wire:model="deliveryLines.{{ $index }}.quantity" class="tnum {{ $inputClass }}">
+                            </div>
+                            <div class="min-w-0 flex-1">
+                                <label class="{{ $labelClass }}" for="dl-cost-{{ $index }}">Cost each</label>
+                                <input id="dl-cost-{{ $index }}" type="number" step="any" min="0" inputmode="decimal"
+                                       wire:model="deliveryLines.{{ $index }}.unit_cost" class="tnum {{ $inputClass }}">
+                            </div>
+                            @if (count($deliveryLines) > 1)
+                                <button type="button" wire:click="removeDeliveryLine({{ $index }})"
+                                        aria-label="Remove line {{ $index + 1 }}"
+                                        class="tap focusable flex h-12 shrink-0 items-center rounded-xl px-3 text-[13px] font-semibold text-negative hover:bg-tint-red">
+                                    Remove
+                                </button>
+                            @endif
+                        </div>
+                    </div>
+                @endforeach
+
+                @error('deliveryLines') <p class="text-[13px] font-medium text-negative">{{ $message }}</p> @enderror
+
+                <button type="button" wire:click="addDeliveryLine"
+                        class="focusable flex min-h-[44px] items-center rounded-xl px-2 text-[14px] font-semibold text-brand hover:opacity-80">
+                    + Another item
+                </button>
+            </div>
+
+            {{-- The bill and the goods usually arrive together. Optional,
+                 because sometimes the invoice follows a week later. --}}
+            <div class="mt-4 rounded-xl bg-surface-2 p-3.5">
+                <label class="focusable flex min-h-[44px] cursor-pointer items-center gap-2.5 text-[14px] font-semibold text-ink-2">
+                    <input type="checkbox" wire:model.live="recordExpense"
+                           class="size-[18px] rounded border-border text-brand focus:ring-brand/30">
+                    Record the supplier's bill as well
+                </label>
+
+                @if ($recordExpense)
+                    <div class="mt-3 grid gap-3 sm:grid-cols-2">
+                        @if ($suppliers->isNotEmpty())
+                            <div>
+                                <label class="{{ $labelClass }}" for="dl-supplier">Supplier</label>
+                                <select id="dl-supplier" wire:model="supplierId" class="{{ $inputClass }}">
+                                    <option value="">Not recorded</option>
+                                    @foreach ($suppliers as $supplier)
+                                        <option value="{{ $supplier->id }}">{{ $supplier->name }}</option>
+                                    @endforeach
+                                </select>
+                            </div>
+                        @endif
+                        <div>
+                            <label class="{{ $labelClass }}" for="dl-vat">TVA rate</label>
+                            <select id="dl-vat" wire:model="deliveryVatRate" class="{{ $inputClass }}">
+                                <option value="0">No TVA</option>
+                                <option value="0.1925">19.25%</option>
+                            </select>
+                        </div>
+                    </div>
+                    <p class="mt-2 text-[12.5px] leading-relaxed text-faint">
+                        Charged to 601 with the TVA recoverable in 445, exactly as a typed expense would be. The stock
+                        itself reaches the balance sheet at your next count — see the note at the foot of this page.
+                    </p>
+                @endif
+            </div>
+
+            <div class="mt-5 flex flex-col gap-3 sm:flex-row-reverse">
+                <button type="button" wire:click="receiveDelivery" wire:loading.attr="disabled"
+                        class="tap focusable flex h-11 items-center justify-center rounded-xl bg-fill-brand px-5 text-[14.5px] font-semibold text-white hover:opacity-90">
+                    Take it in
+                </button>
+                <button type="button" wire:click="$set('receiving', false)"
+                        class="tap focusable flex h-11 items-center justify-center rounded-xl border border-border bg-surface px-5 text-[14.5px] font-semibold text-ink">
+                    Cancel
+                </button>
             </div>
         </div>
     @endif
@@ -153,6 +278,28 @@
             </div>
         @endforelse
     </div>
+
+    {{-- What came in recently, so "did I record that delivery" has an answer
+         on the screen rather than in the movement ledger. --}}
+    @if ($recentDeliveries->isNotEmpty())
+        <h2 class="mt-7 text-[16px] font-bold tracking-[-0.02em] text-ink">Recent deliveries</h2>
+
+        <div class="card mt-3 p-2">
+            @foreach ($recentDeliveries as $index => $movement)
+                <div wire:key="rd-{{ $movement->id }}"
+                     class="flex items-center gap-3 rounded-xl px-3 py-2.5 {{ $index > 0 ? 'border-t border-border' : '' }}">
+                    <div class="min-w-0 flex-1">
+                        <p class="truncate text-[14px] font-semibold text-ink">{{ $movement->item?->name ?? 'Deleted item' }}</p>
+                        <p class="tnum truncate text-[12.5px] text-muted">
+                            {{ $movement->occurred_at?->format('j M Y') }}
+                            @if ($movement->unit_cost) · {{ $money($movement->unit_cost) }} each @endif
+                        </p>
+                    </div>
+                    <p class="tnum shrink-0 text-[14px] font-semibold text-positive">+{{ $qty($movement->quantity) }}</p>
+                </div>
+            @endforeach
+        </div>
+    @endif
 
     @if ($counts->isNotEmpty())
         <h2 class="mt-7 text-[16px] font-bold tracking-[-0.02em] text-ink">Counts</h2>

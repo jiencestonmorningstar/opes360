@@ -394,3 +394,53 @@ because the visible and announced label are the same string they cannot drift ap
 2.5.5 — an **AAA** criterion this product does not claim — and reported 526 failures, almost all inline
 links in a paragraph that 2.5.8 explicitly exempts. `a11y.mjs` measures 2.5.8 as written (24×24, with the
 spacing and inline-text exceptions) and finds none. A number nobody can act on is a number nobody reads.
+
+---
+
+## 19. Receiving a delivery is its own act
+
+**Decision:** a delivery is recorded on the stock screen — what arrived, how many, and what each one cost —
+writing an incoming movement per line, and optionally recording the supplier's bill through the ordinary
+expense recorder.
+
+**Why it was missing and why that mattered:** buying something and receiving it are two facts that usually
+coincide. The expense form records what is owed and charges 601, but has no line items, so it cannot say
+*what* arrived. The stocktake corrects the shelf, but only when somebody counts. Between them there was no
+way at all to say "a hundred sacks came in today at 5 200 each" — the quantity had to be hand-adjusted and
+the price had nowhere to go. That second half was the real damage: the unit cost on an incoming movement is
+the **only** thing the weighted average is built from, so a business with no way to record one had its
+entire valuation resting on the catalogue's planning price.
+
+**It does not debit 31.** Under the intermittent inventory the purchase is a charge when it happens and the
+count carries what is left onto the balance sheet (decision 14). Debiting stock here as well would count the
+same crate twice, and `test_receiving_does_not_put_stock_on_the_balance_sheet_by_itself` holds that line.
+
+**The bill goes through `ExpenseRecorder`,** not through bespoke posting, so it reaches 601 and 445 by
+exactly the path a typed expense takes. One way into the books, not two that can disagree.
+
+**The catalogue's cost follows the last price paid,** because it is a planning figure — what the next one is
+expected to cost — and leaving it at a price from two years ago is how a product ends up being sold for less
+than it now costs to buy. The books are unaffected: they read the movements.
+
+---
+
+## 20. Inline scripts are pinned by hash as well as nonced
+
+**Decision:** `script-src` carries the per-request nonce *and* a `sha256-…` for each inline script the
+layouts ship, listed in `Csp::INLINE_SCRIPT_HASHES`.
+
+**Why:** a nonce is per response, which is what makes it worth having and what breaks under `wire:navigate`.
+Livewire fetches the next page over XHR and re-injects its head scripts into the current document, whose
+header still carries the *previous* nonce — so every navigation logged two refusals for scripts this
+application wrote itself. Nothing broke, but a console with two known violations on every page transition is
+a console in which a real injection goes unnoticed.
+
+A content hash is stable across responses and survives the re-injection. It is strictly narrower than
+`'unsafe-inline'` — it permits those exact bytes and nothing else — and it does not weaken the nonce for
+anything else.
+
+**The risk it introduces, and the guard:** pinning bytes means an edit to one of those scripts silently
+starts being refused on navigate in production. `SecurityHeadersTest` hashes every inline script in every
+layout and partial and asserts each one is pinned, printing the missing hash to paste in. It is what turned
+up the fact that the anti-flash theme script existed in **three** layouts in three slightly different
+spellings; they now include one shared partial, so there is one hash rather than three to keep in step.

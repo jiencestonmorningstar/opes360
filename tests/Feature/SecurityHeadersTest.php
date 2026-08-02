@@ -54,6 +54,58 @@ class SecurityHeadersTest extends TestCase
         $this->assertDoesNotMatchRegularExpression('/<script(?![^>]*(nonce=|src=))[^>]*>/', $html);
     }
 
+    /**
+     * The hashes must match the bytes the layouts actually ship.
+     *
+     * They exist because `wire:navigate` re-injects the head scripts of the
+     * fetched page into the current document, whose header still carries the
+     * previous nonce — so every navigation logged two refusals for scripts this
+     * application wrote itself. A content hash survives that; a nonce cannot.
+     *
+     * The risk of pinning bytes is that somebody edits one of those scripts and
+     * the browser starts refusing it on navigate, silently, in production. This
+     * is what makes that loud: change the script, this fails.
+     */
+    public function test_the_pinned_inline_script_hashes_match_what_the_layouts_ship(): void
+    {
+        $sources = array_merge(
+            glob(resource_path('views/components/layouts/*.blade.php')),
+            glob(resource_path('views/partials/*.blade.php')),
+        );
+
+        $found = [];
+
+        foreach ($sources as $file) {
+            preg_match_all('/<script[^>]*>(.*?)<\/script>/s', file_get_contents($file), $matches);
+
+            foreach ($matches[1] as $body) {
+                if (trim($body) === '') {
+                    continue;
+                }
+                $found[] = 'sha256-'.base64_encode(hash('sha256', $body, true));
+            }
+        }
+
+        foreach ($found as $hash) {
+            $this->assertContains($hash, Csp::INLINE_SCRIPT_HASHES, sprintf(
+                "An inline script in a layout is not pinned in Csp::INLINE_SCRIPT_HASHES.\n".
+                "wire:navigate will re-inject it with a stale nonce and the browser will refuse it.\n".
+                'Add: %s',
+                $hash
+            ));
+        }
+    }
+
+    /** And they must reach the header, or pinning them achieved nothing. */
+    public function test_the_hashes_are_in_the_policy(): void
+    {
+        $header = $this->get('/login')->headers->get('Content-Security-Policy');
+
+        foreach (Csp::INLINE_SCRIPT_HASHES as $hash) {
+            $this->assertStringContainsString("'".$hash."'", $header);
+        }
+    }
+
     public function test_a_nonce_is_not_reused_between_requests(): void
     {
         // A predictable or shared nonce is the same as no nonce at all.

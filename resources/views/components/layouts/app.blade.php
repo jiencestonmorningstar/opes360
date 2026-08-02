@@ -24,28 +24,7 @@
     <meta name="theme-color" content="#ffffff" media="(prefers-color-scheme: light)">
     <meta name="theme-color" content="#000000" media="(prefers-color-scheme: dark)">
 
-    {{--
-        Runs before first paint so the correct theme is already on <html>.
-        Anything slower produces a white flash on every load in dark mode.
-
-        `data-navigate-once` because it has nothing to do on a wire:navigate —
-        <html> survives the swap with the class already on it. Without the
-        attribute Livewire re-executes it from the fetched document, where its
-        nonce no longer matches the header the first response set, and the
-        browser logs a CSP refusal for work that was already done.
-    --}}
-    <script @cspNonce data-navigate-once>
-        (function () {
-            try {
-                var stored = localStorage.getItem('opes-theme');
-                var system = window.matchMedia('(prefers-color-scheme: dark)').matches;
-                var dark = stored === 'dark' || (stored !== 'light' && system);
-                document.documentElement.classList.toggle('dark', dark);
-            } catch (e) {
-                /* Private mode with storage disabled — fall back to the light theme. */
-            }
-        })();
-    </script>
+    @include('partials.theme-boot')
 
     @vite(['resources/css/app.css', 'resources/js/app.js'])
     @livewireStyles

@@ -17,15 +17,7 @@
     <title>{{ $title ? $title.' · Platform Admin' : 'Platform Admin' }} · {{ config('opes.brand.name') }}</title>
     <meta name="robots" content="noindex">
 
-    <script @cspNonce>
-        (function () {
-            try {
-                var stored = localStorage.getItem('opes-theme');
-                var system = window.matchMedia('(prefers-color-scheme: dark)').matches;
-                document.documentElement.classList.toggle('dark', stored === 'dark' || (stored !== 'light' && system));
-            } catch (e) {}
-        })();
-    </script>
+    @include('partials.theme-boot')
 
     @vite(['resources/css/app.css', 'resources/js/app.js'])
     @livewireStyles

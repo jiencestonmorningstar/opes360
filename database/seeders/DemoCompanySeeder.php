@@ -904,6 +904,25 @@ class DemoCompanySeeder extends Seeder
 
         $paid = $status === DocumentStatus::Paid ? $total : 0.0;
 
+        /*
+         * The figure passed in is what the customer pays — TTC — and the TVA
+         * is split back out of it at the company's own rate.
+         *
+         * That way round for two reasons. The demo was a business marked
+         * registered for TVA at 19.25% issuing fifty-six invoices with no TVA
+         * on any of them: a business that cannot exist, and one whose tax
+         * declaration could only ever show the purchase side. And every figure
+         * the design pins — total sales, paid, outstanding, the week — is a
+         * total, so splitting downwards keeps all of them exactly where they
+         * were while making each invoice honest.
+         */
+        $rate = (float) $this->company->vat_rate / 100;
+        $net = round($total / (1 + $rate), 2);
+        // Subtracting rather than multiplying: the two must sum back to the
+        // printed total to the franc, and rounding each independently does not
+        // guarantee that.
+        $tax = round($total - $net, 2);
+
         $invoice = Document::create([
             'type' => DocumentType::Invoice,
             'number' => $number,
@@ -913,7 +932,8 @@ class DemoCompanySeeder extends Seeder
             'issue_date' => $date->toDateString(),
             'due_date' => $date->addDays(14)->toDateString(),
             'currency' => $this->company->currency,
-            'subtotal' => $total,
+            'subtotal' => $net,
+            'tax_total' => $tax,
             'total' => $total,
             'amount_paid' => $paid,
             'balance' => $total - $paid,
@@ -928,8 +948,9 @@ class DemoCompanySeeder extends Seeder
             'document_id' => $invoice->id,
             'description' => 'Professional services',
             'quantity' => 1,
-            'unit_price' => $total,
-            'line_total' => $total,
+            'unit_price' => $net,
+            'tax_amount' => $tax,
+            'line_total' => $net,
         ]);
 
         // Refresh before hashing: a just-created model still holds raw PHP values

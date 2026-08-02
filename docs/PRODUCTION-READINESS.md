@@ -186,20 +186,10 @@ on this list blocks a pilot.
 
 ### What is still open in the code
 
-None of these blocks a pilot; all of them are named rather than left to be
-discovered.
-
-- **The demo business charges no TVA** while being marked registered at 19.25% —
-  a business that cannot exist. Fixing it moves the pinned design figures the
-  dashboard test asserts, so the seeder targets and the test change together.
-- **Two CSP violations per `wire:navigate`**, from Livewire re-injecting head
-  scripts whose per-request nonce no longer matches the enforcing header.
-  Console noise, not broken behaviour — but noise is how a real violation gets
-  missed.
-- **Purchases do not add stock quantities.** Under intermittent inventory the
-  books are right either way, and the count corrects the shelf; but a business
-  that wants stock to rise when a delivery arrives has to record it by hand or
-  wait for the next inventory.
+Nothing known. The three items listed here in the previous revision — the demo
+business charging no TVA while claiming to be registered, two CSP refusals on
+every `wire:navigate`, and no way to record a delivery arriving — are all
+closed (decisions 19 and 20).
 
 ---
 

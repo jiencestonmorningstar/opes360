@@ -2,8 +2,11 @@
 
 namespace App\Livewire\Stock;
 
+use App\Models\Contact;
+use App\Models\Item;
 use App\Models\StockLocation;
 use App\Models\Stocktake;
+use App\Services\Stock\DeliveryReceiver;
 use App\Services\Stock\Stocktaker;
 use App\Services\Stock\StockValuation;
 use App\Support\Accounting\ChartOfAccounts;
@@ -31,11 +34,117 @@ class Valuation extends Component
 
     public bool $starting = false;
 
+    // ── A delivery arriving ─────────────────────────────────────────────
+    public bool $receiving = false;
+
+    public string $receivedOn = '';
+
+    public ?string $supplierId = null;
+
+    public string $deliveryReference = '';
+
+    public bool $recordExpense = true;
+
+    public string $deliveryVatRate = '0';
+
+    /** @var array<int, array{item_id: ?string, quantity: string, unit_cost: string}> */
+    public array $deliveryLines = [];
+
     public function mount(): void
     {
         Gate::authorize('products.view');
 
         $this->countedOn = now()->toDateString();
+        $this->receivedOn = now()->toDateString();
+    }
+
+    public function startReceiving(): void
+    {
+        Gate::authorize('products.adjust-stock');
+
+        $this->resetValidation();
+        $this->receivedOn = now()->toDateString();
+        $this->deliveryReference = '';
+        $this->supplierId = null;
+        $this->recordExpense = true;
+        $this->deliveryVatRate = (string) (app(CurrentCompany::class)->get()?->vat_registered ? '0.1925' : '0');
+        $this->deliveryLines = [['item_id' => null, 'quantity' => '', 'unit_cost' => '']];
+        $this->receiving = true;
+    }
+
+    public function addDeliveryLine(): void
+    {
+        $this->deliveryLines[] = ['item_id' => null, 'quantity' => '', 'unit_cost' => ''];
+    }
+
+    public function removeDeliveryLine(int $index): void
+    {
+        unset($this->deliveryLines[$index]);
+        $this->deliveryLines = array_values($this->deliveryLines);
+
+        if ($this->deliveryLines === []) {
+            $this->deliveryLines = [['item_id' => null, 'quantity' => '', 'unit_cost' => '']];
+        }
+    }
+
+    /**
+     * Take the delivery in.
+     *
+     * The unit cost is what makes this worth having: it is the only figure the
+     * weighted average is built from, and without a way to record one a
+     * business's whole valuation rested on the catalogue's planning price.
+     */
+    public function receiveDelivery(): void
+    {
+        Gate::authorize('products.adjust-stock');
+
+        $this->validate([
+            'receivedOn' => ['required', 'date'],
+            'deliveryLines' => ['required', 'array', 'min:1'],
+            'deliveryLines.*.item_id' => ['nullable', 'string'],
+            'deliveryLines.*.quantity' => ['nullable', 'numeric', 'min:0'],
+            'deliveryLines.*.unit_cost' => ['nullable', 'numeric', 'min:0'],
+            'deliveryReference' => ['nullable', 'string', 'max:60'],
+            'deliveryVatRate' => ['required', 'numeric', 'min:0', 'max:1'],
+        ], [
+            'deliveryLines.*.quantity.numeric' => 'Quantities are numbers.',
+        ]);
+
+        $company = app(CurrentCompany::class)->get();
+
+        if ($company === null) {
+            return;
+        }
+
+        try {
+            $result = app(DeliveryReceiver::class)->receive(
+                $company,
+                $this->deliveryLines,
+                [
+                    'received_on' => $this->receivedOn,
+                    'supplier_id' => $this->supplierId,
+                    'reference' => $this->deliveryReference ?: null,
+                    'location_id' => $this->locationId,
+                    'record_expense' => $this->recordExpense,
+                    'vat_rate' => (float) $this->deliveryVatRate,
+                    'payment_method' => $this->recordExpense ? 'bank' : null,
+                ],
+                auth()->user(),
+            );
+        } catch (RuntimeException $e) {
+            $this->addError('deliveryLines', $e->getMessage());
+
+            return;
+        }
+
+        $this->receiving = false;
+
+        session()->flash('status', sprintf(
+            '%d %s received.%s',
+            $result['movements'],
+            $result['movements'] === 1 ? 'line' : 'lines',
+            $result['expense'] !== null ? ' The bill is in the books too.' : ''
+        ));
     }
 
     public function startCount(): void
@@ -91,6 +200,14 @@ class Valuation extends Component
                 ->map(fn (array $row) => $row['item'])
                 ->values(),
             'locations' => StockLocation::query()->where('active', true)->orderBy('name')->get(),
+            // Only what can actually be received: a service has nothing to put
+            // on a shelf, and an untracked product has no ledger to write to.
+            'trackedItems' => Item::query()
+                ->where('type', 'product')->where('track_stock', true)->where('is_active', true)
+                ->orderBy('name')->get(['id', 'name', 'sku', 'cost']),
+            'suppliers' => Contact::query()
+                ->whereIn('type', ['supplier', 'vendor'])->orderBy('name')->get(['id', 'name']),
+            'recentDeliveries' => $company ? app(DeliveryReceiver::class)->recent($company) : collect(),
             'counts' => Stocktake::query()
                 ->with('location:id,name')
                 ->orderByDesc('counted_on')

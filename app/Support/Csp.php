@@ -26,9 +26,48 @@ use Illuminate\Support\Str;
  *    are static, author-written values rather than anything user-supplied.
  *
  * Inline *scripts* do carry a nonce, so an injected `<script>` still cannot run.
+ *
+ * ── Why hashes as well as the nonce ──────────────────────────────────────
+ *
+ * A nonce is per response, which is exactly what makes it worth having and
+ * exactly what breaks under `wire:navigate`. Livewire fetches the next page
+ * over XHR and re-injects its head scripts into the *current* document, whose
+ * CSP header carries the *previous* nonce — so every single navigation logged
+ * two refusals for scripts the application itself had written. Nothing broke
+ * (the anti-flash script had already done its work, and the prefetch helper is
+ * an optimisation), but a console with two known violations on every page
+ * transition is a console in which a real injection attempt goes unnoticed.
+ *
+ * The fix is the one the browser suggests in the error itself: pin the exact
+ * bytes of those scripts with a `sha256-…` source. A hash is content-addressed,
+ * so it is stable across responses and survives the re-injection, while still
+ * permitting *only* those two scripts and nothing else — it is strictly
+ * narrower than the alternative of `'unsafe-inline'`, and does not weaken the
+ * nonce for anything else.
  */
 class Csp
 {
+    /**
+     * The inline scripts the layouts ship, hashed.
+     *
+     * Kept beside the CSP rather than derived from the rendered page, because a
+     * policy computed from the response it is protecting is not a policy. If
+     * one of these scripts is edited its hash changes and the browser refuses
+     * it on the next navigation — which is the failure being loud rather than
+     * silent, and `CspTest` asserts the hashes match what the layouts contain.
+     *
+     * @var array<int, string>
+     */
+    public const INLINE_SCRIPT_HASHES = [
+        // resources/views/partials/theme-boot.blade.php — the anti-flash theme
+        // script, which must run before first paint. Shared by all three
+        // layouts — app, public and admin — each of which had its own
+        // slightly different copy, so one hash rather than three to keep in step.
+        'sha256-kYI4+tPqbrc7RzVZLdZKTce93/u6cI3lYiobsd8nYz0=',
+        // Laravel's Vite asset prefetch helper, emitted by @vite.
+        'sha256-f2dPU+s9MgICWc5L5shn/fTAEcFJJUc9Y9hxHCv/hqA=',
+    ];
+
     protected ?string $nonce = null;
 
     public function nonce(): string
@@ -61,8 +100,10 @@ class Csp
 
         return collect([
             "default-src 'self'",
-            // 'unsafe-eval' is required by Alpine — see the class docblock.
-            "script-src 'self' {$nonce} 'unsafe-eval'",
+            // 'unsafe-eval' is required by Alpine, and the hashes cover the two
+            // inline scripts Livewire re-injects on navigate — see the docblock.
+            "script-src 'self' {$nonce} 'unsafe-eval' ".
+                collect(self::INLINE_SCRIPT_HASHES)->map(fn (string $h) => "'{$h}'")->implode(' '),
             "style-src 'self' 'unsafe-inline'",
             // data: covers the inlined QR codes and logo previews; blob: covers
             // the camera stream the scanner reads from.

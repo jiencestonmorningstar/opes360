@@ -48,17 +48,7 @@
 
     {{-- Runs before first paint so the correct theme is already on <html>.
          Anything slower produces a white flash on every load in dark mode. --}}
-    <script @cspNonce>
-        (function () {
-            try {
-                var stored = localStorage.getItem('opes-theme');
-                var system = window.matchMedia('(prefers-color-scheme: dark)').matches;
-                document.documentElement.classList.toggle('dark', stored === 'dark' || (stored !== 'light' && system));
-            } catch (e) {
-                /* Private mode with storage disabled — fall back to the light theme. */
-            }
-        })();
-    </script>
+    @include('partials.theme-boot')
 
     {{-- app.js goes everywhere, not just where someone remembered it. Seven of
          these pages shipped Alpine directives with no Alpine on the page, so

@@ -21,6 +21,7 @@ use App\Services\Accounting\Books;
 use App\Services\DocumentConverter;
 use App\Services\DocumentIssuer;
 use App\Services\ExpenseRecorder;
+use App\Services\Stock\DeliveryReceiver;
 use App\Services\Stock\StockLedger;
 use App\Services\Stock\Stocktaker;
 use App\Services\Stock\StockValuation;
@@ -582,6 +583,170 @@ class StockInTheBooksTest extends TestCase
         Livewire::actingAs($clerk)
             ->test(ValuationScreen::class)
             ->call('startCount')
+            ->assertForbidden();
+    }
+
+    // ───────────────────────────────────────────── receiving a delivery ──
+
+    /**
+     * The gap this closed: buying something and receiving it are two facts,
+     * and only the first had anywhere to go. A shopkeeper whose delivery
+     * arrived had to hand-adjust the quantity and had nowhere at all to put
+     * the price — which is the only figure the weighted average is built from.
+     */
+    public function test_a_delivery_puts_stock_on_the_shelf_at_the_price_paid(): void
+    {
+        app(DeliveryReceiver::class)->receive($this->company, [
+            ['item_id' => $this->cement->id, 'quantity' => 100, 'unit_cost' => 5200],
+        ], [], $this->owner);
+
+        $this->assertSame(100.0, $this->cement->fresh()->stockOnHand());
+        $this->assertSame(5200.0, app(StockValuation::class)->unitCost($this->company, $this->cement));
+    }
+
+    public function test_two_deliveries_at_different_prices_average_out(): void
+    {
+        $receiver = app(DeliveryReceiver::class);
+
+        $receiver->receive($this->company, [
+            ['item_id' => $this->cement->id, 'quantity' => 20, 'unit_cost' => 400],
+        ], [], $this->owner);
+        $receiver->receive($this->company, [
+            ['item_id' => $this->cement->id, 'quantity' => 30, 'unit_cost' => 550],
+        ], [], $this->owner);
+
+        $this->assertSame(490.0, app(StockValuation::class)->unitCost($this->company, $this->cement));
+    }
+
+    /**
+     * The catalogue's cost is a planning figure — what the next one is expected
+     * to cost. Leaving it at a price from two years ago is how a product ends
+     * up being sold for less than it now costs to buy.
+     */
+    public function test_a_delivery_updates_what_the_catalogue_expects_to_pay(): void
+    {
+        $this->assertSame(5000.0, (float) $this->cement->cost);
+
+        app(DeliveryReceiver::class)->receive($this->company, [
+            ['item_id' => $this->cement->id, 'quantity' => 10, 'unit_cost' => 6100],
+        ], [], $this->owner);
+
+        $this->assertSame(6100.0, (float) $this->cement->fresh()->cost);
+    }
+
+    public function test_a_delivery_can_record_the_suppliers_bill_at_the_same_time(): void
+    {
+        $result = app(DeliveryReceiver::class)->receive($this->company, [
+            ['item_id' => $this->cement->id, 'quantity' => 100, 'unit_cost' => 5000],
+        ], ['record_expense' => true, 'vat_rate' => 0.1925, 'payment_method' => 'bank'], $this->owner);
+
+        $this->assertNotNull($result['expense']);
+        $this->assertSame(500000.0, (float) $result['expense']->amount);
+
+        // Through the ordinary recorder, so it lands in 601 and 445 exactly as
+        // a typed expense would — one path into the books, not two.
+        $this->assertSame(500000.0, $this->balanceOf(LedgerAccount::query()->where('number', '601')->first()));
+        $this->assertSame(96250.0, $this->balanceOf(LedgerAccount::query()->where('number', '445')->first()));
+    }
+
+    public function test_a_delivery_without_the_bill_leaves_the_books_alone(): void
+    {
+        app(DeliveryReceiver::class)->receive($this->company, [
+            ['item_id' => $this->cement->id, 'quantity' => 100, 'unit_cost' => 5000],
+        ], ['record_expense' => false], $this->owner);
+
+        $this->assertSame(100.0, $this->cement->fresh()->stockOnHand());
+        $this->assertSame(0.0, $this->balanceOf(LedgerAccount::query()->where('number', '601')->first()));
+    }
+
+    /**
+     * Receiving does not debit 31. Under the intermittent inventory the
+     * purchase is a charge when it happens and the count carries what is left
+     * onto the balance sheet; doing both would count the same crate twice.
+     */
+    public function test_receiving_does_not_put_stock_on_the_balance_sheet_by_itself(): void
+    {
+        app(DeliveryReceiver::class)->receive($this->company, [
+            ['item_id' => $this->cement->id, 'quantity' => 100, 'unit_cost' => 5000],
+        ], ['record_expense' => true], $this->owner);
+
+        $this->assertSame(0.0, $this->balanceOf(LedgerAccount::query()->where('number', '31')->first()));
+    }
+
+    public function test_a_blank_line_is_skipped_rather_than_refusing_the_delivery(): void
+    {
+        $result = app(DeliveryReceiver::class)->receive($this->company, [
+            ['item_id' => null, 'quantity' => '', 'unit_cost' => ''],
+            ['item_id' => $this->cement->id, 'quantity' => 40, 'unit_cost' => 5000],
+        ], [], $this->owner);
+
+        $this->assertSame(1, $result['movements']);
+        $this->assertSame(40.0, $this->cement->fresh()->stockOnHand());
+    }
+
+    public function test_a_service_cannot_be_received(): void
+    {
+        $this->expectException(RuntimeException::class);
+
+        app(DeliveryReceiver::class)->receive($this->company, [
+            ['item_id' => $this->labour->id, 'quantity' => 3, 'unit_cost' => 1000],
+        ], [], $this->owner);
+    }
+
+    public function test_another_businesss_product_cannot_be_received_into_this_one(): void
+    {
+        $stranger = User::factory()->create();
+        $other = Company::create([
+            'slug' => 'other-'.Str::lower(Str::random(4)), 'name' => 'Other Sarl',
+            'owner_id' => $stranger->id, 'currency' => 'XAF', 'plan' => 'basic', 'account_type' => 'active',
+        ]);
+
+        $theirs = Item::withoutGlobalScopes()->create([
+            'company_id' => $other->id, 'name' => 'Their cement', 'sku' => 'X', 'type' => 'product',
+            'price' => 1, 'track_stock' => true, 'is_active' => true,
+        ]);
+
+        $this->expectException(RuntimeException::class);
+
+        app(DeliveryReceiver::class)->receive($this->company, [
+            ['item_id' => $theirs->id, 'quantity' => 5, 'unit_cost' => 100],
+        ], [], $this->owner);
+    }
+
+    public function test_the_stock_screen_receives_a_delivery(): void
+    {
+        Livewire::actingAs($this->owner)
+            ->test(ValuationScreen::class)
+            ->call('startReceiving')
+            ->assertSet('receiving', true)
+            ->set('deliveryLines.0.item_id', $this->cement->id)
+            ->set('deliveryLines.0.quantity', '60')
+            ->set('deliveryLines.0.unit_cost', '5100')
+            ->set('recordExpense', false)
+            ->call('receiveDelivery')
+            ->assertHasNoErrors()
+            ->assertSet('receiving', false);
+
+        $this->assertSame(60.0, $this->cement->fresh()->stockOnHand());
+    }
+
+    public function test_the_stock_screen_refuses_a_delivery_of_nothing(): void
+    {
+        Livewire::actingAs($this->owner)
+            ->test(ValuationScreen::class)
+            ->call('startReceiving')
+            ->call('receiveDelivery')
+            ->assertHasErrors('deliveryLines');
+    }
+
+    public function test_someone_who_may_not_adjust_stock_cannot_receive(): void
+    {
+        $clerk = User::factory()->create();
+        $this->joinCompany($this->company, $clerk, Role::READ_ONLY);
+
+        Livewire::actingAs($clerk)
+            ->test(ValuationScreen::class)
+            ->call('startReceiving')
             ->assertForbidden();
     }
 
