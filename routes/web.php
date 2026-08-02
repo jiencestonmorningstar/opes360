@@ -300,6 +300,41 @@ Route::middleware('throttle:10,1')->group(function () {
 // Precached by the service worker so a failed navigation has somewhere to land.
 Route::view('/offline', 'offline')->name('offline');
 
+/*
+ * The service worker, stamped with a version derived from the compiled assets.
+ *
+ * Served from a route rather than straight off disk for one reason: the file
+ * has to differ between releases or the browser never reinstalls it, and a
+ * worker that never reinstalls never runs its activate handler — so no stale
+ * cache is ever cleared. Deriving the version from the Vite manifest means it
+ * changes exactly when the front end does, and not on every request, which
+ * would reinstall the worker constantly.
+ */
+Route::get('/sw.js', function () {
+    $manifest = public_path('build/manifest.json');
+
+    $version = 'opes360-'.(is_file($manifest)
+        ? substr(hash_file('xxh128', $manifest), 0, 12)
+        : 'dev');
+
+    /*
+     * The template lives in resources/, not public/. A file that exists in the
+     * web root is served straight off disk by Apache before the framework is
+     * reached — the shipped .htaccess only rewrites when the request does not
+     * match a real file — so a public/sw.js would shadow this route entirely
+     * and ship the unstamped placeholder.
+     */
+    return response(
+        str_replace('__OPES_BUILD__', $version, file_get_contents(resource_path('sw.js'))),
+    )->withHeaders([
+        'Content-Type' => 'application/javascript; charset=utf-8',
+        // The worker script itself must never be served from cache, or a
+        // release cannot reach a browser that already has one installed.
+        'Cache-Control' => 'no-cache, no-store, must-revalidate',
+        'Service-Worker-Allowed' => '/',
+    ]);
+})->name('service-worker');
+
 Route::get('/manifest.webmanifest', function () {
     return response()->json([
         'name' => config('opes.brand.name').' — '.config('opes.brand.tagline'),

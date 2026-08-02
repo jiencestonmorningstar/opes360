@@ -8,7 +8,18 @@
  * dinosaur when a navigation cannot be served.
  */
 
-const VERSION = 'opes360-v1';
+/*
+ * Stamped by the /sw.js route from the build manifest's hash — see routes/web.php.
+ *
+ * It used to be the literal 'opes360-v1', which meant this file was
+ * byte-identical on every deploy. A browser only reinstalls a service worker
+ * when its bytes change, so the worker never updated: `activate` never ran, no
+ * old cache was ever deleted, and ASSET_CACHE accumulated every build ever
+ * shipped. On the phones this is installed on, that is storage nobody asked to
+ * give up. A version that moves with the release makes the activate handler
+ * below do the job it was written to do.
+ */
+const VERSION = '__OPES_BUILD__';
 const SHELL_CACHE = `${VERSION}-shell`;
 const ASSET_CACHE = `${VERSION}-assets`;
 const PAGE_CACHE = `${VERSION}-pages`;
