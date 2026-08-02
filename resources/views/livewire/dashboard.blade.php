@@ -114,7 +114,7 @@
                     @endforelse
 
                     <a href="{{ route('customers') }}"
-                       class="focusable mt-3 flex items-center justify-center gap-1 text-[14px] font-semibold text-brand hover:underline">
+                       class="focusable mt-2 flex items-center justify-center gap-1 rounded-lg py-1.5 text-[14px] font-semibold text-brand hover:underline">
                         View All
                         <x-icon name="chevron-right" class="size-[15px]" stroke-width="2.4" />
                     </a>

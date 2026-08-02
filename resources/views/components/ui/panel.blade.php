@@ -21,7 +21,7 @@
                 {{ $actions }}
             @elseif ($action && $actionHref)
                 <a href="{{ $actionHref }}"
-                   class="focusable shrink-0 text-[14px] font-semibold text-brand hover:underline">
+                   class="focusable -mr-1.5 shrink-0 rounded-lg px-1.5 py-1.5 text-[14px] font-semibold text-brand hover:underline">
                     {{ $action }}
                 </a>
             @endisset

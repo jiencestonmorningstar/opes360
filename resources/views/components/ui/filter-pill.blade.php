@@ -13,8 +13,11 @@
     desktop composition — one pill that adapts, rather than two that duplicate.
 --}}
 @php
+    // The ghost variant carried no padding, so its hit area was the 21px the
+    // text happened to occupy. The padding is negative-margined back out, so
+    // the target grows without the layout moving.
     $classes = $variant === 'ghost'
-        ? 'gap-1 text-[14px] font-semibold text-brand'
+        ? '-mr-1.5 gap-1 rounded-lg px-1.5 py-1.5 text-[14px] font-semibold text-brand'
         : 'gap-2 rounded-full border border-border bg-surface px-4 py-2.5 text-[14.5px] font-semibold text-ink shadow-[var(--shadow-card)]';
 @endphp
 

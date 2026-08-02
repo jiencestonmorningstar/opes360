@@ -15,7 +15,7 @@
             Try again
         </button>
 
-        <a href="/" class="focusable mt-3 text-[14px] font-semibold text-brand hover:underline">
+        <a href="/" class="focusable mt-2 inline-block rounded-lg px-2 py-2 text-[14px] font-semibold text-brand hover:underline">
             Go to dashboard
         </a>
     </div>

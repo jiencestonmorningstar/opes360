@@ -64,8 +64,17 @@ class PartnerController extends Controller
      * behind it, and an undo button invites a second transfer against the same
      * balance. A mistake is corrected by a new request.
      */
-    public function settle(Request $request, PartnerPayout $payout)
+    public function settle(Request $request, string $payout)
     {
+        /*
+         * Read across every tenant on purpose. PartnerPayout is tenant-scoped
+         * like everything else a company owns, and the admin guard has no
+         * current company — route-model binding would resolve through a scope
+         * that fails closed and 404 on a payout that plainly exists.
+         */
+        $payout = PartnerPayout::query()->acrossAllCompanies()->find($payout);
+
+        abort_if($payout === null, 404);
         abort_unless($payout->isOpen(), 409, 'That payout has already been settled.');
 
         $validated = $request->validate([

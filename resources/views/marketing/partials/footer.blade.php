@@ -12,30 +12,30 @@
 
             <div>
                 <p class="text-[12px] font-semibold uppercase tracking-wide text-faint">Product</p>
-                <nav class="mt-3.5 flex flex-col gap-2.5 text-[13.5px] font-medium text-ink-2">
-                    <a href="{{ route('marketing.features') }}" class="hover:text-brand">Features</a>
-                    <a href="{{ route('marketing.pricing') }}" class="hover:text-brand">Pricing</a>
-                    <a href="{{ route('marketing.partners') }}" class="hover:text-brand">For secretariats</a>
-                    <a href="{{ route('demo.request') }}" class="hover:text-brand">Try a demo</a>
-                    <a href="{{ route('login') }}" class="hover:text-brand">Sign in</a>
+                <nav class="mt-2 flex flex-col text-[13.5px] font-medium text-ink-2">
+                    <a href="{{ route('marketing.features') }}" class="focusable -mx-1 rounded px-1 py-1.5 hover:text-brand">Features</a>
+                    <a href="{{ route('marketing.pricing') }}" class="focusable -mx-1 rounded px-1 py-1.5 hover:text-brand">Pricing</a>
+                    <a href="{{ route('marketing.partners') }}" class="focusable -mx-1 rounded px-1 py-1.5 hover:text-brand">For secretariats</a>
+                    <a href="{{ route('demo.request') }}" class="focusable -mx-1 rounded px-1 py-1.5 hover:text-brand">Try a demo</a>
+                    <a href="{{ route('login') }}" class="focusable -mx-1 rounded px-1 py-1.5 hover:text-brand">Sign in</a>
                 </nav>
             </div>
 
             <div>
                 <p class="text-[12px] font-semibold uppercase tracking-wide text-faint">Company</p>
-                <nav class="mt-3.5 flex flex-col gap-2.5 text-[13.5px] font-medium text-ink-2">
-                    <a href="{{ route('marketing.about') }}" class="hover:text-brand">About</a>
-                    <a href="{{ route('marketing.blog') }}" class="hover:text-brand">Blog</a>
-                    <a href="{{ route('marketing.contact') }}" class="hover:text-brand">Contact</a>
-                    <a href="{{ route('register') }}" class="hover:text-brand">Create your business</a>
+                <nav class="mt-2 flex flex-col text-[13.5px] font-medium text-ink-2">
+                    <a href="{{ route('marketing.about') }}" class="focusable -mx-1 rounded px-1 py-1.5 hover:text-brand">About</a>
+                    <a href="{{ route('marketing.blog') }}" class="focusable -mx-1 rounded px-1 py-1.5 hover:text-brand">Blog</a>
+                    <a href="{{ route('marketing.contact') }}" class="focusable -mx-1 rounded px-1 py-1.5 hover:text-brand">Contact</a>
+                    <a href="{{ route('register') }}" class="focusable -mx-1 rounded px-1 py-1.5 hover:text-brand">Create your business</a>
                 </nav>
             </div>
 
             <div>
                 <p class="text-[12px] font-semibold uppercase tracking-wide text-faint">Legal</p>
-                <nav class="mt-3.5 flex flex-col gap-2.5 text-[13.5px] font-medium text-ink-2">
-                    <a href="{{ route('marketing.privacy') }}" class="hover:text-brand">Privacy</a>
-                    <a href="{{ route('marketing.terms') }}" class="hover:text-brand">Terms</a>
+                <nav class="mt-2 flex flex-col text-[13.5px] font-medium text-ink-2">
+                    <a href="{{ route('marketing.privacy') }}" class="focusable -mx-1 rounded px-1 py-1.5 hover:text-brand">Privacy</a>
+                    <a href="{{ route('marketing.terms') }}" class="focusable -mx-1 rounded px-1 py-1.5 hover:text-brand">Terms</a>
                 </nav>
             </div>
         </div>

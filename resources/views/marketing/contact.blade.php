@@ -13,7 +13,7 @@
                     <x-icon name="bell" class="size-[18px] text-accent-blue" stroke-width="1.9" />
                 </span>
                 <p class="mt-3 text-[13px] font-semibold uppercase tracking-wide text-faint">Support</p>
-                <a href="mailto:{{ config('opes.contact.support_email') }}" class="mt-1 block text-[14.5px] font-semibold text-ink hover:text-brand">
+                <a href="mailto:{{ config('opes.contact.support_email') }}" class="focusable -mx-1 mt-0.5 block rounded-lg px-1 py-1.5 text-[14.5px] font-semibold text-ink hover:text-brand">
                     {{ config('opes.contact.support_email') }}
                 </a>
             </div>
@@ -23,7 +23,7 @@
                     <x-icon name="banknotes" class="size-[18px] text-accent-green" stroke-width="1.9" />
                 </span>
                 <p class="mt-3 text-[13px] font-semibold uppercase tracking-wide text-faint">Sales</p>
-                <a href="mailto:{{ config('opes.contact.sales_email') }}" class="mt-1 block text-[14.5px] font-semibold text-ink hover:text-brand">
+                <a href="mailto:{{ config('opes.contact.sales_email') }}" class="focusable -mx-1 mt-0.5 block rounded-lg px-1 py-1.5 text-[14.5px] font-semibold text-ink hover:text-brand">
                     {{ config('opes.contact.sales_email') }}
                 </a>
             </div>
@@ -33,11 +33,11 @@
                     <x-icon name="user" class="size-[18px] text-accent-orange" stroke-width="1.9" />
                 </span>
                 <p class="mt-3 text-[13px] font-semibold uppercase tracking-wide text-faint">Call or WhatsApp</p>
-                <a href="tel:{{ config('opes.contact.whatsapp') }}" class="mt-1 block text-[14.5px] font-semibold text-ink hover:text-brand">
+                <a href="tel:{{ config('opes.contact.whatsapp') }}" class="focusable -mx-1 mt-0.5 block rounded-lg px-1 py-1.5 text-[14.5px] font-semibold text-ink hover:text-brand">
                     {{ config('opes.contact.phone') }}
                 </a>
                 <a href="https://wa.me/{{ ltrim(config('opes.contact.whatsapp'), '+') }}" target="_blank" rel="noopener"
-                   class="mt-0.5 block text-[13px] font-medium text-positive hover:underline">
+                   class="focusable -mx-1 block rounded-lg px-1 py-1.5 text-[13px] font-medium text-positive hover:underline">
                     Chat on WhatsApp
                 </a>
             </div>

@@ -117,7 +117,7 @@
                 <div class="mt-4 flex items-center justify-between border-t border-border pt-3.5">
                     <label class="flex items-center gap-2 text-[13.5px] text-ink-2">
                         <input type="checkbox" wire:model.live="fields.{{ $i }}.required"
-                               class="size-[17px] rounded border-border-strong text-brand focus:ring-brand/30">
+                               class="size-[20px] rounded border-border-strong text-brand focus:ring-brand/30">
                         Required
                     </label>
 

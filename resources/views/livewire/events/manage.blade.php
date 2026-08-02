@@ -65,18 +65,18 @@
                     <div wire:key="type-{{ $i }}" class="rounded-xl border border-border p-4">
                         <div class="grid gap-3 min-[560px]:grid-cols-[1fr_130px_130px]">
                             <div>
-                                <label class="block text-[12.5px] font-semibold text-ink-2">Name</label>
-                                <input type="text" wire:model="types.{{ $i }}.name" placeholder="General admission"
+                                <label for="ticket-name-{{ $i }}" class="block text-[12.5px] font-semibold text-ink-2">Name</label>
+                                <input id="ticket-name-{{ $i }}" type="text" wire:model="types.{{ $i }}.name" placeholder="General admission"
                                        class="mt-1 h-11 w-full rounded-lg border border-border bg-surface px-3.5 text-[14.5px] text-ink placeholder:text-faint focus:border-brand focus:outline-none focus:ring-1 focus:ring-brand/20">
                             </div>
                             <div>
-                                <label class="block text-[12.5px] font-semibold text-ink-2">Price</label>
-                                <input type="number" step="0.01" min="0" wire:model="types.{{ $i }}.price"
+                                <label for="ticket-price-{{ $i }}" class="block text-[12.5px] font-semibold text-ink-2">Price</label>
+                                <input id="ticket-price-{{ $i }}" type="number" step="0.01" min="0" wire:model="types.{{ $i }}.price"
                                        class="tnum mt-1 h-11 w-full rounded-lg border border-border bg-surface px-3.5 text-[14.5px] text-ink focus:border-brand focus:outline-none focus:ring-1 focus:ring-brand/20">
                             </div>
                             <div>
-                                <label class="block text-[12.5px] font-semibold text-ink-2">Quantity <span class="font-normal text-faint">(blank = unlimited)</span></label>
-                                <input type="number" min="0" wire:model="types.{{ $i }}.quantity"
+                                <label for="ticket-qty-{{ $i }}" class="block text-[12.5px] font-semibold text-ink-2">Quantity <span class="font-normal text-faint">(blank = unlimited)</span></label>
+                                <input id="ticket-qty-{{ $i }}" type="number" min="0" wire:model="types.{{ $i }}.quantity"
                                        class="tnum mt-1 h-11 w-full rounded-lg border border-border bg-surface px-3.5 text-[14.5px] text-ink focus:border-brand focus:outline-none focus:ring-1 focus:ring-brand/20">
                             </div>
                         </div>

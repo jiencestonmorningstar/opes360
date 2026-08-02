@@ -398,7 +398,7 @@
                                             @unless ($row['hasMovement'])
                                                 <button type="button" wire:click="deleteAccount('{{ $row['account']->id }}')"
                                                         wire:confirm="Remove account {{ $row['account']->number }} from the chart?"
-                                                        class="focusable ml-2.5 text-[12.5px] font-semibold text-negative hover:underline">Delete</button>
+                                                        class="focusable ml-1.5 rounded-lg px-2 py-1.5 text-[12.5px] font-semibold text-negative hover:bg-tint-red hover:underline">Delete</button>
                                             @endunless
                                         </td>
                                     @endcan

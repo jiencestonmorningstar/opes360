@@ -727,4 +727,49 @@ class PartnerProgrammeTest extends TestCase
         $this->assertSame('void', $issuance->fresh()->status);
         $this->assertSame(0, app(PartnerLedger::class)->fees($this->partner));
     }
+
+    /**
+     * The production shape of the admin side: no current company at all.
+     *
+     * PartnerPayout is tenant-scoped like everything else a company owns, and
+     * that scope fails closed. Route-model binding therefore resolved nothing
+     * for the admin guard and every settle button answered 404 on a payout that
+     * plainly existed — a fault the earlier tests could not see, because their
+     * setUp had left a company set.
+     */
+    public function test_an_admin_settles_a_payout_with_no_tenant_context(): void
+    {
+        Notification::fake();
+
+        $payout = PartnerPayout::create(['amount' => 12000, 'status' => 'requested', 'currency' => 'XAF']);
+
+        app(CurrentCompany::class)->set(null);
+
+        $this->actingAs($this->platformAdmin(), 'admin')
+            ->post(route('admin.partners.payouts.settle', $payout), ['decision' => 'paid'])
+            ->assertRedirect();
+
+        $this->assertSame('paid', $payout->fresh()->status);
+    }
+
+    public function test_the_admin_partner_list_renders_with_no_tenant_context(): void
+    {
+        PartnerClient::create(['name' => 'Boulangerie Nkolbisson']);
+
+        app(CurrentCompany::class)->set(null);
+
+        $this->actingAs($this->platformAdmin(), 'admin')
+            ->get(route('admin.partners'))
+            ->assertOk()
+            // The client count comes from the ledger, which must not read zero
+            // just because there is no tenant in scope.
+            ->assertSee('Secretariat Bonamoussadi');
+    }
+
+    public function test_settling_a_payout_that_does_not_exist_is_a_404_not_a_crash(): void
+    {
+        $this->actingAs($this->platformAdmin(), 'admin')
+            ->post(route('admin.partners.payouts.settle', '01no-such-payout'), ['decision' => 'paid'])
+            ->assertNotFound();
+    }
 }

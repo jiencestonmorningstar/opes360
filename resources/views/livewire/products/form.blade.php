@@ -131,7 +131,7 @@
                         <span class="block text-[12.5px] text-muted">Counts every sale and warns when you run low.</span>
                     </span>
                     <input type="checkbox" x-model="form.track_stock"
-                           class="size-6 rounded border-border-strong text-brand focus:ring-brand/30">
+                           class="size-[20px] rounded border-border-strong text-brand focus:ring-brand/30">
                 </label>
 
                 <div class="mt-4 grid grid-cols-2 gap-3" x-show="form.track_stock" x-cloak>
@@ -156,7 +156,7 @@
                     <span class="block text-[12.5px] text-muted">Inactive items stay in records but can't be added to new documents.</span>
                 </span>
                 <input type="checkbox" x-model="form.is_active"
-                       class="size-6 rounded border-border-strong text-brand focus:ring-brand/30">
+                       class="size-[20px] rounded border-border-strong text-brand focus:ring-brand/30">
             </label>
         </x-ui.panel>
 

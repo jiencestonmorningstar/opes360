@@ -133,7 +133,7 @@
                 <div class="mt-4 rounded-xl border border-border p-4">
                     <label class="flex items-start gap-3">
                         <input type="checkbox" wire:model.live="form.vat_registered"
-                               class="mt-0.5 size-[18px] shrink-0 rounded border-border text-brand focus:ring-brand/30">
+                               class="mt-0.5 size-[20px] shrink-0 rounded border-border text-brand focus:ring-brand/30">
                         <span>
                             <span class="block text-[14px] font-semibold text-ink">This business is registered for VAT</span>
                             <span class="block text-[12.5px] text-muted">
@@ -154,7 +154,7 @@
                             </label>
                             <label class="flex items-start gap-3 pt-6">
                                 <input type="checkbox" wire:model="form.prices_include_tax"
-                                       class="mt-0.5 size-[18px] shrink-0 rounded border-border text-brand focus:ring-brand/30">
+                                       class="mt-0.5 size-[20px] shrink-0 rounded border-border text-brand focus:ring-brand/30">
                                 <span>
                                     <span class="block text-[14px] font-semibold text-ink">Prices already include VAT</span>
                                     <span class="block text-[12.5px] text-muted">
@@ -308,14 +308,14 @@
 
                     <div class="mt-4 grid grid-cols-2 gap-3">
                         <div>
-                            <label class="mb-1 block text-[12.5px] font-semibold text-ink-2">Spend per point</label>
-                            <input type="number" step="0.01" min="0.01" wire:model="loyaltyPointsPerAmount"
+                            <label for="loyalty-spend-per-point" class="mb-1 block text-[12.5px] font-semibold text-ink-2">Spend per point</label>
+                            <input id="loyalty-spend-per-point" type="number" step="0.01" min="0.01" wire:model="loyaltyPointsPerAmount"
                                    class="h-11 w-full rounded-lg border border-border bg-surface px-3 text-[14px] text-ink focus:border-brand focus:outline-none focus:ring-1 focus:ring-brand/20">
                             @error('loyaltyPointsPerAmount')<p class="mt-1 text-[12px] font-medium text-warning">{{ $message }}</p>@enderror
                         </div>
                         <div>
-                            <label class="mb-1 block text-[12.5px] font-semibold text-ink-2">Value per point</label>
-                            <input type="number" step="0.01" min="0" wire:model="loyaltyPointValue"
+                            <label for="loyalty-point-value" class="mb-1 block text-[12.5px] font-semibold text-ink-2">Value per point</label>
+                            <input id="loyalty-point-value" type="number" step="0.01" min="0" wire:model="loyaltyPointValue"
                                    class="h-11 w-full rounded-lg border border-border bg-surface px-3 text-[14px] text-ink focus:border-brand focus:outline-none focus:ring-1 focus:ring-brand/20">
                             @error('loyaltyPointValue')<p class="mt-1 text-[12px] font-medium text-warning">{{ $message }}</p>@enderror
                         </div>

@@ -267,8 +267,11 @@
                         </span>
                     </span>
                     @unless ($device->isRevoked())
+                        {{-- Destructive, and it was a 20px-tall text button: the
+                             padding is part of the target rather than dead space
+                             around it. --}}
                         <button type="button" wire:click="revokeDevice('{{ $device->id }}')"
-                                class="focusable shrink-0 text-[13px] font-semibold text-negative hover:underline">
+                                class="focusable -mr-1.5 shrink-0 rounded-lg px-2.5 py-2 text-[13px] font-semibold text-negative hover:bg-tint-red hover:underline">
                             Revoke
                         </button>
                     @endunless

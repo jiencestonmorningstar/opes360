@@ -210,7 +210,7 @@
                             @if ($issuance->isBilled())
                                 <button type="button" wire:click="voidIssuance('{{ $issuance->id }}')"
                                         wire:confirm="Cancel the {{ $money($issuance->fee) }} charge for this card?"
-                                        class="focusable shrink-0 text-[12.5px] font-semibold text-negative hover:underline">
+                                        class="focusable -mr-1 shrink-0 rounded-lg px-2 py-1.5 text-[12.5px] font-semibold text-negative hover:bg-tint-red hover:underline">
                                     Void
                                 </button>
                             @else

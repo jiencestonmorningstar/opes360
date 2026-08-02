@@ -4,7 +4,7 @@
 --}}
 <header class="sticky top-0 z-30 border-b border-border bg-canvas/90 backdrop-blur-sm" x-data="{ open: false }" @keydown.escape.window="open = false">
     <div class="mx-auto flex h-16 max-w-6xl items-center justify-between px-5">
-        <a href="{{ route('dashboard') }}" class="text-[22px] font-bold leading-none tracking-[-0.02em]">
+        <a href="{{ route('dashboard') }}" class="focusable -m-1 rounded-lg p-1 text-[22px] font-bold leading-none tracking-[-0.02em]">
             <span class="text-ink">{{ config('opes.brand.name_prefix') }}</span><span
                 class="text-brand">{{ config('opes.brand.name_suffix') }}</span>
         </a>

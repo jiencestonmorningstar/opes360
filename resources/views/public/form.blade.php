@@ -65,7 +65,7 @@
                                         <label class="flex items-center gap-3 text-[14.5px] text-ink">
                                             <input type="radio" name="{{ $name }}" value="{{ $option }}"
                                                    @checked($old === $option) @required($field['required'])
-                                                   class="size-[18px] border-border-strong text-brand focus:ring-brand/30">
+                                                   class="size-[20px] border-border-strong text-brand focus:ring-brand/30">
                                             {{ $option }}
                                         </label>
                                     @endforeach
@@ -78,7 +78,7 @@
                                         <label class="flex items-center gap-3 text-[14.5px] text-ink">
                                             <input type="checkbox" name="{{ $name }}[]" value="{{ $option }}"
                                                    @checked(is_array($old) && in_array($option, $old, true))
-                                                   class="size-[18px] rounded border-border-strong text-brand focus:ring-brand/30">
+                                                   class="size-[20px] rounded border-border-strong text-brand focus:ring-brand/30">
                                             {{ $option }}
                                         </label>
                                     @endforeach

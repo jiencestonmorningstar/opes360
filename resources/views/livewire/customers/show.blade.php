@@ -152,8 +152,8 @@
                     @can('loyalty.redeem')
                         <form wire:submit="redeemLoyaltyPoints" class="mt-4 flex items-end gap-2 border-t border-border pt-4">
                             <div class="min-w-0 flex-1">
-                                <label class="mb-1 block text-[12px] font-semibold text-ink-2">Redeem points</label>
-                                <input type="number" min="1" wire:model="redeemPoints" placeholder="e.g. 50"
+                                <label for="redeem-points" class="mb-1 block text-[12px] font-semibold text-ink-2">Redeem points</label>
+                                <input id="redeem-points" type="number" min="1" wire:model="redeemPoints" placeholder="e.g. 50"
                                        class="h-11 w-full rounded-lg border border-border bg-surface px-3 text-[13.5px] text-ink placeholder:text-faint focus:border-brand focus:outline-none focus:ring-1 focus:ring-brand/20">
                             </div>
                             <button type="submit"

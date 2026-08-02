@@ -115,7 +115,7 @@
                             <span class="block text-[12.5px] text-muted">Unpublished profiles are hidden from the public URL.</span>
                         </span>
                         <input type="checkbox" wire:model="form.is_published"
-                               class="size-6 rounded border-border-strong text-brand focus:ring-brand/30">
+                               class="size-[20px] rounded border-border-strong text-brand focus:ring-brand/30">
                     </label>
                 </div>
 

@@ -70,6 +70,11 @@ Route::prefix('admin')->name('admin.')->group(function () {
          * support staff can read the list but not close a request.
          */
         Route::get('/partners', [AdminPartnerController::class, 'index'])->name('partners');
+        // {payout} is deliberately NOT route-model bound. PartnerPayout carries
+        // the tenant scope, the admin guard has no current company, and the
+        // scope fails closed — so binding resolved nothing and every settle
+        // button answered 404. The controller reads it across all companies,
+        // where the cross-tenant lookup is visible at the call site.
         Route::post('/partners/payouts/{payout}/settle', [AdminPartnerController::class, 'settle'])
             ->name('partners.payouts.settle')->middleware('admin.role');
 
