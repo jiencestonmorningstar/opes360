@@ -14,6 +14,7 @@ use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\SyncController;
 use App\Http\Controllers\TicketController;
 use App\Http\Controllers\VerificationController;
+use App\Livewire\Accounting\Declarations as AccountingDeclarations;
 use App\Livewire\Accounting\Index as AccountingIndex;
 use App\Livewire\Assets\Index as AssetsIndex;
 use App\Livewire\Banking\Index as BankingIndex;
@@ -227,6 +228,10 @@ Route::middleware('auth')->group(function () {
     Route::get('/payslips/{payslip}/print', [PrintController::class, 'payslip'])->middleware('can:payroll.view')->name('payslips.print');
     Route::get('/reports', ReportsIndex::class)->middleware('can:reports.view')->name('reports');
     Route::get('/accounting', AccountingIndex::class)->middleware('can:accounting.view')->name('accounting');
+    // The month's returns, worked out from the books. See the screen: a
+    // worksheet to copy onto the official forms, never the forms themselves.
+    Route::get('/accounting/declarations', AccountingDeclarations::class)
+        ->middleware('can:accounting.view')->name('accounting.declarations');
     Route::get('/assets', AssetsIndex::class)->middleware('can:assets.view')->name('assets');
     Route::get('/banking', BankingIndex::class)->middleware('can:banking.view')->name('banking');
 

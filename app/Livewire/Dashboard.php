@@ -5,6 +5,7 @@ namespace App\Livewire;
 use App\Enums\DocumentType;
 use App\Models\Contact;
 use App\Models\Document;
+use App\Models\Expense;
 use App\Models\Item;
 use App\Models\Payment;
 use App\Models\Receipt;
@@ -276,12 +277,23 @@ class Dashboard extends Component
             ->filter(fn (Item $item) => $item->isLowStock())
             ->count();
 
-        // Expenses land in Phase 7 alongside supplier payments; until then this
-        // reads supplier-side payments so the tile shows real data, not a stub.
-        $expenses = (float) Payment::query()
-            ->whereHas('contact', fn ($q) => $q->whereIn('type', ['supplier', 'vendor']))
-            ->whereBetween('received_at', [$now->startOfMonth(), $now->endOfMonth()])
-            ->sum('amount');
+        /*
+         * What the business spent this month, from the expenses it recorded.
+         *
+         * This used to read supplier-side payments instead, with a comment
+         * saying expenses would arrive in a later phase. They arrived; the
+         * stub did not move. A business diligently recording every tank of
+         * fuel in the Expenses screen saw a dashboard tile reading zero — and
+         * a business that had never opened that screen saw a figure built from
+         * something else entirely.
+         *
+         * TTC, because "what did we spend" is the amount that left the
+         * account, not the part of it that was not tax.
+         */
+        $expenses = (float) Expense::query()
+            ->where('status', '!=', 'void')
+            ->whereBetween('issue_date', [$now->startOfMonth()->toDateString(), $now->endOfMonth()->toDateString()])
+            ->sum('total');
 
         return [
             [

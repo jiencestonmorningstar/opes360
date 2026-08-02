@@ -26,7 +26,9 @@ use App\Models\Ticket;
 use App\Models\TicketType;
 use App\Models\User;
 use App\Models\VerificationToken;
+use App\Services\Accounting\RecordsBusinessEvents;
 use App\Services\DocumentIssuer;
+use App\Services\ExpenseRecorder;
 use App\Services\LoyaltyLedger;
 use App\Services\PaymentRecorder;
 use App\Services\Stock\Stocktaker;
@@ -72,9 +74,12 @@ class DemoCompanySeeder extends Seeder
     /** Number counter for background invoices; starts above the design's 1–18. */
     protected int $sequence = 1000;
 
+    protected RecordsBusinessEvents $books;
+
     public function run(): void
     {
         $this->today = CarbonImmutable::now()->startOfDay();
+        $this->books = app(RecordsBusinessEvents::class);
 
         $this->owner = User::updateOrCreate(
             ['email' => 'john@opesware.com'],
@@ -853,17 +858,35 @@ class DemoCompanySeeder extends Seeder
     {
         $supplier = $customers['supplier'];
         $date = $this->today->startOfMonth()->addDays(3);
+        $rate = (float) $this->company->vat_rate / 100;
 
-        foreach ([120, 60, 30] as $offset => $amount) {
-            Payment::create([
-                'contact_id' => $supplier->id,
-                'method' => 'bank_transfer',
-                'amount' => $amount,
-                'currency' => $this->company->currency,
-                'reference' => 'EXP-'.($offset + 1),
-                'received_at' => $date->addDays($offset),
-                'received_by' => $this->owner->id,
-            ]);
+        /*
+         * Real expenses, through the recorder, so they reach the books and the
+         * Expenses screen rather than being three bare payments against a
+         * supplier — which is what they were, from before the expenses module
+         * existed. Each one carries recoverable TVA, so the demo's declaration
+         * screen has both halves of a TVA return rather than only the sales.
+         *
+         * The HT figures are worked back from the round totals the design
+         * pins, which is also how a real receipt reads: 120 000 at the counter,
+         * an odd number before tax.
+         */
+        $spending = [
+            ['Carburant véhicule de livraison', 'fuel', 120],
+            ['Facture ENEO', 'electricity', 60],
+            ['Crédit téléphone et internet', 'telecoms', 30],
+        ];
+
+        foreach ($spending as $offset => [$description, $category, $gross]) {
+            app(ExpenseRecorder::class)->record([
+                'supplier_id' => $supplier->id,
+                'description' => $description,
+                'category' => $category,
+                'issue_date' => $date->addDays($offset)->toDateString(),
+                'amount' => round($gross / (1 + $rate), 2),
+                'vat_rate' => $rate,
+                'payment_method' => 'bank',
+            ], $this->owner);
         }
     }
 
@@ -925,6 +948,22 @@ class DemoCompanySeeder extends Seeder
             ])->id,
         ])->saveQuietly();
 
+        /*
+         * And into the books, which is the part this used to skip.
+         *
+         * These invoices are built rather than issued — the seeder backdates
+         * issued_at and created_at to hit the exact figures the design pins,
+         * and DocumentIssuer quite rightly stamps `now()`. The consequence went
+         * unnoticed: fifty-six issued invoices and three journal entries, so
+         * the demo's Accounting screen, its financial statements and its tax
+         * declarations were all but empty on the account whose whole job is
+         * showing what the product does. Posting here uses the document's own
+         * issue_date, so March's sale lands in March.
+         */
+        $this->books->recordQuietly(
+            fn () => $this->books->recordIssuedDocument($invoice, $this->company, $this->owner)
+        );
+
         return $invoice;
     }
 
@@ -970,6 +1009,12 @@ class DemoCompanySeeder extends Seeder
             'document_id' => $invoice->id,
             'amount' => $amount,
         ]);
+
+        // The settlement too: money off the customer's account and into the
+        // till, on the day it actually arrived.
+        $this->books->recordQuietly(
+            fn () => $this->books->recordPayment($payment, $this->company, $this->owner)
+        );
 
         if ($receipt) {
             Receipt::create([

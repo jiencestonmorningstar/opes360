@@ -15,12 +15,21 @@
             <h1 class="text-[25px] font-bold leading-tight tracking-[-0.03em] text-ink lg:text-[28px]">Accounting</h1>
             <p class="mt-1 text-[14.5px] text-muted">Your SYSCOHADA books, kept as you invoice and take payment.</p>
         </div>
-        @can('accounting.export')
-            <button type="button" wire:click="exportBalance"
-                    class="focusable flex h-11 items-center rounded-lg bg-surface-2 px-4 text-[13.5px] font-semibold text-ink-2 hover:bg-tint-blue hover:text-brand">
-                Export balance
-            </button>
-        @endcan
+        <div class="flex flex-wrap gap-2">
+            {{-- The returns are due on the fifteenth whether or not anybody
+                 has added them up, which is why this sits at the top rather
+                 than in a menu. --}}
+            <a href="{{ route('accounting.declarations') }}" wire:navigate
+               class="focusable flex h-11 items-center rounded-lg bg-surface-2 px-4 text-[13.5px] font-semibold text-ink-2 hover:bg-tint-blue hover:text-brand">
+                Declarations
+            </a>
+            @can('accounting.export')
+                <button type="button" wire:click="exportBalance"
+                        class="focusable flex h-11 items-center rounded-lg bg-surface-2 px-4 text-[13.5px] font-semibold text-ink-2 hover:bg-tint-blue hover:text-brand">
+                    Export balance
+                </button>
+            @endcan
+        </div>
     </div>
 
     @if (session('accountingStatus'))
