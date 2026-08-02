@@ -210,13 +210,19 @@ class RecordsBusinessEvents
      * half configured has a worse problem than one whose books need catching
      * up — the customer is standing at the counter either way. Failures are
      * logged and the entry can be posted later; the sale goes through.
+     *
+     * The same shelter covers the stock ledger, for the same reason: a shelf
+     * that ends up one crate out is a discrepancy the next inventory catches,
+     * and a sale that could not be made is a customer who left.
+     *
+     * @return mixed whatever the recorder returned, or null if it threw
      */
-    public function recordQuietly(callable $record): ?JournalEntry
+    public function recordQuietly(callable $record): mixed
     {
         try {
             return $record();
         } catch (Throwable $e) {
-            Log::warning('Ledger posting failed; the business event was not recorded in the books.', [
+            Log::warning('Recording a business event failed; the sale itself went through.', [
                 'error' => $e->getMessage(),
             ]);
 

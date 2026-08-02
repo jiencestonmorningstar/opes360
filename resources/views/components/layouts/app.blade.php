@@ -27,8 +27,14 @@
     {{--
         Runs before first paint so the correct theme is already on <html>.
         Anything slower produces a white flash on every load in dark mode.
+
+        `data-navigate-once` because it has nothing to do on a wire:navigate —
+        <html> survives the swap with the class already on it. Without the
+        attribute Livewire re-executes it from the fetched document, where its
+        nonce no longer matches the header the first response set, and the
+        browser logs a CSP refusal for work that was already done.
     --}}
-    <script @cspNonce>
+    <script @cspNonce data-navigate-once>
         (function () {
             try {
                 var stored = localStorage.getItem('opes-theme');

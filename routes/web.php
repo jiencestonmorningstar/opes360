@@ -54,7 +54,9 @@ use App\Livewire\Sales\Index as SalesIndex;
 use App\Livewire\Scan;
 use App\Livewire\Settings\Billing as SettingsBilling;
 use App\Livewire\Settings\Index as SettingsIndex;
+use App\Livewire\Stock\Count as StockCount;
 use App\Livewire\Stock\Locations as StockLocations;
+use App\Livewire\Stock\Valuation as StockValuation;
 use App\Livewire\Team\Index as TeamIndex;
 use App\Livewire\Team\Show as TeamShow;
 use Illuminate\Http\Request;
@@ -171,6 +173,10 @@ Route::middleware('auth')->group(function () {
     Route::get('/products/create', ProductForm::class)->middleware('can:products.create')->name('products.create');
     // Before the {item} wildcard, or "locations" is read as a product id.
     Route::get('/products/locations', StockLocations::class)->middleware('can:products.manage-locations')->name('products.locations');
+    // Likewise "stock" — and the count sheet under it, so a business finds the
+    // inventory where it keeps the things being counted.
+    Route::get('/products/stock', StockValuation::class)->middleware('can:products.view')->name('products.stock');
+    Route::get('/products/stock/{stocktake}', StockCount::class)->middleware('can:products.view')->name('products.stock.count');
     Route::get('/products/{item}/edit', ProductForm::class)->middleware('can:update,item')->name('products.edit');
 
     Route::get('/business', BusinessEdit::class)->middleware('can:business.view')->name('business');

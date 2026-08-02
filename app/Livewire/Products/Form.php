@@ -106,6 +106,12 @@ class Form extends Component
                 StockMovement::create([
                     'item_id' => $this->item->id,
                     'quantity' => (float) $form['opening_stock'],
+                    // What the opening stock is worth, taken from the cost
+                    // typed alongside it. Without it the valuation has nothing
+                    // to average and the balance sheet carries no inventory —
+                    // which is exactly the state every business started in
+                    // before stock reached the books.
+                    'unit_cost' => $this->item->cost !== null ? (float) $this->item->cost : null,
                     'reason' => 'opening',
                     'user_id' => auth()->id(),
                     'occurred_at' => now(),

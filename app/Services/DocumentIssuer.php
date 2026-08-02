@@ -7,6 +7,7 @@ use App\Models\Document;
 use App\Models\User;
 use App\Models\VerificationToken;
 use App\Services\Accounting\RecordsBusinessEvents;
+use App\Services\Stock\StockLedger;
 use App\Support\CurrentCompany;
 use Illuminate\Support\Facades\DB;
 use RuntimeException;
@@ -72,6 +73,20 @@ class DocumentIssuer
 
             if ($company !== null) {
                 $events->recordQuietly(fn () => $events->recordIssuedDocument($document, $company, $user));
+
+                /*
+                 * And the goods leave the shelf. Here rather than at draft for
+                 * the same reason the sale is posted here: a draft can still
+                 * change, and nothing has left the shop until the customer has
+                 * a paper saying it has. Only a receivable document sells
+                 * anything — a quotation is an offer, and taking stock off for
+                 * one would empty a shelf nobody had bought from.
+                 */
+                if ($document->type->isReceivable()) {
+                    $events->recordQuietly(
+                        fn () => app(StockLedger::class)->recordSale($document, $company, $user)
+                    );
+                }
             }
 
             return $document;

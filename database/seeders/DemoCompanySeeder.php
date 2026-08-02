@@ -21,6 +21,7 @@ use App\Models\Payment;
 use App\Models\PaymentAllocation;
 use App\Models\Receipt;
 use App\Models\Role;
+use App\Models\Stocktake;
 use App\Models\Ticket;
 use App\Models\TicketType;
 use App\Models\User;
@@ -28,6 +29,7 @@ use App\Models\VerificationToken;
 use App\Services\DocumentIssuer;
 use App\Services\LoyaltyLedger;
 use App\Services\PaymentRecorder;
+use App\Services\Stock\Stocktaker;
 use App\Services\TicketSeller;
 use App\Support\Accounting\ChartOfAccounts;
 use App\Support\CurrentCompany;
@@ -182,6 +184,9 @@ class DemoCompanySeeder extends Seeder
         $this->seedYesterday();
         $this->seedToday($customers, $lease);
         $this->seedExpenses($customers);
+        // After the sales, so the count sees shelves the invoices have already
+        // drawn down — which is the whole reason a business counts.
+        $this->seedStocktake();
 
         $this->seedArtisans();
         $this->seedReviews();
@@ -533,6 +538,9 @@ class DemoCompanySeeder extends Seeder
         DocumentLine::query()->delete();
         Document::query()->forceDelete();
         NumberLease::query()->delete();
+        // Before the items: a count sheet points at products, and its lines
+        // go with it.
+        Stocktake::query()->delete();
         Item::query()->forceDelete();
         Contact::query()->forceDelete();
     }
@@ -602,11 +610,47 @@ class DemoCompanySeeder extends Seeder
             $item->movements()->create([
                 'company_id' => $item->company_id,
                 'quantity' => 50,
+                // What it cost is what makes the stock worth anything on the
+                // balance sheet. A demo whose inventory values at zero shows
+                // the feature working and demonstrates nothing.
+                'unit_cost' => (float) $item->cost,
                 'reason' => 'opening',
                 'occurred_at' => $this->today->subMonth(),
                 'created_at' => $this->today->subMonth(),
             ]);
         });
+    }
+
+    /**
+     * Last month's inventory, counted and posted.
+     *
+     * Without it the demo's balance sheet carries no stock and its income
+     * statement charges every delivery to the month it arrived — which is the
+     * state the software is there to get a business out of, so showing it is
+     * showing the wrong thing.
+     */
+    protected function seedStocktake(): void
+    {
+        $company = $this->company->refresh();
+        $taker = app(Stocktaker::class);
+
+        $stocktake = $taker->start($company, null, $this->today->copy()->subDays(3)->toDateString(), $this->owner);
+
+        if ($stocktake->lines->isEmpty()) {
+            return;
+        }
+
+        // Counted honestly: most shelves agree, a couple are short. A demo in
+        // which every count is exact teaches nobody what the variance column
+        // is for.
+        $counts = [];
+
+        foreach ($stocktake->lines->values() as $index => $line) {
+            $counts[$line->item_id] = max(0, (float) $line->book_quantity - ($index % 4 === 0 ? 2 : 0));
+        }
+
+        $taker->save($stocktake, $counts, $this->owner);
+        $taker->post($stocktake, $this->owner);
     }
 
     protected function seedNumberLease(): NumberLease

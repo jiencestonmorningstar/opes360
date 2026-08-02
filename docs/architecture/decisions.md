@@ -232,3 +232,42 @@ it was. Switching off never deletes: the screens go quiet and the data waits.
 **Not switchable:** the business record, its users, its devices and its settings are the account, not a
 feature of it, so they belong to no module and cannot be turned off by accident. The secretariat programme
 is listed but fixed on, because a secretariat that switched it off would have signed up for nothing.
+
+---
+
+## 14. Stock reaches the books through a count, not through every sale
+
+**Decision:** purchases are charged to 601 when they happen; the shelf is drawn down by a perpetual
+movement ledger; and the two are married by a **stocktake**, which values what is left at weighted average
+cost, carries it to 31 Marchandises and posts the change to 6031 Variation des stocks. There is no
+cost-of-goods entry on the sale itself.
+
+**Why:** this is SYSCOHADA's *inventaire intermittent*, the presentation the compte de résultat is laid out
+for — "achats moins variation des stocks" is a line on the form. It is also the only method that works for
+the businesses this software is for. Posting cost of goods at the moment of sale (*inventaire permanent*)
+needs a reliable unit cost for every item on every invoice; a shop that has never typed a cost price would
+get an income statement full of zero-cost sales and a gross margin of 100%, which is worse than no figure at
+all. A count needs a cost only for what is actually still there, and the screen names the items it could not
+price rather than quietly valuing them at nothing.
+
+**Why weighted average:** CUMP de fin de période, one of the two methods the AUDCIF allows. It needs no lot
+tracking and gives the same answer whichever crate the shopkeeper reached into — FIFO would need both.
+Costs are read off the movements rather than off the item, because `items.cost` is what the *next* one is
+expected to cost, and building the books on it would silently restate history the day a supplier's price
+changed.
+
+**What changed on the sale side regardless:** issuing a document now writes a negative stock movement for
+every tracked product line, and voiding one writes the opposite. Before this, stock on hand ignored every
+invoice ever issued — it was fed only by opening balances, hand adjustments and transfers — so the figure
+was right only for a business that never sold anything. Voiding also now reverses the sale's journal entry,
+which it never did: the books were claiming revenue and a receivable for a sale the business had publicly
+cancelled.
+
+**Trade-off:** between counts, account 31 is stale and the income statement overstates cost by whatever has
+been bought and not yet consumed. That is inherent to intermittent inventory and is why the valuation screen
+puts the shelf figure and the book figure side by side with the gap between them as its headline: the drift
+is visible and one action closes it. A business that wants the books right monthly counts monthly.
+
+**Uncounted is not zero.** A blank box on a count sheet stays blank and the line keeps its book quantity.
+Reading it as an empty shelf would write off everything whoever was counting did not reach before closing
+time, which is the single most expensive way this feature could be wrong.

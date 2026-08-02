@@ -7,6 +7,10 @@ use App\Enums\DocumentType;
 use App\Models\Document;
 use App\Models\DocumentLine;
 use App\Models\User;
+use App\Services\Accounting\Ledger;
+use App\Services\Accounting\RecordsBusinessEvents;
+use App\Services\Stock\StockLedger;
+use App\Support\CurrentCompany;
 use Illuminate\Support\Facades\DB;
 use RuntimeException;
 
@@ -150,7 +154,48 @@ class DocumentConverter
                 $document->contact->decrement('balance', (float) $document->total);
             }
 
+            $this->undoIssue($document, $user);
+
             return $document;
         });
+    }
+
+    /**
+     * Undo what issuing did: extourne the sale and put the goods back.
+     *
+     * Voiding used to stop at the document and the customer's balance, which
+     * left the ledger claiming revenue and a receivable for a sale that had
+     * been cancelled — the books said the business had earned money it had
+     * publicly said it had not. The entry is reversed rather than deleted, so
+     * March still has an answer, and the stock returns as a movement rather
+     * than by unwinding the original one.
+     *
+     * Quietly, like the posting it undoes: a document that cannot be voided
+     * because the chart of accounts is half configured is a worse outcome than
+     * books that need a correction.
+     */
+    protected function undoIssue(Document $document, User $user): void
+    {
+        $company = app(CurrentCompany::class)->get();
+
+        if ($company === null || ! $document->type->isReceivable()) {
+            return;
+        }
+
+        $events = app(RecordsBusinessEvents::class);
+
+        $events->recordQuietly(function () use ($document, $company, $user) {
+            $ledger = app(Ledger::class);
+
+            if ($entry = $ledger->entryFor($company, $document)) {
+                $ledger->reverse($entry, $user, 'Annulation '.($document->number ?? ''));
+            }
+
+            return null;
+        });
+
+        $events->recordQuietly(
+            fn () => app(StockLedger::class)->reverseSale($document, $company, $user)
+        );
     }
 }

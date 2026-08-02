@@ -16,6 +16,7 @@ use App\Models\PayrollRun;
 use App\Models\Payslip;
 use App\Models\Receipt;
 use App\Models\StockLocation;
+use App\Models\Stocktake;
 use App\Models\Ticket;
 
 /*
@@ -91,7 +92,7 @@ return [
         // is excluded here rather than inherited from the group.
         'groups' => ['products'],
         'except' => ['products.manage-locations'],
-        'models' => [Item::class],
+        'models' => [Item::class, Stocktake::class],
     ],
 
     'stock_locations' => [

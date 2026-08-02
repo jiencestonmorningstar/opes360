@@ -98,6 +98,28 @@ class ChartOfAccounts
         'interest_income' => ['771', 'Intérêts de prêts et créances diverses'],
         'social_payable' => ['431', 'Sécurité sociale'],
         'tax_withheld' => ['447', 'État, impôts retenus à la source'],
+
+        /*
+         * Stock, the SYSCOHADA way round.
+         *
+         * The plan's ordinary presentation is the inventaire intermittent:
+         * everything bought is charged to 601 the day it is bought, and at the
+         * end of a period the counted stock is carried onto the balance sheet
+         * in 31 with the *movement* in that figure posted to 6031. Achats less
+         * variation is then the cost of what was actually sold, which is the
+         * "Variation des stocks" line the compte de résultat asks for.
+         *
+         * 6031 is a charge account and so debit-normal, but it swings both
+         * ways by design: stock growing is a credit to it, and reduces the
+         * period's cost. There is only one pair here rather than the plan's
+         * three, because the catalogue holds things a business resells —
+         * marchandises. A manufacturer's matières premières (32/6032) and
+         * produits finis (36/736) are a different shape of business than this
+         * software claims to keep books for, and seeding accounts nothing
+         * posts to would be furniture.
+         */
+        'stock' => ['31', 'Marchandises'],
+        'stock_variation' => ['6031', 'Variation des stocks de marchandises'],
     ];
 
     /**
