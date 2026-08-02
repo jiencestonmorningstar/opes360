@@ -7,6 +7,7 @@ use App\Models\Role;
 use App\Models\User;
 use App\Services\TwoFactor;
 use App\Support\CurrentCompany;
+use App\Support\Modules;
 use Illuminate\Contracts\View\View;
 use Illuminate\Foundation\Auth\Access\AuthorizesRequests;
 use Illuminate\Support\Facades\Hash;
@@ -134,6 +135,49 @@ class Index extends Component
         }
     }
 
+    /**
+     * Switch a module on or off for this business.
+     *
+     * Only the departure from the default is stored, so a module added in a
+     * later release arrives switched on rather than silently missing. Turning
+     * something off never deletes anything: the screens go quiet and the data
+     * waits, which is what makes trying a module and changing your mind a
+     * decision rather than a commitment.
+     */
+    public function toggleModule(string $key): void
+    {
+        $this->authorize('business.update');
+
+        $company = app(CurrentCompany::class)->get();
+
+        if ($company === null || ! Modules::exists($key)) {
+            return;
+        }
+
+        if ((Modules::catalogue()[$key]['switchable'] ?? true) === false) {
+            return;
+        }
+
+        $settings = (array) ($company->modules ?? []);
+        $wasOn = Modules::enabled($company, $key);
+
+        $settings[$key] = ! $wasOn;
+
+        $company->forceFill(['modules' => $settings])->save();
+        Modules::flush();
+
+        $also = $wasOn
+            ? array_filter(Modules::dependents($key), fn (string $k) => ! isset($settings[$k]) || $settings[$k])
+            : [];
+
+        session()->flash('moduleStatus', Modules::label($key).($wasOn ? ' switched off.' : ' switched on.').(
+            $also === []
+                ? ''
+                : ' '.implode(' and ', array_map(fn (string $k) => Modules::label($k), $also)).
+                  (count($also) === 1 ? ' went with it — it cannot work without this.' : ' went with it.')
+        ));
+    }
+
     public function revokeDevice(string $deviceId): void
     {
         $this->authorize('devices.revoke');
@@ -163,6 +207,8 @@ class Index extends Component
                 : collect(),
             'roles' => Role::orderBy('level')->get()->keyBy('id'),
             'devices' => Device::query()->with('user')->latest('last_synced_at')->get(),
+            'modules' => Modules::switchable(),
+            'enabledModules' => $company ? Modules::enabledFor($company) : [],
         ])->layout('components.layouts.app', ['title' => 'Settings', 'active' => 'settings']);
     }
 }

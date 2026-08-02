@@ -15,6 +15,8 @@ use App\Http\Controllers\SyncController;
 use App\Http\Controllers\TicketController;
 use App\Http\Controllers\VerificationController;
 use App\Livewire\Accounting\Index as AccountingIndex;
+use App\Livewire\Assets\Index as AssetsIndex;
+use App\Livewire\Banking\Index as BankingIndex;
 use App\Livewire\Business\Artisans as BusinessArtisans;
 use App\Livewire\Business\Companies as BusinessCompanies;
 use App\Livewire\Business\Edit as BusinessEdit;
@@ -52,6 +54,7 @@ use App\Livewire\Sales\Index as SalesIndex;
 use App\Livewire\Scan;
 use App\Livewire\Settings\Billing as SettingsBilling;
 use App\Livewire\Settings\Index as SettingsIndex;
+use App\Livewire\Stock\Locations as StockLocations;
 use App\Livewire\Team\Index as TeamIndex;
 use App\Livewire\Team\Show as TeamShow;
 use Illuminate\Http\Request;
@@ -166,6 +169,8 @@ Route::middleware('auth')->group(function () {
 
     Route::get('/products', ProductsIndex::class)->middleware('can:products.view')->name('products');
     Route::get('/products/create', ProductForm::class)->middleware('can:products.create')->name('products.create');
+    // Before the {item} wildcard, or "locations" is read as a product id.
+    Route::get('/products/locations', StockLocations::class)->middleware('can:products.manage-locations')->name('products.locations');
     Route::get('/products/{item}/edit', ProductForm::class)->middleware('can:update,item')->name('products.edit');
 
     Route::get('/business', BusinessEdit::class)->middleware('can:business.view')->name('business');
@@ -205,6 +210,8 @@ Route::middleware('auth')->group(function () {
     Route::get('/payslips/{payslip}/print', [PrintController::class, 'payslip'])->middleware('can:payroll.view')->name('payslips.print');
     Route::get('/reports', ReportsIndex::class)->middleware('can:reports.view')->name('reports');
     Route::get('/accounting', AccountingIndex::class)->middleware('can:accounting.view')->name('accounting');
+    Route::get('/assets', AssetsIndex::class)->middleware('can:assets.view')->name('assets');
+    Route::get('/banking', BankingIndex::class)->middleware('can:banking.view')->name('banking');
 
     /*
      * Module 13 — generated business documents (contracts, letters,

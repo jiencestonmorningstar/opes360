@@ -78,6 +78,24 @@ class ChartOfAccounts
         'payroll_taxes' => ['641', 'Impôts et taxes directs'],
         'staff_payable' => ['422', 'Personnel, rémunérations dues'],
         'staff_advances' => ['421', 'Personnel, avances et acomptes'],
+
+        /*
+         * Fixed assets. The charge is 681; the two class-8 accounts are what
+         * makes a disposal say something true — the asset leaves at its book
+         * value through 812 and the money arrives through 822, and the gain or
+         * loss is the difference rather than a figure anyone has to work out.
+         */
+        'depreciation_expense' => ['681', 'Dotations aux amortissements d\'exploitation'],
+        'disposal_cost' => ['812', 'Valeurs comptables des cessions d\'immobilisations'],
+        'disposal_proceeds' => ['822', 'Produits des cessions d\'immobilisations'],
+
+        /*
+         * Bank interest received. Seeded because the reconciliation screen
+         * offers it as the other side of a credit nobody recorded, and an
+         * account the software suggests but has not created is a dead end at
+         * the moment somebody needs it.
+         */
+        'interest_income' => ['771', 'Intérêts de prêts et créances diverses'],
         'social_payable' => ['431', 'Sécurité sociale'],
         'tax_withheld' => ['447', 'État, impôts retenus à la source'],
     ];
@@ -116,6 +134,70 @@ class ChartOfAccounts
         'taxes' => ['646', 'Droits d\'enregistrement', 'Duties & licences'],
         'other' => ['638', 'Autres charges externes', 'Other'],
     ];
+
+    /**
+     * The class-2 accounts a small business capitalises into, each with the
+     * class-28 account its accumulated depreciation is credited to and a
+     * default useful life in months.
+     *
+     * Land is in the list with a null depreciation account and a zero life,
+     * deliberately: land is not depreciated, and a business that owns its plot
+     * still has to be able to record it. The service reads that null rather
+     * than carrying a special case for "terrains".
+     *
+     * The lives are ordinary commercial practice, not tax rules — the DGI's
+     * accepted rates vary by sector and by asset, and are the accountant's
+     * call. They are a starting figure the form lets anyone change.
+     *
+     * @var array<string, array{0: string, 1: string, 2: ?string, 3: ?string, 4: int, 5: string}>
+     *                                                                                            category => [account, account name, depreciation account, its name, default months, label]
+     */
+    public const ASSET_CATEGORIES = [
+        'equipment' => ['241', 'Matériel et outillage industriel et commercial', '284', 'Amortissements du matériel', 60, 'Machinery & equipment'],
+        'vehicles' => ['245', 'Matériel de transport', '284', 'Amortissements du matériel', 48, 'Vehicles'],
+        'furniture' => ['244', 'Matériel et mobilier', '284', 'Amortissements du matériel', 120, 'Furniture & fittings'],
+        'computers' => ['2442', 'Matériel informatique', '284', 'Amortissements du matériel', 36, 'Computers & IT'],
+        'buildings' => ['231', 'Bâtiments industriels, agricoles et commerciaux', '283', 'Amortissements des bâtiments et installations', 240, 'Buildings'],
+        'fittings' => ['235', 'Aménagements, agencements et installations', '283', 'Amortissements des bâtiments et installations', 120, 'Leasehold improvements'],
+        'software' => ['213', 'Logiciels et sites internet', '281', 'Amortissements des immobilisations incorporelles', 36, 'Software & licences'],
+        // Not depreciated. Nothing to write off, so no class-28 account.
+        'land' => ['222', 'Terrains nus', null, null, 0, 'Land'],
+        'other' => ['248', 'Autres matériels', '284', 'Amortissements du matériel', 60, 'Other'],
+    ];
+
+    /** The class-2 account an asset category is capitalised into. */
+    public static function assetAccountFor(string $category): string
+    {
+        return self::ASSET_CATEGORIES[$category][0] ?? self::ASSET_CATEGORIES['other'][0];
+    }
+
+    /**
+     * Its accumulated-depreciation account, or null when it is not depreciated.
+     *
+     * The falsy-coalesce that would read naturally here is a trap: land's entry
+     * IS null, so `?? other` would quietly give land a depreciation account and
+     * start writing off a plot that does not wear out. Only an unknown category
+     * falls back.
+     */
+    public static function assetDepreciationAccountFor(string $category): ?string
+    {
+        if (! array_key_exists($category, self::ASSET_CATEGORIES)) {
+            return self::ASSET_CATEGORIES['other'][2];
+        }
+
+        return self::ASSET_CATEGORIES[$category][2];
+    }
+
+    public static function assetDefaultLife(string $category): int
+    {
+        return self::ASSET_CATEGORIES[$category][4] ?? 60;
+    }
+
+    /** category => human label, for a select. */
+    public static function assetCategoryOptions(): array
+    {
+        return array_map(fn (array $row) => $row[5], self::ASSET_CATEGORIES);
+    }
 
     /** The SYSCOHADA account number an expense category posts to. */
     public static function accountForCategory(string $category): string
@@ -199,6 +281,14 @@ class ChartOfAccounts
             $wanted[(string) $number] ??= $name;
         }
 
+        foreach (self::ASSET_CATEGORIES as [$number, $name, $depreciation, $depreciationName]) {
+            $wanted[(string) $number] ??= $name;
+
+            if ($depreciation !== null) {
+                $wanted[(string) $depreciation] ??= $depreciationName;
+            }
+        }
+
         return $wanted;
     }
 
@@ -249,6 +339,33 @@ class ChartOfAccounts
      */
     public static function normalBalanceFor(string $number, int $class): string
     {
+        /*
+         * Class 2 is assets, but 28 and 29 are the accounts that reduce them —
+         * accumulated depreciation and impairment. They sit in class 2 so an
+         * asset and what has been written off it are read together, and they
+         * are credit-normal: a van's 284 balance growing means the van is
+         * worth less, not that the business owns more.
+         */
+        if ($class === 2) {
+            return str_starts_with($number, '28') || str_starts_with($number, '29')
+                ? 'credit'
+                : 'debit';
+        }
+
+        /*
+         * Class 8 alternates. 81 valeurs comptables des cessions, 83 charges
+         * HAO, 85 dotations HAO, 87 participation des travailleurs and 89
+         * impôts sur le résultat are all charges; 82 produits des cessions,
+         * 84 produits HAO, 86 reprises HAO and 88 subventions d'équilibre are
+         * all income. Odd tens are charges, even tens are produits — which is
+         * a property of how the plan is laid out, not a coincidence.
+         */
+        if ($class === 8) {
+            $tens = (int) substr($number, 1, 1);
+
+            return $tens % 2 === 1 ? 'debit' : 'credit';
+        }
+
         if ($class === 4) {
             // 411 is owed to the business, 445 is tax it can reclaim, and 421
             // is money advanced to a member of staff and not yet recovered —

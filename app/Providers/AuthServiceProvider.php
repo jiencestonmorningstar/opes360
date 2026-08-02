@@ -24,9 +24,11 @@ use App\Policies\PaymentPolicy;
 use App\Policies\ReceiptPolicy;
 use App\Policies\TicketPolicy;
 use App\Support\CurrentCompany;
+use App\Support\Modules;
 use App\Support\Permissions;
 use App\Support\PlanEntitlements;
 use Illuminate\Auth\Access\Response;
+use Illuminate\Database\Eloquent\Model;
 use Illuminate\Foundation\Support\Providers\AuthServiceProvider as ServiceProvider;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Str;
@@ -94,11 +96,33 @@ class AuthServiceProvider extends ServiceProvider
          * answers the permission question without also answering the ones the
          * policies exist to ask.
          */
-        Gate::before(function (User $user, string $ability) {
+        Gate::before(function (User $user, string $ability, array $arguments = []) {
             $company = app(CurrentCompany::class)->get();
 
             if ($company === null) {
                 return null;
+            }
+
+            /*
+             * Has this business switched the module off? Asked here, once, so
+             * the navigation, the routes, the quick actions and the components
+             * all go quiet together — see config/modules.php.
+             *
+             * Two lookups because a page-level check asks `sales.view` while a
+             * policy check asks `view` with a Document: the ability names the
+             * module in the first case and the model names it in the second,
+             * and missing the second would leave a disabled module's detail
+             * pages reachable by their direct URL.
+             */
+            $module = Modules::forAbility($ability)
+                ?? (isset($arguments[0]) && ($arguments[0] instanceof Model || is_string($arguments[0]))
+                    ? Modules::forModel($arguments[0])
+                    : null);
+
+            if ($module !== null && ! Modules::enabled($company, $module)) {
+                return Response::deny(
+                    Modules::label($module).' is switched off for this business. Turn it on in Settings.'
+                );
             }
 
             if (! PlanEntitlements::allowsAbility($company, $ability)) {

@@ -126,9 +126,18 @@ class Books
     }
 
     /**
-     * Compte de résultat — class 7 produits less class 6 charges.
+     * Compte de résultat — class 7 produits less class 6 charges, plus the
+     * hors activités ordinaires in class 8.
      *
-     * @return array{produits: Collection, charges: Collection, total_produits: float, total_charges: float, resultat: float}
+     * The HAO half is kept in its own keys rather than folded into the two
+     * totals, because that is the distinction the statement exists to draw: a
+     * shop that broke even trading and posted a profit only because it sold a
+     * van has had a bad year, and a single "profit" figure would hide it. The
+     * `resultat` includes both, because that is what the business is actually
+     * left with — and because the balance sheet's two sides only meet if it
+     * does.
+     *
+     * @return array{produits: Collection, charges: Collection, hao_produits: Collection, hao_charges: Collection, total_produits: float, total_charges: float, total_hao_produits: float, total_hao_charges: float, resultat_exploitation: float, resultat: float}
      */
     public function incomeStatement(Company $company, ?string $from = null, ?string $to = null): array
     {
@@ -137,17 +146,30 @@ class Books
         $produits = $balance->filter(fn ($r) => $r['account']->class === 7)->values();
         $charges = $balance->filter(fn ($r) => $r['account']->class === 6)->values();
 
+        // Class 8 holds both sides; only the account's normal side says which.
+        $haoProduits = $balance->filter(fn ($r) => $r['account']->class === 8 && ! $r['account']->isDebitNormal())->values();
+        $haoCharges = $balance->filter(fn ($r) => $r['account']->class === 8 && $r['account']->isDebitNormal())->values();
+
         $totalProduits = round($produits->sum('balance'), 2);
         $totalCharges = round($charges->sum('balance'), 2);
+        $totalHaoProduits = round($haoProduits->sum('balance'), 2);
+        $totalHaoCharges = round($haoCharges->sum('balance'), 2);
+
+        // Positive is a profit. Charges are debit-normal so their balance is
+        // already positive as a cost; subtracting is the whole sum.
+        $exploitation = round($totalProduits - $totalCharges, 2);
 
         return [
             'produits' => $produits,
             'charges' => $charges,
+            'hao_produits' => $haoProduits,
+            'hao_charges' => $haoCharges,
             'total_produits' => $totalProduits,
             'total_charges' => $totalCharges,
-            // Positive is a profit. Charges are debit-normal so their balance
-            // is already positive as a cost; subtracting is the whole sum.
-            'resultat' => round($totalProduits - $totalCharges, 2),
+            'total_hao_produits' => $totalHaoProduits,
+            'total_hao_charges' => $totalHaoCharges,
+            'resultat_exploitation' => $exploitation,
+            'resultat' => round($exploitation + $totalHaoProduits - $totalHaoCharges, 2),
         ];
     }
 

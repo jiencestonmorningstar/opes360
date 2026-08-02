@@ -32,4 +32,14 @@ class StockMovement extends Model
     {
         return $this->belongsTo(Item::class);
     }
+
+    /**
+     * Where it happened. Null for a business that keeps stock in one place and
+     * for every movement recorded before locations existed — inventing a
+     * default for those would claim to know something nobody wrote down.
+     */
+    public function location(): BelongsTo
+    {
+        return $this->belongsTo(StockLocation::class, 'stock_location_id');
+    }
 }

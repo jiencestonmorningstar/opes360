@@ -202,3 +202,33 @@ reads the contract in force on its own period, not the latest one.
 **Trade-off:** two records to keep in step for the minority of staff who do also have a login, and a raise
 is a new contract rather than an edited field — which reads as ceremony until the first time somebody has
 to produce last year's payroll.
+
+---
+
+## 13. Modules are switchable per business, enforced in one place
+
+**Decision:** every module beyond the account itself is listed in `config/modules.php` and can be switched
+off per company. Enforcement is a single check in `AuthServiceProvider`'s `Gate::before`, which denies every
+ability belonging to a disabled module.
+
+**Why one place:** the navigation, the routes, the quick actions and the Blade `@can` blocks already ask the
+same gate. Filtering there means they cannot drift — a module switched off goes quiet everywhere at once,
+and adding a module is an entry in one file rather than four templates remembered correctly. The alternative,
+a `module:` route middleware plus a nav flag plus a view condition, has three places to forget.
+
+Two lookups are needed, not one. A page-level check asks `sales.view`, so the ability names the module; a
+policy check asks `view` with a `Document`, so only the model does. Mapping abilities alone would leave
+every detail page reachable by its direct URL, which is why `models` exists in the catalogue.
+
+**Storage:** `companies.modules` holds only the *departures* from the defaults. Writing out the enabled set
+in full would mean a module added in a later release is missing for every business whose stored list
+predates it — a bug nobody notices until a customer asks where the new feature is.
+
+**Trade-off:** a business can switch off a module whose data other modules read. Dependencies (`requires`)
+handle the cases where that would break something outright — payroll without HR has no contracts to read —
+and cascade at read time rather than at write time, so re-enabling the parent restores the child exactly as
+it was. Switching off never deletes: the screens go quiet and the data waits.
+
+**Not switchable:** the business record, its users, its devices and its settings are the account, not a
+feature of it, so they belong to no module and cannot be turned off by accident. The secretariat programme
+is listed but fixed on, because a secretariat that switched it off would have signed up for nothing.

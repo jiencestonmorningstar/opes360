@@ -243,6 +243,67 @@
             </p>
         </x-ui.panel>
 
+        {{-- Modules. A hairdresser has no fixed asset register and a
+             consultancy has no stock; every module a business will never open
+             makes the navigation longer for nothing. --}}
+        @can('business.update')
+            <x-ui.panel title="Modules" body-class="-mx-1.5" class="lg:col-span-2">
+                <p class="mx-1.5 text-[13px] leading-relaxed text-muted">
+                    Switch off what this business does not do. Nothing is deleted — the screens go quiet and the data
+                    waits, so turning something back on picks up exactly where it left off.
+                </p>
+
+                @if (session('moduleStatus'))
+                    <div class="mx-1.5 mt-3 rounded-xl bg-tint-green px-4 py-2.5 text-[13px] font-semibold text-positive">
+                        {{ session('moduleStatus') }}
+                    </div>
+                @endif
+
+                <div class="mt-3 grid gap-x-6 sm:grid-cols-2">
+                    @foreach ($modules as $key => $module)
+                        @php
+                            $on = in_array($key, $enabledModules, true);
+                            $blockedBy = collect($module['requires'] ?? [])
+                                ->reject(fn ($needed) => in_array($needed, $enabledModules, true));
+                        @endphp
+
+                        <div wire:key="module-{{ $key }}" class="flex items-start gap-3 border-t border-border px-1.5 py-3.5">
+                            <span class="mt-0.5 flex size-[34px] shrink-0 items-center justify-center rounded-xl {{ $on ? 'bg-tint-blue' : 'bg-surface-2' }}">
+                                <x-icon :name="$module['icon'] ?? 'cube'"
+                                        class="size-[17px] {{ $on ? 'text-brand' : 'text-faint' }}" stroke-width="1.9" />
+                            </span>
+
+                            <span class="min-w-0 flex-1">
+                                <span class="block text-[14.5px] font-semibold {{ $on ? 'text-ink' : 'text-muted' }}">
+                                    {{ $module['label'] }}
+                                </span>
+                                <span class="mt-0.5 block text-[12.5px] leading-relaxed text-muted">
+                                    {{ $module['description'] }}
+                                </span>
+                                @if ($blockedBy->isNotEmpty())
+                                    <span class="mt-1 block text-[12px] font-medium text-warning">
+                                        Needs {{ $blockedBy->map(fn ($k) => \App\Support\Modules::label($k))->join(' and ') }}.
+                                    </span>
+                                @endif
+                            </span>
+
+                            {{-- A real checkbox rather than a styled div: it is
+                                 what a screen reader and a keyboard already
+                                 know how to operate. --}}
+                            <label class="tap focusable relative mt-0.5 flex shrink-0 cursor-pointer items-center">
+                                <input type="checkbox" class="peer sr-only"
+                                       wire:click="toggleModule('{{ $key }}')"
+                                       @checked($on)
+                                       aria-label="{{ $on ? 'Switch off' : 'Switch on' }} {{ $module['label'] }}">
+                                <span class="h-[26px] w-[46px] rounded-full bg-border-strong transition-colors peer-checked:bg-fill-brand peer-focus-visible:ring-2 peer-focus-visible:ring-brand/40"></span>
+                                <span class="pointer-events-none absolute left-[3px] size-[20px] rounded-full bg-white shadow transition-transform peer-checked:translate-x-[20px]"></span>
+                            </label>
+                        </div>
+                    @endforeach
+                </div>
+            </x-ui.panel>
+        @endcan
+
         {{-- Devices --}}
         <x-ui.panel title="Devices" body-class="-mx-1.5">
             @if (session('deviceStatus'))

@@ -2,16 +2,23 @@
 
 namespace Database\Seeders;
 
+use App\Models\BankAccount;
 use App\Models\Company;
 use App\Models\Employee;
 use App\Models\EmploymentContract;
+use App\Models\Item;
+use App\Models\LedgerAccount;
 use App\Models\PartnerClient;
 use App\Models\Role;
 use App\Models\SalaryComponent;
+use App\Models\StockLocation;
 use App\Models\User;
 use App\Models\VerificationToken;
+use App\Services\Assets\AssetRegister;
+use App\Services\Banking\Reconciler;
 use App\Services\Partners\PartnerProgramme;
 use App\Services\Payroll\PayrollRunner;
+use App\Services\Stock\LocationLedger;
 use App\Support\Accounting\ChartOfAccounts;
 use App\Support\CurrentCompany;
 use Illuminate\Database\Seeder;
@@ -109,7 +116,152 @@ class DemoSecretariatSeeder extends Seeder
             }
 
             $this->seedTeam($partner, $owner);
+            $this->seedAssets($partner, $owner);
+            $this->seedBanking($partner);
+            $this->seedStockLocations($partner);
         });
+    }
+
+    /**
+     * A press, a laminator and a van, part-way through their lives.
+     *
+     * Seeded with a year of depreciation already charged rather than bought
+     * yesterday, because the interesting figure is the gap between cost and
+     * book value and an asset register full of brand-new things does not show
+     * it.
+     */
+    protected function seedAssets(Company $partner, User $owner): void
+    {
+        $register = app(AssetRegister::class);
+        $boughtOn = now()->subYear()->startOfMonth();
+
+        $assets = [
+            ['Presse offset Heidelberg', 'equipment', 6500000, 96],
+            ['Plastifieuse A3', 'equipment', 450000, 60],
+            ['Toyota Hilux — livraisons', 'vehicles', 8200000, 48],
+            ['Mobilier accueil', 'furniture', 380000, 120],
+            ['Terrain Bonamoussadi', 'land', 12000000, 0],
+        ];
+
+        foreach ($assets as [$name, $category, $cost, $life]) {
+            $asset = $register->record([
+                'name' => $name,
+                'category' => $category,
+                'acquired_on' => $boughtOn->toDateString(),
+                'cost' => $cost,
+                'useful_life_months' => $life,
+                'funded_by' => 'bank',
+            ], $owner);
+
+            // Twelve months of charges, so the register shows wear rather than
+            // a list of things bought this morning.
+            for ($i = 0; $i < 12; $i++) {
+                $register->depreciate(
+                    $asset->refresh(),
+                    $boughtOn->copy()->addMonths($i)->toDateString(),
+                    $owner,
+                );
+            }
+        }
+    }
+
+    /**
+     * A bank account with a statement that does not quite agree with the books.
+     *
+     * Two of the four lines match entries the business made; the other two are
+     * a bank charge and a credit interest nobody recorded, which is exactly the
+     * case the reconciliation exists for.
+     */
+    protected function seedBanking(Company $partner): void
+    {
+        $account = BankAccount::create([
+            'company_id' => $partner->id,
+            'name' => 'Compte courant',
+            'bank_name' => 'UBA Cameroun',
+            'account_number' => '10033 05001 07834521001 62',
+            'currency' => 'XAF',
+            'ledger_account_id' => LedgerAccount::query()->where('number', '521')->value('id'),
+            // Everything up to the end of last month was already agreed; this
+            // month is what is open. Without a starting point every movement
+            // the business ever posted would count as unmatched, which is
+            // exactly the state that makes a first reconciliation impossible.
+            'opening_balance' => 4250000,
+            'opened_on' => now()->subMonth()->endOfMonth()->toDateString(),
+            'is_default' => true,
+            'active' => true,
+        ]);
+
+        $month = now()->startOfMonth();
+
+        app(Reconciler::class)->import($account, [
+            ['value_date' => $month->copy()->addDays(3)->toDateString(), 'description' => 'Virement Ets. Mbarga & Fils', 'amount' => 450000, 'reference' => 'VIR-77201'],
+            ['value_date' => $month->copy()->addDays(9)->toDateString(), 'description' => 'Frais de tenue de compte', 'amount' => -7500, 'reference' => 'FRAIS'],
+            ['value_date' => $month->copy()->addDays(14)->toDateString(), 'description' => 'Chèque n° 004112 — fournisseur papier', 'amount' => -1250000, 'reference' => 'CHQ4112'],
+            ['value_date' => $month->copy()->addDays(21)->toDateString(), 'description' => 'Intérêts créditeurs', 'amount' => 3100, 'reference' => 'INT'],
+        ]);
+
+        // What the statement would say if the four lines above were the only
+        // movements — so the demo opens on "nothing unexplained, four lines to
+        // match" rather than on an alarming red figure.
+        $summary = app(Reconciler::class)->summary($account->fresh());
+
+        $account->forceFill([
+            'statement_balance' => round(
+                $summary['book_balance'] + $summary['unmatched_in'] - $summary['unmatched_out'] - $summary['unmatched_book'],
+                2
+            ),
+            'statement_date' => now()->endOfMonth()->toDateString(),
+        ])->save();
+    }
+
+    /** A counter and a store room, with stock split between them. */
+    protected function seedStockLocations(Company $partner): void
+    {
+        $counter = StockLocation::create([
+            'company_id' => $partner->id,
+            'name' => 'Comptoir', 'code' => 'CPT', 'kind' => 'shop',
+            'city' => 'Douala', 'is_default' => true, 'active' => true,
+        ]);
+
+        $store = StockLocation::create([
+            'company_id' => $partner->id,
+            'name' => 'Réserve', 'code' => 'RES', 'kind' => 'warehouse',
+            'city' => 'Douala', 'active' => true,
+        ]);
+
+        $supplies = [
+            ['Papier A4 80g (rame)', 'PAP-A4', 3500, 40, 260],
+            ['Papier photo A3 (paquet)', 'PAP-A3', 12000, 8, 45],
+            ['Cartouche encre noire', 'ENC-NR', 28000, 6, 22],
+            ['Pochette plastification A4', 'PLA-A4', 9000, 12, 60],
+        ];
+
+        $ledger = app(LocationLedger::class);
+
+        foreach ($supplies as [$name, $sku, $price, $atCounter, $inStore]) {
+            $item = Item::create([
+                'company_id' => $partner->id,
+                'name' => $name,
+                'sku' => $sku,
+                'type' => 'product',
+                'price' => $price,
+                'track_stock' => true,
+                'is_active' => true,
+            ]);
+
+            $ledger->adjust($item, $counter, $atCounter, 'opening');
+            $ledger->adjust($item, $store, $inStore, 'opening');
+        }
+
+        // One restock, so the transfer list is not an empty panel.
+        $ledger->transfer(
+            $store,
+            $counter,
+            [['item_id' => Item::query()->where('sku', 'PAP-A4')->value('id'), 'quantity' => 20]],
+            null,
+            now()->subDays(3)->toDateString(),
+            'Réassort comptoir',
+        );
     }
 
     /**

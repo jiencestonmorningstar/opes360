@@ -35,7 +35,15 @@ class Permissions
         'Payroll' => ['view', 'run', 'approve', 'pay', 'void'],
         'Leave' => ['view', 'request', 'approve'],
         'Customers' => ['view', 'create', 'update', 'delete'],
-        'Products' => ['view', 'create', 'update', 'delete', 'adjust-stock'],
+        // `manage-locations` sits in this group because it is about stock, but
+        // belongs to its own module: a business can sell things from one shelf
+        // without ever needing a warehouse. See config/modules.php.
+        'Products' => ['view', 'create', 'update', 'delete', 'adjust-stock', 'manage-locations'],
+        // What the business owns and what it banks with. Both are the
+        // accountant's ground rather than the shopkeeper's, which is why they
+        // are separate groups instead of actions on Accounting.
+        'Assets' => ['view', 'create', 'update', 'depreciate', 'dispose'],
+        'Banking' => ['view', 'manage', 'import', 'reconcile'],
         'Papers' => ['view', 'create', 'issue', 'void'],
         'Forms' => ['view', 'create', 'update', 'delete', 'responses'],
         'Events' => ['view', 'create', 'update', 'void', 'check-in'],
