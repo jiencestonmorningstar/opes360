@@ -216,6 +216,25 @@
             </x-ui.panel>
         @endif
 
+        {{-- API tokens. Personal to the signed-in user rather than company-wide,
+             which is why this sits outside the @if ($company) above. --}}
+        <x-ui.panel title="API tokens" action="Manage" :action-href="route('settings.api-tokens')">
+            <div class="flex items-center gap-3">
+                <span class="flex size-[42px] shrink-0 items-center justify-center rounded-xl bg-tint-purple">
+                    <x-icon name="qr-code" class="size-[20px] text-accent-purple" />
+                </span>
+                <div class="min-w-0">
+                    <p class="text-[14.5px] font-bold text-ink">
+                        {{ auth()->user()->tokens()->count() }}
+                        {{ Str::plural('token', auth()->user()->tokens()->count()) }}
+                    </p>
+                    <p class="mt-0.5 text-[12.5px] leading-relaxed text-muted">
+                        Let another program work with your business data, without giving it your password.
+                    </p>
+                </div>
+            </div>
+        </x-ui.panel>
+
         {{-- Team --}}
         <x-ui.panel title="Team" body-class="-mx-1.5">
             @can('users.invite')

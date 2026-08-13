@@ -16,7 +16,7 @@ different contract and are not documented here; they belong to the PWA.
 ## 1. Getting a token
 
 ```http
-POST /api/tokens
+POST /api/v1/tokens
 Content-Type: application/json
 
 { "email": "you@business.com", "password": "…", "device_name": "Kayla's phone" }
@@ -48,7 +48,7 @@ session until a proper challenge flow exists.
 ### Who am I
 
 ```http
-GET /api/user
+GET /api/v1/user
 ```
 
 Returns the user and, importantly, `current_company_id` — the business every
@@ -57,7 +57,7 @@ other request will act on.
 ### Giving it back
 
 ```http
-DELETE /api/tokens/current
+DELETE /api/v1/tokens/current
 ```
 
 ---
@@ -106,7 +106,7 @@ A suspended business gets `403` with a message, on every endpoint.
 
 ## 5. Customers and suppliers
 
-`GET /api/contacts` · `POST` · `GET|PATCH|DELETE /api/contacts/{id}`
+`GET /api/v1/contacts` · `POST` · `GET|PATCH|DELETE /api/v1/contacts/{id}`
 
 Filters: `type` (`customer`, `supplier`, `vendor`, `lead`), `q` (name, company
 or email), `per_page`.
@@ -129,7 +129,7 @@ later is cheaper than having handed it out for a year first.
 
 ## 6. Products and services
 
-`GET /api/items` · `POST` · `GET|PATCH|DELETE /api/items/{id}`
+`GET /api/v1/items` · `POST` · `GET|PATCH|DELETE /api/v1/items/{id}`
 
 Filters: `type` (`product`, `service`), `q` (name, SKU, barcode), `active`,
 `per_page`.
@@ -146,8 +146,8 @@ agreement with nothing explaining why. Use a stocktake.
 
 ## 7. Sales documents
 
-`GET /api/documents` · `POST` · `GET|DELETE /api/documents/{id}` ·
-`POST /api/documents/{id}/issue`
+`GET /api/v1/documents` · `POST` · `GET|DELETE /api/v1/documents/{id}` ·
+`POST /api/v1/documents/{id}/issue`
 
 Filters: `type`, `status`, `contact_id`, `outstanding`, `per_page`.
 
@@ -161,7 +161,7 @@ a content hash, receives a verification QR token and enters the books. From
 then on it is immutable — because a customer is holding a printed copy, and the
 two must never be able to disagree.
 
-So: `POST /api/documents` creates a **draft** with no number. `POST
+So: `POST /api/v1/documents` creates a **draft** with no number. `POST
 …/issue` issues it. Pass `"issue": true` on creation to do both in one call,
 which is what a till wants.
 
@@ -193,7 +193,7 @@ yet exposed here.
 
 ## 8. Sales pipeline
 
-`GET /api/deals` · `POST` · `GET|PATCH|DELETE /api/deals/{id}`
+`GET /api/v1/deals` · `POST` · `GET|PATCH|DELETE /api/v1/deals/{id}`
 
 Filters: `stage`, `open`, `per_page`.
 
@@ -206,7 +206,7 @@ one is how the customer book fills with junk.
 ### Moving a deal
 
 ```http
-POST /api/deals/{id}/move
+POST /api/v1/deals/{id}/move
 { "stage": "lost", "lost_reason": "Bought from a competitor" }
 ```
 
@@ -218,7 +218,7 @@ board actually performs and it carries rules a general update should not:
 ### Turning a won deal into an invoice
 
 ```http
-POST /api/deals/{id}/invoice
+POST /api/v1/deals/{id}/invoice
 ```
 
 Creates a **draft** invoice, links it to the deal, and — if the deal was only
@@ -236,7 +236,7 @@ sales module. Refused with `422` if the deal is not `won`, or already invoiced.
 
 ## 9. Importing records
 
-`POST /api/imports/preview` · `POST /api/imports`
+`POST /api/v1/imports/preview` · `POST /api/v1/imports`
 
 Multipart, with `type` (`customers` or `products`) and `file`.
 
@@ -272,7 +272,7 @@ Limits: 2,000 rows and 5 MB per import.
 
 ## 10. Payments
 
-`GET /api/payments` · `POST` · `GET /api/payments/{id}`
+`GET /api/v1/payments` · `POST` · `GET /api/v1/payments/{id}`
 
 Filters: `contact_id`, `method`, `from`, `to`, `per_page`.
 
@@ -307,8 +307,8 @@ is a refund or a void.
 
 ## 11. Expenses
 
-`GET /api/expenses` · `POST` · `GET /api/expenses/{id}` ·
-`POST /api/expenses/{id}/settle` · `POST /api/expenses/{id}/void`
+`GET /api/v1/expenses` · `POST` · `GET /api/v1/expenses/{id}` ·
+`POST /api/v1/expenses/{id}/settle` · `POST /api/v1/expenses/{id}/void`
 
 Filters: `status`, `category`, `supplier_id`, `from`, `to`, `per_page`.
 
@@ -332,7 +332,7 @@ keep having an answer. That is why there is no delete route.
 
 ## 12. The books
 
-`GET /api/accounting/accounts` · `trial-balance` · `income-statement` ·
+`GET /api/v1/accounting/accounts` · `trial-balance` · `income-statement` ·
 `balance-sheet` · `journal`
 
 All take `from` and `to`; `journal` also takes `journal` (the journal code).
@@ -353,7 +353,7 @@ Requires `accounting.view`.
 
 ## 13. Staff and payroll
 
-`GET /api/employees` · `POST` · `GET|PATCH /api/employees/{id}`
+`GET /api/v1/employees` · `POST` · `GET|PATCH /api/v1/employees/{id}`
 
 Filters: `status` (`active`, `suspended`, `ended`), `department`, `q`,
 `per_page`.
@@ -364,7 +364,7 @@ The national id, CNPS and NIU numbers, bank account and emergency contact are
 back over HTTP yet. Pay is not here either — it lives behind the payroll
 permissions.
 
-`GET /api/payroll/runs` · `GET /api/payroll/runs/{id}/payslips`
+`GET /api/v1/payroll/runs` · `GET /api/v1/payroll/runs/{id}/payslips`
 
 Read only. Running a month, approving it and marking it paid are deliberately
 absent: approving commits the business to a month's wages and to the CNPS and
@@ -386,7 +386,7 @@ no API. They will follow the pattern above as each is next touched.
 Also absent by design, not by omission: voiding a sales document, refunding a
 payment, and anything that posts to the ledger by hand.
 
-`PATCH /api/deals/{id}` accepts a `stage` and applies the same closure rules as
+`PATCH /api/v1/deals/{id}` accepts a `stage` and applies the same closure rules as
 `/move`, so neither can leave `closed_at` disagreeing with the stage. Prefer
 `/move` anyway: it is the action a board performs, and `lost_reason` belongs
 with it.

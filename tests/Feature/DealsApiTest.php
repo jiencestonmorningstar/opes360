@@ -60,7 +60,7 @@ class DealsApiTest extends TestCase
     {
         $user = User::factory()->create(['password' => bcrypt('secret-password')]);
 
-        $this->postJson('/api/tokens', [
+        $this->postJson('/api/v1/tokens', [
             'email' => $user->email,
             'password' => 'secret-password',
             'device_name' => 'phpunit',
@@ -71,7 +71,7 @@ class DealsApiTest extends TestCase
     {
         $user = User::factory()->create(['password' => bcrypt('secret-password')]);
 
-        $this->postJson('/api/tokens', [
+        $this->postJson('/api/v1/tokens', [
             'email' => $user->email,
             'password' => 'not-the-password',
             'device_name' => 'phpunit',
@@ -80,14 +80,14 @@ class DealsApiTest extends TestCase
 
     public function test_the_api_refuses_an_unauthenticated_caller(): void
     {
-        $this->getJson('/api/deals')->assertUnauthorized();
+        $this->getJson('/api/v1/deals')->assertUnauthorized();
     }
 
     public function test_a_deal_can_be_created_and_read_back(): void
     {
-        Sanctum::actingAs($this->owner);
+        Sanctum::actingAs($this->owner, ['*']);
 
-        $response = $this->postJson('/api/deals', [
+        $response = $this->postJson('/api/v1/deals', [
             'title' => 'Supply 200 bags cement',
             'lead_name' => 'Jane Mbeki',
             'value' => 1250000,
@@ -96,7 +96,7 @@ class DealsApiTest extends TestCase
 
         $id = $response->json('data.id');
 
-        $this->getJson("/api/deals/{$id}")
+        $this->getJson("/api/v1/deals/{$id}")
             ->assertOk()
             ->assertJsonPath('data.title', 'Supply 200 bags cement')
             ->assertJsonPath('data.stage', 'lead')
@@ -106,23 +106,23 @@ class DealsApiTest extends TestCase
 
     public function test_a_deal_needs_a_contact_or_a_lead_name(): void
     {
-        Sanctum::actingAs($this->owner);
+        Sanctum::actingAs($this->owner, ['*']);
 
-        $this->postJson('/api/deals', ['title' => 'Nameless'])
+        $this->postJson('/api/v1/deals', ['title' => 'Nameless'])
             ->assertStatus(422)
             ->assertJsonValidationErrors(['contact_id', 'lead_name']);
     }
 
     public function test_winning_a_deal_closes_it_and_reopening_clears_the_closure(): void
     {
-        Sanctum::actingAs($this->owner);
+        Sanctum::actingAs($this->owner, ['*']);
 
-        $id = $this->postJson('/api/deals', [
+        $id = $this->postJson('/api/v1/deals', [
             'title' => 'Roof sheets',
             'lead_name' => 'Paul',
         ])->json('data.id');
 
-        $this->postJson("/api/deals/{$id}/move", ['stage' => 'won'])
+        $this->postJson("/api/v1/deals/{$id}/move", ['stage' => 'won'])
             ->assertOk()
             ->assertJsonPath('data.stage', 'won')
             ->assertJsonPath('data.is_open', false);
@@ -131,7 +131,7 @@ class DealsApiTest extends TestCase
 
         // The reopening case: a deal that claims it was settled on a date it
         // is plainly still open past is worse than one with no date at all.
-        $this->postJson("/api/deals/{$id}/move", ['stage' => 'proposal'])
+        $this->postJson("/api/v1/deals/{$id}/move", ['stage' => 'proposal'])
             ->assertOk()
             ->assertJsonPath('data.is_open', true)
             ->assertJsonPath('data.closed_at', null);
@@ -139,45 +139,45 @@ class DealsApiTest extends TestCase
 
     public function test_losing_a_deal_keeps_the_reason_and_winning_drops_it(): void
     {
-        Sanctum::actingAs($this->owner);
+        Sanctum::actingAs($this->owner, ['*']);
 
-        $id = $this->postJson('/api/deals', [
+        $id = $this->postJson('/api/v1/deals', [
             'title' => 'Tiles',
             'lead_name' => 'Ada',
         ])->json('data.id');
 
-        $this->postJson("/api/deals/{$id}/move", [
+        $this->postJson("/api/v1/deals/{$id}/move", [
             'stage' => 'lost',
             'lost_reason' => 'Bought from a competitor',
         ])->assertJsonPath('data.lost_reason', 'Bought from a competitor');
 
-        $this->postJson("/api/deals/{$id}/move", ['stage' => 'won'])
+        $this->postJson("/api/v1/deals/{$id}/move", ['stage' => 'won'])
             ->assertJsonPath('data.lost_reason', null);
     }
 
     public function test_an_unknown_stage_is_rejected(): void
     {
-        Sanctum::actingAs($this->owner);
+        Sanctum::actingAs($this->owner, ['*']);
 
-        $id = $this->postJson('/api/deals', [
+        $id = $this->postJson('/api/v1/deals', [
             'title' => 'Sand',
             'lead_name' => 'Sam',
         ])->json('data.id');
 
-        $this->postJson("/api/deals/{$id}/move", ['stage' => 'banana'])
+        $this->postJson("/api/v1/deals/{$id}/move", ['stage' => 'banana'])
             ->assertStatus(422);
     }
 
     public function test_the_open_filter_excludes_closed_deals(): void
     {
-        Sanctum::actingAs($this->owner);
+        Sanctum::actingAs($this->owner, ['*']);
 
-        $open = $this->postJson('/api/deals', ['title' => 'Open one', 'lead_name' => 'A'])->json('data.id');
-        $closed = $this->postJson('/api/deals', ['title' => 'Closed one', 'lead_name' => 'B'])->json('data.id');
+        $open = $this->postJson('/api/v1/deals', ['title' => 'Open one', 'lead_name' => 'A'])->json('data.id');
+        $closed = $this->postJson('/api/v1/deals', ['title' => 'Closed one', 'lead_name' => 'B'])->json('data.id');
 
-        $this->postJson("/api/deals/{$closed}/move", ['stage' => 'won']);
+        $this->postJson("/api/v1/deals/{$closed}/move", ['stage' => 'won']);
 
-        $ids = collect($this->getJson('/api/deals?open=1')->json('data'))->pluck('id');
+        $ids = collect($this->getJson('/api/v1/deals?open=1')->json('data'))->pluck('id');
 
         $this->assertContains($open, $ids);
         $this->assertNotContains($closed, $ids);
@@ -185,28 +185,28 @@ class DealsApiTest extends TestCase
 
     public function test_a_deal_can_be_deleted(): void
     {
-        Sanctum::actingAs($this->owner);
+        Sanctum::actingAs($this->owner, ['*']);
 
-        $id = $this->postJson('/api/deals', ['title' => 'Gone', 'lead_name' => 'C'])->json('data.id');
+        $id = $this->postJson('/api/v1/deals', ['title' => 'Gone', 'lead_name' => 'C'])->json('data.id');
 
-        $this->deleteJson("/api/deals/{$id}")->assertNoContent();
+        $this->deleteJson("/api/v1/deals/{$id}")->assertNoContent();
 
         $this->assertSoftDeleted('deals', ['id' => $id]);
     }
 
     public function test_a_won_deal_can_be_invoiced_over_the_api(): void
     {
-        Sanctum::actingAs($this->owner);
+        Sanctum::actingAs($this->owner, ['*']);
 
-        $id = $this->postJson('/api/deals', [
+        $id = $this->postJson('/api/v1/deals', [
             'title' => 'Roof sheets',
             'lead_name' => 'Paul',
             'value' => 750000,
         ])->json('data.id');
 
-        $this->postJson("/api/deals/{$id}/move", ['stage' => 'won']);
+        $this->postJson("/api/v1/deals/{$id}/move", ['stage' => 'won']);
 
-        $this->postJson("/api/deals/{$id}/invoice")
+        $this->postJson("/api/v1/deals/{$id}/invoice")
             ->assertCreated()
             // Draft on purpose: issuing is immutable and enters the books.
             ->assertJsonPath('data.status', 'draft')
@@ -217,20 +217,20 @@ class DealsApiTest extends TestCase
 
     public function test_an_open_deal_cannot_be_invoiced_over_the_api(): void
     {
-        Sanctum::actingAs($this->owner);
+        Sanctum::actingAs($this->owner, ['*']);
 
-        $id = $this->postJson('/api/deals', ['title' => 'Still open', 'lead_name' => 'Ada'])->json('data.id');
+        $id = $this->postJson('/api/v1/deals', ['title' => 'Still open', 'lead_name' => 'Ada'])->json('data.id');
 
-        $this->postJson("/api/deals/{$id}/invoice")->assertStatus(422);
+        $this->postJson("/api/v1/deals/{$id}/invoice")->assertStatus(422);
     }
 
     public function test_the_module_switch_denies_the_api_too(): void
     {
         $this->company->forceFill(['modules' => ['deals' => false]])->save();
 
-        Sanctum::actingAs($this->owner);
+        Sanctum::actingAs($this->owner, ['*']);
 
-        $this->postJson('/api/deals', ['title' => 'Nope', 'lead_name' => 'D'])
+        $this->postJson('/api/v1/deals', ['title' => 'Nope', 'lead_name' => 'D'])
             ->assertForbidden();
     }
 
@@ -240,9 +240,9 @@ class DealsApiTest extends TestCase
         $this->joinCompany($this->company, $cashier, 'cashier');
         $cashier->forceFill(['current_company_id' => $this->company->id])->save();
 
-        Sanctum::actingAs($cashier);
+        Sanctum::actingAs($cashier, ['*']);
 
-        $this->getJson('/api/deals')->assertForbidden();
+        $this->getJson('/api/v1/deals')->assertForbidden();
     }
 
     public function test_a_deal_from_another_company_is_not_reachable(): void
@@ -261,10 +261,10 @@ class DealsApiTest extends TestCase
         ]);
         app(CurrentCompany::class)->set($this->company);
 
-        Sanctum::actingAs($this->owner);
+        Sanctum::actingAs($this->owner, ['*']);
 
         // 404 rather than 403: the tenant scope means the row does not exist
         // for this caller, which is the right thing to tell them.
-        $this->getJson("/api/deals/{$theirDeal->id}")->assertNotFound();
+        $this->getJson("/api/v1/deals/{$theirDeal->id}")->assertNotFound();
     }
 }

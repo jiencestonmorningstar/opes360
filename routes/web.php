@@ -57,6 +57,7 @@ use App\Livewire\Products\Index as ProductsIndex;
 use App\Livewire\Reports\Index as ReportsIndex;
 use App\Livewire\Sales\Index as SalesIndex;
 use App\Livewire\Scan;
+use App\Livewire\Settings\ApiTokens as SettingsApiTokens;
 use App\Livewire\Settings\Billing as SettingsBilling;
 use App\Livewire\Settings\Index as SettingsIndex;
 use App\Livewire\Stock\Count as StockCount;
@@ -280,6 +281,7 @@ Route::middleware('auth')->group(function () {
     Route::get('/calendar', CalendarIndex::class)->middleware('can:sales.view')->name('calendar');
     Route::get('/settings', SettingsIndex::class)->name('settings');
     Route::get('/settings/billing', SettingsBilling::class)->middleware('can:business.update')->name('settings.billing');
+    Route::get('/settings/api-tokens', SettingsApiTokens::class)->name('settings.api-tokens');
     Route::get('/scan', Scan::class)->name('scan');
     Route::get('/two-factor/qr.svg', [AuthController::class, 'twoFactorQr'])->name('two-factor.qr');
     Route::get('/email/verify/{id}/{hash}', [AuthController::class, 'verifyEmail'])

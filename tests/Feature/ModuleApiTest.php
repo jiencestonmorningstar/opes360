@@ -58,7 +58,7 @@ class ModuleApiTest extends TestCase
         app(CurrentCompany::class)->set($this->company);
         ChartOfAccounts::seed($this->company);
 
-        Sanctum::actingAs($this->owner);
+        Sanctum::actingAs($this->owner, ['*']);
     }
 
     /** An issued invoice, which is the only thing a payment can be taken against. */
@@ -66,7 +66,7 @@ class ModuleApiTest extends TestCase
     {
         $contact = Contact::create(['type' => 'customer', 'name' => 'Boulangerie Nkolbisson']);
 
-        $id = $this->postJson('/api/documents', [
+        $id = $this->postJson('/api/v1/documents', [
             'type' => 'invoice',
             'contact_id' => $contact->id,
             'issue' => true,
@@ -83,7 +83,7 @@ class ModuleApiTest extends TestCase
         $invoice = $this->issuedInvoice(50000);
         $owed = (float) $invoice->balance;
 
-        $response = $this->postJson('/api/payments', [
+        $response = $this->postJson('/api/v1/payments', [
             'document_id' => $invoice->id,
             'amount' => $owed,
             'method' => PaymentMethod::Cash->value,
@@ -102,7 +102,7 @@ class ModuleApiTest extends TestCase
         $invoice = $this->issuedInvoice(50000);
         $owed = (float) $invoice->balance;
 
-        $this->postJson('/api/payments', [
+        $this->postJson('/api/v1/payments', [
             'document_id' => $invoice->id,
             'amount' => round($owed / 2, 2),
             'method' => PaymentMethod::MobileMoney->value,
@@ -119,7 +119,7 @@ class ModuleApiTest extends TestCase
     {
         $invoice = $this->issuedInvoice(10000);
 
-        $this->postJson('/api/payments', [
+        $this->postJson('/api/v1/payments', [
             'document_id' => $invoice->id,
             'amount' => (float) $invoice->balance + 1000,
             'method' => PaymentMethod::Cash->value,
@@ -130,13 +130,13 @@ class ModuleApiTest extends TestCase
     {
         $contact = Contact::create(['type' => 'customer', 'name' => 'Garage Akwa']);
 
-        $draft = $this->postJson('/api/documents', [
+        $draft = $this->postJson('/api/v1/documents', [
             'type' => 'invoice',
             'contact_id' => $contact->id,
             'lines' => [['description' => 'Service', 'quantity' => 1, 'unit_price' => 5000]],
         ])->json('data.id');
 
-        $this->postJson('/api/payments', [
+        $this->postJson('/api/v1/payments', [
             'document_id' => $draft,
             'amount' => 1000,
             'method' => PaymentMethod::Cash->value,
@@ -147,9 +147,9 @@ class ModuleApiTest extends TestCase
 
     public function test_an_expense_is_recorded_and_reaches_the_books(): void
     {
-        $before = $this->getJson('/api/accounting/journal')->json('data');
+        $before = $this->getJson('/api/v1/accounting/journal')->json('data');
 
-        $this->postJson('/api/expenses', [
+        $this->postJson('/api/v1/expenses', [
             'description' => 'Carburant',
             'category' => array_key_first(ChartOfAccounts::EXPENSE_CATEGORIES),
             'issue_date' => now()->toDateString(),
@@ -157,7 +157,7 @@ class ModuleApiTest extends TestCase
             'payment_method' => 'cash',
         ])->assertCreated()->assertJsonPath('data.description', 'Carburant');
 
-        $after = $this->getJson('/api/accounting/journal')->json('data');
+        $after = $this->getJson('/api/v1/accounting/journal')->json('data');
 
         // Recording an expense is a business event, so the books moved.
         $this->assertGreaterThan(count($before), count($after));
@@ -165,7 +165,7 @@ class ModuleApiTest extends TestCase
 
     public function test_an_expense_can_be_settled_and_then_shows_no_balance(): void
     {
-        $id = $this->postJson('/api/expenses', [
+        $id = $this->postJson('/api/v1/expenses', [
             'description' => 'Facture fournisseur',
             'category' => array_key_first(ChartOfAccounts::EXPENSE_CATEGORIES),
             'issue_date' => now()->toDateString(),
@@ -174,7 +174,7 @@ class ModuleApiTest extends TestCase
 
         $total = (float) Expense::findOrFail($id)->total;
 
-        $this->postJson("/api/expenses/{$id}/settle", [
+        $this->postJson("/api/v1/expenses/{$id}/settle", [
             'amount' => $total,
             'method' => 'cash',
         ])->assertOk()->assertJsonPath('data.balance', fn ($v) => (float) $v === 0.0);
@@ -182,14 +182,14 @@ class ModuleApiTest extends TestCase
 
     public function test_settling_more_than_is_owing_is_refused(): void
     {
-        $id = $this->postJson('/api/expenses', [
+        $id = $this->postJson('/api/v1/expenses', [
             'description' => 'Facture',
             'category' => array_key_first(ChartOfAccounts::EXPENSE_CATEGORIES),
             'issue_date' => now()->toDateString(),
             'amount' => 10000,
         ])->json('data.id');
 
-        $this->postJson("/api/expenses/{$id}/settle", [
+        $this->postJson("/api/v1/expenses/{$id}/settle", [
             'amount' => 999999,
             'method' => 'cash',
         ])->assertStatus(422);
@@ -198,7 +198,7 @@ class ModuleApiTest extends TestCase
     /** A fraction, not a percentage: 19.25 would be a 1,925% expense. */
     public function test_a_vat_rate_above_one_is_refused(): void
     {
-        $this->postJson('/api/expenses', [
+        $this->postJson('/api/v1/expenses', [
             'description' => 'Carburant',
             'category' => array_key_first(ChartOfAccounts::EXPENSE_CATEGORIES),
             'issue_date' => now()->toDateString(),
@@ -211,10 +211,10 @@ class ModuleApiTest extends TestCase
 
     public function test_the_books_can_be_read(): void
     {
-        $this->getJson('/api/accounting/accounts')->assertOk()->assertJsonStructure(['data']);
-        $this->getJson('/api/accounting/trial-balance')->assertOk()->assertJsonStructure(['data']);
-        $this->getJson('/api/accounting/income-statement')->assertOk()->assertJsonStructure(['data']);
-        $this->getJson('/api/accounting/balance-sheet')->assertOk()->assertJsonStructure(['data']);
+        $this->getJson('/api/v1/accounting/accounts')->assertOk()->assertJsonStructure(['data']);
+        $this->getJson('/api/v1/accounting/trial-balance')->assertOk()->assertJsonStructure(['data']);
+        $this->getJson('/api/v1/accounting/income-statement')->assertOk()->assertJsonStructure(['data']);
+        $this->getJson('/api/v1/accounting/balance-sheet')->assertOk()->assertJsonStructure(['data']);
     }
 
     /**
@@ -224,7 +224,7 @@ class ModuleApiTest extends TestCase
      */
     public function test_the_books_cannot_be_written_to(): void
     {
-        $this->postJson('/api/accounting/journal', [])->assertStatus(405);
+        $this->postJson('/api/v1/accounting/journal', [])->assertStatus(405);
     }
 
     public function test_a_cashier_cannot_read_the_books(): void
@@ -233,23 +233,23 @@ class ModuleApiTest extends TestCase
         $this->joinCompany($this->company, $cashier, 'cashier');
         $cashier->forceFill(['current_company_id' => $this->company->id])->save();
 
-        Sanctum::actingAs($cashier);
+        Sanctum::actingAs($cashier, ['*']);
 
-        $this->getJson('/api/accounting/trial-balance')->assertForbidden();
+        $this->getJson('/api/v1/accounting/trial-balance')->assertForbidden();
     }
 
     // ── Employees and payroll ────────────────────────────────────────────
 
     public function test_an_employee_can_be_added_and_listed(): void
     {
-        $this->postJson('/api/employees', [
+        $this->postJson('/api/v1/employees', [
             'first_name' => 'Marie',
             'last_name' => 'Ngo',
             'job_title' => 'Comptable',
             'hired_on' => '2026-01-15',
         ])->assertCreated()->assertJsonPath('data.first_name', 'Marie');
 
-        $this->getJson('/api/employees')->assertOk()->assertJsonPath('data.0.last_name', 'Ngo');
+        $this->getJson('/api/v1/employees')->assertOk()->assertJsonPath('data.0.last_name', 'Ngo');
     }
 
     /**
@@ -267,7 +267,7 @@ class ModuleApiTest extends TestCase
             'bank_account' => '00012345678',
         ]);
 
-        $body = $this->getJson("/api/employees/{$employee->id}")->assertOk()->json('data');
+        $body = $this->getJson("/api/v1/employees/{$employee->id}")->assertOk()->json('data');
 
         foreach (['national_id', 'cnps_number', 'bank_account', 'niu', 'emergency_phone'] as $field) {
             $this->assertArrayNotHasKey($field, $body);
@@ -280,17 +280,17 @@ class ModuleApiTest extends TestCase
         $this->joinCompany($this->company, $cashier, 'cashier');
         $cashier->forceFill(['current_company_id' => $this->company->id])->save();
 
-        Sanctum::actingAs($cashier);
+        Sanctum::actingAs($cashier, ['*']);
 
-        $this->getJson('/api/employees')->assertForbidden();
+        $this->getJson('/api/v1/employees')->assertForbidden();
     }
 
     public function test_payroll_runs_are_readable_but_not_runnable(): void
     {
-        $this->getJson('/api/payroll/runs')->assertOk()->assertJsonStructure(['data']);
+        $this->getJson('/api/v1/payroll/runs')->assertOk()->assertJsonStructure(['data']);
 
         // Approving a month commits the business to its wages and the
         // declarations that follow. There is no route for it on purpose.
-        $this->postJson('/api/payroll/runs', [])->assertStatus(405);
+        $this->postJson('/api/v1/payroll/runs', [])->assertStatus(405);
     }
 }

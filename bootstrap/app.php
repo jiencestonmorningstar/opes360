@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Middleware\EnsurePlatformAdminRole;
+use App\Http\Middleware\Idempotent;
 use App\Http\Middleware\SecurityHeaders;
 use App\Http\Middleware\SetCurrentCompany;
 use Illuminate\Auth\Middleware\Authenticate;
@@ -19,6 +20,8 @@ use Illuminate\Routing\Middleware\ThrottleRequests;
 use Illuminate\Routing\Middleware\ThrottleRequestsWithRedis;
 use Illuminate\Session\Middleware\StartSession;
 use Illuminate\View\Middleware\ShareErrorsFromSession;
+use Laravel\Sanctum\Http\Middleware\CheckAbilities;
+use Laravel\Sanctum\Http\Middleware\CheckForAnyAbility;
 
 return Application::configure(basePath: dirname(__DIR__))
     ->withRouting(
@@ -71,6 +74,12 @@ return Application::configure(basePath: dirname(__DIR__))
 
         $middleware->alias([
             'admin.role' => EnsurePlatformAdminRole::class,
+            // Token scopes. `ability` passes if the token holds any of the
+            // listed ones; a token minted with `*` holds all of them. These
+            // narrow what a token may do — never widen what its user may do.
+            'ability' => CheckForAnyAbility::class,
+            'abilities' => CheckAbilities::class,
+            'idempotent' => Idempotent::class,
         ]);
 
         /*

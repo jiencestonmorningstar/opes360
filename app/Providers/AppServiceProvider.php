@@ -13,13 +13,16 @@ use App\Models\User;
 use App\Observers\AuditObserver;
 use App\Support\Csp;
 use App\Support\CurrentCompany;
+use Illuminate\Cache\RateLimiting\Limit;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Pagination\Paginator;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Blade;
 use Illuminate\Support\Facades\Date;
+use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\Facades\Vite;
 use Illuminate\Support\ServiceProvider;
+use Laravel\Sanctum\PersonalAccessToken;
 use Livewire\Livewire;
 
 class AppServiceProvider extends ServiceProvider
@@ -35,6 +38,29 @@ class AppServiceProvider extends ServiceProvider
     {
         // Fail loudly in development on lazy loads and bad attribute assignment,
         // rather than shipping N+1 queries to a phone on a slow connection.
+        /*
+         * The API's rate limit, keyed on the token rather than the user or the
+         * IP. Per user, one runaway integration would throttle that person's
+         * own app session; per IP, every business behind one office NAT would
+         * share a bucket. The token is the thing whose behaviour is being
+         * limited, so it is the thing counted.
+         *
+         * The instanceof check is load-bearing: a session-authenticated request
+         * carries a TransientToken, which has no id at all, and reaching for one
+         * throws rather than returning null. Those fall back to the user.
+         */
+        RateLimiter::for('api', function ($request) {
+            $token = $request->user()?->currentAccessToken();
+
+            $key = match (true) {
+                $token instanceof PersonalAccessToken => 'token:'.$token->getKey(),
+                $request->user() !== null => 'user:'.$request->user()->getAuthIdentifier(),
+                default => 'ip:'.$request->ip(),
+            };
+
+            return Limit::perMinute(120)->by($key);
+        });
+
         Model::preventLazyLoading(! $this->app->isProduction());
         Model::preventSilentlyDiscardingAttributes(! $this->app->isProduction());
 

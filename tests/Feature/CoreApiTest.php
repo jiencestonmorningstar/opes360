@@ -58,7 +58,7 @@ class CoreApiTest extends TestCase
         app(CurrentCompany::class)->set($this->company);
         ChartOfAccounts::seed($this->company);
 
-        Sanctum::actingAs($this->owner);
+        Sanctum::actingAs($this->owner, ['*']);
     }
 
     protected function makeContact(string $name = 'Boulangerie Nkolbisson'): Contact
@@ -70,13 +70,13 @@ class CoreApiTest extends TestCase
 
     public function test_a_contact_can_be_created_and_listed(): void
     {
-        $this->postJson('/api/contacts', [
+        $this->postJson('/api/v1/contacts', [
             'name' => 'Boulangerie Nkolbisson',
             'phone' => '+237670000000',
             'city' => 'Yaoundé',
         ])->assertCreated()->assertJsonPath('data.name', 'Boulangerie Nkolbisson');
 
-        $this->getJson('/api/contacts')
+        $this->getJson('/api/v1/contacts')
             ->assertOk()
             ->assertJsonPath('data.0.phones.0', '+237670000000')
             ->assertJsonPath('data.0.address.city', 'Yaoundé');
@@ -85,13 +85,13 @@ class CoreApiTest extends TestCase
     /** A partial update must not blank the fields it did not mention. */
     public function test_updating_one_field_leaves_the_others_alone(): void
     {
-        $id = $this->postJson('/api/contacts', [
+        $id = $this->postJson('/api/v1/contacts', [
             'name' => 'Garage Akwa',
             'phone' => '+237699000000',
             'city' => 'Douala',
         ])->json('data.id');
 
-        $this->patchJson("/api/contacts/{$id}", ['name' => 'Garage Akwa Ltd'])
+        $this->patchJson("/api/v1/contacts/{$id}", ['name' => 'Garage Akwa Ltd'])
             ->assertOk()
             ->assertJsonPath('data.name', 'Garage Akwa Ltd')
             ->assertJsonPath('data.phones.0', '+237699000000')
@@ -100,15 +100,15 @@ class CoreApiTest extends TestCase
 
     public function test_contacts_can_be_searched_and_filtered_by_type(): void
     {
-        $this->postJson('/api/contacts', ['name' => 'Boulangerie Nkolbisson']);
-        $this->postJson('/api/contacts', ['name' => 'Prime Supplies', 'type' => 'supplier']);
+        $this->postJson('/api/v1/contacts', ['name' => 'Boulangerie Nkolbisson']);
+        $this->postJson('/api/v1/contacts', ['name' => 'Prime Supplies', 'type' => 'supplier']);
 
-        $this->getJson('/api/contacts?type=supplier')
+        $this->getJson('/api/v1/contacts?type=supplier')
             ->assertOk()
             ->assertJsonCount(1, 'data')
             ->assertJsonPath('data.0.name', 'Prime Supplies');
 
-        $this->getJson('/api/contacts?q=Boulangerie')
+        $this->getJson('/api/v1/contacts?q=Boulangerie')
             ->assertOk()
             ->assertJsonCount(1, 'data');
     }
@@ -117,14 +117,14 @@ class CoreApiTest extends TestCase
 
     public function test_an_item_can_be_created_and_read_back(): void
     {
-        $id = $this->postJson('/api/items', [
+        $id = $this->postJson('/api/v1/items', [
             'name' => 'Ciment 50kg',
             'sku' => 'CIM-50',
             'price' => 6500,
             'cost' => 5800,
         ])->assertCreated()->json('data.id');
 
-        $this->getJson("/api/items/{$id}")
+        $this->getJson("/api/v1/items/{$id}")
             ->assertOk()
             ->assertJsonPath('data.sku', 'CIM-50')
             ->assertJsonPath('data.price', fn ($v) => (float) $v === 6500.0)
@@ -138,7 +138,7 @@ class CoreApiTest extends TestCase
      */
     public function test_stock_cannot_be_set_through_the_item_endpoint(): void
     {
-        $id = $this->postJson('/api/items', [
+        $id = $this->postJson('/api/v1/items', [
             'name' => 'Ciment 50kg',
             'price' => 6500,
             'stock' => 999,
@@ -157,7 +157,7 @@ class CoreApiTest extends TestCase
     {
         $contact = $this->makeContact();
 
-        $response = $this->postJson('/api/documents', [
+        $response = $this->postJson('/api/v1/documents', [
             'type' => 'invoice',
             'contact_id' => $contact->id,
             'lines' => [
@@ -184,13 +184,13 @@ class CoreApiTest extends TestCase
     {
         $contact = $this->makeContact();
 
-        $id = $this->postJson('/api/documents', [
+        $id = $this->postJson('/api/v1/documents', [
             'type' => 'invoice',
             'contact_id' => $contact->id,
             'lines' => [['description' => 'Service', 'quantity' => 1, 'unit_price' => 50000]],
         ])->json('data.id');
 
-        $this->postJson("/api/documents/{$id}/issue")
+        $this->postJson("/api/v1/documents/{$id}/issue")
             ->assertOk()
             ->assertJsonPath('data.status', 'issued');
 
@@ -201,7 +201,7 @@ class CoreApiTest extends TestCase
     {
         $contact = $this->makeContact();
 
-        $this->postJson('/api/documents', [
+        $this->postJson('/api/v1/documents', [
             'type' => 'invoice',
             'contact_id' => $contact->id,
             'issue' => true,
@@ -213,14 +213,14 @@ class CoreApiTest extends TestCase
     {
         $contact = $this->makeContact();
 
-        $id = $this->postJson('/api/documents', [
+        $id = $this->postJson('/api/v1/documents', [
             'type' => 'invoice',
             'contact_id' => $contact->id,
             'issue' => true,
             'lines' => [['description' => 'Service', 'quantity' => 1, 'unit_price' => 1000]],
         ])->json('data.id');
 
-        $this->postJson("/api/documents/{$id}/issue")->assertStatus(422);
+        $this->postJson("/api/v1/documents/{$id}/issue")->assertStatus(422);
     }
 
     /**
@@ -231,14 +231,14 @@ class CoreApiTest extends TestCase
     {
         $contact = $this->makeContact();
 
-        $id = $this->postJson('/api/documents', [
+        $id = $this->postJson('/api/v1/documents', [
             'type' => 'invoice',
             'contact_id' => $contact->id,
             'issue' => true,
             'lines' => [['description' => 'Service', 'quantity' => 1, 'unit_price' => 1000]],
         ])->json('data.id');
 
-        $this->deleteJson("/api/documents/{$id}")->assertStatus(422);
+        $this->deleteJson("/api/v1/documents/{$id}")->assertStatus(422);
 
         $this->assertNotNull(Document::find($id));
     }
@@ -247,20 +247,20 @@ class CoreApiTest extends TestCase
     {
         $contact = $this->makeContact();
 
-        $id = $this->postJson('/api/documents', [
+        $id = $this->postJson('/api/v1/documents', [
             'type' => 'invoice',
             'contact_id' => $contact->id,
             'lines' => [['description' => 'Service', 'quantity' => 1, 'unit_price' => 1000]],
         ])->json('data.id');
 
-        $this->deleteJson("/api/documents/{$id}")->assertNoContent();
+        $this->deleteJson("/api/v1/documents/{$id}")->assertNoContent();
     }
 
     public function test_a_document_needs_at_least_one_line(): void
     {
         $contact = $this->makeContact();
 
-        $this->postJson('/api/documents', [
+        $this->postJson('/api/v1/documents', [
             'type' => 'invoice',
             'contact_id' => $contact->id,
             'lines' => [],
@@ -271,7 +271,7 @@ class CoreApiTest extends TestCase
     {
         $contact = $this->makeContact();
 
-        $this->postJson('/api/documents', [
+        $this->postJson('/api/v1/documents', [
             'type' => 'invoice',
             'contact_id' => $contact->id,
             'issue' => true,
@@ -279,13 +279,13 @@ class CoreApiTest extends TestCase
         ]);
 
         // A draft is not outstanding: nothing is owed until it is issued.
-        $this->postJson('/api/documents', [
+        $this->postJson('/api/v1/documents', [
             'type' => 'invoice',
             'contact_id' => $contact->id,
             'lines' => [['description' => 'Draft', 'quantity' => 1, 'unit_price' => 5000]],
         ]);
 
-        $this->getJson('/api/documents?outstanding=1')
+        $this->getJson('/api/v1/documents?outstanding=1')
             ->assertOk()
             ->assertJsonCount(1, 'data')
             // Lines are absent from the list on purpose — see DocumentResource,
@@ -302,9 +302,9 @@ class CoreApiTest extends TestCase
         $this->joinCompany($this->company, $cashier, 'cashier');
         $cashier->forceFill(['current_company_id' => $this->company->id])->save();
 
-        Sanctum::actingAs($cashier);
+        Sanctum::actingAs($cashier, ['*']);
 
-        $this->postJson('/api/items', ['name' => 'Nope', 'price' => 1])->assertForbidden();
+        $this->postJson('/api/v1/items', ['name' => 'Nope', 'price' => 1])->assertForbidden();
     }
 
     public function test_another_companys_records_are_not_reachable(): void
@@ -324,8 +324,8 @@ class CoreApiTest extends TestCase
         $theirContact = Contact::create(['type' => 'customer', 'name' => 'Not yours']);
         app(CurrentCompany::class)->set($this->company);
 
-        Sanctum::actingAs($this->owner);
+        Sanctum::actingAs($this->owner, ['*']);
 
-        $this->getJson("/api/contacts/{$theirContact->id}")->assertNotFound();
+        $this->getJson("/api/v1/contacts/{$theirContact->id}")->assertNotFound();
     }
 }
