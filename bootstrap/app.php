@@ -23,6 +23,7 @@ use Illuminate\View\Middleware\ShareErrorsFromSession;
 return Application::configure(basePath: dirname(__DIR__))
     ->withRouting(
         web: __DIR__.'/../routes/web.php',
+        api: __DIR__.'/../routes/api.php',
         commands: __DIR__.'/../routes/console.php',
         health: '/up',
     )
@@ -59,6 +60,12 @@ return Application::configure(basePath: dirname(__DIR__))
 
         // Runs on every web request so tenant scoping is never opt-in.
         $middleware->web(append: [
+            SetCurrentCompany::class,
+        ]);
+
+        // The API needs the same tenant resolution: without it the scope fails
+        // closed and every token request 404s on data the caller owns.
+        $middleware->api(append: [
             SetCurrentCompany::class,
         ]);
 

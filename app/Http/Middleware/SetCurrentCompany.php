@@ -21,7 +21,10 @@ class SetCurrentCompany
 
     public function handle(Request $request, Closure $next): Response
     {
-        $user = $request->user('web');
+        // Token requests carry no session, so the web guard resolves nobody on
+        // them. Without the sanctum fallback the tenant scope would fail closed
+        // for every API call and turn the whole API into a wall of 404s.
+        $user = $request->user('web') ?? $request->user('sanctum');
 
         if ($user === null) {
             return $next($request);
@@ -47,6 +50,14 @@ class SetCurrentCompany
         // everything; this just tells the user why.
         if ($company !== null && $company->isSuspended()) {
             $this->current->set(null);
+
+            // An API client has no screen to be redirected to, and a 302 to an
+            // HTML page is a worse answer than saying plainly what happened.
+            if ($request->expectsJson()) {
+                return response()->json([
+                    'message' => 'This business account is suspended.',
+                ], 403);
+            }
 
             if (! $request->routeIs('account-suspended', 'logout')) {
                 return redirect()->route('account-suspended');
