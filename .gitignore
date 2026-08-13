@@ -31,3 +31,11 @@ Thumbs.db
 
 # Output of scripts/audit/ui-audit.mjs
 /audit-report.json
+
+# Binaries the Windows setup script downloads (caddy and friends). Tens of
+# megabytes, per-machine, and re-fetchable — the script is the source of truth.
+/scripts/windows/bin/
+
+/*.png
+/*.jpg
+/*.jpeg

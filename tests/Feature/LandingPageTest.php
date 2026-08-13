@@ -25,45 +25,44 @@ class LandingPageTest extends TestCase
         $this->get('/')
             ->assertOk()
             ->assertSee('Opes360', false)
-            ->assertSee('3,000', false);
+            ->assertSee('One platform.', false)
+            ->assertSee('Every operation.', false);
     }
 
     /**
-     * Every module gets a slot in the grid. This replaced a hero carousel that
-     * listed the same six modules the grid below already listed, so the first
-     * two screens of the page said the same thing twice.
+     * The home page groups the product into six things a business recognises
+     * as its own departments, rather than listing all twenty-two modules. The
+     * full catalogue is the features page's job; a visitor deciding whether
+     * this is for them is not helped by a wall of names.
      */
-    public function test_the_home_page_names_every_module_once(): void
+    public function test_the_home_page_names_the_six_capability_groups(): void
     {
         $response = $this->get('/')->assertOk();
 
-        foreach (['Opes Forms', 'Opes Events', 'Loyalty program', 'Public reviews', 'Offline mode', 'SYSCOHADA accounting'] as $module) {
-            $response->assertSee($module, false);
+        foreach (['Manage', 'Sell', 'Operate', 'Manage People', 'Control Finances', 'Grow'] as $group) {
+            $response->assertSee($group, false);
         }
 
-        $body = $response->getContent();
-
-        $this->assertSame(1, substr_count($body, 'Opes Events'), 'A module named twice on one page is the duplication this layout removed.');
+        $response->assertSee('Everything your business needs.', false);
     }
 
-    public function test_the_home_page_carries_the_three_pillars_and_their_mocks(): void
+    /** The before/after comparison is the page's central argument. */
+    public function test_the_home_page_contrasts_life_before_and_after(): void
     {
         $this->get('/')
             ->assertOk()
-            ->assertSee('Three things a receipt book cannot do')
-            // Each pillar is illustrated by a mock built from the design tokens
-            // rather than a screenshot; these strings only exist inside them.
-            ->assertSee('QT-2026-0042', false)
-            ->assertSee('Verified document', false)
-            ->assertSee('No connection', false);
+            ->assertSee('Your business, without the paperwork.', false)
+            ->assertSee('Paperwork and manual records', false)
+            ->assertSee('One connected digital platform', false);
     }
 
-    public function test_the_home_page_advertises_the_partner_programme(): void
+    public function test_the_home_page_reaches_the_rest_of_the_site(): void
     {
         $this->get('/')
             ->assertOk()
-            ->assertSee('For secretariats and print shops')
-            ->assertSee(route('marketing.partners'), false);
+            ->assertSee(route('marketing.pricing'), false)
+            ->assertSee(route('marketing.features'), false)
+            ->assertSee(route('marketing.about'), false);
     }
 
     public function test_authenticated_users_still_see_the_dashboard_at_the_root(): void
@@ -145,6 +144,21 @@ class LandingPageTest extends TestCase
             ->assertSee('Added in Business')
             // The matrix survives, but only from `md` where it fits.
             ->assertSee('hidden overflow-x-auto md:block', false);
+    }
+
+    /**
+     * The partner programme is a revenue channel, and the home page is where
+     * a print shop that has never heard of it will be standing. A redesign
+     * once dropped this section outright, which is why it is pinned here.
+     */
+    public function test_the_home_page_advertises_the_partner_programme(): void
+    {
+        $this->get('/')
+            ->assertOk()
+            ->assertSee('For secretariats and print shops', false)
+            ->assertSee(route('marketing.partners'), false)
+            ->assertSee('500', false)  // card fee, from config
+            ->assertSee('10%', false); // commission rate, from config
     }
 
     public function test_the_partner_programme_page_states_the_terms_from_config(): void

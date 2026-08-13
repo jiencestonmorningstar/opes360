@@ -242,6 +242,18 @@
     }
 }
 
+/* A decorative globe graphic turning in place — slow enough to read as
+   ambient motion rather than a loading spinner. */
+@keyframes spin-slow {
+    to {
+        transform: rotate(360deg);
+    }
+}
+
+@utility animate-spin-slow {
+    animation: spin-slow 50s linear infinite;
+}
+
 /* Horizontal scrollers without a visible scrollbar. */
 @utility no-scrollbar {
     scrollbar-width: none;
