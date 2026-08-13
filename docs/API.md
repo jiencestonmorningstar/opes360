@@ -11,6 +11,44 @@ business's own settings.
 The offline sync endpoints (`/api/sync/v1/*`) are a different thing with a
 different contract and are not documented here; they belong to the PWA.
 
+**Base URL:** `/api/v1`. The version is in the path so that a future breaking
+change can be made without breaking you — a v2 will live beside v1, not on top
+of it.
+
+**Machine-readable:** an OpenAPI 3.1 description is served at
+[`/openapi.json`](/openapi.json), generated from the router by
+`php artisan opes:export-openapi`. It is generated rather than hand-written for
+the same reason the install schema is: a spec maintained by hand drifts, and a
+spec that lies is worse than none — a client generated from it fails in ways
+that look like server bugs.
+
+---
+
+## 0. Tokens and scopes
+
+Create tokens in the app under **Settings → API tokens**. That is the right way
+to get one: a token is revocable and can be narrowed, and it lets you give an
+integration access without handing it the password to the whole account.
+
+A token may be **narrower** than the person who created it, never wider:
+
+| Scope | What it opens |
+|---|---|
+| `read` | Lists and single records, across the business |
+| `write` | Add and change customers, products, deals and documents |
+| `money` | Record payments, enter and settle expenses, sell a ticket |
+| `people` | Read the staff file and payroll |
+
+They do not imply each other. A reporting token asking for `read` does not
+thereby get the payroll, and a token that can add a customer cannot take a
+payment. A token minted with no scopes at all holds them all, which keeps a
+one-off script simple.
+
+Scopes are a ceiling on top of the permission catalogue, not a replacement for
+it — every scope there is, held by a cashier, is still a cashier.
+
+**Rate limit:** 120 requests a minute, counted per token.
+
 ---
 
 ## 1. Getting a token
@@ -186,8 +224,36 @@ a junior draft an invoice but not commit one gets that, unchanged, here.
 There is **no update route**. An issued document cannot be edited, and a draft
 that needs different lines can be deleted and recreated.
 
-`DELETE` works on drafts only; an issued document must be voided, which is not
-yet exposed here.
+`DELETE` works on drafts only.
+
+### Undoing a sale
+
+Since an issued document cannot be edited, these are how a mistake is
+corrected. All three accept an `Idempotency-Key`.
+
+`POST /api/v1/documents/{id}/void` — cancels it. The verification token is
+revoked so a printed copy stops verifying, and the ledger entry is reversed
+rather than removed, so March still has an answer. **Refused while payments sit
+against it**: money already taken has to be dealt with first, or a receipt ends
+up pointing at a document saying nothing was ever owed.
+
+`POST /api/v1/documents/{id}/credit-note` — takes an `amount`, and is the
+answer for an invoice that *has* been paid. The money is acknowledged as not
+owed rather than the original being rewritten to pretend it was never charged.
+
+`POST /api/v1/documents/{id}/convert` — quotation → invoice, proforma →
+invoice. Needs the issue right rather than merely the right to draft, because
+it produces a permanent numbered document.
+
+Voiding is its own permission (`sales.void`): a Sales Officer may raise an
+invoice without being able to make one disappear.
+
+**Refunding a payment is not here, and not merely unexposed — nothing in the
+product implements it.** The permission exists in the catalogue and no code
+answers it. Reversing a receipt correctly means unwinding the allocation, the
+document's balance and status, the ledger and the customer's balance together;
+until that exists as a service, an endpoint pretending to do it would be worse
+than its absence. Credit the invoice instead.
 
 ---
 
@@ -378,10 +444,192 @@ very obvious dishonest one.
 
 ---
 
-## 14. What is not here yet
+## 14. Events and ticketing
 
-Events and ticketing, forms, loyalty and the partner programme have screens but
-no API. They will follow the pattern above as each is next touched.
+`GET /api/v1/events` · `GET /api/v1/events/{id}` ·
+`GET /api/v1/events/{id}/ticket-types` · `GET /api/v1/events/{id}/tickets` ·
+`POST /api/v1/events/{id}/tickets` ·
+`POST /api/v1/events/{id}/tickets/{ticket}/check-in`
+
+Filters on the event list: `status` (`draft`, `published`, `cancelled`),
+`upcoming`, `q` (title or venue), `per_page`. On the attendee list: `status`
+(`issued`, `checked_in`, `void`), `q` (serial, buyer name or email), `per_page`.
+
+**Events are read only.** An event is a poster — a title, a venue, a date and a
+price list somebody writes once and checks on a screen before sharing a link to
+it. Nothing about it repeats and nothing about it arrives from another system,
+while getting the date wrong is a mistake the public page prints. What
+integrations want from this module is to sell through it and scan at the door,
+and those are the two things you can do.
+
+`remaining` on a ticket type is `null` when the type is unlimited, not a large
+number. "None left" and "no limit" are different answers.
+
+### Selling
+
+```http
+POST /api/v1/events/{id}/tickets
+{
+  "buyer_name": "Marie Ngo",
+  "buyer_phone": "+237670000000",
+  "quantities": { "01j…": 2 }
+}
+```
+
+`quantities` is keyed by ticket type id, so one call issues a whole order.
+Either `buyer_email` or `buyer_phone` is required — the tickets have to reach
+somebody. Maximum ten of any one type per call.
+
+Returns **201** with one object per ticket, each carrying its own `serial` and
+`verification_token`. Tickets are rows rather than an order with a quantity
+because two seats bought together still admit two people separately, and each
+needs its own QR. A caller printing its own copy prints a checkable one.
+
+This runs through the same service the public sales page does, in one
+transaction with the ticket-type rows locked. That is the oversell guard: a
+four-seat order that fails on the fourth leaves nothing behind, and two buyers
+racing for the last seat cannot both get it. Refused with `422` when a type
+lacks availability, when sales have closed (an event is `draft`, `cancelled`,
+or has already started), or when a ticket type belongs to another event.
+
+Under the **`money` scope** and idempotent: a seat is value, and a retry after
+a dropped connection must not issue the order twice. Send an `Idempotency-Key`.
+
+Issuing needs `events.create`. The catalogue has no separate "sell" action, so
+a cashier — who may scan at a door — cannot issue over the API. That is the
+line the role catalogue already draws, not a new one.
+
+Tickets sold this way are **not marked paid**. Whether the money arrived is a
+separate fact, and marking it is done on the screen where somebody can see the
+list.
+
+### The door
+
+```http
+POST /api/v1/events/{id}/tickets/{ticket}/check-in
+```
+
+Under the **`write` scope**, not `money`: nothing changes hands at a door, so a
+scanner can hold a token that admits people and cannot sell a thing. Needs
+`events.check-in`.
+
+Nested under the event on purpose — a serial from another night `404`s rather
+than quietly admitting somebody to the wrong one.
+
+A second check-in is refused with `422` and the time of the first. The screen
+no-ops because the person using it can see the row; a scanner cannot, and
+"already used at 20:14" is the one answer a door needs. Voided tickets are
+refused too.
+
+**Issued tickets cannot be deleted here.** A ticket that should not have been
+sold is voided on the screen, which keeps the row, its serial and its QR — a
+serial that simply vanished would make an honest buyer at the door
+indistinguishable from a forged one.
+
+---
+
+## 15. Forms
+
+`GET /api/v1/forms` · `GET /api/v1/forms/{id}` ·
+`GET /api/v1/forms/{id}/responses`
+
+Filters: `status` (`draft`, `open`, `closed`), `q`, `per_page`. Responses take
+`from`, `to` and `per_page`.
+
+**Creating a form over HTTP is not offered.** A form is a set of ordered field
+definitions — ids, types, options, required flags — that the builder edits as a
+whole and the public page renders. Posting that JSON blind is strictly harder
+than dragging four fields on a screen, and nothing about it repeats or arrives
+from elsewhere. What integrations want from this module is the data coming
+back, which is what these endpoints are.
+
+`fields` comes back normalised, exactly as the builder and the public page see
+it. **Answers stay keyed by field id**, not by label: that is the whole reason
+for the storage format, since renaming a field must never rewrite what somebody
+already submitted. Join against `fields` if you want labels.
+
+Reading responses needs **`forms.responses`**, a separate grant from seeing
+that a form exists. Submissions are other people's names, numbers and
+complaints, and the business decides who reads them.
+
+Responses are scoped to a form rather than offered as a flat list, for the same
+reason payslips are scoped to a run.
+
+---
+
+## 16. Loyalty
+
+`GET /api/v1/loyalty/contacts/{contact}` ·
+`GET /api/v1/loyalty/contacts/{contact}/transactions` ·
+`POST /api/v1/loyalty/contacts/{contact}/redeem`
+
+Points hang off a customer rather than standing alone — a balance is part of
+somebody's record — so both the contact and the loyalty ability are checked.
+Reading needs `customers.view` **and** `loyalty.view`.
+
+```json
+{
+  "data": {
+    "contact_id": "01j…",
+    "card_number": "LOY-7QK2M4XZ",
+    "points": 500,
+    "point_value": 1,
+    "value": 500,
+    "currency": "XAF",
+    "program_enabled": true
+  }
+}
+```
+
+`value` is what the points are worth today, in the business's own currency —
+the number a till takes off a bill. It is computed server-side because the rate
+is a setting that can change, and a client caching its own copy would
+eventually discount by last month's.
+
+`transactions` is the ledger behind that balance, newest first. `points` is
+signed (earns +, redemptions −) and `balance_after` is the balance that row
+produced, both stored rather than derived, so a caller paging backwards sees
+the numbers the till printed at the time.
+
+### Redeeming
+
+```http
+POST /api/v1/loyalty/contacts/{contact}/redeem
+{ "points": 200, "note": "Remise en caisse" }
+```
+
+Returns **201** with the ledger row. Needs `loyalty.redeem`, and sits under the
+**`money` scope** with idempotency: a point is a discount the business will
+honour, and a retry must not deduct twice.
+
+Refused with `422` when the balance is short, and the message names the
+customer and the number actually available — which is what the person at the
+till has to say out loud. It is **refused, not clamped**: the check happens
+inside the service under a row lock, because two tills redeeming the last
+hundred points at the same moment both pass a check made against their own
+stale copy, and clamping the loser to zero would hand out the reward twice and
+leave a ledger balancing to a number nobody ever had.
+
+**Earning is not exposed, and neither is adjusting.** Points are earned as a
+side effect of a payment, which already has an endpoint; an "earn" route would
+be a way to mint them with no spend behind them. A manual adjustment is audited
+in the service — it demands a note and records who made it — but it is the
+goodwill gesture a manager makes in front of a customer, with a screen and a
+name attached. Nothing has asked to do that over HTTP, and handing a token the
+ability to conjure balances is not a default to ship ahead of a use case.
+Issuing a loyalty card is absent for the same reason: it happens once, at a
+counter, with the customer standing there.
+
+---
+
+## 17. What is not here yet
+
+The partner programme has screens but no API. It will follow the pattern above
+when it is next touched.
+
+Creating and editing events, building forms, and awarding or adjusting loyalty
+points are absent by choice rather than by omission; the sections above say why
+in each case.
 
 Also absent by design, not by omission: voiding a sales document, refunding a
 payment, and anything that posts to the ledger by hand.

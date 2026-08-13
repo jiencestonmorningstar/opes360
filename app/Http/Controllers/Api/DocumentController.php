@@ -8,6 +8,7 @@ use App\Http\Resources\DocumentResource;
 use App\Models\Contact;
 use App\Models\Document;
 use App\Models\DocumentLine;
+use App\Services\DocumentConverter;
 use App\Services\DocumentIssuer;
 use App\Support\CurrentCompany;
 use App\Support\Vat;
@@ -39,7 +40,10 @@ use RuntimeException;
  */
 class DocumentController extends ApiController
 {
-    public function __construct(private readonly DocumentIssuer $issuer) {}
+    public function __construct(
+        private readonly DocumentIssuer $issuer,
+        private readonly DocumentConverter $converter,
+    ) {}
 
     public function index(Request $request): AnonymousResourceCollection
     {
@@ -161,6 +165,87 @@ class DocumentController extends ApiController
         }
 
         return DocumentResource::make($issued->load('lines', 'contact'));
+    }
+
+    /**
+     * Cancel an issued document.
+     *
+     * The counterpart to the missing update route: an issued document cannot
+     * be edited, so cancelling it is how a mistake is undone. Voided rather
+     * than deleted, its verification token revoked so a printed copy stops
+     * verifying, and its ledger entry reversed rather than removed — March
+     * still has an answer.
+     *
+     * Refused while payments sit against it: money already taken has to be
+     * dealt with first, and silently detaching it would leave a receipt
+     * pointing at a document that says nothing was ever owed.
+     */
+    public function void(Request $request, Document $document): DocumentResource|JsonResponse
+    {
+        $this->authorize('void', $document);
+
+        $data = $request->validate([
+            'reason' => ['nullable', 'string', 'max:255'],
+        ]);
+
+        try {
+            $voided = $this->converter->void($document, $request->user(), $data['reason'] ?? null);
+        } catch (RuntimeException $e) {
+            return response()->json(['message' => $e->getMessage()], 422);
+        }
+
+        return DocumentResource::make($voided->load('lines', 'contact'));
+    }
+
+    /**
+     * Quotation → invoice, proforma → invoice, and the rest of the chain.
+     *
+     * Needs the issue right rather than merely the right to create a draft,
+     * because converting produces a permanent numbered document.
+     */
+    public function convert(Request $request, Document $document): DocumentResource|JsonResponse
+    {
+        $this->authorize('convert', $document);
+
+        try {
+            $converted = $this->converter->convert($document, $request->user());
+        } catch (RuntimeException $e) {
+            return response()->json(['message' => $e->getMessage()], 422);
+        }
+
+        return DocumentResource::make($converted->load('lines', 'contact'))
+            ->response()->setStatusCode(201);
+    }
+
+    /**
+     * Credit part or all of an invoice.
+     *
+     * The honest way to reverse a sale that has been paid for: the money is
+     * acknowledged as not owed rather than the original invoice being edited
+     * to pretend it was never charged.
+     */
+    public function creditNote(Request $request, Document $document): DocumentResource|JsonResponse
+    {
+        $this->authorize('convert', $document);
+
+        $data = $request->validate([
+            'amount' => ['required', 'numeric', 'gt:0'],
+            'reason' => ['nullable', 'string', 'max:255'],
+        ]);
+
+        try {
+            $note = $this->converter->creditNote(
+                $document,
+                $request->user(),
+                (float) $data['amount'],
+                $data['reason'] ?? null,
+            );
+        } catch (RuntimeException $e) {
+            return response()->json(['message' => $e->getMessage()], 422);
+        }
+
+        return DocumentResource::make($note->load('lines', 'contact'))
+            ->response()->setStatusCode(201);
     }
 
     /**

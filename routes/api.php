@@ -5,11 +5,15 @@ use App\Http\Controllers\Api\ContactController;
 use App\Http\Controllers\Api\DealController;
 use App\Http\Controllers\Api\DocumentController;
 use App\Http\Controllers\Api\EmployeeController;
+use App\Http\Controllers\Api\EventController;
 use App\Http\Controllers\Api\ExpenseController;
+use App\Http\Controllers\Api\FormController;
 use App\Http\Controllers\Api\ImportController;
 use App\Http\Controllers\Api\ItemController;
+use App\Http\Controllers\Api\LoyaltyController;
 use App\Http\Controllers\Api\PaymentController;
 use App\Http\Controllers\Api\PayrollController;
+use App\Http\Controllers\Api\TicketController;
 use App\Http\Controllers\Api\TokenController;
 use Illuminate\Support\Facades\Route;
 
@@ -82,6 +86,36 @@ Route::prefix('v1')->group(function (): void {
             Route::get('expenses/{expense}', [ExpenseController::class, 'show'])->name('api.v1.expenses.show');
 
             /*
+             * Events. Read only here: an event is a poster somebody writes
+             * once and checks on a screen, so what an integration wants from
+             * this module is the price list and the attendee list — selling
+             * and scanning are below, under the scopes that fit them.
+             */
+            Route::get('events', [EventController::class, 'index'])->name('api.v1.events.index');
+            Route::get('events/{event}', [EventController::class, 'show'])->name('api.v1.events.show');
+            Route::get('events/{event}/ticket-types', [EventController::class, 'ticketTypes'])->name('api.v1.events.ticket-types');
+            Route::get('events/{event}/tickets', [TicketController::class, 'index'])->name('api.v1.events.tickets.index');
+
+            /*
+             * Forms, and the answers people gave them. Responses are scoped to
+             * a form rather than offered flat, for the same reason payslips are
+             * scoped to a run, and they sit behind `forms.responses` — a
+             * separate grant from seeing that a form exists, because other
+             * people's submissions are what is in them.
+             */
+            Route::get('forms', [FormController::class, 'index'])->name('api.v1.forms.index');
+            Route::get('forms/{form}', [FormController::class, 'show'])->name('api.v1.forms.show');
+            Route::get('forms/{form}/responses', [FormController::class, 'responses'])->name('api.v1.forms.responses');
+
+            /*
+             * Loyalty hangs off a customer rather than standing alone — a
+             * balance is part of somebody's record, and both the contact and
+             * the loyalty ability are checked before it is returned.
+             */
+            Route::get('loyalty/contacts/{contact}', [LoyaltyController::class, 'show'])->name('api.v1.loyalty.show');
+            Route::get('loyalty/contacts/{contact}/transactions', [LoyaltyController::class, 'transactions'])->name('api.v1.loyalty.transactions');
+
+            /*
              * The books, read only and deliberately so — every entry is the
              * consequence of a business event that already has its own
              * endpoint, and a hand-written entry would be a way to make the
@@ -125,8 +159,34 @@ Route::prefix('v1')->group(function (): void {
             Route::post('documents/{document}/issue', [DocumentController::class, 'issue'])
                 ->middleware('idempotent')->name('api.v1.documents.issue');
 
+            /*
+             * The counterpart to there being no update route. An issued
+             * document cannot be edited, so these are how a mistake is undone:
+             * void it if nothing has been paid, credit it if something has.
+             * Both are idempotent — voiding twice or crediting twice on a
+             * retry would be a different kind of wrong from the first.
+             */
+            Route::post('documents/{document}/void', [DocumentController::class, 'void'])
+                ->middleware('idempotent')->name('api.v1.documents.void');
+            Route::post('documents/{document}/convert', [DocumentController::class, 'convert'])
+                ->middleware('idempotent')->name('api.v1.documents.convert');
+            Route::post('documents/{document}/credit-note', [DocumentController::class, 'creditNote'])
+                ->middleware('idempotent')->name('api.v1.documents.credit-note');
+
             Route::post('imports/preview', [ImportController::class, 'preview'])->name('api.v1.imports.preview');
             Route::post('imports', [ImportController::class, 'store'])->name('api.v1.imports.store');
+
+            /*
+             * Checking a ticket in is an ordinary write, not a money one:
+             * nothing changes hands at the door, the seat was paid for (or
+             * not) when it was sold. A scanner at the entrance should be able
+             * to hold a token that admits people and cannot sell a thing.
+             *
+             * Nested under the event so a serial belonging to another night
+             * 404s rather than quietly admitting somebody to the wrong one.
+             */
+            Route::post('events/{event}/tickets/{ticket}/check-in', [TicketController::class, 'checkIn'])
+                ->name('api.v1.events.tickets.check-in');
         });
 
         // ── Money ────────────────────────────────────────────────────────
@@ -147,6 +207,19 @@ Route::prefix('v1')->group(function (): void {
             Route::post('expenses', [ExpenseController::class, 'store'])->name('api.v1.expenses.store');
             Route::post('expenses/{expense}/settle', [ExpenseController::class, 'settle'])->name('api.v1.expenses.settle');
             Route::post('expenses/{expense}/void', [ExpenseController::class, 'void'])->name('api.v1.expenses.void');
+
+            /*
+             * Selling a ticket and spending loyalty points are both here
+             * rather than under `write` because both move value: a ticket is
+             * a seat somebody paid for, and a point is a discount the business
+             * will honour at the till. A retry that issued the order twice or
+             * deducted the points twice is precisely what `idempotent` is for,
+             * and both are the kind of call a shaky mobile connection drops
+             * halfway through.
+             */
+            Route::post('events/{event}/tickets', [TicketController::class, 'store'])->name('api.v1.events.tickets.store');
+
+            Route::post('loyalty/contacts/{contact}/redeem', [LoyaltyController::class, 'redeem'])->name('api.v1.loyalty.redeem');
         });
 
         // ── People ───────────────────────────────────────────────────────
