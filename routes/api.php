@@ -1,10 +1,15 @@
 <?php
 
+use App\Http\Controllers\Api\AccountingController;
 use App\Http\Controllers\Api\ContactController;
 use App\Http\Controllers\Api\DealController;
 use App\Http\Controllers\Api\DocumentController;
+use App\Http\Controllers\Api\EmployeeController;
+use App\Http\Controllers\Api\ExpenseController;
 use App\Http\Controllers\Api\ImportController;
 use App\Http\Controllers\Api\ItemController;
+use App\Http\Controllers\Api\PaymentController;
+use App\Http\Controllers\Api\PayrollController;
 use App\Http\Controllers\Api\TokenController;
 use Illuminate\Support\Facades\Route;
 
@@ -46,6 +51,44 @@ Route::middleware(['auth:sanctum'])->group(function (): void {
         ->only(['index', 'store', 'show', 'destroy'])
         ->names('api.documents');
     Route::post('documents/{document}/issue', [DocumentController::class, 'issue'])->name('api.documents.issue');
+
+    /*
+     * Money in. No update route: a payment is a thing that happened, and
+     * correcting one is a refund or a void rather than an edit.
+     */
+    Route::apiResource('payments', PaymentController::class)
+        ->only(['index', 'store', 'show'])
+        ->names('api.payments');
+
+    /*
+     * Money out. Voided rather than deleted, so the reversal shows in the
+     * books instead of the original vanishing from them.
+     */
+    Route::apiResource('expenses', ExpenseController::class)
+        ->only(['index', 'store', 'show'])
+        ->names('api.expenses');
+    Route::post('expenses/{expense}/settle', [ExpenseController::class, 'settle'])->name('api.expenses.settle');
+    Route::post('expenses/{expense}/void', [ExpenseController::class, 'void'])->name('api.expenses.void');
+
+    /*
+     * The books, read only and deliberately so — every entry is the
+     * consequence of a business event that already has its own endpoint.
+     */
+    Route::prefix('accounting')->name('api.accounting.')->group(function (): void {
+        Route::get('accounts', [AccountingController::class, 'accounts'])->name('accounts');
+        Route::get('trial-balance', [AccountingController::class, 'trialBalance'])->name('trial-balance');
+        Route::get('income-statement', [AccountingController::class, 'incomeStatement'])->name('income-statement');
+        Route::get('balance-sheet', [AccountingController::class, 'balanceSheet'])->name('balance-sheet');
+        Route::get('journal', [AccountingController::class, 'journal'])->name('journal');
+    });
+
+    Route::apiResource('employees', EmployeeController::class)
+        ->only(['index', 'store', 'show', 'update'])
+        ->names('api.employees');
+
+    // Read only: approving a month is the owner's signature, not a token's.
+    Route::get('payroll/runs', [PayrollController::class, 'runs'])->name('api.payroll.runs');
+    Route::get('payroll/runs/{run}/payslips', [PayrollController::class, 'payslips'])->name('api.payroll.payslips');
 
     Route::post('imports/preview', [ImportController::class, 'preview'])->name('api.imports.preview');
     Route::post('imports', [ImportController::class, 'store'])->name('api.imports.store');

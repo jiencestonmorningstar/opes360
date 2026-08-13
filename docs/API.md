@@ -270,11 +270,121 @@ Limits: 2,000 rows and 5 MB per import.
 
 ---
 
-## 10. What is not here yet
+## 10. Payments
 
-Payments and receipts, expenses, accounting, payroll, events, forms and the
-partner programme all have screens but no API. They will arrive module by
-module, following the pattern above, as each is next touched.
+`GET /api/payments` · `POST` · `GET /api/payments/{id}`
+
+Filters: `contact_id`, `method`, `from`, `to`, `per_page`.
+
+Recording a payment does the whole thing in one transaction — the payment, its
+allocation, the invoice's balance and status, a **numbered receipt** with its
+content hash and verification token, and the customer's cached balance. That is
+why there is a service behind it rather than a row insert: a payment written
+directly would be money the books never saw and a receipt nobody can check.
+
+```json
+{ "document_id": "01j…", "amount": 50000, "method": "cash" }
+```
+
+Methods: `cash`, `bank_transfer`, `mobile_money`, `card`.
+
+`received_at` is accepted for money that changed hands earlier — a business
+entering last week's cash on Monday. Send it rather than correcting the date
+afterwards: the receipt's hash covers it, so a later edit produces a receipt
+that fails its own QR verification.
+
+Refused with `422`: paying a draft or voided document, and **overpaying**.
+Customer credit is a real feature, not a negative balance nobody meant to
+create.
+
+The response carries `receipt.verification_token` — the same token the app's
+QR is built from, so a caller printing its own copy prints a checkable one.
+
+There is no update or delete. A payment is a thing that happened; correcting it
+is a refund or a void.
+
+---
+
+## 11. Expenses
+
+`GET /api/expenses` · `POST` · `GET /api/expenses/{id}` ·
+`POST /api/expenses/{id}/settle` · `POST /api/expenses/{id}/void`
+
+Filters: `status`, `category`, `supplier_id`, `from`, `to`, `per_page`.
+
+One shape covers both a supplier bill and a direct expense, because the
+difference is a due date rather than a kind of thing.
+
+**`vat_rate` is a fraction, not a percentage.** `0.1925`, not `19.25` — the
+latter would be a 1,925% expense, so it is rejected.
+
+`category` must be one of the SYSCOHADA expense categories; the account it maps
+to is stored on the expense rather than derived at report time, so
+recategorising the list later cannot rewrite what a past month was posted
+against.
+
+`settle` pays a bill in part or in full and refuses more than is owing. `void`
+cancels one recorded in error — **voided, not deleted**, with its journal entry
+reversed rather than removed, because "what did the books say in March" has to
+keep having an answer. That is why there is no delete route.
+
+---
+
+## 12. The books
+
+`GET /api/accounting/accounts` · `trial-balance` · `income-statement` ·
+`balance-sheet` · `journal`
+
+All take `from` and `to`; `journal` also takes `journal` (the journal code).
+
+**Read only, and not as a limitation to be lifted.** Every entry in this ledger
+is the consequence of a business event — an invoice issued, a payment taken, an
+expense settled, a payroll month approved — and each of those already has its
+own endpoint that posts as a side effect. An endpoint that let you write a
+journal entry by hand would be a way to make the books disagree with the
+documents underneath them, with nothing to say why.
+
+Figures come from the same service the accounting screens and exports read, so
+a report pulled over HTTP and one printed from the app cannot differ.
+
+Requires `accounting.view`.
+
+---
+
+## 13. Staff and payroll
+
+`GET /api/employees` · `POST` · `GET|PATCH /api/employees/{id}`
+
+Filters: `status` (`active`, `suspended`, `ended`), `department`, `q`,
+`per_page`.
+
+The national id, CNPS and NIU numbers, bank account and emergency contact are
+**not returned**. They are the identity-theft-shaped fields in this table,
+`employees.view` is held by every manager, and nothing has needed to read them
+back over HTTP yet. Pay is not here either — it lives behind the payroll
+permissions.
+
+`GET /api/payroll/runs` · `GET /api/payroll/runs/{id}/payslips`
+
+Read only. Running a month, approving it and marking it paid are deliberately
+absent: approving commits the business to a month's wages and to the CNPS and
+IRPP declarations that follow. The role catalogue already keeps
+`payroll.approve` away from the accountant who runs it, and a signature is not
+a thing to hand to a token.
+
+Payslips are scoped to a run rather than offered as a flat list, because "every
+payslip this business has ever produced" is a question with no honest use and a
+very obvious dishonest one.
+
+---
+
+## 14. What is not here yet
+
+Events and ticketing, forms, loyalty and the partner programme have screens but
+no API. They will follow the pattern above as each is next touched.
+
+Also absent by design, not by omission: voiding a sales document, refunding a
+payment, and anything that posts to the ledger by hand.
 
 `PATCH /api/deals/{id}` accepts a `stage` and applies the same closure rules as
 `/move`, so neither can leave `closed_at` disagreeing with the stage. Prefer
