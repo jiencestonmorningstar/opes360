@@ -27,6 +27,9 @@ use App\Livewire\Business\Stationery;
 use App\Livewire\CalendarPage\Index as CalendarIndex;
 use App\Livewire\Customers\Form as CustomerForm;
 use App\Livewire\Customers\Index as CustomersIndex;
+use App\Livewire\Deals\Form as DealForm;
+use App\Livewire\Imports\Index as ImportsIndex;
+use App\Livewire\Deals\Index as DealsIndex;
 use App\Livewire\Customers\Show as CustomerShow;
 use App\Livewire\Dashboard;
 use App\Livewire\Documents\Create as DocumentCreate;
@@ -164,6 +167,12 @@ Route::get('/', function () {
 
 Route::middleware('auth')->group(function () {
     Route::get('/sales', SalesIndex::class)->middleware('can:sales.view')->name('sales');
+
+    Route::get('/import', ImportsIndex::class)->name('imports');
+
+    Route::get('/deals', DealsIndex::class)->middleware('can:deals.view')->name('deals');
+    Route::get('/deals/create', DealForm::class)->middleware('can:deals.create')->name('deals.create');
+    Route::get('/deals/{deal}/edit', DealForm::class)->middleware('can:update,deal')->name('deals.edit');
 
     Route::get('/customers', CustomersIndex::class)->middleware('can:customers.view')->name('customers');
     Route::get('/customers/create', CustomerForm::class)->middleware('can:customers.create')->name('customers.create');

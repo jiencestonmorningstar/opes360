@@ -33,6 +33,7 @@ class RolePermissionSeeder extends Seeder
             'Payroll' => ['view', 'run'],
             'Leave' => ['view', 'request', 'approve'],
             'Customers' => ['view', 'create', 'update'],
+            'Deals' => ['view', 'create', 'update', 'delete'],
             'Products' => ['view', 'create', 'update', 'adjust-stock', 'manage-locations'],
             'Assets' => ['view'],
             'Banking' => ['view'],
@@ -64,6 +65,7 @@ class RolePermissionSeeder extends Seeder
             'Payroll' => ['view', 'run', 'pay'],
             'Leave' => ['view'],
             'Customers' => ['view', 'create', 'update'],
+            'Deals' => ['view'],
             'Products' => ['view'],
             // The asset register and the bank reconciliation are the
             // accountant's work before they are anybody's.
@@ -84,6 +86,9 @@ class RolePermissionSeeder extends Seeder
             'Receipts' => ['view', 'create'],
             'Payments' => ['view', 'record'],
             'Customers' => ['view', 'create', 'update'],
+            // Chasing deals is this role's actual job, so it gets the full set
+            // here even though it cannot issue the invoice one turns into.
+            'Deals' => ['view', 'create', 'update', 'delete'],
             'Products' => ['view'],
             'Papers' => ['view', 'create'],
             'Forms' => ['view', 'create', 'update', 'responses'],
@@ -120,6 +125,7 @@ class RolePermissionSeeder extends Seeder
             'Assets' => ['view'],
             'Banking' => ['view'],
             'Customers' => ['view'],
+            'Deals' => ['view'],
             'Products' => ['view'],
             'Papers' => ['view'],
             'Forms' => ['view', 'responses'],

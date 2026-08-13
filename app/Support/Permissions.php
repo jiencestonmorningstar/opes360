@@ -35,6 +35,11 @@ class Permissions
         'Payroll' => ['view', 'run', 'approve', 'pay', 'void'],
         'Leave' => ['view', 'request', 'approve'],
         'Customers' => ['view', 'create', 'update', 'delete'],
+        // The sales pipeline. Separate from Sales, which is the paperwork:
+        // a junior can chase a deal without being able to issue the invoice
+        // it turns into, and that is the common arrangement rather than an
+        // exotic one.
+        'Deals' => ['view', 'create', 'update', 'delete'],
         // `manage-locations` sits in this group because it is about stock, but
         // belongs to its own module: a business can sell things from one shelf
         // without ever needing a warehouse. See config/modules.php.

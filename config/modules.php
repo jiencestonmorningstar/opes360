@@ -3,6 +3,7 @@
 use App\Models\BankAccount;
 use App\Models\BusinessDocument;
 use App\Models\Contact;
+use App\Models\Deal;
 use App\Models\Document;
 use App\Models\Employee;
 use App\Models\Event;
@@ -81,6 +82,18 @@ return [
         'default' => true,
         'groups' => ['customers'],
         'models' => [Contact::class],
+    ],
+
+    'deals' => [
+        'label' => 'Sales pipeline',
+        'description' => 'Leads and deals in progress, from first enquiry to the invoice.',
+        'icon' => 'trending-up',
+        'default' => true,
+        // A deal is about somebody. Without the customer book there is nowhere
+        // for a won deal to leave a customer behind.
+        'requires' => ['customers'],
+        'groups' => ['deals'],
+        'models' => [Deal::class],
     ],
 
     'products' => [

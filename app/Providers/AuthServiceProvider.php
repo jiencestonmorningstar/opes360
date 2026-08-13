@@ -5,6 +5,7 @@ namespace App\Providers;
 use App\Models\Artisan;
 use App\Models\BusinessDocument;
 use App\Models\Contact;
+use App\Models\Deal;
 use App\Models\Document;
 use App\Models\Event;
 use App\Models\Form;
@@ -16,6 +17,7 @@ use App\Models\User;
 use App\Policies\ArtisanPolicy;
 use App\Policies\BusinessDocumentPolicy;
 use App\Policies\ContactPolicy;
+use App\Policies\DealPolicy;
 use App\Policies\DocumentPolicy;
 use App\Policies\EventPolicy;
 use App\Policies\FormPolicy;
@@ -38,6 +40,7 @@ class AuthServiceProvider extends ServiceProvider
     protected $policies = [
         Document::class => DocumentPolicy::class,
         Contact::class => ContactPolicy::class,
+        Deal::class => DealPolicy::class,
         Item::class => ItemPolicy::class,
         Payment::class => PaymentPolicy::class,
         Receipt::class => ReceiptPolicy::class,

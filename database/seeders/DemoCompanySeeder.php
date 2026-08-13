@@ -10,6 +10,7 @@ use App\Models\ArtisanTestimonial;
 use App\Models\Company;
 use App\Models\CompanyReview;
 use App\Models\Contact;
+use App\Models\Deal;
 use App\Models\Document;
 use App\Models\DocumentLine;
 use App\Models\Event;
@@ -27,6 +28,7 @@ use App\Models\TicketType;
 use App\Models\User;
 use App\Models\VerificationToken;
 use App\Services\Accounting\RecordsBusinessEvents;
+use App\Services\DealPipeline;
 use App\Services\DocumentIssuer;
 use App\Services\ExpenseRecorder;
 use App\Services\LoyaltyLedger;
@@ -188,6 +190,7 @@ class DemoCompanySeeder extends Seeder
         $this->seedRestOfWeek();
         $this->seedYesterday();
         $this->seedToday($customers, $lease);
+        $this->seedPipeline($customers);
         $this->seedExpenses($customers);
         // After the sales, so the count sees shelves the invoices have already
         // drawn down — which is the whole reason a business counts.
@@ -526,6 +529,49 @@ class DemoCompanySeeder extends Seeder
             ->get();
     }
 
+    /**
+     * A pipeline with work visibly in progress.
+     *
+     * A demo account whose board is empty shows the feature exists and nothing
+     * about what it is for, so there is a deal in every open stage, one won and
+     * one lost — including a bare lead with no customer record, because that is
+     * the case the board is most often actually used for.
+     */
+    protected function seedPipeline($customers): void
+    {
+        $pipeline = app(DealPipeline::class);
+        $named = $customers instanceof \Illuminate\Support\Collection ? $customers->values() : collect($customers)->values();
+
+        $deals = [
+            ['Website and branding refresh', 'lead', 1450000, 21, null],
+            ['Point-of-sale rollout, 4 branches', 'qualified', 3800000, 14, 0],
+            ['Annual support retainer', 'proposal', 2400000, 9, 1],
+            ['Stock system for the Bonabéri warehouse', 'proposal', 5600000, 30, 2],
+            ['Payroll migration', 'won', 1900000, -3, 3],
+            ['Tablet fleet for field staff', 'lost', 2750000, -10, null],
+        ];
+
+        foreach ($deals as [$title, $stage, $value, $daysOut, $customerIndex]) {
+            $contact = $customerIndex !== null ? $named->get($customerIndex) : null;
+
+            $deal = $pipeline->create([
+                'title' => $title,
+                'contact_id' => $contact?->id,
+                // The lead that is not a customer yet: a name and a number.
+                'lead_name' => $contact === null ? 'Ets. Nguemo & Fils' : null,
+                'lead_phone' => $contact === null ? '+237 6 99 12 34 56' : null,
+                'value' => $value,
+                'currency' => $this->company->currency,
+                'stage' => $stage,
+                'expected_close_on' => $this->today->addDays($daysOut)->toDateString(),
+            ], $this->owner);
+
+            if ($stage === 'lost') {
+                $deal->forceFill(['lost_reason' => 'Went with a cheaper quote'])->save();
+            }
+        }
+    }
+
     /** Keeps re-running the seeder idempotent without touching other tenants. */
     protected function wipeExistingDemoData(): void
     {
@@ -540,6 +586,7 @@ class DemoCompanySeeder extends Seeder
         PaymentAllocation::query()->delete();
         Receipt::query()->delete();
         Payment::query()->forceDelete();
+        Deal::query()->forceDelete();
         DocumentLine::query()->delete();
         Document::query()->forceDelete();
         NumberLease::query()->delete();

@@ -62,6 +62,7 @@ return [
         ['key' => 'sales', 'label' => 'Sales', 'icon' => 'sales', 'route' => 'sales', 'primary' => true, 'ability' => 'sales.view'],
         ['key' => 'customers', 'label' => 'Customers', 'icon' => 'user', 'route' => 'customers', 'primary' => true, 'ability' => 'customers.view'],
         ['key' => 'business', 'label' => 'Business', 'icon' => 'briefcase', 'route' => 'business', 'primary' => true, 'ability' => 'business.view'],
+        ['key' => 'deals', 'label' => 'Pipeline', 'icon' => 'trending-up', 'route' => 'deals', 'ability' => 'deals.view'],
         ['key' => 'products', 'label' => 'Products', 'icon' => 'cube', 'route' => 'products', 'ability' => 'products.view'],
         ['key' => 'papers', 'label' => 'Documents', 'icon' => 'document', 'route' => 'papers', 'ability' => 'papers.view'],
         ['key' => 'forms', 'label' => 'Forms', 'icon' => 'clipboard', 'route' => 'forms', 'ability' => 'forms.view'],
@@ -82,6 +83,9 @@ return [
         ['key' => 'team', 'label' => 'Team', 'icon' => 'users', 'route' => 'team', 'ability' => 'employees.view'],
         ['key' => 'payroll', 'label' => 'Payroll', 'icon' => 'wallet', 'route' => 'payroll', 'ability' => 'payroll.view'],
         ['key' => 'calendar', 'label' => 'Calendar', 'icon' => 'calendar', 'route' => 'calendar', 'ability' => 'sales.view'],
+        // Reachable by anyone who may create the records it writes; the screen
+        // itself asks for the same permission per import type.
+        ['key' => 'imports', 'label' => 'Import records', 'icon' => 'arrow-up', 'route' => 'imports', 'ability' => 'customers.create'],
         ['key' => 'settings', 'label' => 'Settings', 'icon' => 'cog', 'route' => 'settings'],
         ['key' => 'help', 'label' => 'Help & Support', 'icon' => 'help', 'route' => 'help'],
     ],
