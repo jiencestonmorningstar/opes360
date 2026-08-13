@@ -60,6 +60,21 @@ class Permissions
         // but it is only reachable at all on a secretariat account. See
         // AuthServiceProvider, which adds that second condition to these gates.
         'Partners' => ['view', 'manage', 'issue', 'withdraw'],
+        /*
+         * Outbound webhooks. Granted to nobody but the Owner and the
+         * Administrator, and that is the whole reason it is a group of its own
+         * rather than an action on Settings.
+         *
+         * Subscribing an endpoint is not a settings change, it is a standing
+         * export: whoever can add one can point `payment.recorded` at a server
+         * they control and read every sale the business makes, for as long as
+         * nobody notices. A manager who may see today's takings should not
+         * thereby be able to arrange a copy of them forever, and a sales
+         * officer certainly should not. `view` is separated from `manage` so
+         * an auditor role could be given sight of the delivery log later
+         * without being able to add a destination.
+         */
+        'Webhooks' => ['view', 'manage'],
         'Users' => ['view', 'invite', 'update-role', 'remove'],
         'Devices' => ['view', 'revoke'],
         'Settings' => ['view', 'update'],

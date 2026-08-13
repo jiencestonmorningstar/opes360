@@ -7,6 +7,7 @@ use App\Http\Resources\PaymentResource;
 use App\Models\Document;
 use App\Models\Payment;
 use App\Services\PaymentRecorder;
+use App\Services\PaymentRefunder;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -28,7 +29,10 @@ use RuntimeException;
  */
 class PaymentController extends ApiController
 {
-    public function __construct(private readonly PaymentRecorder $recorder) {}
+    public function __construct(
+        private readonly PaymentRecorder $recorder,
+        private readonly PaymentRefunder $refunder,
+    ) {}
 
     public function index(Request $request): AnonymousResourceCollection
     {
@@ -104,5 +108,63 @@ class PaymentController extends ApiController
         $this->authorize('view', $payment);
 
         return PaymentResource::make($payment->load('receipt.verificationToken', 'allocations'));
+    }
+
+    /**
+     * Give money back.
+     *
+     * The payment is not deleted and its receipt keeps verifying — the
+     * customer is holding a printed copy saying money changed hands, and it
+     * did. The refund is recorded beside it, the invoice becomes owed again,
+     * the ledger is reversed and any loyalty points earned are taken back in
+     * proportion.
+     *
+     * `reason` is required rather than optional. A refund nobody can explain a
+     * year later is the entry in the books that matters most and reads least.
+     */
+    public function refund(Request $request, Payment $payment): JsonResponse
+    {
+        $this->authorize('view', $payment);
+        $this->authorize('payments.refund');
+
+        $data = $request->validate([
+            'amount' => ['required', 'numeric', 'gt:0'],
+            // How it went back, which need not be how it came in: cash taken
+            // at the counter is often returned by mobile money.
+            'method' => ['required', Rule::in(array_column(PaymentMethod::cases(), 'value'))],
+            'reason' => ['required', 'string', 'max:255'],
+            'reference' => ['nullable', 'string', 'max:120'],
+            'refunded_at' => ['nullable', 'date'],
+        ], [
+            'reason.required' => 'Say why this is being refunded.',
+        ]);
+
+        try {
+            $refund = $this->refunder->refund(
+                payment: $payment,
+                actor: $request->user(),
+                amount: (float) $data['amount'],
+                method: PaymentMethod::from($data['method']),
+                reason: $data['reason'],
+                reference: $data['reference'] ?? null,
+                refundedAt: isset($data['refunded_at']) ? now()->parse($data['refunded_at']) : null,
+            );
+        } catch (RuntimeException $e) {
+            return response()->json(['message' => $e->getMessage()], 422);
+        }
+
+        return response()->json([
+            'data' => [
+                'id' => $refund->id,
+                'payment_id' => $refund->payment_id,
+                'amount' => (float) $refund->amount,
+                'currency' => $refund->currency,
+                'method' => $refund->method?->value,
+                'reason' => $refund->reason,
+                'reference' => $refund->reference,
+                'refunded_at' => $refund->refunded_at?->toIso8601String(),
+                'payment' => PaymentResource::make($payment->fresh()->load('allocations')),
+            ],
+        ], 201);
     }
 }

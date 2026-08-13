@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Api;
 use App\Http\Resources\ContactResource;
 use App\Livewire\Customers\Form as CustomerForm;
 use App\Models\Contact;
+use App\Services\WebhookDispatcher;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -59,6 +60,8 @@ class ContactController extends ApiController
             CustomerForm::attributesFrom($data)
             + ['type' => $data['type'] ?? 'customer', 'created_by' => $request->user()->id]
         );
+
+        app(WebhookDispatcher::class)->contactCreated($contact);
 
         return ContactResource::make($contact)->response()->setStatusCode(201);
     }

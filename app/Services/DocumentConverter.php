@@ -11,6 +11,7 @@ use App\Services\Accounting\Ledger;
 use App\Services\Accounting\RecordsBusinessEvents;
 use App\Services\Stock\StockLedger;
 use App\Support\CurrentCompany;
+use App\Support\WebhookEvents;
 use Illuminate\Support\Facades\DB;
 use RuntimeException;
 
@@ -284,6 +285,20 @@ class DocumentConverter
             if ($document->contact && $document->type->affectsCustomerAccount()) {
                 $document->contact->recomputeBalance();
             }
+
+            // Anybody told about the issue has to be told about the retraction,
+            // or their copy of the business keeps a sale that no longer exists.
+            app(WebhookDispatcher::class)->send(WebhookEvents::DOCUMENT_VOIDED, [
+                'id' => $document->id,
+                'type' => $document->type->value,
+                'number' => $document->number,
+                'status' => $document->status->value,
+                'contact_id' => $document->contact_id,
+                'currency' => $document->currency,
+                'total' => (float) $document->total,
+                'reason' => $reason,
+                'voided_at' => now()->toIso8601String(),
+            ], $document->company);
 
             return $document;
         });

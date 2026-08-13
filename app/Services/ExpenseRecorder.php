@@ -11,6 +11,7 @@ use App\Services\Accounting\Ledger;
 use App\Services\Accounting\RecordsBusinessEvents;
 use App\Support\Accounting\ChartOfAccounts;
 use App\Support\CurrentCompany;
+use App\Support\WebhookEvents;
 use Illuminate\Support\Facades\DB;
 use RuntimeException;
 
@@ -76,6 +77,25 @@ class ExpenseRecorder
             }
 
             $this->post($expense, $company, $actor);
+
+            // Told after posting, so the payload carries the settled status an
+            // immediately-paid expense ends up with rather than the `recorded`
+            // it was created as.
+            app(WebhookDispatcher::class)->send(WebhookEvents::EXPENSE_RECORDED, [
+                'id' => $expense->id,
+                'number' => $expense->number,
+                'reference' => $expense->reference,
+                'description' => $expense->description,
+                'category' => $expense->category,
+                'status' => $expense->status,
+                'supplier_id' => $expense->supplier_id,
+                'currency' => $expense->currency,
+                'amount' => (float) $expense->amount,
+                'vat_amount' => (float) $expense->vat_amount,
+                'total' => (float) $expense->total,
+                'issue_date' => $expense->issue_date?->toDateString(),
+                'due_date' => $expense->due_date?->toDateString(),
+            ], $company);
 
             return $expense;
         });

@@ -58,6 +58,7 @@ use App\Livewire\Reports\Index as ReportsIndex;
 use App\Livewire\Sales\Index as SalesIndex;
 use App\Livewire\Scan;
 use App\Livewire\Settings\ApiTokens as SettingsApiTokens;
+use App\Livewire\Settings\Webhooks as SettingsWebhooks;
 use App\Livewire\Settings\Billing as SettingsBilling;
 use App\Livewire\Settings\Index as SettingsIndex;
 use App\Livewire\Stock\Count as StockCount;
@@ -282,6 +283,14 @@ Route::middleware('auth')->group(function () {
     Route::get('/settings', SettingsIndex::class)->name('settings');
     Route::get('/settings/billing', SettingsBilling::class)->middleware('can:business.update')->name('settings.billing');
     Route::get('/settings/api-tokens', SettingsApiTokens::class)->name('settings.api-tokens');
+    /*
+     * Webhooks. Gated at the route as well as in the component, because
+     * `webhooks.manage` is the Owner's and the Administrator's alone —
+     * subscribing an endpoint to `payment.recorded` is a standing export of
+     * every sale the business makes, not a preference.
+     */
+    Route::get('/settings/webhooks', SettingsWebhooks::class)
+        ->middleware('can:webhooks.manage')->name('settings.webhooks');
     Route::get('/scan', Scan::class)->name('scan');
     Route::get('/two-factor/qr.svg', [AuthController::class, 'twoFactorQr'])->name('two-factor.qr');
     Route::get('/email/verify/{id}/{hash}', [AuthController::class, 'verifyEmail'])

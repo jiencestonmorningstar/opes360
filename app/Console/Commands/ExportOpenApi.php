@@ -69,6 +69,7 @@ class ExportOpenApi extends Command
         'payments.index' => 'List payments received.',
         'payments.store' => 'Record a payment against an issued document, and issue its receipt.',
         'payments.show' => 'One payment, with its receipt.',
+        'payments.refund' => 'Give money back. The payment and its receipt survive; the invoice becomes owed again.',
 
         'expenses.index' => 'List supplier bills and spending.',
         'expenses.store' => 'Record an expense. vat_rate is a fraction, not a percentage.',
@@ -105,6 +106,14 @@ class ExportOpenApi extends Command
         'loyalty.transactions' => 'The points a customer has earned and spent.',
         'loyalty.redeem' => 'Spend a customer\'s points.',
 
+        'webhooks.index' => 'List registered webhook endpoints. The signing secret is never returned here.',
+        'webhooks.store' => 'Register an endpoint. The response carries the signing secret, and it is the only one that ever will.',
+        'webhooks.show' => 'One endpoint.',
+        'webhooks.update' => 'Change an endpoint. Re-enabling one clears the failure count that switched it off.',
+        'webhooks.destroy' => 'Remove an endpoint. Nothing further is sent to it.',
+        'webhooks.deliveries' => 'What we tried to send, with the body, the response and the error.',
+        'webhooks.redeliver' => 'Send a failed delivery again, with the body it originally carried and the same delivery id.',
+
         'imports.preview' => 'Read a CSV or Excel file and report what would happen. Writes nothing.',
         'imports.store' => 'Import the rows a preview showed.',
     ];
@@ -114,7 +123,7 @@ class ExportOpenApi extends Command
         'payments.store', 'expenses.store', 'expenses.settle', 'expenses.void',
         'documents.store', 'documents.issue', 'documents.void',
         'documents.convert', 'documents.credit-note',
-        'events.tickets.store', 'loyalty.redeem',
+        'events.tickets.store', 'loyalty.redeem', 'payments.refund',
     ];
 
     public function handle(): int

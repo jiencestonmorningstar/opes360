@@ -235,6 +235,30 @@
             </div>
         </x-ui.panel>
 
+        {{-- Webhooks. Beside API tokens because they are two halves of the same
+             thing — a token is how another program asks us, a webhook is how we
+             tell it — but company-wide rather than personal, and Owner/Admin
+             only: an endpoint subscribed to payments is a standing copy of the
+             business's revenue. --}}
+        @can('webhooks.manage')
+            <x-ui.panel title="Webhooks" action="Manage" :action-href="route('settings.webhooks')">
+                <div class="flex items-center gap-3">
+                    <span class="flex size-[42px] shrink-0 items-center justify-center rounded-xl bg-tint-blue">
+                        <x-icon name="sync" class="size-[20px] text-brand" />
+                    </span>
+                    <div class="min-w-0">
+                        @php $endpointCount = \App\Models\WebhookEndpoint::query()->count(); @endphp
+                        <p class="text-[14.5px] font-bold text-ink">
+                            {{ $endpointCount }} {{ Str::plural('endpoint', $endpointCount) }}
+                        </p>
+                        <p class="mt-0.5 text-[12.5px] leading-relaxed text-muted">
+                            Have us tell another program the moment something happens, instead of it asking all day.
+                        </p>
+                    </div>
+                </div>
+            </x-ui.panel>
+        @endcan
+
         {{-- Team --}}
         <x-ui.panel title="Team" body-class="-mx-1.5">
             @can('users.invite')

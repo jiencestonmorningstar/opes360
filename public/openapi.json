@@ -2638,6 +2638,56 @@
                 ]
             }
         },
+        "/api/v1/payments/{payment}/refund": {
+            "post": {
+                "operationId": "paymentsRefund",
+                "summary": "Give money back. The payment and its receipt survive; the invoice becomes owed again.",
+                "tags": [
+                    "Payments"
+                ],
+                "parameters": [
+                    {
+                        "name": "payment",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "$ref": "#/components/parameters/idempotencyKey"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Success"
+                    },
+                    "401": {
+                        "description": "No token, or a revoked one"
+                    },
+                    "403": {
+                        "description": "The permission, module switch or token scope says no"
+                    },
+                    "404": {
+                        "description": "Not found, or belongs to another business"
+                    },
+                    "422": {
+                        "description": "Validation failed, or a rule of the domain refused"
+                    },
+                    "429": {
+                        "description": "Rate limited"
+                    }
+                },
+                "description": "Requires the `money` token scope, on top of the permission the same action needs in the app.",
+                "security": [
+                    {
+                        "bearerAuth": [
+                            "money"
+                        ]
+                    }
+                ]
+            }
+        },
         "/api/v1/payroll/runs": {
             "get": {
                 "operationId": "payrollRuns",
@@ -2799,6 +2849,344 @@
                         "description": "Rate limited"
                     }
                 }
+            }
+        },
+        "/api/v1/webhooks": {
+            "get": {
+                "operationId": "webhooksIndex",
+                "summary": "List registered webhook endpoints. The signing secret is never returned here.",
+                "tags": [
+                    "Webhooks"
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Success"
+                    },
+                    "401": {
+                        "description": "No token, or a revoked one"
+                    },
+                    "403": {
+                        "description": "The permission, module switch or token scope says no"
+                    },
+                    "404": {
+                        "description": "Not found, or belongs to another business"
+                    },
+                    "422": {
+                        "description": "Validation failed, or a rule of the domain refused"
+                    },
+                    "429": {
+                        "description": "Rate limited"
+                    }
+                },
+                "description": "Requires the `read` token scope, on top of the permission the same action needs in the app.",
+                "security": [
+                    {
+                        "bearerAuth": [
+                            "read"
+                        ]
+                    }
+                ]
+            },
+            "post": {
+                "operationId": "webhooksStore",
+                "summary": "Register an endpoint. The response carries the signing secret, and it is the only one that ever will.",
+                "tags": [
+                    "Webhooks"
+                ],
+                "responses": {
+                    "201": {
+                        "description": "Success"
+                    },
+                    "401": {
+                        "description": "No token, or a revoked one"
+                    },
+                    "403": {
+                        "description": "The permission, module switch or token scope says no"
+                    },
+                    "404": {
+                        "description": "Not found, or belongs to another business"
+                    },
+                    "422": {
+                        "description": "Validation failed, or a rule of the domain refused"
+                    },
+                    "429": {
+                        "description": "Rate limited"
+                    }
+                },
+                "description": "Requires the `write` token scope, on top of the permission the same action needs in the app.",
+                "security": [
+                    {
+                        "bearerAuth": [
+                            "write"
+                        ]
+                    }
+                ]
+            }
+        },
+        "/api/v1/webhooks/deliveries": {
+            "get": {
+                "operationId": "webhooksDeliveries",
+                "summary": "What we tried to send, with the body, the response and the error.",
+                "tags": [
+                    "Webhooks"
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Success"
+                    },
+                    "401": {
+                        "description": "No token, or a revoked one"
+                    },
+                    "403": {
+                        "description": "The permission, module switch or token scope says no"
+                    },
+                    "404": {
+                        "description": "Not found, or belongs to another business"
+                    },
+                    "422": {
+                        "description": "Validation failed, or a rule of the domain refused"
+                    },
+                    "429": {
+                        "description": "Rate limited"
+                    }
+                },
+                "description": "Requires the `read` token scope, on top of the permission the same action needs in the app.",
+                "security": [
+                    {
+                        "bearerAuth": [
+                            "read"
+                        ]
+                    }
+                ]
+            }
+        },
+        "/api/v1/webhooks/deliveries/{delivery}/redeliver": {
+            "post": {
+                "operationId": "webhooksRedeliver",
+                "summary": "Send a failed delivery again, with the body it originally carried and the same delivery id.",
+                "tags": [
+                    "Webhooks"
+                ],
+                "parameters": [
+                    {
+                        "name": "delivery",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Success"
+                    },
+                    "401": {
+                        "description": "No token, or a revoked one"
+                    },
+                    "403": {
+                        "description": "The permission, module switch or token scope says no"
+                    },
+                    "404": {
+                        "description": "Not found, or belongs to another business"
+                    },
+                    "422": {
+                        "description": "Validation failed, or a rule of the domain refused"
+                    },
+                    "429": {
+                        "description": "Rate limited"
+                    }
+                },
+                "description": "Requires the `write` token scope, on top of the permission the same action needs in the app.",
+                "security": [
+                    {
+                        "bearerAuth": [
+                            "write"
+                        ]
+                    }
+                ]
+            }
+        },
+        "/api/v1/webhooks/{webhook}": {
+            "get": {
+                "operationId": "webhooksShow",
+                "summary": "One endpoint.",
+                "tags": [
+                    "Webhooks"
+                ],
+                "parameters": [
+                    {
+                        "name": "webhook",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Success"
+                    },
+                    "401": {
+                        "description": "No token, or a revoked one"
+                    },
+                    "403": {
+                        "description": "The permission, module switch or token scope says no"
+                    },
+                    "404": {
+                        "description": "Not found, or belongs to another business"
+                    },
+                    "422": {
+                        "description": "Validation failed, or a rule of the domain refused"
+                    },
+                    "429": {
+                        "description": "Rate limited"
+                    }
+                },
+                "description": "Requires the `read` token scope, on top of the permission the same action needs in the app.",
+                "security": [
+                    {
+                        "bearerAuth": [
+                            "read"
+                        ]
+                    }
+                ]
+            },
+            "put": {
+                "operationId": "webhooksUpdate",
+                "summary": "Change an endpoint. Re-enabling one clears the failure count that switched it off.",
+                "tags": [
+                    "Webhooks"
+                ],
+                "parameters": [
+                    {
+                        "name": "webhook",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Success"
+                    },
+                    "401": {
+                        "description": "No token, or a revoked one"
+                    },
+                    "403": {
+                        "description": "The permission, module switch or token scope says no"
+                    },
+                    "404": {
+                        "description": "Not found, or belongs to another business"
+                    },
+                    "422": {
+                        "description": "Validation failed, or a rule of the domain refused"
+                    },
+                    "429": {
+                        "description": "Rate limited"
+                    }
+                },
+                "description": "Requires the `write` token scope, on top of the permission the same action needs in the app.",
+                "security": [
+                    {
+                        "bearerAuth": [
+                            "write"
+                        ]
+                    }
+                ]
+            },
+            "patch": {
+                "operationId": "webhooksUpdate",
+                "summary": "Change an endpoint. Re-enabling one clears the failure count that switched it off.",
+                "tags": [
+                    "Webhooks"
+                ],
+                "parameters": [
+                    {
+                        "name": "webhook",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Success"
+                    },
+                    "401": {
+                        "description": "No token, or a revoked one"
+                    },
+                    "403": {
+                        "description": "The permission, module switch or token scope says no"
+                    },
+                    "404": {
+                        "description": "Not found, or belongs to another business"
+                    },
+                    "422": {
+                        "description": "Validation failed, or a rule of the domain refused"
+                    },
+                    "429": {
+                        "description": "Rate limited"
+                    }
+                },
+                "description": "Requires the `write` token scope, on top of the permission the same action needs in the app.",
+                "security": [
+                    {
+                        "bearerAuth": [
+                            "write"
+                        ]
+                    }
+                ]
+            },
+            "delete": {
+                "operationId": "webhooksDestroy",
+                "summary": "Remove an endpoint. Nothing further is sent to it.",
+                "tags": [
+                    "Webhooks"
+                ],
+                "parameters": [
+                    {
+                        "name": "webhook",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "responses": {
+                    "204": {
+                        "description": "Success"
+                    },
+                    "401": {
+                        "description": "No token, or a revoked one"
+                    },
+                    "403": {
+                        "description": "The permission, module switch or token scope says no"
+                    },
+                    "404": {
+                        "description": "Not found, or belongs to another business"
+                    },
+                    "422": {
+                        "description": "Validation failed, or a rule of the domain refused"
+                    },
+                    "429": {
+                        "description": "Rate limited"
+                    }
+                },
+                "description": "Requires the `write` token scope, on top of the permission the same action needs in the app.",
+                "security": [
+                    {
+                        "bearerAuth": [
+                            "write"
+                        ]
+                    }
+                ]
             }
         }
     }

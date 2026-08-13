@@ -9,6 +9,7 @@ use App\Models\VerificationToken;
 use App\Services\Accounting\RecordsBusinessEvents;
 use App\Services\Stock\StockLedger;
 use App\Support\CurrentCompany;
+use App\Support\WebhookEvents;
 use Illuminate\Support\Facades\DB;
 use RuntimeException;
 
@@ -92,6 +93,26 @@ class DocumentIssuer
                     $document->contact?->recomputeBalance();
                 }
             }
+
+            /*
+             * And anybody who asked to be told. Called from inside the
+             * transaction because this is where the event is known, but it
+             * queues nothing until the commit lands — see WebhookDispatcher,
+             * which exists precisely so that a webhook cannot be the reason an
+             * invoice fails to issue.
+             */
+            app(WebhookDispatcher::class)->send(WebhookEvents::DOCUMENT_ISSUED, [
+                'id' => $document->id,
+                'type' => $document->type->value,
+                'number' => $document->number,
+                'status' => $document->status->value,
+                'contact_id' => $document->contact_id,
+                'currency' => $document->currency,
+                'total' => (float) $document->total,
+                'balance' => (float) $document->balance,
+                'issue_date' => $document->issue_date?->toDateString(),
+                'issued_at' => $document->issued_at?->toIso8601String(),
+            ], $company);
 
             return $document;
         });

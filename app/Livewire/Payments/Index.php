@@ -4,16 +4,22 @@ namespace App\Livewire\Payments;
 
 use App\Enums\PaymentMethod;
 use App\Models\Payment;
+use App\Models\Refund;
+use App\Services\PaymentRefunder;
 use App\Support\CurrentCompany;
 use Carbon\CarbonImmutable;
 use Illuminate\Contracts\View\View;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Foundation\Auth\Access\AuthorizesRequests;
+use Illuminate\Validation\Rule;
 use Livewire\Attributes\Url;
 use Livewire\Component;
 use Livewire\WithPagination;
+use RuntimeException;
 
 class Index extends Component
 {
+    use AuthorizesRequests;
     use WithPagination;
 
     #[Url]
@@ -31,6 +37,78 @@ class Index extends Component
     public function updatingSearch(): void
     {
         $this->resetPage();
+    }
+
+    // ── Refunding ────────────────────────────────────────────────────────
+
+    public ?string $refundingId = null;
+
+    public string $refundAmount = '';
+
+    public string $refundMethod = 'cash';
+
+    public string $refundReason = '';
+
+    public function startRefund(string $id): void
+    {
+        $this->authorize('payments.refund');
+
+        $payment = Payment::findOrFail($id);
+
+        $this->refundingId = $payment->id;
+        // Defaults to what is left rather than to the whole payment: a second
+        // refund on a partly-refunded payment should not offer to overpay.
+        $this->refundAmount = (string) $this->refundableOn($payment);
+        $this->refundMethod = $payment->method?->value ?? 'cash';
+        $this->refundReason = '';
+        $this->resetErrorBag();
+    }
+
+    public function cancelRefund(): void
+    {
+        $this->reset('refundingId', 'refundAmount', 'refundMethod', 'refundReason');
+    }
+
+    public function refund(PaymentRefunder $refunder): void
+    {
+        $this->authorize('payments.refund');
+
+        $this->validate([
+            'refundAmount' => ['required', 'numeric', 'gt:0'],
+            'refundMethod' => ['required', Rule::in(array_column(PaymentMethod::cases(), 'value'))],
+            'refundReason' => ['required', 'string', 'max:255'],
+        ], [
+            'refundReason.required' => 'Say why this is being refunded.',
+        ]);
+
+        $payment = Payment::findOrFail($this->refundingId);
+
+        try {
+            $refunder->refund(
+                payment: $payment,
+                actor: auth()->user(),
+                amount: (float) $this->refundAmount,
+                method: PaymentMethod::from($this->refundMethod),
+                reason: $this->refundReason,
+            );
+        } catch (RuntimeException $e) {
+            $this->addError('refundAmount', $e->getMessage());
+
+            return;
+        }
+
+        session()->flash('status', 'Refund recorded. The invoice is owed again.');
+
+        $this->cancelRefund();
+    }
+
+    /** What is left to give back on a payment. */
+    public function refundableOn(Payment $payment): float
+    {
+        return round(
+            (float) $payment->amount - (float) Refund::where('payment_id', $payment->id)->sum('amount'),
+            2
+        );
     }
 
     public function render(): View

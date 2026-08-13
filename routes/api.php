@@ -15,6 +15,7 @@ use App\Http\Controllers\Api\PaymentController;
 use App\Http\Controllers\Api\PayrollController;
 use App\Http\Controllers\Api\TicketController;
 use App\Http\Controllers\Api\TokenController;
+use App\Http\Controllers\Api\WebhookController;
 use Illuminate\Support\Facades\Route;
 
 /*
@@ -121,6 +122,20 @@ Route::prefix('v1')->group(function (): void {
              * endpoint, and a hand-written entry would be a way to make the
              * ledger disagree with the documents underneath it.
              */
+            /*
+             * Webhooks: the endpoints a business has registered, and the log
+             * of what we tried to send them. Reading is separated from
+             * managing because they answer different questions — "did that
+             * sale reach my system" is a support question anybody debugging an
+             * integration asks, while "which servers get a copy of our
+             * revenue" is a decision. `webhooks.view` still keeps it away from
+             * a token whose user is not an Owner or Administrator, and the
+             * signing secret is never in a read response.
+             */
+            Route::get('webhooks', [WebhookController::class, 'index'])->name('api.v1.webhooks.index');
+            Route::get('webhooks/deliveries', [WebhookController::class, 'deliveries'])->name('api.v1.webhooks.deliveries');
+            Route::get('webhooks/{webhook}', [WebhookController::class, 'show'])->name('api.v1.webhooks.show');
+
             Route::prefix('accounting')->name('api.v1.accounting.')->group(function (): void {
                 Route::get('accounts', [AccountingController::class, 'accounts'])->name('accounts');
                 Route::get('trial-balance', [AccountingController::class, 'trialBalance'])->name('trial-balance');
@@ -173,6 +188,27 @@ Route::prefix('v1')->group(function (): void {
             Route::post('documents/{document}/credit-note', [DocumentController::class, 'creditNote'])
                 ->middleware('idempotent')->name('api.v1.documents.credit-note');
 
+            /*
+             * Registering a webhook endpoint. Under `write` rather than a
+             * scope of its own: a token that can already issue invoices and
+             * create customers is not made meaningfully more dangerous by
+             * being able to name a URL, and a fifth scope invented for one
+             * resource is a worse contract than the four the API already
+             * teaches. The permission is what narrows this — `webhooks.manage`
+             * belongs to the Owner and the Administrator and to nobody else,
+             * because subscribing to `payment.recorded` is a standing export
+             * of the business's revenue.
+             *
+             * Redelivery is a write rather than a read for the obvious reason
+             * — it puts a request on somebody's server — and it is here rather
+             * than under `money` because the money already moved; this only
+             * repeats the sentence describing it.
+             */
+            Route::post('webhooks', [WebhookController::class, 'store'])->name('api.v1.webhooks.store');
+            Route::match(['put', 'patch'], 'webhooks/{webhook}', [WebhookController::class, 'update'])->name('api.v1.webhooks.update');
+            Route::delete('webhooks/{webhook}', [WebhookController::class, 'destroy'])->name('api.v1.webhooks.destroy');
+            Route::post('webhooks/deliveries/{delivery}/redeliver', [WebhookController::class, 'redeliver'])->name('api.v1.webhooks.redeliver');
+
             Route::post('imports/preview', [ImportController::class, 'preview'])->name('api.v1.imports.preview');
             Route::post('imports', [ImportController::class, 'store'])->name('api.v1.imports.store');
 
@@ -203,6 +239,14 @@ Route::prefix('v1')->group(function (): void {
          */
         Route::middleware(['ability:money', 'idempotent'])->group(function (): void {
             Route::post('payments', [PaymentController::class, 'store'])->name('api.v1.payments.store');
+
+            /*
+             * The payment is not deleted and its receipt keeps verifying: the
+             * customer holds a printed copy saying money changed hands, and it
+             * did. The refund is a second event recorded beside the first.
+             */
+            Route::post('payments/{payment}/refund', [PaymentController::class, 'refund'])
+                ->middleware('idempotent')->name('api.v1.payments.refund');
 
             Route::post('expenses', [ExpenseController::class, 'store'])->name('api.v1.expenses.store');
             Route::post('expenses/{expense}/settle', [ExpenseController::class, 'settle'])->name('api.v1.expenses.settle');

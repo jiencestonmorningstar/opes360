@@ -15,6 +15,7 @@ use App\Notifications\PaymentReceivedNotification;
 use App\Services\Accounting\RecordsBusinessEvents;
 use App\Support\CurrentCompany;
 use App\Support\NotifyCompany;
+use App\Support\WebhookEvents;
 use Carbon\CarbonInterface;
 use Illuminate\Support\Facades\DB;
 use RuntimeException;
@@ -177,6 +178,28 @@ class PaymentRecorder
             if ($company !== null) {
                 $events->recordQuietly(fn () => $events->recordPayment($payment, $company, $cashier));
             }
+
+            /*
+             * And the outside world. This is the event webhooks were mostly
+             * asked for — a till in one system, a ledger in another — and it
+             * is also the one where getting it wrong is unforgivable. Nothing
+             * leaves this method until the commit lands, and nothing this
+             * dispatcher does can unwind money that has already changed hands;
+             * WebhookDispatcher's docblock is about exactly this call site.
+             */
+            app(WebhookDispatcher::class)->send(WebhookEvents::PAYMENT_RECORDED, [
+                'id' => $payment->id,
+                'document_id' => $document->id,
+                'document_number' => $document->number,
+                'contact_id' => $payment->contact_id,
+                'method' => $payment->method?->value,
+                'amount' => (float) $payment->amount,
+                'currency' => $payment->currency,
+                'reference' => $payment->reference,
+                'receipt_number' => $receipt->number,
+                'received_at' => $receivedAt->toIso8601String(),
+                'document_balance' => $balance,
+            ], $company);
 
             return $payment;
         });

@@ -3,6 +3,7 @@
 namespace App\Livewire\Customers;
 
 use App\Models\Contact;
+use App\Services\WebhookDispatcher;
 use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Contracts\View\View;
 use Illuminate\Foundation\Auth\Access\AuthorizesRequests;
@@ -99,6 +100,8 @@ class Form extends Component
             $this->contact->update($attributes);
         } else {
             $this->contact = Contact::create($attributes + ['created_by' => auth()->id()]);
+
+            app(WebhookDispatcher::class)->contactCreated($this->contact);
         }
 
         return [

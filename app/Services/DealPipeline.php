@@ -10,6 +10,7 @@ use App\Models\Document;
 use App\Models\DocumentLine;
 use App\Models\User;
 use App\Support\CurrentCompany;
+use App\Support\WebhookEvents;
 use Illuminate\Support\Facades\DB;
 use InvalidArgumentException;
 use RuntimeException;
@@ -185,12 +186,34 @@ class DealPipeline
     {
         $closing = in_array($stage, Deal::CLOSED_STAGES, true);
 
+        /*
+         * Winning is announced from here, the one place a stage change is
+         * applied — the same reason `closed_at` is set here rather than at the
+         * three call sites. `wasWon` guards against announcing it twice: a
+         * board that saves a won deal again, or an update that touches the
+         * title while leaving the stage alone, is not a second win.
+         */
+        $wasWon = $deal->stage === 'won';
+
         $deal->stage = $stage;
 
         // Reopening a closed deal has to clear the closure, or the deal keeps
         // claiming it was settled on a date it is plainly still open past.
         $deal->closed_at = $closing ? ($deal->closed_at ?? now()) : null;
         $deal->lost_reason = $stage === 'lost' ? $lostReason : null;
+
+        if ($stage === 'won' && ! $wasWon) {
+            app(WebhookDispatcher::class)->send(WebhookEvents::DEAL_WON, [
+                'id' => $deal->id,
+                'title' => $deal->title,
+                'contact_id' => $deal->contact_id,
+                'lead_name' => $deal->lead_name,
+                'value' => (float) $deal->value,
+                'currency' => $deal->currency,
+                'owner_id' => $deal->owner_id,
+                'won_at' => $deal->closed_at?->toIso8601String(),
+            ]);
+        }
     }
 
     private function assertStageExists(string $stage): void

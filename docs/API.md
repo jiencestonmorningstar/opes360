@@ -248,12 +248,8 @@ it produces a permanent numbered document.
 Voiding is its own permission (`sales.void`): a Sales Officer may raise an
 invoice without being able to make one disappear.
 
-**Refunding a payment is not here, and not merely unexposed — nothing in the
-product implements it.** The permission exists in the catalogue and no code
-answers it. Reversing a receipt correctly means unwinding the allocation, the
-document's balance and status, the ledger and the customer's balance together;
-until that exists as a service, an endpoint pretending to do it would be worse
-than its absence. Credit the invoice instead.
+To give money back on a payment rather than to cancel the sale, see
+**Refunds** in the Payments section.
 
 ---
 
@@ -367,7 +363,44 @@ The response carries `receipt.verification_token` — the same token the app's
 QR is built from, so a caller printing its own copy prints a checkable one.
 
 There is no update or delete. A payment is a thing that happened; correcting it
-is a refund or a void.
+is a refund.
+
+### Refunds
+
+`POST /api/v1/payments/{id}/refund` — requires `payments.refund` and the
+`money` scope. Accepts an `Idempotency-Key`.
+
+```json
+{ "amount": 25000, "method": "mobile_money", "reason": "Goods returned" }
+```
+
+**The payment is not deleted and its receipt keeps verifying.** The customer is
+holding a printed copy saying money changed hands, and it did — deleting the
+payment would leave that copy pointing at nothing, which is the exact situation
+the verification QR exists to prevent. A refund is a second event recorded
+beside the first.
+
+What it unwinds, in one transaction:
+
+- the allocation, so the invoice becomes **owed again** and returns to `partial`
+  or `issued` (a voided document stays void — refunding against something
+  already cancelled must not bring it back to life);
+- the customer's cached balance, recomputed from the documents rather than by
+  arithmetic on this one;
+- the ledger — a full refund reverses the settlement entry, a partial one posts
+  its own, because reversing the whole entry would credit the till with money
+  that never left it;
+- loyalty points earned on the payment, in proportion, through the audited
+  adjustment path and never below zero.
+
+`method` is how the money went **back**, which need not be how it came in: cash
+taken at the counter is often returned by mobile money.
+
+`reason` is **required**. A refund nobody can explain a year later is the entry
+in the books that matters most and reads least.
+
+Partial refunds are allowed and may be repeated, but they cannot add up past
+what was paid.
 
 ---
 
@@ -622,7 +655,251 @@ counter, with the customer standing there.
 
 ---
 
-## 17. What is not here yet
+## 17. Webhooks
+
+`GET /api/v1/webhooks` ·
+`POST /api/v1/webhooks` ·
+`GET /api/v1/webhooks/{id}` ·
+`PATCH /api/v1/webhooks/{id}` ·
+`DELETE /api/v1/webhooks/{id}` ·
+`GET /api/v1/webhooks/deliveries` ·
+`POST /api/v1/webhooks/deliveries/{id}/redeliver`
+
+Everything above this section is pull. An integration that wants to know when
+an invoice is issued has one option — ask again, and keep asking — which on a
+metered connection costs it 1,440 requests a day to learn about four sales, and
+still learns about each of them up to a minute late.
+
+A webhook inverts that. Register a URL, name the moments you care about, and we
+POST to it when one happens.
+
+Managing endpoints sits under the **`write` scope** and needs
+**`webhooks.manage`**, which only an Owner or an Administrator holds. That is
+not caution for its own sake: an endpoint subscribed to `payment.recorded` is a
+standing copy of everything the business sells, for as long as nobody notices
+it. Reading the delivery log needs `webhooks.view`, under the `read` scope.
+
+### Registering one
+
+```http
+POST /api/v1/webhooks
+{
+  "url": "https://example.com/hooks/opes360",
+  "description": "Stock system at the warehouse",
+  "events": ["document.issued", "payment.recorded"]
+}
+```
+
+Returns **201**. The response contains a `secret`, and it is the **only**
+response that ever will — every read omits it. We keep the secret in the clear
+rather than hashed, unlike an API token, because both ends need the same bytes
+to compute the same HMAC and there is nothing to compare a hash against. Lose
+it and you replace the endpoint.
+
+`url` must be **https**. The signature below proves who sent a delivery; it
+does nothing to hide what is in it, and what is in it is the business's
+takings.
+
+### The events
+
+| Event | Fires when |
+| --- | --- |
+| `document.issued` | An invoice, quotation or other document is issued — the moment it gets its number and enters the books. |
+| `document.voided` | An issued document is cancelled. |
+| `payment.recorded` | A customer payment is recorded and its receipt issued. |
+| `expense.recorded` | A supplier bill or an expense is entered. |
+| `deal.won` | A deal is moved to the won stage. |
+| `contact.created` | A customer or supplier is added, from the screen or the API. |
+
+The list is short on purpose. An event earns a place here when a business could
+say what it would *do* about it; a message for every row that saves produces a
+stream nobody can act on, and a `contact.updated` that fires because somebody
+fixed a typo in a phone number.
+
+Two absences are deliberate. A **bulk import** creates contacts without firing
+`contact.created` — two thousand rows would mean two thousand deliveries, which
+is a denial of service dressed as a feature. And the placeholder contact a won
+deal conjures on its way to an invoice does not fire it either: that is a side
+effect of invoicing, not somebody adding a customer.
+
+### What arrives
+
+```http
+POST /hooks/opes360
+Content-Type: application/json
+Opes-Event: payment.recorded
+Opes-Delivery: 01j8…
+Opes-Signature: t=1755000000,v1=8f4b1c…
+
+{
+  "id": "01j8…",
+  "event": "payment.recorded",
+  "created_at": "2026-08-17T09:14:22+00:00",
+  "company_id": "01h…",
+  "data": { "…": "…" }
+}
+```
+
+`id` is the delivery id, and it is stable across retries and across a manual
+redelivery. **Deduplicate on it.** A retry that crosses with your own slow
+success is not hypothetical; it is the one failure mode at-least-once delivery
+guarantees you will eventually see.
+
+Answer **2xx**, and answer quickly. We wait five seconds for a connection and
+ten seconds in total, then treat the delivery as failed. A receiver that needs
+longer should answer 200 first and do its work afterwards.
+
+### Checking the signature
+
+Every delivery carries an HMAC-SHA256 of the body, keyed on your secret:
+
+```
+Opes-Signature: t=<unix timestamp>,v1=<hex digest>
+```
+
+The signed material is **the timestamp, a dot, and the exact bytes of the
+body** — `"{t}.{body}"`. The timestamp is inside the signature on purpose.
+Signing the body alone would produce a proof that stays valid forever, and
+anybody who captured one delivery — from a log, a mirror, a misconfigured
+proxy — could replay it a month later and have it verify perfectly, because it
+*is* genuine. It just is not now. With the timestamp signed, a delivery's age
+cannot be changed without the secret, so refusing anything old kills the replay.
+
+Verify against the **raw request body**, before any JSON decoding. Decoding and
+re-encoding reorders keys and changes whitespace, and the digest will then not
+match for reasons that look like our bug and are not.
+
+```php
+<?php
+
+// $header is the Opes-Signature header, $body the raw request body, and
+// $secret the value shown once when you registered the endpoint.
+function opes_webhook_is_genuine(string $header, string $body, string $secret): bool
+{
+    $parts = [];
+
+    foreach (explode(',', $header) as $piece) {
+        [$key, $value] = array_pad(explode('=', trim($piece), 2), 2, null);
+        $parts[$key] = $value;
+    }
+
+    if (! isset($parts['t'], $parts['v1']) || ! ctype_digit($parts['t'])) {
+        return false;
+    }
+
+    // Anything older than five minutes is a replay, or a clock nobody has
+    // pointed at NTP. Either way, refuse it.
+    if (abs(time() - (int) $parts['t']) > 300) {
+        return false;
+    }
+
+    $expected = hash_hmac('sha256', $parts['t'].'.'.$body, $secret);
+
+    // hash_equals, not ===. A comparison that returns early leaks how much of
+    // a guess was right, which is enough to forge a digest one byte at a time.
+    return hash_equals($expected, $parts['v1']);
+}
+
+$body = file_get_contents('php://input');
+$header = $_SERVER['HTTP_OPES_SIGNATURE'] ?? '';
+
+if (! opes_webhook_is_genuine($header, $body, getenv('OPES_WEBHOOK_SECRET'))) {
+    http_response_code(401);
+    exit;
+}
+
+$event = json_decode($body, true);
+// $event['id'] — deduplicate on this. $event['event'] — what happened.
+http_response_code(200);
+```
+
+Worked through, with a secret of `whsec_test`, a timestamp of `1755000000` and
+a body of exactly `{"id":"01j","event":"deal.won"}`, the signed material is
+
+```
+1755000000.{"id":"01j","event":"deal.won"}
+```
+
+and `hash_hmac('sha256', $material, 'whsec_test')` is what arrives after `v1=`.
+Change one byte of the body, or one digit of the timestamp, and it does not
+match.
+
+The URL alone proves nothing: it leaks the moment it appears in a proxy log or
+a screenshot, and anybody holding it can post whatever they like to it. **A
+receiver that does not check the signature has no webhook security at all.**
+
+### Retries
+
+A delivery that does not answer 2xx is retried on a fixed schedule:
+
+| Attempt | Sent |
+| --- | --- |
+| 1 | immediately |
+| 2 | 1 minute later |
+| 3 | 5 minutes later |
+| 4 | 30 minutes later |
+| 5 | 2 hours later |
+| — | and a last one 6 hours after that |
+
+Five attempts spanning a little under nine hours, after which the delivery is
+marked `failed` and left alone. The shape matters more than the numbers: the
+first retry is quick because most failures are a dropped connection or a server
+mid-restart, and the last is far away because a failure that has survived two
+hours is an outage somebody has to fix rather than one that will pass.
+
+Retrying for days instead would be the dishonest option. An event delivered a
+day late is rarely worth having, and the delivery log plus a manual redelivery
+is a better answer than an infinite queue nobody is watching.
+
+### When an endpoint switches itself off
+
+Fifteen **whole deliveries** failing in a row — each of which has already
+exhausted its own five attempts across nine hours — switches the endpoint off.
+`is_active` goes false, `disabled_at` is stamped, and `disabled_reason` records
+what the last error was, so the answer to "why did my webhooks stop" is on the
+settings screen rather than in our logs.
+
+Fifteen rather than three, because an endpoint is not dead just because its
+server restarted during a deploy, and a business whose integration switched
+itself off over a two-minute outage has been handed a worse problem than the
+one this feature solves. A single bad delivery does not count as five failures
+either: the counter moves when a delivery is abandoned altogether, not on every
+attempt.
+
+`PATCH` with `"is_active": true` turns it back on and clears the counter — an
+endpoint that has been fixed must not switch itself off again on its very next
+hiccup, which would read as the fix not having worked.
+
+### The delivery log
+
+```http
+GET /api/v1/webhooks/deliveries?endpoint_id=01j…&status=failed
+```
+
+Returns what we sent, what came back and what went wrong: `payload`,
+`attempts`, `response_status`, a truncated `response_body`, `last_error`,
+`delivered_at` and `next_attempt_at`. It exists to answer the one question this
+feature reliably generates — "you say you sent it, my system never got it" —
+and an answer that omitted the body would not answer it.
+
+`POST /api/v1/webhooks/deliveries/{id}/redeliver` sends a failed one again,
+with the body it originally carried and the same delivery id. Not rebuilt from
+the record as it stands today: the record may have changed since, and a
+"redelivery" quietly carrying newer data would make your history disagree with
+ours in a way neither side could see.
+
+### What a webhook can never do
+
+Break the thing it describes. Every dispatch is queued after the business
+transaction commits, so an unreachable endpoint, a full disk or a queue that is
+down cannot roll back a payment somebody has already taken at a counter. The
+other half of that promise holds too: nothing is sent for something that did
+not happen, because a transaction that rolls back never reaches the dispatch at
+all.
+
+---
+
+## 18. What is not here yet
 
 The partner programme has screens but no API. It will follow the pattern above
 when it is next touched.
