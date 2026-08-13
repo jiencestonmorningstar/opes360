@@ -9,14 +9,13 @@
 -- Contains: the schema, recorded as already migrated, plus the roles and
 -- permissions the application cannot work without. No businesses, no users.
 --
--- Generated: 2026-08-02
+-- Generated: 2026-08-13
 
-/*M!999999\- enable the sandbox mode */ 
 
 /*!40101 SET @OLD_CHARACTER_SET_CLIENT=@@CHARACTER_SET_CLIENT */;
 /*!40101 SET @OLD_CHARACTER_SET_RESULTS=@@CHARACTER_SET_RESULTS */;
 /*!40101 SET @OLD_COLLATION_CONNECTION=@@COLLATION_CONNECTION */;
-/*!40101 SET NAMES utf8mb4 */;
+/*!50503 SET NAMES utf8mb4 */;
 /*!40103 SET @OLD_TIME_ZONE=@@TIME_ZONE */;
 /*!40103 SET TIME_ZONE='+00:00' */;
 /*!40014 SET @OLD_UNIQUE_CHECKS=@@UNIQUE_CHECKS, UNIQUE_CHECKS=0 */;
@@ -25,17 +24,17 @@
 /*!40111 SET @OLD_SQL_NOTES=@@SQL_NOTES, SQL_NOTES=0 */;
 DROP TABLE IF EXISTS `activity_log`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
-/*!40101 SET character_set_client = utf8mb4 */;
+/*!50503 SET character_set_client = utf8mb4 */;
 CREATE TABLE `activity_log` (
-  `id` char(26) NOT NULL,
-  `company_id` char(26) DEFAULT NULL,
-  `user_id` bigint(20) unsigned DEFAULT NULL,
-  `event` varchar(255) NOT NULL,
-  `subject_type` varchar(255) DEFAULT NULL,
-  `subject_id` varchar(255) DEFAULT NULL,
-  `properties` longtext CHARACTER SET utf8mb4 COLLATE utf8mb4_bin DEFAULT NULL CHECK (json_valid(`properties`)),
-  `ip` varchar(45) DEFAULT NULL,
-  `user_agent` varchar(255) DEFAULT NULL,
+  `id` char(26) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `company_id` char(26) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `user_id` bigint unsigned DEFAULT NULL,
+  `event` varchar(255) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `subject_type` varchar(255) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `subject_id` varchar(255) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `properties` json DEFAULT NULL,
+  `ip` varchar(45) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `user_agent` varchar(255) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
   `created_at` timestamp NULL DEFAULT NULL,
   PRIMARY KEY (`id`),
   KEY `activity_log_user_id_foreign` (`user_id`),
@@ -50,15 +49,15 @@ CREATE TABLE `activity_log` (
 /*!40000 ALTER TABLE `activity_log` ENABLE KEYS */;
 DROP TABLE IF EXISTS `artisan_testimonials`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
-/*!40101 SET character_set_client = utf8mb4 */;
+/*!50503 SET character_set_client = utf8mb4 */;
 CREATE TABLE `artisan_testimonials` (
-  `id` char(26) NOT NULL,
-  `company_id` char(26) NOT NULL,
-  `artisan_id` char(26) NOT NULL,
-  `author_name` varchar(255) NOT NULL,
-  `rating` tinyint(3) unsigned DEFAULT NULL,
-  `body` text NOT NULL,
-  `is_published` tinyint(1) NOT NULL DEFAULT 1,
+  `id` char(26) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `company_id` char(26) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `artisan_id` char(26) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `author_name` varchar(255) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `rating` tinyint unsigned DEFAULT NULL,
+  `body` text COLLATE utf8mb4_unicode_ci NOT NULL,
+  `is_published` tinyint(1) NOT NULL DEFAULT '1',
   `created_at` timestamp NULL DEFAULT NULL,
   `updated_at` timestamp NULL DEFAULT NULL,
   PRIMARY KEY (`id`),
@@ -73,36 +72,36 @@ CREATE TABLE `artisan_testimonials` (
 /*!40000 ALTER TABLE `artisan_testimonials` ENABLE KEYS */;
 DROP TABLE IF EXISTS `artisans`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
-/*!40101 SET character_set_client = utf8mb4 */;
+/*!50503 SET character_set_client = utf8mb4 */;
 CREATE TABLE `artisans` (
-  `id` char(26) NOT NULL,
-  `company_id` char(26) NOT NULL,
-  `user_id` bigint(20) unsigned DEFAULT NULL,
-  `slug` varchar(255) NOT NULL,
-  `artisan_number` varchar(255) DEFAULT NULL,
-  `full_name` varchar(255) NOT NULL,
-  `photo_path` varchar(255) DEFAULT NULL,
-  `occupation` varchar(255) DEFAULT NULL,
-  `trade_category` varchar(255) DEFAULT NULL,
-  `skills` longtext CHARACTER SET utf8mb4 COLLATE utf8mb4_bin DEFAULT NULL CHECK (json_valid(`skills`)),
-  `biography` text DEFAULT NULL,
-  `years_experience` smallint(5) unsigned DEFAULT NULL,
-  `certifications` longtext CHARACTER SET utf8mb4 COLLATE utf8mb4_bin DEFAULT NULL CHECK (json_valid(`certifications`)),
-  `languages` longtext CHARACTER SET utf8mb4 COLLATE utf8mb4_bin DEFAULT NULL CHECK (json_valid(`languages`)),
-  `coverage_area` longtext CHARACTER SET utf8mb4 COLLATE utf8mb4_bin DEFAULT NULL CHECK (json_valid(`coverage_area`)),
-  `phones` longtext CHARACTER SET utf8mb4 COLLATE utf8mb4_bin DEFAULT NULL CHECK (json_valid(`phones`)),
-  `whatsapp` varchar(255) DEFAULT NULL,
-  `email` varchar(255) DEFAULT NULL,
-  `website` varchar(255) DEFAULT NULL,
-  `address` longtext CHARACTER SET utf8mb4 COLLATE utf8mb4_bin DEFAULT NULL CHECK (json_valid(`address`)),
+  `id` char(26) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `company_id` char(26) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `user_id` bigint unsigned DEFAULT NULL,
+  `slug` varchar(255) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `artisan_number` varchar(255) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `full_name` varchar(255) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `photo_path` varchar(255) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `occupation` varchar(255) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `trade_category` varchar(255) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `skills` json DEFAULT NULL,
+  `biography` text COLLATE utf8mb4_unicode_ci,
+  `years_experience` smallint unsigned DEFAULT NULL,
+  `certifications` json DEFAULT NULL,
+  `languages` json DEFAULT NULL,
+  `coverage_area` json DEFAULT NULL,
+  `phones` json DEFAULT NULL,
+  `whatsapp` varchar(255) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `email` varchar(255) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `website` varchar(255) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `address` json DEFAULT NULL,
   `latitude` decimal(10,7) DEFAULT NULL,
   `longitude` decimal(10,7) DEFAULT NULL,
-  `working_hours` longtext CHARACTER SET utf8mb4 COLLATE utf8mb4_bin DEFAULT NULL CHECK (json_valid(`working_hours`)),
-  `emergency_contact` varchar(255) DEFAULT NULL,
-  `socials` longtext CHARACTER SET utf8mb4 COLLATE utf8mb4_bin DEFAULT NULL CHECK (json_valid(`socials`)),
-  `verification_token_id` char(26) DEFAULT NULL,
-  `is_verified` tinyint(1) NOT NULL DEFAULT 0,
-  `is_published` tinyint(1) NOT NULL DEFAULT 1,
+  `working_hours` json DEFAULT NULL,
+  `emergency_contact` varchar(255) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `socials` json DEFAULT NULL,
+  `verification_token_id` char(26) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `is_verified` tinyint(1) NOT NULL DEFAULT '0',
+  `is_published` tinyint(1) NOT NULL DEFAULT '1',
   `created_at` timestamp NULL DEFAULT NULL,
   `updated_at` timestamp NULL DEFAULT NULL,
   `deleted_at` timestamp NULL DEFAULT NULL,
@@ -122,23 +121,23 @@ CREATE TABLE `artisans` (
 /*!40000 ALTER TABLE `artisans` ENABLE KEYS */;
 DROP TABLE IF EXISTS `bank_accounts`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
-/*!40101 SET character_set_client = utf8mb4 */;
+/*!50503 SET character_set_client = utf8mb4 */;
 CREATE TABLE `bank_accounts` (
-  `id` char(26) NOT NULL,
-  `company_id` char(26) NOT NULL,
-  `name` varchar(255) NOT NULL,
-  `bank_name` varchar(255) DEFAULT NULL,
-  `account_number` varchar(255) DEFAULT NULL,
-  `swift` varchar(255) DEFAULT NULL,
-  `currency` varchar(3) NOT NULL DEFAULT 'XAF',
-  `ledger_account_id` char(26) DEFAULT NULL,
-  `statement_balance` decimal(16,2) NOT NULL DEFAULT 0.00,
+  `id` char(26) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `company_id` char(26) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `name` varchar(255) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `bank_name` varchar(255) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `account_number` varchar(255) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `swift` varchar(255) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `currency` varchar(3) COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT 'XAF',
+  `ledger_account_id` char(26) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `statement_balance` decimal(16,2) NOT NULL DEFAULT '0.00',
   `statement_date` date DEFAULT NULL,
-  `opening_balance` decimal(16,2) NOT NULL DEFAULT 0.00,
+  `opening_balance` decimal(16,2) NOT NULL DEFAULT '0.00',
   `opened_on` date DEFAULT NULL,
-  `is_default` tinyint(1) NOT NULL DEFAULT 0,
-  `active` tinyint(1) NOT NULL DEFAULT 1,
-  `notes` text DEFAULT NULL,
+  `is_default` tinyint(1) NOT NULL DEFAULT '0',
+  `active` tinyint(1) NOT NULL DEFAULT '1',
+  `notes` text COLLATE utf8mb4_unicode_ci,
   `created_at` timestamp NULL DEFAULT NULL,
   `updated_at` timestamp NULL DEFAULT NULL,
   `deleted_at` timestamp NULL DEFAULT NULL,
@@ -154,24 +153,24 @@ CREATE TABLE `bank_accounts` (
 /*!40000 ALTER TABLE `bank_accounts` ENABLE KEYS */;
 DROP TABLE IF EXISTS `bank_statement_lines`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
-/*!40101 SET character_set_client = utf8mb4 */;
+/*!50503 SET character_set_client = utf8mb4 */;
 CREATE TABLE `bank_statement_lines` (
-  `id` char(26) NOT NULL,
-  `company_id` char(26) NOT NULL,
-  `bank_account_id` char(26) NOT NULL,
+  `id` char(26) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `company_id` char(26) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `bank_account_id` char(26) COLLATE utf8mb4_unicode_ci NOT NULL,
   `value_date` date NOT NULL,
-  `description` varchar(255) NOT NULL,
-  `reference` varchar(255) DEFAULT NULL,
+  `description` varchar(255) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `reference` varchar(255) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
   `amount` decimal(16,2) NOT NULL,
   `running_balance` decimal(16,2) DEFAULT NULL,
-  `status` varchar(255) NOT NULL DEFAULT 'unmatched',
-  `matched_to_type` varchar(255) DEFAULT NULL,
-  `matched_to_id` char(26) DEFAULT NULL,
-  `journal_entry_id` char(26) DEFAULT NULL,
+  `status` varchar(255) COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT 'unmatched',
+  `matched_to_type` varchar(255) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `matched_to_id` char(26) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `journal_entry_id` char(26) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
   `matched_at` timestamp NULL DEFAULT NULL,
-  `matched_by` bigint(20) unsigned DEFAULT NULL,
-  `import_batch` varchar(255) DEFAULT NULL,
-  `note` text DEFAULT NULL,
+  `matched_by` bigint unsigned DEFAULT NULL,
+  `import_batch` varchar(255) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `note` text COLLATE utf8mb4_unicode_ci,
   `created_at` timestamp NULL DEFAULT NULL,
   `updated_at` timestamp NULL DEFAULT NULL,
   PRIMARY KEY (`id`),
@@ -192,25 +191,25 @@ CREATE TABLE `bank_statement_lines` (
 /*!40000 ALTER TABLE `bank_statement_lines` ENABLE KEYS */;
 DROP TABLE IF EXISTS `business_documents`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
-/*!40101 SET character_set_client = utf8mb4 */;
+/*!50503 SET character_set_client = utf8mb4 */;
 CREATE TABLE `business_documents` (
-  `id` char(26) NOT NULL,
-  `company_id` char(26) NOT NULL,
-  `template` varchar(255) NOT NULL,
-  `title` varchar(255) NOT NULL,
-  `reference` varchar(255) DEFAULT NULL,
-  `recipient` varchar(255) DEFAULT NULL,
-  `fields` longtext CHARACTER SET utf8mb4 COLLATE utf8mb4_bin DEFAULT NULL CHECK (json_valid(`fields`)),
-  `body` longtext NOT NULL,
-  `status` varchar(255) NOT NULL DEFAULT 'draft',
+  `id` char(26) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `company_id` char(26) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `template` varchar(255) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `title` varchar(255) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `reference` varchar(255) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `recipient` varchar(255) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `fields` json DEFAULT NULL,
+  `body` longtext COLLATE utf8mb4_unicode_ci NOT NULL,
+  `status` varchar(255) COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT 'draft',
   `issued_at` timestamp NULL DEFAULT NULL,
   `voided_at` timestamp NULL DEFAULT NULL,
-  `voided_by` bigint(20) unsigned DEFAULT NULL,
-  `void_reason` varchar(255) DEFAULT NULL,
-  `issued_by` bigint(20) unsigned DEFAULT NULL,
-  `content_hash` varchar(64) DEFAULT NULL,
-  `verification_token_id` char(26) DEFAULT NULL,
-  `created_by` bigint(20) unsigned DEFAULT NULL,
+  `voided_by` bigint unsigned DEFAULT NULL,
+  `void_reason` varchar(255) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `issued_by` bigint unsigned DEFAULT NULL,
+  `content_hash` varchar(64) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `verification_token_id` char(26) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `created_by` bigint unsigned DEFAULT NULL,
   `created_at` timestamp NULL DEFAULT NULL,
   `updated_at` timestamp NULL DEFAULT NULL,
   `deleted_at` timestamp NULL DEFAULT NULL,
@@ -234,11 +233,11 @@ CREATE TABLE `business_documents` (
 /*!40000 ALTER TABLE `business_documents` ENABLE KEYS */;
 DROP TABLE IF EXISTS `cache`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
-/*!40101 SET character_set_client = utf8mb4 */;
+/*!50503 SET character_set_client = utf8mb4 */;
 CREATE TABLE `cache` (
-  `key` varchar(255) NOT NULL,
-  `value` mediumtext NOT NULL,
-  `expiration` int(11) NOT NULL,
+  `key` varchar(255) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `value` mediumtext COLLATE utf8mb4_unicode_ci NOT NULL,
+  `expiration` int NOT NULL,
   PRIMARY KEY (`key`),
   KEY `cache_expiration_index` (`expiration`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
@@ -248,11 +247,11 @@ CREATE TABLE `cache` (
 /*!40000 ALTER TABLE `cache` ENABLE KEYS */;
 DROP TABLE IF EXISTS `cache_locks`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
-/*!40101 SET character_set_client = utf8mb4 */;
+/*!50503 SET character_set_client = utf8mb4 */;
 CREATE TABLE `cache_locks` (
-  `key` varchar(255) NOT NULL,
-  `owner` varchar(255) NOT NULL,
-  `expiration` int(11) NOT NULL,
+  `key` varchar(255) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `owner` varchar(255) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `expiration` int NOT NULL,
   PRIMARY KEY (`key`),
   KEY `cache_locks_expiration_index` (`expiration`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
@@ -262,19 +261,19 @@ CREATE TABLE `cache_locks` (
 /*!40000 ALTER TABLE `cache_locks` ENABLE KEYS */;
 DROP TABLE IF EXISTS `card_issuances`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
-/*!40101 SET character_set_client = utf8mb4 */;
+/*!50503 SET character_set_client = utf8mb4 */;
 CREATE TABLE `card_issuances` (
-  `id` char(26) NOT NULL,
-  `company_id` char(26) NOT NULL,
-  `partner_client_id` char(26) DEFAULT NULL,
-  `asset` varchar(255) NOT NULL,
-  `design` varchar(255) NOT NULL,
-  `subject_name` varchar(255) NOT NULL,
-  `fee` int(10) unsigned NOT NULL,
-  `currency` varchar(3) NOT NULL DEFAULT 'XAF',
-  `status` varchar(255) NOT NULL DEFAULT 'billed',
-  `void_reason` text DEFAULT NULL,
-  `issued_by` bigint(20) unsigned DEFAULT NULL,
+  `id` char(26) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `company_id` char(26) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `partner_client_id` char(26) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `asset` varchar(255) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `design` varchar(255) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `subject_name` varchar(255) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `fee` int unsigned NOT NULL,
+  `currency` varchar(3) COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT 'XAF',
+  `status` varchar(255) COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT 'billed',
+  `void_reason` text COLLATE utf8mb4_unicode_ci,
+  `issued_by` bigint unsigned DEFAULT NULL,
   `created_at` timestamp NULL DEFAULT NULL,
   `updated_at` timestamp NULL DEFAULT NULL,
   PRIMARY KEY (`id`),
@@ -292,14 +291,14 @@ CREATE TABLE `card_issuances` (
 /*!40000 ALTER TABLE `card_issuances` ENABLE KEYS */;
 DROP TABLE IF EXISTS `categories`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
-/*!40101 SET character_set_client = utf8mb4 */;
+/*!50503 SET character_set_client = utf8mb4 */;
 CREATE TABLE `categories` (
-  `id` char(26) NOT NULL,
-  `company_id` char(26) NOT NULL,
-  `parent_id` char(26) DEFAULT NULL,
-  `name` varchar(255) NOT NULL,
-  `slug` varchar(255) NOT NULL,
-  `sort_order` int(10) unsigned NOT NULL DEFAULT 0,
+  `id` char(26) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `company_id` char(26) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `parent_id` char(26) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `name` varchar(255) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `slug` varchar(255) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `sort_order` int unsigned NOT NULL DEFAULT '0',
   `created_at` timestamp NULL DEFAULT NULL,
   `updated_at` timestamp NULL DEFAULT NULL,
   PRIMARY KEY (`id`),
@@ -314,66 +313,66 @@ CREATE TABLE `categories` (
 /*!40000 ALTER TABLE `categories` ENABLE KEYS */;
 DROP TABLE IF EXISTS `companies`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
-/*!40101 SET character_set_client = utf8mb4 */;
+/*!50503 SET character_set_client = utf8mb4 */;
 CREATE TABLE `companies` (
-  `id` char(26) NOT NULL,
-  `slug` varchar(255) NOT NULL,
-  `name` varchar(255) NOT NULL,
-  `motto` varchar(255) DEFAULT NULL,
-  `description` text DEFAULT NULL,
-  `industry` varchar(255) DEFAULT NULL,
-  `registration_number` varchar(255) DEFAULT NULL,
-  `tax_id` text DEFAULT NULL,
-  `tax_id_index` varchar(255) DEFAULT NULL,
-  `vat_number` text DEFAULT NULL,
-  `tax_regime` varchar(255) DEFAULT NULL,
-  `tax_centre` varchar(255) DEFAULT NULL,
-  `cnps_employer_number` varchar(255) DEFAULT NULL,
-  `cnps_risk_group` varchar(1) NOT NULL DEFAULT 'a',
-  `cnps_family_regime` varchar(255) NOT NULL DEFAULT 'general',
-  `payroll_settings` longtext CHARACTER SET utf8mb4 COLLATE utf8mb4_bin DEFAULT NULL CHECK (json_valid(`payroll_settings`)),
-  `modules` longtext CHARACTER SET utf8mb4 COLLATE utf8mb4_bin DEFAULT NULL CHECK (json_valid(`modules`)),
+  `id` char(26) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `slug` varchar(255) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `name` varchar(255) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `motto` varchar(255) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `description` text COLLATE utf8mb4_unicode_ci,
+  `industry` varchar(255) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `registration_number` varchar(255) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `tax_id` text COLLATE utf8mb4_unicode_ci,
+  `tax_id_index` varchar(255) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `vat_number` text COLLATE utf8mb4_unicode_ci,
+  `tax_regime` varchar(255) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `tax_centre` varchar(255) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `cnps_employer_number` varchar(255) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `cnps_risk_group` varchar(1) COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT 'a',
+  `cnps_family_regime` varchar(255) COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT 'general',
+  `payroll_settings` json DEFAULT NULL,
+  `modules` json DEFAULT NULL,
   `capital_social` decimal(15,2) DEFAULT NULL,
-  `vat_registered` tinyint(1) NOT NULL DEFAULT 0,
-  `vat_rate` decimal(7,4) NOT NULL DEFAULT 19.2500,
-  `prices_include_tax` tinyint(1) NOT NULL DEFAULT 0,
-  `default_sales_account` varchar(255) NOT NULL DEFAULT 'sales_goods',
-  `address_line1` varchar(255) DEFAULT NULL,
-  `address_line2` varchar(255) DEFAULT NULL,
-  `city` varchar(255) DEFAULT NULL,
-  `region` varchar(255) DEFAULT NULL,
-  `country` varchar(2) DEFAULT NULL,
-  `postal_code` varchar(255) DEFAULT NULL,
+  `vat_registered` tinyint(1) NOT NULL DEFAULT '0',
+  `vat_rate` decimal(7,4) NOT NULL DEFAULT '19.2500',
+  `prices_include_tax` tinyint(1) NOT NULL DEFAULT '0',
+  `default_sales_account` varchar(255) COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT 'sales_goods',
+  `address_line1` varchar(255) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `address_line2` varchar(255) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `city` varchar(255) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `region` varchar(255) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `country` varchar(2) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `postal_code` varchar(255) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
   `latitude` decimal(10,7) DEFAULT NULL,
   `longitude` decimal(10,7) DEFAULT NULL,
-  `website` varchar(255) DEFAULT NULL,
-  `email` varchar(255) DEFAULT NULL,
-  `phones` longtext CHARACTER SET utf8mb4 COLLATE utf8mb4_bin DEFAULT NULL CHECK (json_valid(`phones`)),
-  `socials` longtext CHARACTER SET utf8mb4 COLLATE utf8mb4_bin DEFAULT NULL CHECK (json_valid(`socials`)),
-  `operating_hours` longtext CHARACTER SET utf8mb4 COLLATE utf8mb4_bin DEFAULT NULL CHECK (json_valid(`operating_hours`)),
-  `logo_path` varchar(255) DEFAULT NULL,
-  `banner_path` varchar(255) DEFAULT NULL,
-  `brand_tokens` longtext CHARACTER SET utf8mb4 COLLATE utf8mb4_bin DEFAULT NULL CHECK (json_valid(`brand_tokens`)),
-  `letterhead_design` varchar(255) DEFAULT NULL,
-  `card_design` varchar(255) DEFAULT NULL,
-  `currency` varchar(3) NOT NULL DEFAULT 'USD',
-  `timezone` varchar(255) NOT NULL DEFAULT 'UTC',
-  `account_type` varchar(255) NOT NULL DEFAULT 'active',
-  `kind` varchar(255) NOT NULL DEFAULT 'business',
-  `partner_code` varchar(255) DEFAULT NULL,
-  `referred_by_company_id` char(26) DEFAULT NULL,
+  `website` varchar(255) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `email` varchar(255) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `phones` json DEFAULT NULL,
+  `socials` json DEFAULT NULL,
+  `operating_hours` json DEFAULT NULL,
+  `logo_path` varchar(255) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `banner_path` varchar(255) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `brand_tokens` json DEFAULT NULL,
+  `letterhead_design` varchar(255) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `card_design` varchar(255) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `currency` varchar(3) COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT 'USD',
+  `timezone` varchar(255) COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT 'UTC',
+  `account_type` varchar(255) COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT 'active',
+  `kind` varchar(255) COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT 'business',
+  `partner_code` varchar(255) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `referred_by_company_id` char(26) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
   `referred_at` timestamp NULL DEFAULT NULL,
-  `plan` varchar(255) NOT NULL DEFAULT 'basic',
+  `plan` varchar(255) COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT 'basic',
   `plan_renews_at` timestamp NULL DEFAULT NULL,
-  `renewal_reminder_stage` varchar(255) DEFAULT NULL,
+  `renewal_reminder_stage` varchar(255) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
   `renewal_reminder_for` date DEFAULT NULL,
   `suspended_at` timestamp NULL DEFAULT NULL,
   `demo_expires_at` timestamp NULL DEFAULT NULL,
-  `loyalty_enabled` tinyint(1) NOT NULL DEFAULT 0,
-  `loyalty_points_per_amount` decimal(12,2) NOT NULL DEFAULT 100.00,
-  `loyalty_point_value` decimal(12,4) NOT NULL DEFAULT 1.0000,
-  `status` varchar(255) NOT NULL DEFAULT 'active',
-  `owner_id` bigint(20) unsigned NOT NULL,
+  `loyalty_enabled` tinyint(1) NOT NULL DEFAULT '0',
+  `loyalty_points_per_amount` decimal(12,2) NOT NULL DEFAULT '100.00',
+  `loyalty_point_value` decimal(12,4) NOT NULL DEFAULT '1.0000',
+  `status` varchar(255) COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT 'active',
+  `owner_id` bigint unsigned NOT NULL,
   `created_at` timestamp NULL DEFAULT NULL,
   `updated_at` timestamp NULL DEFAULT NULL,
   `deleted_at` timestamp NULL DEFAULT NULL,
@@ -384,7 +383,7 @@ CREATE TABLE `companies` (
   KEY `companies_status_index` (`status`),
   KEY `companies_tax_id_index_index` (`tax_id_index`),
   KEY `companies_referred_by_company_id_foreign` (`referred_by_company_id`),
-  CONSTRAINT `companies_owner_id_foreign` FOREIGN KEY (`owner_id`) REFERENCES `users` (`id`),
+  CONSTRAINT `companies_owner_id_foreign` FOREIGN KEY (`owner_id`) REFERENCES `users` (`id`) ON DELETE RESTRICT,
   CONSTRAINT `companies_referred_by_company_id_foreign` FOREIGN KEY (`referred_by_company_id`) REFERENCES `companies` (`id`) ON DELETE SET NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
@@ -393,12 +392,12 @@ CREATE TABLE `companies` (
 /*!40000 ALTER TABLE `companies` ENABLE KEYS */;
 DROP TABLE IF EXISTS `company_notes`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
-/*!40101 SET character_set_client = utf8mb4 */;
+/*!50503 SET character_set_client = utf8mb4 */;
 CREATE TABLE `company_notes` (
-  `id` char(26) NOT NULL,
-  `company_id` char(26) NOT NULL,
-  `platform_admin_id` bigint(20) unsigned DEFAULT NULL,
-  `body` text NOT NULL,
+  `id` char(26) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `company_id` char(26) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `platform_admin_id` bigint unsigned DEFAULT NULL,
+  `body` text COLLATE utf8mb4_unicode_ci NOT NULL,
   `created_at` timestamp NULL DEFAULT NULL,
   `updated_at` timestamp NULL DEFAULT NULL,
   PRIMARY KEY (`id`),
@@ -413,15 +412,15 @@ CREATE TABLE `company_notes` (
 /*!40000 ALTER TABLE `company_notes` ENABLE KEYS */;
 DROP TABLE IF EXISTS `company_reviews`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
-/*!40101 SET character_set_client = utf8mb4 */;
+/*!50503 SET character_set_client = utf8mb4 */;
 CREATE TABLE `company_reviews` (
-  `id` char(26) NOT NULL,
-  `company_id` char(26) NOT NULL,
-  `author_name` varchar(255) NOT NULL,
-  `rating` tinyint(3) unsigned NOT NULL,
-  `body` text NOT NULL,
-  `is_published` tinyint(1) NOT NULL DEFAULT 0,
-  `submitted_ip_hash` varchar(64) DEFAULT NULL,
+  `id` char(26) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `company_id` char(26) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `author_name` varchar(255) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `rating` tinyint unsigned NOT NULL,
+  `body` text COLLATE utf8mb4_unicode_ci NOT NULL,
+  `is_published` tinyint(1) NOT NULL DEFAULT '0',
+  `submitted_ip_hash` varchar(64) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
   `created_at` timestamp NULL DEFAULT NULL,
   `updated_at` timestamp NULL DEFAULT NULL,
   PRIMARY KEY (`id`),
@@ -434,18 +433,18 @@ CREATE TABLE `company_reviews` (
 /*!40000 ALTER TABLE `company_reviews` ENABLE KEYS */;
 DROP TABLE IF EXISTS `company_user`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
-/*!40101 SET character_set_client = utf8mb4 */;
+/*!50503 SET character_set_client = utf8mb4 */;
 CREATE TABLE `company_user` (
-  `id` bigint(20) unsigned NOT NULL AUTO_INCREMENT,
-  `company_id` char(26) NOT NULL,
-  `user_id` bigint(20) unsigned NOT NULL,
-  `role_id` bigint(20) unsigned NOT NULL,
-  `job_title` varchar(255) DEFAULT NULL,
-  `status` varchar(255) NOT NULL DEFAULT 'active',
+  `id` bigint unsigned NOT NULL AUTO_INCREMENT,
+  `company_id` char(26) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `user_id` bigint unsigned NOT NULL,
+  `role_id` bigint unsigned NOT NULL,
+  `job_title` varchar(255) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `status` varchar(255) COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT 'active',
   `invited_at` timestamp NULL DEFAULT NULL,
-  `invitation_token` varchar(64) DEFAULT NULL,
+  `invitation_token` varchar(64) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
   `invitation_expires_at` timestamp NULL DEFAULT NULL,
-  `invited_by` bigint(20) unsigned DEFAULT NULL,
+  `invited_by` bigint unsigned DEFAULT NULL,
   `joined_at` timestamp NULL DEFAULT NULL,
   `created_at` timestamp NULL DEFAULT NULL,
   `updated_at` timestamp NULL DEFAULT NULL,
@@ -457,7 +456,7 @@ CREATE TABLE `company_user` (
   KEY `company_user_invited_by_foreign` (`invited_by`),
   CONSTRAINT `company_user_company_id_foreign` FOREIGN KEY (`company_id`) REFERENCES `companies` (`id`) ON DELETE CASCADE,
   CONSTRAINT `company_user_invited_by_foreign` FOREIGN KEY (`invited_by`) REFERENCES `users` (`id`) ON DELETE SET NULL,
-  CONSTRAINT `company_user_role_id_foreign` FOREIGN KEY (`role_id`) REFERENCES `roles` (`id`),
+  CONSTRAINT `company_user_role_id_foreign` FOREIGN KEY (`role_id`) REFERENCES `roles` (`id`) ON DELETE RESTRICT,
   CONSTRAINT `company_user_user_id_foreign` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
@@ -466,13 +465,13 @@ CREATE TABLE `company_user` (
 /*!40000 ALTER TABLE `company_user` ENABLE KEYS */;
 DROP TABLE IF EXISTS `company_user_permission`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
-/*!40101 SET character_set_client = utf8mb4 */;
+/*!50503 SET character_set_client = utf8mb4 */;
 CREATE TABLE `company_user_permission` (
-  `id` bigint(20) unsigned NOT NULL AUTO_INCREMENT,
-  `company_id` char(26) NOT NULL,
-  `user_id` bigint(20) unsigned NOT NULL,
-  `permission_id` bigint(20) unsigned NOT NULL,
-  `granted` tinyint(1) NOT NULL DEFAULT 1,
+  `id` bigint unsigned NOT NULL AUTO_INCREMENT,
+  `company_id` char(26) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `user_id` bigint unsigned NOT NULL,
+  `permission_id` bigint unsigned NOT NULL,
+  `granted` tinyint(1) NOT NULL DEFAULT '1',
   `created_at` timestamp NULL DEFAULT NULL,
   `updated_at` timestamp NULL DEFAULT NULL,
   PRIMARY KEY (`id`),
@@ -489,14 +488,14 @@ CREATE TABLE `company_user_permission` (
 /*!40000 ALTER TABLE `company_user_permission` ENABLE KEYS */;
 DROP TABLE IF EXISTS `contact_notes`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
-/*!40101 SET character_set_client = utf8mb4 */;
+/*!50503 SET character_set_client = utf8mb4 */;
 CREATE TABLE `contact_notes` (
-  `id` char(26) NOT NULL,
-  `company_id` char(26) NOT NULL,
-  `contact_id` char(26) NOT NULL,
-  `user_id` bigint(20) unsigned DEFAULT NULL,
-  `type` varchar(255) NOT NULL DEFAULT 'note',
-  `body` text NOT NULL,
+  `id` char(26) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `company_id` char(26) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `contact_id` char(26) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `user_id` bigint unsigned DEFAULT NULL,
+  `type` varchar(255) COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT 'note',
+  `body` text COLLATE utf8mb4_unicode_ci NOT NULL,
   `created_at` timestamp NULL DEFAULT NULL,
   `updated_at` timestamp NULL DEFAULT NULL,
   PRIMARY KEY (`id`),
@@ -513,36 +512,36 @@ CREATE TABLE `contact_notes` (
 /*!40000 ALTER TABLE `contact_notes` ENABLE KEYS */;
 DROP TABLE IF EXISTS `contacts`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
-/*!40101 SET character_set_client = utf8mb4 */;
+/*!50503 SET character_set_client = utf8mb4 */;
 CREATE TABLE `contacts` (
-  `id` char(26) NOT NULL,
-  `company_id` char(26) NOT NULL,
-  `type` varchar(255) NOT NULL DEFAULT 'customer',
-  `name` varchar(255) NOT NULL,
-  `company_name` varchar(255) DEFAULT NULL,
-  `email` varchar(255) DEFAULT NULL,
-  `phones` longtext CHARACTER SET utf8mb4 COLLATE utf8mb4_bin DEFAULT NULL CHECK (json_valid(`phones`)),
-  `whatsapp` varchar(255) DEFAULT NULL,
-  `address` longtext CHARACTER SET utf8mb4 COLLATE utf8mb4_bin DEFAULT NULL CHECK (json_valid(`address`)),
-  `tax_id` text DEFAULT NULL,
-  `tax_id_index` varchar(255) DEFAULT NULL,
+  `id` char(26) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `company_id` char(26) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `type` varchar(255) COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT 'customer',
+  `name` varchar(255) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `company_name` varchar(255) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `email` varchar(255) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `phones` json DEFAULT NULL,
+  `whatsapp` varchar(255) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `address` json DEFAULT NULL,
+  `tax_id` text COLLATE utf8mb4_unicode_ci,
+  `tax_id_index` varchar(255) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
   `credit_limit` decimal(15,2) DEFAULT NULL,
-  `payment_terms_days` smallint(5) unsigned DEFAULT NULL,
-  `notes` text DEFAULT NULL,
-  `tags` longtext CHARACTER SET utf8mb4 COLLATE utf8mb4_bin DEFAULT NULL CHECK (json_valid(`tags`)),
-  `balance` decimal(15,2) NOT NULL DEFAULT 0.00,
-  `loyalty_points` int(10) unsigned NOT NULL DEFAULT 0,
-  `loyalty_card_number` varchar(255) DEFAULT NULL,
+  `payment_terms_days` smallint unsigned DEFAULT NULL,
+  `notes` text COLLATE utf8mb4_unicode_ci,
+  `tags` json DEFAULT NULL,
+  `balance` decimal(15,2) NOT NULL DEFAULT '0.00',
+  `loyalty_points` int unsigned NOT NULL DEFAULT '0',
+  `loyalty_card_number` varchar(255) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
   `loyalty_card_issued_at` timestamp NULL DEFAULT NULL,
-  `loyalty_verification_token_id` char(26) DEFAULT NULL,
-  `avatar_path` varchar(255) DEFAULT NULL,
-  `created_by` bigint(20) unsigned DEFAULT NULL,
-  `device_id` char(26) DEFAULT NULL,
+  `loyalty_verification_token_id` char(26) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `avatar_path` varchar(255) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `created_by` bigint unsigned DEFAULT NULL,
+  `device_id` char(26) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
   `synced_at` timestamp NULL DEFAULT NULL,
   `created_at` timestamp NULL DEFAULT NULL,
   `updated_at` timestamp NULL DEFAULT NULL,
   `deleted_at` timestamp NULL DEFAULT NULL,
-  `sync_sequence` bigint(20) unsigned DEFAULT NULL,
+  `sync_sequence` bigint unsigned DEFAULT NULL,
   PRIMARY KEY (`id`),
   UNIQUE KEY `contacts_company_id_loyalty_card_number_unique` (`company_id`,`loyalty_card_number`),
   KEY `contacts_created_by_foreign` (`created_by`),
@@ -559,20 +558,57 @@ CREATE TABLE `contacts` (
 
 /*!40000 ALTER TABLE `contacts` DISABLE KEYS */;
 /*!40000 ALTER TABLE `contacts` ENABLE KEYS */;
+DROP TABLE IF EXISTS `deals`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!50503 SET character_set_client = utf8mb4 */;
+CREATE TABLE `deals` (
+  `id` char(26) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `company_id` char(26) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `contact_id` char(26) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `owner_id` bigint unsigned DEFAULT NULL,
+  `title` varchar(255) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `notes` text COLLATE utf8mb4_unicode_ci,
+  `lead_name` varchar(255) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `lead_phone` varchar(255) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `stage` varchar(255) COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT 'lead',
+  `value` decimal(15,2) NOT NULL DEFAULT '0.00',
+  `currency` varchar(3) COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT 'XAF',
+  `expected_close_on` date DEFAULT NULL,
+  `closed_at` timestamp NULL DEFAULT NULL,
+  `lost_reason` varchar(255) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `document_id` char(26) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `created_at` timestamp NULL DEFAULT NULL,
+  `updated_at` timestamp NULL DEFAULT NULL,
+  `deleted_at` timestamp NULL DEFAULT NULL,
+  PRIMARY KEY (`id`),
+  KEY `deals_contact_id_foreign` (`contact_id`),
+  KEY `deals_owner_id_foreign` (`owner_id`),
+  KEY `deals_document_id_foreign` (`document_id`),
+  KEY `deals_company_id_stage_index` (`company_id`,`stage`),
+  KEY `deals_company_id_expected_close_on_index` (`company_id`,`expected_close_on`),
+  CONSTRAINT `deals_company_id_foreign` FOREIGN KEY (`company_id`) REFERENCES `companies` (`id`) ON DELETE CASCADE,
+  CONSTRAINT `deals_contact_id_foreign` FOREIGN KEY (`contact_id`) REFERENCES `contacts` (`id`) ON DELETE SET NULL,
+  CONSTRAINT `deals_document_id_foreign` FOREIGN KEY (`document_id`) REFERENCES `documents` (`id`) ON DELETE SET NULL,
+  CONSTRAINT `deals_owner_id_foreign` FOREIGN KEY (`owner_id`) REFERENCES `users` (`id`) ON DELETE SET NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+/*!40101 SET character_set_client = @saved_cs_client */;
+
+/*!40000 ALTER TABLE `deals` DISABLE KEYS */;
+/*!40000 ALTER TABLE `deals` ENABLE KEYS */;
 DROP TABLE IF EXISTS `depreciation_entries`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
-/*!40101 SET character_set_client = utf8mb4 */;
+/*!50503 SET character_set_client = utf8mb4 */;
 CREATE TABLE `depreciation_entries` (
-  `id` char(26) NOT NULL,
-  `company_id` char(26) NOT NULL,
-  `fixed_asset_id` char(26) NOT NULL,
+  `id` char(26) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `company_id` char(26) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `fixed_asset_id` char(26) COLLATE utf8mb4_unicode_ci NOT NULL,
   `period` date NOT NULL,
   `amount` decimal(16,2) NOT NULL,
   `accumulated_after` decimal(16,2) NOT NULL,
   `book_value_after` decimal(16,2) NOT NULL,
-  `status` varchar(255) NOT NULL DEFAULT 'posted',
-  `note` text DEFAULT NULL,
-  `created_by` bigint(20) unsigned DEFAULT NULL,
+  `status` varchar(255) COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT 'posted',
+  `note` text COLLATE utf8mb4_unicode_ci,
+  `created_by` bigint unsigned DEFAULT NULL,
   `created_at` timestamp NULL DEFAULT NULL,
   `updated_at` timestamp NULL DEFAULT NULL,
   PRIMARY KEY (`id`),
@@ -589,15 +625,15 @@ CREATE TABLE `depreciation_entries` (
 /*!40000 ALTER TABLE `depreciation_entries` ENABLE KEYS */;
 DROP TABLE IF EXISTS `devices`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
-/*!40101 SET character_set_client = utf8mb4 */;
+/*!50503 SET character_set_client = utf8mb4 */;
 CREATE TABLE `devices` (
-  `id` char(26) NOT NULL,
-  `company_id` char(26) NOT NULL,
-  `user_id` bigint(20) unsigned NOT NULL,
-  `name` varchar(255) NOT NULL,
-  `platform` varchar(255) DEFAULT NULL,
-  `token_hash` varchar(255) NOT NULL,
-  `pending_count` int(10) unsigned NOT NULL DEFAULT 0,
+  `id` char(26) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `company_id` char(26) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `user_id` bigint unsigned NOT NULL,
+  `name` varchar(255) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `platform` varchar(255) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `token_hash` varchar(255) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `pending_count` int unsigned NOT NULL DEFAULT '0',
   `last_synced_at` timestamp NULL DEFAULT NULL,
   `revoked_at` timestamp NULL DEFAULT NULL,
   `created_at` timestamp NULL DEFAULT NULL,
@@ -615,14 +651,14 @@ CREATE TABLE `devices` (
 /*!40000 ALTER TABLE `devices` ENABLE KEYS */;
 DROP TABLE IF EXISTS `document_approvals`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
-/*!40101 SET character_set_client = utf8mb4 */;
+/*!50503 SET character_set_client = utf8mb4 */;
 CREATE TABLE `document_approvals` (
-  `id` char(26) NOT NULL,
-  `company_id` char(26) NOT NULL,
-  `document_id` char(26) NOT NULL,
-  `user_id` bigint(20) unsigned DEFAULT NULL,
-  `action` varchar(255) NOT NULL,
-  `comment` text DEFAULT NULL,
+  `id` char(26) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `company_id` char(26) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `document_id` char(26) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `user_id` bigint unsigned DEFAULT NULL,
+  `action` varchar(255) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `comment` text COLLATE utf8mb4_unicode_ci,
   `created_at` timestamp NULL DEFAULT NULL,
   PRIMARY KEY (`id`),
   KEY `document_approvals_company_id_foreign` (`company_id`),
@@ -638,22 +674,22 @@ CREATE TABLE `document_approvals` (
 /*!40000 ALTER TABLE `document_approvals` ENABLE KEYS */;
 DROP TABLE IF EXISTS `document_lines`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
-/*!40101 SET character_set_client = utf8mb4 */;
+/*!50503 SET character_set_client = utf8mb4 */;
 CREATE TABLE `document_lines` (
-  `id` char(26) NOT NULL,
-  `company_id` char(26) NOT NULL,
-  `document_id` char(26) NOT NULL,
-  `item_id` char(26) DEFAULT NULL,
-  `description` varchar(255) NOT NULL,
-  `quantity` decimal(15,3) NOT NULL DEFAULT 1.000,
-  `unit` varchar(255) NOT NULL DEFAULT 'unit',
-  `unit_price` decimal(15,2) NOT NULL DEFAULT 0.00,
-  `discount_type` varchar(255) DEFAULT NULL,
-  `discount_value` decimal(15,2) NOT NULL DEFAULT 0.00,
-  `tax_rate_id` char(26) DEFAULT NULL,
-  `tax_amount` decimal(15,2) NOT NULL DEFAULT 0.00,
-  `line_total` decimal(15,2) NOT NULL DEFAULT 0.00,
-  `sort_order` int(10) unsigned NOT NULL DEFAULT 0,
+  `id` char(26) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `company_id` char(26) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `document_id` char(26) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `item_id` char(26) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `description` varchar(255) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `quantity` decimal(15,3) NOT NULL DEFAULT '1.000',
+  `unit` varchar(255) COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT 'unit',
+  `unit_price` decimal(15,2) NOT NULL DEFAULT '0.00',
+  `discount_type` varchar(255) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `discount_value` decimal(15,2) NOT NULL DEFAULT '0.00',
+  `tax_rate_id` char(26) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `tax_amount` decimal(15,2) NOT NULL DEFAULT '0.00',
+  `line_total` decimal(15,2) NOT NULL DEFAULT '0.00',
+  `sort_order` int unsigned NOT NULL DEFAULT '0',
   `created_at` timestamp NULL DEFAULT NULL,
   `updated_at` timestamp NULL DEFAULT NULL,
   PRIMARY KEY (`id`),
@@ -672,43 +708,43 @@ CREATE TABLE `document_lines` (
 /*!40000 ALTER TABLE `document_lines` ENABLE KEYS */;
 DROP TABLE IF EXISTS `documents`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
-/*!40101 SET character_set_client = utf8mb4 */;
+/*!50503 SET character_set_client = utf8mb4 */;
 CREATE TABLE `documents` (
-  `id` char(26) NOT NULL,
-  `company_id` char(26) NOT NULL,
-  `type` varchar(255) NOT NULL,
-  `number` varchar(255) DEFAULT NULL,
-  `number_lease_id` char(26) DEFAULT NULL,
-  `contact_id` char(26) DEFAULT NULL,
-  `status` varchar(255) NOT NULL DEFAULT 'draft',
+  `id` char(26) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `company_id` char(26) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `type` varchar(255) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `number` varchar(255) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `number_lease_id` char(26) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `contact_id` char(26) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `status` varchar(255) COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT 'draft',
   `issue_date` date DEFAULT NULL,
   `due_date` date DEFAULT NULL,
   `valid_until` date DEFAULT NULL,
-  `currency` varchar(3) NOT NULL DEFAULT 'USD',
-  `exchange_rate` decimal(15,6) NOT NULL DEFAULT 1.000000,
-  `subtotal` decimal(15,2) NOT NULL DEFAULT 0.00,
-  `discount_total` decimal(15,2) NOT NULL DEFAULT 0.00,
-  `tax_total` decimal(15,2) NOT NULL DEFAULT 0.00,
-  `total` decimal(15,2) NOT NULL DEFAULT 0.00,
-  `amount_paid` decimal(15,2) NOT NULL DEFAULT 0.00,
-  `balance` decimal(15,2) NOT NULL DEFAULT 0.00,
-  `notes` text DEFAULT NULL,
-  `terms` text DEFAULT NULL,
-  `reference` varchar(255) DEFAULT NULL,
-  `parent_document_id` char(26) DEFAULT NULL,
-  `content_hash` varchar(255) DEFAULT NULL,
+  `currency` varchar(3) COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT 'USD',
+  `exchange_rate` decimal(15,6) NOT NULL DEFAULT '1.000000',
+  `subtotal` decimal(15,2) NOT NULL DEFAULT '0.00',
+  `discount_total` decimal(15,2) NOT NULL DEFAULT '0.00',
+  `tax_total` decimal(15,2) NOT NULL DEFAULT '0.00',
+  `total` decimal(15,2) NOT NULL DEFAULT '0.00',
+  `amount_paid` decimal(15,2) NOT NULL DEFAULT '0.00',
+  `balance` decimal(15,2) NOT NULL DEFAULT '0.00',
+  `notes` text COLLATE utf8mb4_unicode_ci,
+  `terms` text COLLATE utf8mb4_unicode_ci,
+  `reference` varchar(255) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `parent_document_id` char(26) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `content_hash` varchar(255) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
   `issued_at` timestamp NULL DEFAULT NULL,
-  `issued_by` bigint(20) unsigned DEFAULT NULL,
-  `signature_path` varchar(255) DEFAULT NULL,
-  `verification_token_id` char(26) DEFAULT NULL,
-  `pdf_path` varchar(255) DEFAULT NULL,
-  `created_by` bigint(20) unsigned DEFAULT NULL,
-  `device_id` char(26) DEFAULT NULL,
+  `issued_by` bigint unsigned DEFAULT NULL,
+  `signature_path` varchar(255) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `verification_token_id` char(26) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `pdf_path` varchar(255) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `created_by` bigint unsigned DEFAULT NULL,
+  `device_id` char(26) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
   `synced_at` timestamp NULL DEFAULT NULL,
   `created_at` timestamp NULL DEFAULT NULL,
   `updated_at` timestamp NULL DEFAULT NULL,
   `deleted_at` timestamp NULL DEFAULT NULL,
-  `sync_sequence` bigint(20) unsigned DEFAULT NULL,
+  `sync_sequence` bigint unsigned DEFAULT NULL,
   PRIMARY KEY (`id`),
   UNIQUE KEY `documents_company_id_type_number_unique` (`company_id`,`type`,`number`),
   KEY `documents_number_lease_id_foreign` (`number_lease_id`),
@@ -722,7 +758,7 @@ CREATE TABLE `documents` (
   KEY `documents_company_id_issue_date_index` (`company_id`,`issue_date`),
   KEY `documents_sync_sequence_index` (`sync_sequence`),
   CONSTRAINT `documents_company_id_foreign` FOREIGN KEY (`company_id`) REFERENCES `companies` (`id`) ON DELETE CASCADE,
-  CONSTRAINT `documents_contact_id_foreign` FOREIGN KEY (`contact_id`) REFERENCES `contacts` (`id`),
+  CONSTRAINT `documents_contact_id_foreign` FOREIGN KEY (`contact_id`) REFERENCES `contacts` (`id`) ON DELETE RESTRICT,
   CONSTRAINT `documents_created_by_foreign` FOREIGN KEY (`created_by`) REFERENCES `users` (`id`) ON DELETE SET NULL,
   CONSTRAINT `documents_issued_by_foreign` FOREIGN KEY (`issued_by`) REFERENCES `users` (`id`) ON DELETE SET NULL,
   CONSTRAINT `documents_number_lease_id_foreign` FOREIGN KEY (`number_lease_id`) REFERENCES `number_leases` (`id`) ON DELETE SET NULL,
@@ -735,42 +771,42 @@ CREATE TABLE `documents` (
 /*!40000 ALTER TABLE `documents` ENABLE KEYS */;
 DROP TABLE IF EXISTS `employees`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
-/*!40101 SET character_set_client = utf8mb4 */;
+/*!50503 SET character_set_client = utf8mb4 */;
 CREATE TABLE `employees` (
-  `id` char(26) NOT NULL,
-  `company_id` char(26) NOT NULL,
-  `user_id` bigint(20) unsigned DEFAULT NULL,
-  `number` varchar(255) DEFAULT NULL,
-  `first_name` varchar(255) NOT NULL,
-  `last_name` varchar(255) NOT NULL,
-  `gender` varchar(255) DEFAULT NULL,
+  `id` char(26) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `company_id` char(26) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `user_id` bigint unsigned DEFAULT NULL,
+  `number` varchar(255) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `first_name` varchar(255) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `last_name` varchar(255) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `gender` varchar(255) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
   `date_of_birth` date DEFAULT NULL,
-  `place_of_birth` varchar(255) DEFAULT NULL,
-  `nationality` varchar(255) DEFAULT NULL,
-  `marital_status` varchar(255) DEFAULT NULL,
-  `dependants` tinyint(3) unsigned NOT NULL DEFAULT 0,
-  `phone` varchar(255) DEFAULT NULL,
-  `email` varchar(255) DEFAULT NULL,
-  `address` varchar(255) DEFAULT NULL,
-  `city` varchar(255) DEFAULT NULL,
-  `national_id` varchar(255) DEFAULT NULL,
-  `cnps_number` varchar(255) DEFAULT NULL,
-  `niu` varchar(255) DEFAULT NULL,
-  `job_title` varchar(255) DEFAULT NULL,
-  `department` varchar(255) DEFAULT NULL,
+  `place_of_birth` varchar(255) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `nationality` varchar(255) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `marital_status` varchar(255) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `dependants` tinyint unsigned NOT NULL DEFAULT '0',
+  `phone` varchar(255) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `email` varchar(255) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `address` varchar(255) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `city` varchar(255) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `national_id` varchar(255) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `cnps_number` varchar(255) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `niu` varchar(255) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `job_title` varchar(255) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `department` varchar(255) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
   `hired_on` date DEFAULT NULL,
   `ended_on` date DEFAULT NULL,
-  `end_reason` varchar(255) DEFAULT NULL,
-  `status` varchar(255) NOT NULL DEFAULT 'active',
-  `payment_method` varchar(255) NOT NULL DEFAULT 'cash',
-  `bank_name` varchar(255) DEFAULT NULL,
-  `bank_account` varchar(255) DEFAULT NULL,
-  `mobile_money_number` varchar(255) DEFAULT NULL,
-  `emergency_contact` varchar(255) DEFAULT NULL,
-  `emergency_phone` varchar(255) DEFAULT NULL,
-  `leave_opening_balance` decimal(6,2) NOT NULL DEFAULT 0.00,
-  `notes` text DEFAULT NULL,
-  `created_by` bigint(20) unsigned DEFAULT NULL,
+  `end_reason` varchar(255) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `status` varchar(255) COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT 'active',
+  `payment_method` varchar(255) COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT 'cash',
+  `bank_name` varchar(255) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `bank_account` varchar(255) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `mobile_money_number` varchar(255) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `emergency_contact` varchar(255) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `emergency_phone` varchar(255) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `leave_opening_balance` decimal(6,2) NOT NULL DEFAULT '0.00',
+  `notes` text COLLATE utf8mb4_unicode_ci,
+  `created_by` bigint unsigned DEFAULT NULL,
   `created_at` timestamp NULL DEFAULT NULL,
   `updated_at` timestamp NULL DEFAULT NULL,
   `deleted_at` timestamp NULL DEFAULT NULL,
@@ -790,26 +826,26 @@ CREATE TABLE `employees` (
 /*!40000 ALTER TABLE `employees` ENABLE KEYS */;
 DROP TABLE IF EXISTS `employment_contracts`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
-/*!40101 SET character_set_client = utf8mb4 */;
+/*!50503 SET character_set_client = utf8mb4 */;
 CREATE TABLE `employment_contracts` (
-  `id` char(26) NOT NULL,
-  `company_id` char(26) NOT NULL,
-  `employee_id` char(26) NOT NULL,
-  `type` varchar(255) NOT NULL DEFAULT 'cdi',
-  `reference` varchar(255) DEFAULT NULL,
-  `job_title` varchar(255) DEFAULT NULL,
+  `id` char(26) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `company_id` char(26) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `employee_id` char(26) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `type` varchar(255) COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT 'cdi',
+  `reference` varchar(255) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `job_title` varchar(255) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
   `starts_on` date NOT NULL,
   `ends_on` date DEFAULT NULL,
   `trial_ends_on` date DEFAULT NULL,
   `signed_on` date DEFAULT NULL,
-  `base_salary` decimal(14,2) NOT NULL DEFAULT 0.00,
-  `currency` varchar(3) NOT NULL DEFAULT 'XAF',
-  `category` varchar(255) DEFAULT NULL,
-  `echelon` varchar(255) DEFAULT NULL,
-  `hours_per_week` decimal(5,2) NOT NULL DEFAULT 40.00,
-  `status` varchar(255) NOT NULL DEFAULT 'active',
+  `base_salary` decimal(14,2) NOT NULL DEFAULT '0.00',
+  `currency` varchar(3) COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT 'XAF',
+  `category` varchar(255) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `echelon` varchar(255) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `hours_per_week` decimal(5,2) NOT NULL DEFAULT '40.00',
+  `status` varchar(255) COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT 'active',
   `ended_on` date DEFAULT NULL,
-  `terms` text DEFAULT NULL,
+  `terms` text COLLATE utf8mb4_unicode_ci,
   `created_at` timestamp NULL DEFAULT NULL,
   `updated_at` timestamp NULL DEFAULT NULL,
   `deleted_at` timestamp NULL DEFAULT NULL,
@@ -826,18 +862,18 @@ CREATE TABLE `employment_contracts` (
 /*!40000 ALTER TABLE `employment_contracts` ENABLE KEYS */;
 DROP TABLE IF EXISTS `events`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
-/*!40101 SET character_set_client = utf8mb4 */;
+/*!50503 SET character_set_client = utf8mb4 */;
 CREATE TABLE `events` (
-  `id` char(26) NOT NULL,
-  `company_id` char(26) NOT NULL,
-  `title` varchar(255) NOT NULL,
-  `description` text DEFAULT NULL,
-  `venue` varchar(255) DEFAULT NULL,
+  `id` char(26) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `company_id` char(26) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `title` varchar(255) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `description` text COLLATE utf8mb4_unicode_ci,
+  `venue` varchar(255) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
   `starts_at` timestamp NOT NULL,
   `ends_at` timestamp NULL DEFAULT NULL,
-  `status` varchar(255) NOT NULL DEFAULT 'draft',
-  `share_token` varchar(32) NOT NULL,
-  `created_by` bigint(20) unsigned DEFAULT NULL,
+  `status` varchar(255) COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT 'draft',
+  `share_token` varchar(32) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `created_by` bigint unsigned DEFAULT NULL,
   `created_at` timestamp NULL DEFAULT NULL,
   `updated_at` timestamp NULL DEFAULT NULL,
   `deleted_at` timestamp NULL DEFAULT NULL,
@@ -855,18 +891,18 @@ CREATE TABLE `events` (
 /*!40000 ALTER TABLE `events` ENABLE KEYS */;
 DROP TABLE IF EXISTS `expense_payments`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
-/*!40101 SET character_set_client = utf8mb4 */;
+/*!50503 SET character_set_client = utf8mb4 */;
 CREATE TABLE `expense_payments` (
-  `id` char(26) NOT NULL,
-  `company_id` char(26) NOT NULL,
-  `expense_id` char(26) NOT NULL,
+  `id` char(26) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `company_id` char(26) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `expense_id` char(26) COLLATE utf8mb4_unicode_ci NOT NULL,
   `amount` decimal(14,2) NOT NULL,
-  `currency` varchar(3) NOT NULL DEFAULT 'XAF',
-  `method` varchar(255) NOT NULL,
-  `reference` varchar(255) DEFAULT NULL,
+  `currency` varchar(3) COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT 'XAF',
+  `method` varchar(255) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `reference` varchar(255) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
   `paid_on` date NOT NULL,
-  `note` text DEFAULT NULL,
-  `recorded_by` bigint(20) unsigned DEFAULT NULL,
+  `note` text COLLATE utf8mb4_unicode_ci,
+  `recorded_by` bigint unsigned DEFAULT NULL,
   `created_at` timestamp NULL DEFAULT NULL,
   `updated_at` timestamp NULL DEFAULT NULL,
   `deleted_at` timestamp NULL DEFAULT NULL,
@@ -885,28 +921,28 @@ CREATE TABLE `expense_payments` (
 /*!40000 ALTER TABLE `expense_payments` ENABLE KEYS */;
 DROP TABLE IF EXISTS `expenses`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
-/*!40101 SET character_set_client = utf8mb4 */;
+/*!50503 SET character_set_client = utf8mb4 */;
 CREATE TABLE `expenses` (
-  `id` char(26) NOT NULL,
-  `company_id` char(26) NOT NULL,
-  `supplier_id` char(26) DEFAULT NULL,
-  `number` varchar(255) DEFAULT NULL,
-  `reference` varchar(255) DEFAULT NULL,
-  `description` varchar(255) NOT NULL,
-  `category` varchar(255) NOT NULL,
-  `ledger_account_id` char(26) DEFAULT NULL,
+  `id` char(26) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `company_id` char(26) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `supplier_id` char(26) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `number` varchar(255) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `reference` varchar(255) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `description` varchar(255) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `category` varchar(255) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `ledger_account_id` char(26) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
   `issue_date` date NOT NULL,
   `due_date` date DEFAULT NULL,
   `amount` decimal(14,2) NOT NULL,
-  `vat_rate` decimal(5,4) NOT NULL DEFAULT 0.0000,
-  `vat_amount` decimal(14,2) NOT NULL DEFAULT 0.00,
+  `vat_rate` decimal(5,4) NOT NULL DEFAULT '0.0000',
+  `vat_amount` decimal(14,2) NOT NULL DEFAULT '0.00',
   `total` decimal(14,2) NOT NULL,
-  `amount_paid` decimal(14,2) NOT NULL DEFAULT 0.00,
-  `currency` varchar(3) NOT NULL DEFAULT 'XAF',
-  `status` varchar(255) NOT NULL DEFAULT 'recorded',
-  `payment_method` varchar(255) DEFAULT NULL,
-  `notes` text DEFAULT NULL,
-  `recorded_by` bigint(20) unsigned DEFAULT NULL,
+  `amount_paid` decimal(14,2) NOT NULL DEFAULT '0.00',
+  `currency` varchar(3) COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT 'XAF',
+  `status` varchar(255) COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT 'recorded',
+  `payment_method` varchar(255) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `notes` text COLLATE utf8mb4_unicode_ci,
+  `recorded_by` bigint unsigned DEFAULT NULL,
   `created_at` timestamp NULL DEFAULT NULL,
   `updated_at` timestamp NULL DEFAULT NULL,
   `deleted_at` timestamp NULL DEFAULT NULL,
@@ -929,15 +965,15 @@ CREATE TABLE `expenses` (
 /*!40000 ALTER TABLE `expenses` ENABLE KEYS */;
 DROP TABLE IF EXISTS `failed_jobs`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
-/*!40101 SET character_set_client = utf8mb4 */;
+/*!50503 SET character_set_client = utf8mb4 */;
 CREATE TABLE `failed_jobs` (
-  `id` bigint(20) unsigned NOT NULL AUTO_INCREMENT,
-  `uuid` varchar(255) NOT NULL,
-  `connection` text NOT NULL,
-  `queue` text NOT NULL,
-  `payload` longtext NOT NULL,
-  `exception` longtext NOT NULL,
-  `failed_at` timestamp NOT NULL DEFAULT current_timestamp(),
+  `id` bigint unsigned NOT NULL AUTO_INCREMENT,
+  `uuid` varchar(255) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `connection` text COLLATE utf8mb4_unicode_ci NOT NULL,
+  `queue` text COLLATE utf8mb4_unicode_ci NOT NULL,
+  `payload` longtext COLLATE utf8mb4_unicode_ci NOT NULL,
+  `exception` longtext COLLATE utf8mb4_unicode_ci NOT NULL,
+  `failed_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
   PRIMARY KEY (`id`),
   UNIQUE KEY `failed_jobs_uuid_unique` (`uuid`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
@@ -947,35 +983,35 @@ CREATE TABLE `failed_jobs` (
 /*!40000 ALTER TABLE `failed_jobs` ENABLE KEYS */;
 DROP TABLE IF EXISTS `fixed_assets`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
-/*!40101 SET character_set_client = utf8mb4 */;
+/*!50503 SET character_set_client = utf8mb4 */;
 CREATE TABLE `fixed_assets` (
-  `id` char(26) NOT NULL,
-  `company_id` char(26) NOT NULL,
-  `reference` varchar(255) DEFAULT NULL,
-  `name` varchar(255) NOT NULL,
-  `description` text DEFAULT NULL,
-  `category` varchar(255) NOT NULL,
-  `ledger_account_id` char(26) DEFAULT NULL,
-  `depreciation_account_id` char(26) DEFAULT NULL,
-  `supplier_id` char(26) DEFAULT NULL,
-  `expense_id` char(26) DEFAULT NULL,
+  `id` char(26) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `company_id` char(26) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `reference` varchar(255) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `name` varchar(255) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `description` text COLLATE utf8mb4_unicode_ci,
+  `category` varchar(255) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `ledger_account_id` char(26) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `depreciation_account_id` char(26) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `supplier_id` char(26) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `expense_id` char(26) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
   `acquired_on` date NOT NULL,
   `in_service_on` date DEFAULT NULL,
   `cost` decimal(16,2) NOT NULL,
-  `residual_value` decimal(16,2) NOT NULL DEFAULT 0.00,
-  `currency` varchar(3) NOT NULL DEFAULT 'XAF',
-  `method` varchar(255) NOT NULL DEFAULT 'straight_line',
-  `useful_life_months` smallint(5) unsigned NOT NULL DEFAULT 60,
+  `residual_value` decimal(16,2) NOT NULL DEFAULT '0.00',
+  `currency` varchar(3) COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT 'XAF',
+  `method` varchar(255) COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT 'straight_line',
+  `useful_life_months` smallint unsigned NOT NULL DEFAULT '60',
   `declining_rate` decimal(6,4) DEFAULT NULL,
-  `opening_accumulated` decimal(16,2) NOT NULL DEFAULT 0.00,
-  `accumulated_depreciation` decimal(16,2) NOT NULL DEFAULT 0.00,
-  `status` varchar(255) NOT NULL DEFAULT 'active',
+  `opening_accumulated` decimal(16,2) NOT NULL DEFAULT '0.00',
+  `accumulated_depreciation` decimal(16,2) NOT NULL DEFAULT '0.00',
+  `status` varchar(255) COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT 'active',
   `disposed_on` date DEFAULT NULL,
   `disposal_proceeds` decimal(16,2) DEFAULT NULL,
-  `disposal_note` varchar(255) DEFAULT NULL,
-  `location` varchar(255) DEFAULT NULL,
-  `notes` text DEFAULT NULL,
-  `created_by` bigint(20) unsigned DEFAULT NULL,
+  `disposal_note` varchar(255) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `location` varchar(255) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `notes` text COLLATE utf8mb4_unicode_ci,
+  `created_by` bigint unsigned DEFAULT NULL,
   `created_at` timestamp NULL DEFAULT NULL,
   `updated_at` timestamp NULL DEFAULT NULL,
   `deleted_at` timestamp NULL DEFAULT NULL,
@@ -1001,12 +1037,12 @@ CREATE TABLE `fixed_assets` (
 /*!40000 ALTER TABLE `fixed_assets` ENABLE KEYS */;
 DROP TABLE IF EXISTS `form_responses`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
-/*!40101 SET character_set_client = utf8mb4 */;
+/*!50503 SET character_set_client = utf8mb4 */;
 CREATE TABLE `form_responses` (
-  `id` char(26) NOT NULL,
-  `company_id` char(26) NOT NULL,
-  `form_id` char(26) NOT NULL,
-  `answers` longtext CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NOT NULL CHECK (json_valid(`answers`)),
+  `id` char(26) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `company_id` char(26) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `form_id` char(26) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `answers` json NOT NULL,
   `created_at` timestamp NULL DEFAULT NULL,
   `updated_at` timestamp NULL DEFAULT NULL,
   PRIMARY KEY (`id`),
@@ -1021,16 +1057,16 @@ CREATE TABLE `form_responses` (
 /*!40000 ALTER TABLE `form_responses` ENABLE KEYS */;
 DROP TABLE IF EXISTS `forms`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
-/*!40101 SET character_set_client = utf8mb4 */;
+/*!50503 SET character_set_client = utf8mb4 */;
 CREATE TABLE `forms` (
-  `id` char(26) NOT NULL,
-  `company_id` char(26) NOT NULL,
-  `title` varchar(255) NOT NULL,
-  `description` text DEFAULT NULL,
-  `fields` longtext CHARACTER SET utf8mb4 COLLATE utf8mb4_bin DEFAULT NULL CHECK (json_valid(`fields`)),
-  `status` varchar(255) NOT NULL DEFAULT 'draft',
-  `share_token` varchar(32) NOT NULL,
-  `created_by` bigint(20) unsigned DEFAULT NULL,
+  `id` char(26) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `company_id` char(26) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `title` varchar(255) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `description` text COLLATE utf8mb4_unicode_ci,
+  `fields` json DEFAULT NULL,
+  `status` varchar(255) COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT 'draft',
+  `share_token` varchar(32) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `created_by` bigint unsigned DEFAULT NULL,
   `created_at` timestamp NULL DEFAULT NULL,
   `updated_at` timestamp NULL DEFAULT NULL,
   `deleted_at` timestamp NULL DEFAULT NULL,
@@ -1047,31 +1083,31 @@ CREATE TABLE `forms` (
 /*!40000 ALTER TABLE `forms` ENABLE KEYS */;
 DROP TABLE IF EXISTS `items`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
-/*!40101 SET character_set_client = utf8mb4 */;
+/*!50503 SET character_set_client = utf8mb4 */;
 CREATE TABLE `items` (
-  `id` char(26) NOT NULL,
-  `company_id` char(26) NOT NULL,
-  `type` varchar(255) NOT NULL DEFAULT 'product',
-  `category_id` char(26) DEFAULT NULL,
-  `sku` varchar(255) DEFAULT NULL,
-  `barcode` varchar(255) DEFAULT NULL,
-  `name` varchar(255) NOT NULL,
-  `description` text DEFAULT NULL,
-  `unit` varchar(255) NOT NULL DEFAULT 'unit',
-  `price` decimal(15,2) NOT NULL DEFAULT 0.00,
+  `id` char(26) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `company_id` char(26) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `type` varchar(255) COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT 'product',
+  `category_id` char(26) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `sku` varchar(255) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `barcode` varchar(255) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `name` varchar(255) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `description` text COLLATE utf8mb4_unicode_ci,
+  `unit` varchar(255) COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT 'unit',
+  `price` decimal(15,2) NOT NULL DEFAULT '0.00',
   `cost` decimal(15,2) DEFAULT NULL,
-  `tax_rate_id` char(26) DEFAULT NULL,
-  `track_stock` tinyint(1) NOT NULL DEFAULT 0,
+  `tax_rate_id` char(26) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `track_stock` tinyint(1) NOT NULL DEFAULT '0',
   `reorder_level` decimal(15,3) DEFAULT NULL,
-  `is_active` tinyint(1) NOT NULL DEFAULT 1,
-  `image_path` varchar(255) DEFAULT NULL,
-  `created_by` bigint(20) unsigned DEFAULT NULL,
-  `device_id` char(26) DEFAULT NULL,
+  `is_active` tinyint(1) NOT NULL DEFAULT '1',
+  `image_path` varchar(255) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `created_by` bigint unsigned DEFAULT NULL,
+  `device_id` char(26) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
   `synced_at` timestamp NULL DEFAULT NULL,
   `created_at` timestamp NULL DEFAULT NULL,
   `updated_at` timestamp NULL DEFAULT NULL,
   `deleted_at` timestamp NULL DEFAULT NULL,
-  `sync_sequence` bigint(20) unsigned DEFAULT NULL,
+  `sync_sequence` bigint unsigned DEFAULT NULL,
   PRIMARY KEY (`id`),
   UNIQUE KEY `items_company_id_sku_unique` (`company_id`,`sku`),
   KEY `items_category_id_foreign` (`category_id`),
@@ -1091,18 +1127,18 @@ CREATE TABLE `items` (
 /*!40000 ALTER TABLE `items` ENABLE KEYS */;
 DROP TABLE IF EXISTS `job_batches`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
-/*!40101 SET character_set_client = utf8mb4 */;
+/*!50503 SET character_set_client = utf8mb4 */;
 CREATE TABLE `job_batches` (
-  `id` varchar(255) NOT NULL,
-  `name` varchar(255) NOT NULL,
-  `total_jobs` int(11) NOT NULL,
-  `pending_jobs` int(11) NOT NULL,
-  `failed_jobs` int(11) NOT NULL,
-  `failed_job_ids` longtext NOT NULL,
-  `options` mediumtext DEFAULT NULL,
-  `cancelled_at` int(11) DEFAULT NULL,
-  `created_at` int(11) NOT NULL,
-  `finished_at` int(11) DEFAULT NULL,
+  `id` varchar(255) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `name` varchar(255) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `total_jobs` int NOT NULL,
+  `pending_jobs` int NOT NULL,
+  `failed_jobs` int NOT NULL,
+  `failed_job_ids` longtext COLLATE utf8mb4_unicode_ci NOT NULL,
+  `options` mediumtext COLLATE utf8mb4_unicode_ci,
+  `cancelled_at` int DEFAULT NULL,
+  `created_at` int NOT NULL,
+  `finished_at` int DEFAULT NULL,
   PRIMARY KEY (`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
@@ -1111,15 +1147,15 @@ CREATE TABLE `job_batches` (
 /*!40000 ALTER TABLE `job_batches` ENABLE KEYS */;
 DROP TABLE IF EXISTS `jobs`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
-/*!40101 SET character_set_client = utf8mb4 */;
+/*!50503 SET character_set_client = utf8mb4 */;
 CREATE TABLE `jobs` (
-  `id` bigint(20) unsigned NOT NULL AUTO_INCREMENT,
-  `queue` varchar(255) NOT NULL,
-  `payload` longtext NOT NULL,
-  `attempts` tinyint(3) unsigned NOT NULL,
-  `reserved_at` int(10) unsigned DEFAULT NULL,
-  `available_at` int(10) unsigned NOT NULL,
-  `created_at` int(10) unsigned NOT NULL,
+  `id` bigint unsigned NOT NULL AUTO_INCREMENT,
+  `queue` varchar(255) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `payload` longtext COLLATE utf8mb4_unicode_ci NOT NULL,
+  `attempts` tinyint unsigned NOT NULL,
+  `reserved_at` int unsigned DEFAULT NULL,
+  `available_at` int unsigned NOT NULL,
+  `created_at` int unsigned NOT NULL,
   PRIMARY KEY (`id`),
   KEY `jobs_queue_index` (`queue`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
@@ -1129,18 +1165,18 @@ CREATE TABLE `jobs` (
 /*!40000 ALTER TABLE `jobs` ENABLE KEYS */;
 DROP TABLE IF EXISTS `journal_entries`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
-/*!40101 SET character_set_client = utf8mb4 */;
+/*!50503 SET character_set_client = utf8mb4 */;
 CREATE TABLE `journal_entries` (
-  `id` char(26) NOT NULL,
-  `company_id` char(26) NOT NULL,
-  `journal` varchar(4) NOT NULL,
-  `reference` varchar(255) DEFAULT NULL,
-  `narration` text DEFAULT NULL,
+  `id` char(26) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `company_id` char(26) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `journal` varchar(4) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `reference` varchar(255) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `narration` text COLLATE utf8mb4_unicode_ci,
   `entry_date` date NOT NULL,
-  `source_type` varchar(255) DEFAULT NULL,
-  `source_id` char(26) DEFAULT NULL,
-  `reverses_entry_id` char(26) DEFAULT NULL,
-  `created_by` bigint(20) unsigned DEFAULT NULL,
+  `source_type` varchar(255) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `source_id` char(26) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `reverses_entry_id` char(26) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `created_by` bigint unsigned DEFAULT NULL,
   `created_at` timestamp NULL DEFAULT NULL,
   `updated_at` timestamp NULL DEFAULT NULL,
   PRIMARY KEY (`id`),
@@ -1159,16 +1195,16 @@ CREATE TABLE `journal_entries` (
 /*!40000 ALTER TABLE `journal_entries` ENABLE KEYS */;
 DROP TABLE IF EXISTS `journal_lines`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
-/*!40101 SET character_set_client = utf8mb4 */;
+/*!50503 SET character_set_client = utf8mb4 */;
 CREATE TABLE `journal_lines` (
-  `id` char(26) NOT NULL,
-  `company_id` char(26) NOT NULL,
-  `journal_entry_id` char(26) NOT NULL,
-  `ledger_account_id` char(26) NOT NULL,
-  `debit` decimal(15,2) NOT NULL DEFAULT 0.00,
-  `credit` decimal(15,2) NOT NULL DEFAULT 0.00,
-  `narration` varchar(255) DEFAULT NULL,
-  `sort_order` smallint(5) unsigned NOT NULL DEFAULT 0,
+  `id` char(26) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `company_id` char(26) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `journal_entry_id` char(26) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `ledger_account_id` char(26) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `debit` decimal(15,2) NOT NULL DEFAULT '0.00',
+  `credit` decimal(15,2) NOT NULL DEFAULT '0.00',
+  `narration` varchar(255) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `sort_order` smallint unsigned NOT NULL DEFAULT '0',
   `created_at` timestamp NULL DEFAULT NULL,
   `updated_at` timestamp NULL DEFAULT NULL,
   PRIMARY KEY (`id`),
@@ -1177,7 +1213,7 @@ CREATE TABLE `journal_lines` (
   KEY `journal_lines_journal_entry_id_index` (`journal_entry_id`),
   CONSTRAINT `journal_lines_company_id_foreign` FOREIGN KEY (`company_id`) REFERENCES `companies` (`id`) ON DELETE CASCADE,
   CONSTRAINT `journal_lines_journal_entry_id_foreign` FOREIGN KEY (`journal_entry_id`) REFERENCES `journal_entries` (`id`) ON DELETE CASCADE,
-  CONSTRAINT `journal_lines_ledger_account_id_foreign` FOREIGN KEY (`ledger_account_id`) REFERENCES `ledger_accounts` (`id`)
+  CONSTRAINT `journal_lines_ledger_account_id_foreign` FOREIGN KEY (`ledger_account_id`) REFERENCES `ledger_accounts` (`id`) ON DELETE RESTRICT
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
@@ -1185,22 +1221,22 @@ CREATE TABLE `journal_lines` (
 /*!40000 ALTER TABLE `journal_lines` ENABLE KEYS */;
 DROP TABLE IF EXISTS `leave_requests`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
-/*!40101 SET character_set_client = utf8mb4 */;
+/*!50503 SET character_set_client = utf8mb4 */;
 CREATE TABLE `leave_requests` (
-  `id` char(26) NOT NULL,
-  `company_id` char(26) NOT NULL,
-  `employee_id` char(26) NOT NULL,
-  `type` varchar(255) NOT NULL DEFAULT 'annual',
+  `id` char(26) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `company_id` char(26) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `employee_id` char(26) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `type` varchar(255) COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT 'annual',
   `starts_on` date NOT NULL,
   `ends_on` date NOT NULL,
-  `days` decimal(6,2) NOT NULL DEFAULT 0.00,
-  `paid` tinyint(1) NOT NULL DEFAULT 1,
-  `deducts_balance` tinyint(1) NOT NULL DEFAULT 1,
-  `status` varchar(255) NOT NULL DEFAULT 'pending',
-  `reason` text DEFAULT NULL,
-  `decision_note` text DEFAULT NULL,
-  `requested_by` bigint(20) unsigned DEFAULT NULL,
-  `decided_by` bigint(20) unsigned DEFAULT NULL,
+  `days` decimal(6,2) NOT NULL DEFAULT '0.00',
+  `paid` tinyint(1) NOT NULL DEFAULT '1',
+  `deducts_balance` tinyint(1) NOT NULL DEFAULT '1',
+  `status` varchar(255) COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT 'pending',
+  `reason` text COLLATE utf8mb4_unicode_ci,
+  `decision_note` text COLLATE utf8mb4_unicode_ci,
+  `requested_by` bigint unsigned DEFAULT NULL,
+  `decided_by` bigint unsigned DEFAULT NULL,
   `decided_at` timestamp NULL DEFAULT NULL,
   `created_at` timestamp NULL DEFAULT NULL,
   `updated_at` timestamp NULL DEFAULT NULL,
@@ -1222,15 +1258,15 @@ CREATE TABLE `leave_requests` (
 /*!40000 ALTER TABLE `leave_requests` ENABLE KEYS */;
 DROP TABLE IF EXISTS `ledger_accounts`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
-/*!40101 SET character_set_client = utf8mb4 */;
+/*!50503 SET character_set_client = utf8mb4 */;
 CREATE TABLE `ledger_accounts` (
-  `id` char(26) NOT NULL,
-  `company_id` char(26) NOT NULL,
-  `number` varchar(12) NOT NULL,
-  `name` varchar(255) NOT NULL,
-  `class` tinyint(3) unsigned NOT NULL,
-  `normal_balance` varchar(6) NOT NULL,
-  `is_active` tinyint(1) NOT NULL DEFAULT 1,
+  `id` char(26) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `company_id` char(26) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `number` varchar(12) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `name` varchar(255) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `class` tinyint unsigned NOT NULL,
+  `normal_balance` varchar(6) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `is_active` tinyint(1) NOT NULL DEFAULT '1',
   `created_at` timestamp NULL DEFAULT NULL,
   `updated_at` timestamp NULL DEFAULT NULL,
   PRIMARY KEY (`id`),
@@ -1244,18 +1280,18 @@ CREATE TABLE `ledger_accounts` (
 /*!40000 ALTER TABLE `ledger_accounts` ENABLE KEYS */;
 DROP TABLE IF EXISTS `loyalty_transactions`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
-/*!40101 SET character_set_client = utf8mb4 */;
+/*!50503 SET character_set_client = utf8mb4 */;
 CREATE TABLE `loyalty_transactions` (
-  `id` char(26) NOT NULL,
-  `company_id` char(26) NOT NULL,
-  `contact_id` char(26) NOT NULL,
-  `type` varchar(255) NOT NULL,
-  `points` int(11) NOT NULL,
-  `balance_after` int(10) unsigned NOT NULL,
-  `reference_type` varchar(255) DEFAULT NULL,
-  `reference_id` varchar(255) DEFAULT NULL,
-  `note` varchar(255) DEFAULT NULL,
-  `created_by` bigint(20) unsigned DEFAULT NULL,
+  `id` char(26) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `company_id` char(26) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `contact_id` char(26) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `type` varchar(255) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `points` int NOT NULL,
+  `balance_after` int unsigned NOT NULL,
+  `reference_type` varchar(255) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `reference_id` varchar(255) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `note` varchar(255) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `created_by` bigint unsigned DEFAULT NULL,
   `created_at` timestamp NULL DEFAULT NULL,
   `updated_at` timestamp NULL DEFAULT NULL,
   PRIMARY KEY (`id`),
@@ -1273,21 +1309,21 @@ CREATE TABLE `loyalty_transactions` (
 /*!40000 ALTER TABLE `loyalty_transactions` ENABLE KEYS */;
 DROP TABLE IF EXISTS `media`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
-/*!40101 SET character_set_client = utf8mb4 */;
+/*!50503 SET character_set_client = utf8mb4 */;
 CREATE TABLE `media` (
-  `id` char(26) NOT NULL,
-  `company_id` char(26) NOT NULL,
-  `collection` varchar(255) NOT NULL DEFAULT 'default',
-  `disk` varchar(255) NOT NULL DEFAULT 'public',
-  `path` varchar(255) NOT NULL,
-  `mime` varchar(255) DEFAULT NULL,
-  `size` bigint(20) unsigned DEFAULT NULL,
-  `width` int(10) unsigned DEFAULT NULL,
-  `height` int(10) unsigned DEFAULT NULL,
-  `checksum` varchar(255) DEFAULT NULL,
-  `attachable_type` varchar(255) DEFAULT NULL,
-  `attachable_id` varchar(255) DEFAULT NULL,
-  `sort_order` int(10) unsigned NOT NULL DEFAULT 0,
+  `id` char(26) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `company_id` char(26) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `collection` varchar(255) COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT 'default',
+  `disk` varchar(255) COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT 'public',
+  `path` varchar(255) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `mime` varchar(255) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `size` bigint unsigned DEFAULT NULL,
+  `width` int unsigned DEFAULT NULL,
+  `height` int unsigned DEFAULT NULL,
+  `checksum` varchar(255) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `attachable_type` varchar(255) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `attachable_id` varchar(255) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `sort_order` int unsigned NOT NULL DEFAULT '0',
   `created_at` timestamp NULL DEFAULT NULL,
   `updated_at` timestamp NULL DEFAULT NULL,
   PRIMARY KEY (`id`),
@@ -1301,77 +1337,27 @@ CREATE TABLE `media` (
 /*!40000 ALTER TABLE `media` ENABLE KEYS */;
 DROP TABLE IF EXISTS `migrations`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
-/*!40101 SET character_set_client = utf8mb4 */;
+/*!50503 SET character_set_client = utf8mb4 */;
 CREATE TABLE `migrations` (
-  `id` int(10) unsigned NOT NULL AUTO_INCREMENT,
-  `migration` varchar(255) NOT NULL,
-  `batch` int(11) NOT NULL,
+  `id` int unsigned NOT NULL AUTO_INCREMENT,
+  `migration` varchar(255) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `batch` int NOT NULL,
   PRIMARY KEY (`id`)
-) ENGINE=InnoDB AUTO_INCREMENT=51 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=53 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 /*!40000 ALTER TABLE `migrations` DISABLE KEYS */;
-INSERT INTO `migrations` VALUES
-(1,'0001_01_01_000000_create_users_table',1),
-(2,'0001_01_01_000001_create_cache_table',1),
-(3,'0001_01_01_000002_create_jobs_table',1),
-(4,'2026_07_27_000001_create_companies_table',1),
-(5,'2026_07_27_000002_create_roles_and_permissions_tables',1),
-(6,'2026_07_27_000003_add_opes_columns_to_users_table',1),
-(7,'2026_07_27_000004_create_platform_tables',1),
-(8,'2026_07_27_000005_create_crm_and_catalogue_tables',1),
-(9,'2026_07_27_000006_create_sales_tables',1),
-(10,'2026_07_27_000007_create_payment_tables',1),
-(11,'2026_07_28_000001_create_artisans_table',1),
-(12,'2026_07_28_000002_add_two_factor_columns_to_users_table',1),
-(13,'2026_07_28_000003_create_sync_receipts_table',1),
-(14,'2026_07_28_000004_create_business_documents_table',1),
-(15,'2026_07_31_000001_create_forms_tables',1),
-(16,'2026_07_31_000002_create_events_tables',1),
-(17,'2026_07_31_100001_add_card_design_to_companies',1),
-(18,'2026_07_31_100002_add_letterhead_design_to_companies',1),
-(19,'2026_07_31_100003_create_company_reviews_table',1),
-(20,'2026_07_31_200001_create_notifications_table',1),
-(21,'2026_07_31_300001_add_account_lifecycle_to_companies',1),
-(22,'2026_08_01_000001_add_loyalty_settings_to_companies',1),
-(23,'2026_08_01_000002_add_loyalty_card_to_contacts',1),
-(24,'2026_08_01_000003_create_loyalty_transactions_table',1),
-(25,'2026_08_02_000001_add_plan_to_companies',1),
-(26,'2026_08_02_000002_create_platform_admins_table',1),
-(27,'2026_08_03_000001_create_platform_admin_password_reset_tokens_table',1),
-(28,'2026_08_03_000002_add_ip_and_user_agent_to_platform_admin_activity',1),
-(29,'2026_08_03_000003_add_soft_deletes_to_platform_admins',1),
-(30,'2026_08_04_000001_add_two_factor_columns_to_platform_admins_table',1),
-(31,'2026_08_04_000002_add_role_to_platform_admins_table',1),
-(32,'2026_08_04_000003_create_company_notes_table',1),
-(33,'2026_08_05_000001_create_subscription_payments_table',1),
-(34,'2026_08_05_000002_add_plan_renews_at_to_companies',1),
-(35,'2026_08_06_000001_add_fiscal_identity_to_companies',1),
-(36,'2026_08_07_000001_create_ledger_tables',1),
-(37,'2026_08_08_000001_add_default_sales_account_to_companies',1),
-(38,'2026_08_08_000002_correct_ledger_account_labels',1),
-(39,'2026_08_09_000001_add_renewal_reminder_state_to_companies',1),
-(40,'2026_08_10_000001_create_partner_programme_tables',1),
-(41,'2026_08_11_000001_create_expenses_tables',1),
-(42,'2026_08_12_000001_create_hr_tables',1),
-(43,'2026_08_12_000002_create_payroll_tables',1),
-(44,'2026_08_12_000003_add_payroll_settings_to_companies',1),
-(45,'2026_08_13_000001_add_modules_to_companies',1),
-(46,'2026_08_13_000002_create_fixed_assets_tables',1),
-(47,'2026_08_13_000003_create_banking_tables',1),
-(48,'2026_08_13_000004_create_stock_locations_tables',1),
-(49,'2026_08_14_000001_create_stocktakes_and_stock_valuation',1),
-(50,'2026_08_14_000002_add_invitations_to_company_user',1);
+INSERT INTO `migrations` VALUES (1,'0001_01_01_000000_create_users_table',1),(2,'0001_01_01_000001_create_cache_table',1),(3,'0001_01_01_000002_create_jobs_table',1),(4,'2026_07_27_000001_create_companies_table',1),(5,'2026_07_27_000002_create_roles_and_permissions_tables',1),(6,'2026_07_27_000003_add_opes_columns_to_users_table',1),(7,'2026_07_27_000004_create_platform_tables',1),(8,'2026_07_27_000005_create_crm_and_catalogue_tables',1),(9,'2026_07_27_000006_create_sales_tables',1),(10,'2026_07_27_000007_create_payment_tables',1),(11,'2026_07_28_000001_create_artisans_table',1),(12,'2026_07_28_000002_add_two_factor_columns_to_users_table',1),(13,'2026_07_28_000003_create_sync_receipts_table',1),(14,'2026_07_28_000004_create_business_documents_table',1),(15,'2026_07_31_000001_create_forms_tables',1),(16,'2026_07_31_000002_create_events_tables',1),(17,'2026_07_31_100001_add_card_design_to_companies',1),(18,'2026_07_31_100002_add_letterhead_design_to_companies',1),(19,'2026_07_31_100003_create_company_reviews_table',1),(20,'2026_07_31_200001_create_notifications_table',1),(21,'2026_07_31_300001_add_account_lifecycle_to_companies',1),(22,'2026_08_01_000001_add_loyalty_settings_to_companies',1),(23,'2026_08_01_000002_add_loyalty_card_to_contacts',1),(24,'2026_08_01_000003_create_loyalty_transactions_table',1),(25,'2026_08_02_000001_add_plan_to_companies',1),(26,'2026_08_02_000002_create_platform_admins_table',1),(27,'2026_08_03_000001_create_platform_admin_password_reset_tokens_table',1),(28,'2026_08_03_000002_add_ip_and_user_agent_to_platform_admin_activity',1),(29,'2026_08_03_000003_add_soft_deletes_to_platform_admins',1),(30,'2026_08_04_000001_add_two_factor_columns_to_platform_admins_table',1),(31,'2026_08_04_000002_add_role_to_platform_admins_table',1),(32,'2026_08_04_000003_create_company_notes_table',1),(33,'2026_08_05_000001_create_subscription_payments_table',1),(34,'2026_08_05_000002_add_plan_renews_at_to_companies',1),(35,'2026_08_06_000001_add_fiscal_identity_to_companies',1),(36,'2026_08_07_000001_create_ledger_tables',1),(37,'2026_08_08_000001_add_default_sales_account_to_companies',1),(38,'2026_08_08_000002_correct_ledger_account_labels',1),(39,'2026_08_09_000001_add_renewal_reminder_state_to_companies',1),(40,'2026_08_10_000001_create_partner_programme_tables',1),(41,'2026_08_11_000001_create_expenses_tables',1),(42,'2026_08_12_000001_create_hr_tables',1),(43,'2026_08_12_000002_create_payroll_tables',1),(44,'2026_08_12_000003_add_payroll_settings_to_companies',1),(45,'2026_08_13_000001_add_modules_to_companies',1),(46,'2026_08_13_000001_create_personal_access_tokens_table',1),(47,'2026_08_13_000002_create_fixed_assets_tables',1),(48,'2026_08_13_000003_create_banking_tables',1),(49,'2026_08_13_000004_create_stock_locations_tables',1),(50,'2026_08_14_000001_create_stocktakes_and_stock_valuation',1),(51,'2026_08_14_000002_add_invitations_to_company_user',1),(52,'2026_08_15_000001_create_deals_table',1);
 /*!40000 ALTER TABLE `migrations` ENABLE KEYS */;
 DROP TABLE IF EXISTS `notifications`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
-/*!40101 SET character_set_client = utf8mb4 */;
+/*!50503 SET character_set_client = utf8mb4 */;
 CREATE TABLE `notifications` (
-  `id` char(36) NOT NULL,
-  `type` varchar(255) NOT NULL,
-  `notifiable_type` varchar(255) NOT NULL,
-  `notifiable_id` bigint(20) unsigned NOT NULL,
-  `data` text NOT NULL,
+  `id` char(36) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `type` varchar(255) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `notifiable_type` varchar(255) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `notifiable_id` bigint unsigned NOT NULL,
+  `data` text COLLATE utf8mb4_unicode_ci NOT NULL,
   `read_at` timestamp NULL DEFAULT NULL,
   `created_at` timestamp NULL DEFAULT NULL,
   `updated_at` timestamp NULL DEFAULT NULL,
@@ -1384,18 +1370,18 @@ CREATE TABLE `notifications` (
 /*!40000 ALTER TABLE `notifications` ENABLE KEYS */;
 DROP TABLE IF EXISTS `number_leases`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
-/*!40101 SET character_set_client = utf8mb4 */;
+/*!50503 SET character_set_client = utf8mb4 */;
 CREATE TABLE `number_leases` (
-  `id` char(26) NOT NULL,
-  `company_id` char(26) NOT NULL,
-  `document_type` varchar(255) NOT NULL,
-  `year` smallint(5) unsigned NOT NULL,
-  `range_start` bigint(20) unsigned NOT NULL,
-  `range_end` bigint(20) unsigned NOT NULL,
-  `next_available` bigint(20) unsigned NOT NULL,
-  `device_id` char(26) DEFAULT NULL,
-  `status` varchar(255) NOT NULL DEFAULT 'active',
-  `void_unused_from` bigint(20) unsigned DEFAULT NULL,
+  `id` char(26) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `company_id` char(26) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `document_type` varchar(255) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `year` smallint unsigned NOT NULL,
+  `range_start` bigint unsigned NOT NULL,
+  `range_end` bigint unsigned NOT NULL,
+  `next_available` bigint unsigned NOT NULL,
+  `device_id` char(26) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `status` varchar(255) COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT 'active',
+  `void_unused_from` bigint unsigned DEFAULT NULL,
   `issued_at` timestamp NOT NULL,
   `expires_at` timestamp NULL DEFAULT NULL,
   `created_at` timestamp NULL DEFAULT NULL,
@@ -1413,19 +1399,19 @@ CREATE TABLE `number_leases` (
 /*!40000 ALTER TABLE `number_leases` ENABLE KEYS */;
 DROP TABLE IF EXISTS `partner_clients`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
-/*!40101 SET character_set_client = utf8mb4 */;
+/*!50503 SET character_set_client = utf8mb4 */;
 CREATE TABLE `partner_clients` (
-  `id` char(26) NOT NULL,
-  `company_id` char(26) NOT NULL,
-  `name` varchar(255) NOT NULL,
-  `contact_name` varchar(255) DEFAULT NULL,
-  `phone` varchar(255) DEFAULT NULL,
-  `email` varchar(255) DEFAULT NULL,
-  `industry` varchar(255) DEFAULT NULL,
-  `city` varchar(255) DEFAULT NULL,
-  `notes` text DEFAULT NULL,
-  `invite_token` varchar(255) NOT NULL,
-  `converted_company_id` char(26) DEFAULT NULL,
+  `id` char(26) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `company_id` char(26) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `name` varchar(255) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `contact_name` varchar(255) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `phone` varchar(255) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `email` varchar(255) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `industry` varchar(255) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `city` varchar(255) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `notes` text COLLATE utf8mb4_unicode_ci,
+  `invite_token` varchar(255) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `converted_company_id` char(26) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
   `converted_at` timestamp NULL DEFAULT NULL,
   `created_at` timestamp NULL DEFAULT NULL,
   `updated_at` timestamp NULL DEFAULT NULL,
@@ -1442,17 +1428,17 @@ CREATE TABLE `partner_clients` (
 /*!40000 ALTER TABLE `partner_clients` ENABLE KEYS */;
 DROP TABLE IF EXISTS `partner_commissions`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
-/*!40101 SET character_set_client = utf8mb4 */;
+/*!50503 SET character_set_client = utf8mb4 */;
 CREATE TABLE `partner_commissions` (
-  `id` char(26) NOT NULL,
-  `company_id` char(26) NOT NULL,
-  `source_company_id` char(26) NOT NULL,
-  `subscription_payment_id` char(26) NOT NULL,
-  `amount` int(10) unsigned NOT NULL,
+  `id` char(26) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `company_id` char(26) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `source_company_id` char(26) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `subscription_payment_id` char(26) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `amount` int unsigned NOT NULL,
   `rate` decimal(5,4) NOT NULL,
-  `base_amount` int(10) unsigned NOT NULL,
-  `currency` varchar(3) NOT NULL DEFAULT 'XAF',
-  `status` varchar(255) NOT NULL DEFAULT 'earned',
+  `base_amount` int unsigned NOT NULL,
+  `currency` varchar(3) COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT 'XAF',
+  `status` varchar(255) COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT 'earned',
   `created_at` timestamp NULL DEFAULT NULL,
   `updated_at` timestamp NULL DEFAULT NULL,
   PRIMARY KEY (`id`),
@@ -1469,17 +1455,17 @@ CREATE TABLE `partner_commissions` (
 /*!40000 ALTER TABLE `partner_commissions` ENABLE KEYS */;
 DROP TABLE IF EXISTS `partner_payouts`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
-/*!40101 SET character_set_client = utf8mb4 */;
+/*!50503 SET character_set_client = utf8mb4 */;
 CREATE TABLE `partner_payouts` (
-  `id` char(26) NOT NULL,
-  `company_id` char(26) NOT NULL,
-  `amount` int(10) unsigned NOT NULL,
-  `currency` varchar(3) NOT NULL DEFAULT 'XAF',
-  `status` varchar(255) NOT NULL DEFAULT 'requested',
-  `method` varchar(255) DEFAULT NULL,
-  `destination` varchar(255) DEFAULT NULL,
-  `note` text DEFAULT NULL,
-  `requested_by` bigint(20) unsigned DEFAULT NULL,
+  `id` char(26) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `company_id` char(26) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `amount` int unsigned NOT NULL,
+  `currency` varchar(3) COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT 'XAF',
+  `status` varchar(255) COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT 'requested',
+  `method` varchar(255) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `destination` varchar(255) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `note` text COLLATE utf8mb4_unicode_ci,
+  `requested_by` bigint unsigned DEFAULT NULL,
   `settled_at` timestamp NULL DEFAULT NULL,
   `created_at` timestamp NULL DEFAULT NULL,
   `updated_at` timestamp NULL DEFAULT NULL,
@@ -1495,10 +1481,10 @@ CREATE TABLE `partner_payouts` (
 /*!40000 ALTER TABLE `partner_payouts` ENABLE KEYS */;
 DROP TABLE IF EXISTS `password_reset_tokens`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
-/*!40101 SET character_set_client = utf8mb4 */;
+/*!50503 SET character_set_client = utf8mb4 */;
 CREATE TABLE `password_reset_tokens` (
-  `email` varchar(255) NOT NULL,
-  `token` varchar(255) NOT NULL,
+  `email` varchar(255) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `token` varchar(255) COLLATE utf8mb4_unicode_ci NOT NULL,
   `created_at` timestamp NULL DEFAULT NULL,
   PRIMARY KEY (`email`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
@@ -1508,12 +1494,12 @@ CREATE TABLE `password_reset_tokens` (
 /*!40000 ALTER TABLE `password_reset_tokens` ENABLE KEYS */;
 DROP TABLE IF EXISTS `payment_allocations`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
-/*!40101 SET character_set_client = utf8mb4 */;
+/*!50503 SET character_set_client = utf8mb4 */;
 CREATE TABLE `payment_allocations` (
-  `id` char(26) NOT NULL,
-  `company_id` char(26) NOT NULL,
-  `payment_id` char(26) NOT NULL,
-  `document_id` char(26) NOT NULL,
+  `id` char(26) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `company_id` char(26) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `payment_id` char(26) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `document_id` char(26) COLLATE utf8mb4_unicode_ci NOT NULL,
   `amount` decimal(15,2) NOT NULL,
   `created_at` timestamp NULL DEFAULT NULL,
   `updated_at` timestamp NULL DEFAULT NULL,
@@ -1522,7 +1508,7 @@ CREATE TABLE `payment_allocations` (
   KEY `payment_allocations_company_id_foreign` (`company_id`),
   KEY `payment_allocations_document_id_index` (`document_id`),
   CONSTRAINT `payment_allocations_company_id_foreign` FOREIGN KEY (`company_id`) REFERENCES `companies` (`id`) ON DELETE CASCADE,
-  CONSTRAINT `payment_allocations_document_id_foreign` FOREIGN KEY (`document_id`) REFERENCES `documents` (`id`),
+  CONSTRAINT `payment_allocations_document_id_foreign` FOREIGN KEY (`document_id`) REFERENCES `documents` (`id`) ON DELETE RESTRICT,
   CONSTRAINT `payment_allocations_payment_id_foreign` FOREIGN KEY (`payment_id`) REFERENCES `payments` (`id`) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
@@ -1531,27 +1517,27 @@ CREATE TABLE `payment_allocations` (
 /*!40000 ALTER TABLE `payment_allocations` ENABLE KEYS */;
 DROP TABLE IF EXISTS `payments`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
-/*!40101 SET character_set_client = utf8mb4 */;
+/*!50503 SET character_set_client = utf8mb4 */;
 CREATE TABLE `payments` (
-  `id` char(26) NOT NULL,
-  `company_id` char(26) NOT NULL,
-  `contact_id` char(26) DEFAULT NULL,
-  `method` varchar(255) NOT NULL,
+  `id` char(26) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `company_id` char(26) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `contact_id` char(26) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `method` varchar(255) COLLATE utf8mb4_unicode_ci NOT NULL,
   `amount` decimal(15,2) NOT NULL,
-  `currency` varchar(3) NOT NULL DEFAULT 'USD',
-  `exchange_rate` decimal(15,6) NOT NULL DEFAULT 1.000000,
-  `reference` varchar(255) DEFAULT NULL,
-  `provider` varchar(255) DEFAULT NULL,
-  `provider_reference` varchar(255) DEFAULT NULL,
-  `notes` text DEFAULT NULL,
+  `currency` varchar(3) COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT 'USD',
+  `exchange_rate` decimal(15,6) NOT NULL DEFAULT '1.000000',
+  `reference` varchar(255) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `provider` varchar(255) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `provider_reference` varchar(255) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `notes` text COLLATE utf8mb4_unicode_ci,
   `received_at` timestamp NOT NULL,
-  `received_by` bigint(20) unsigned DEFAULT NULL,
-  `device_id` char(26) DEFAULT NULL,
+  `received_by` bigint unsigned DEFAULT NULL,
+  `device_id` char(26) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
   `synced_at` timestamp NULL DEFAULT NULL,
   `created_at` timestamp NULL DEFAULT NULL,
   `updated_at` timestamp NULL DEFAULT NULL,
   `deleted_at` timestamp NULL DEFAULT NULL,
-  `sync_sequence` bigint(20) unsigned DEFAULT NULL,
+  `sync_sequence` bigint unsigned DEFAULT NULL,
   PRIMARY KEY (`id`),
   KEY `payments_contact_id_foreign` (`contact_id`),
   KEY `payments_received_by_foreign` (`received_by`),
@@ -1559,7 +1545,7 @@ CREATE TABLE `payments` (
   KEY `payments_company_id_method_index` (`company_id`,`method`),
   KEY `payments_sync_sequence_index` (`sync_sequence`),
   CONSTRAINT `payments_company_id_foreign` FOREIGN KEY (`company_id`) REFERENCES `companies` (`id`) ON DELETE CASCADE,
-  CONSTRAINT `payments_contact_id_foreign` FOREIGN KEY (`contact_id`) REFERENCES `contacts` (`id`),
+  CONSTRAINT `payments_contact_id_foreign` FOREIGN KEY (`contact_id`) REFERENCES `contacts` (`id`) ON DELETE RESTRICT,
   CONSTRAINT `payments_received_by_foreign` FOREIGN KEY (`received_by`) REFERENCES `users` (`id`) ON DELETE SET NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
@@ -1568,26 +1554,26 @@ CREATE TABLE `payments` (
 /*!40000 ALTER TABLE `payments` ENABLE KEYS */;
 DROP TABLE IF EXISTS `payroll_runs`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
-/*!40101 SET character_set_client = utf8mb4 */;
+/*!50503 SET character_set_client = utf8mb4 */;
 CREATE TABLE `payroll_runs` (
-  `id` char(26) NOT NULL,
-  `company_id` char(26) NOT NULL,
+  `id` char(26) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `company_id` char(26) COLLATE utf8mb4_unicode_ci NOT NULL,
   `period` date NOT NULL,
-  `label` varchar(255) DEFAULT NULL,
+  `label` varchar(255) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
   `pay_date` date DEFAULT NULL,
-  `status` varchar(255) NOT NULL DEFAULT 'draft',
-  `gross` decimal(16,2) NOT NULL DEFAULT 0.00,
-  `employee_deductions` decimal(16,2) NOT NULL DEFAULT 0.00,
-  `net` decimal(16,2) NOT NULL DEFAULT 0.00,
-  `employer_charges` decimal(16,2) NOT NULL DEFAULT 0.00,
-  `headcount` int(10) unsigned NOT NULL DEFAULT 0,
-  `currency` varchar(3) NOT NULL DEFAULT 'XAF',
-  `rates` longtext CHARACTER SET utf8mb4 COLLATE utf8mb4_bin DEFAULT NULL CHECK (json_valid(`rates`)),
-  `created_by` bigint(20) unsigned DEFAULT NULL,
-  `approved_by` bigint(20) unsigned DEFAULT NULL,
+  `status` varchar(255) COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT 'draft',
+  `gross` decimal(16,2) NOT NULL DEFAULT '0.00',
+  `employee_deductions` decimal(16,2) NOT NULL DEFAULT '0.00',
+  `net` decimal(16,2) NOT NULL DEFAULT '0.00',
+  `employer_charges` decimal(16,2) NOT NULL DEFAULT '0.00',
+  `headcount` int unsigned NOT NULL DEFAULT '0',
+  `currency` varchar(3) COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT 'XAF',
+  `rates` json DEFAULT NULL,
+  `created_by` bigint unsigned DEFAULT NULL,
+  `approved_by` bigint unsigned DEFAULT NULL,
   `approved_at` timestamp NULL DEFAULT NULL,
   `paid_at` timestamp NULL DEFAULT NULL,
-  `notes` text DEFAULT NULL,
+  `notes` text COLLATE utf8mb4_unicode_ci,
   `created_at` timestamp NULL DEFAULT NULL,
   `updated_at` timestamp NULL DEFAULT NULL,
   `deleted_at` timestamp NULL DEFAULT NULL,
@@ -1606,18 +1592,18 @@ CREATE TABLE `payroll_runs` (
 /*!40000 ALTER TABLE `payroll_runs` ENABLE KEYS */;
 DROP TABLE IF EXISTS `payslip_lines`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
-/*!40101 SET character_set_client = utf8mb4 */;
+/*!50503 SET character_set_client = utf8mb4 */;
 CREATE TABLE `payslip_lines` (
-  `id` char(26) NOT NULL,
-  `company_id` char(26) NOT NULL,
-  `payslip_id` char(26) NOT NULL,
-  `kind` varchar(255) NOT NULL,
-  `code` varchar(255) DEFAULT NULL,
-  `label` varchar(255) NOT NULL,
+  `id` char(26) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `company_id` char(26) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `payslip_id` char(26) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `kind` varchar(255) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `code` varchar(255) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `label` varchar(255) COLLATE utf8mb4_unicode_ci NOT NULL,
   `base` decimal(14,2) DEFAULT NULL,
   `rate` decimal(8,5) DEFAULT NULL,
-  `amount` decimal(14,2) NOT NULL DEFAULT 0.00,
-  `sort_order` smallint(5) unsigned NOT NULL DEFAULT 0,
+  `amount` decimal(14,2) NOT NULL DEFAULT '0.00',
+  `sort_order` smallint unsigned NOT NULL DEFAULT '0',
   `created_at` timestamp NULL DEFAULT NULL,
   `updated_at` timestamp NULL DEFAULT NULL,
   PRIMARY KEY (`id`),
@@ -1632,49 +1618,49 @@ CREATE TABLE `payslip_lines` (
 /*!40000 ALTER TABLE `payslip_lines` ENABLE KEYS */;
 DROP TABLE IF EXISTS `payslips`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
-/*!40101 SET character_set_client = utf8mb4 */;
+/*!50503 SET character_set_client = utf8mb4 */;
 CREATE TABLE `payslips` (
-  `id` char(26) NOT NULL,
-  `company_id` char(26) NOT NULL,
-  `payroll_run_id` char(26) NOT NULL,
-  `employee_id` char(26) NOT NULL,
-  `employment_contract_id` char(26) DEFAULT NULL,
-  `number` varchar(255) DEFAULT NULL,
-  `base_salary` decimal(14,2) NOT NULL DEFAULT 0.00,
-  `taxable_allowances` decimal(14,2) NOT NULL DEFAULT 0.00,
-  `exempt_allowances` decimal(14,2) NOT NULL DEFAULT 0.00,
-  `overtime` decimal(14,2) NOT NULL DEFAULT 0.00,
-  `gross` decimal(14,2) NOT NULL DEFAULT 0.00,
-  `taxable_gross` decimal(14,2) NOT NULL DEFAULT 0.00,
-  `cnps_base` decimal(14,2) NOT NULL DEFAULT 0.00,
-  `cnps_base_uncapped` decimal(14,2) NOT NULL DEFAULT 0.00,
-  `cnps_employee` decimal(14,2) NOT NULL DEFAULT 0.00,
-  `irpp` decimal(14,2) NOT NULL DEFAULT 0.00,
-  `cac` decimal(14,2) NOT NULL DEFAULT 0.00,
-  `cfc_employee` decimal(14,2) NOT NULL DEFAULT 0.00,
-  `tdl` decimal(14,2) NOT NULL DEFAULT 0.00,
-  `rav` decimal(14,2) NOT NULL DEFAULT 0.00,
-  `other_deductions` decimal(14,2) NOT NULL DEFAULT 0.00,
-  `advances` decimal(14,2) NOT NULL DEFAULT 0.00,
-  `total_deductions` decimal(14,2) NOT NULL DEFAULT 0.00,
-  `net_pay` decimal(14,2) NOT NULL DEFAULT 0.00,
-  `cnps_employer_pension` decimal(14,2) NOT NULL DEFAULT 0.00,
-  `cnps_employer_family` decimal(14,2) NOT NULL DEFAULT 0.00,
-  `cnps_employer_risk` decimal(14,2) NOT NULL DEFAULT 0.00,
-  `cfc_employer` decimal(14,2) NOT NULL DEFAULT 0.00,
-  `fne` decimal(14,2) NOT NULL DEFAULT 0.00,
-  `employer_charges` decimal(14,2) NOT NULL DEFAULT 0.00,
-  `total_cost` decimal(14,2) NOT NULL DEFAULT 0.00,
+  `id` char(26) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `company_id` char(26) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `payroll_run_id` char(26) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `employee_id` char(26) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `employment_contract_id` char(26) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `number` varchar(255) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `base_salary` decimal(14,2) NOT NULL DEFAULT '0.00',
+  `taxable_allowances` decimal(14,2) NOT NULL DEFAULT '0.00',
+  `exempt_allowances` decimal(14,2) NOT NULL DEFAULT '0.00',
+  `overtime` decimal(14,2) NOT NULL DEFAULT '0.00',
+  `gross` decimal(14,2) NOT NULL DEFAULT '0.00',
+  `taxable_gross` decimal(14,2) NOT NULL DEFAULT '0.00',
+  `cnps_base` decimal(14,2) NOT NULL DEFAULT '0.00',
+  `cnps_base_uncapped` decimal(14,2) NOT NULL DEFAULT '0.00',
+  `cnps_employee` decimal(14,2) NOT NULL DEFAULT '0.00',
+  `irpp` decimal(14,2) NOT NULL DEFAULT '0.00',
+  `cac` decimal(14,2) NOT NULL DEFAULT '0.00',
+  `cfc_employee` decimal(14,2) NOT NULL DEFAULT '0.00',
+  `tdl` decimal(14,2) NOT NULL DEFAULT '0.00',
+  `rav` decimal(14,2) NOT NULL DEFAULT '0.00',
+  `other_deductions` decimal(14,2) NOT NULL DEFAULT '0.00',
+  `advances` decimal(14,2) NOT NULL DEFAULT '0.00',
+  `total_deductions` decimal(14,2) NOT NULL DEFAULT '0.00',
+  `net_pay` decimal(14,2) NOT NULL DEFAULT '0.00',
+  `cnps_employer_pension` decimal(14,2) NOT NULL DEFAULT '0.00',
+  `cnps_employer_family` decimal(14,2) NOT NULL DEFAULT '0.00',
+  `cnps_employer_risk` decimal(14,2) NOT NULL DEFAULT '0.00',
+  `cfc_employer` decimal(14,2) NOT NULL DEFAULT '0.00',
+  `fne` decimal(14,2) NOT NULL DEFAULT '0.00',
+  `employer_charges` decimal(14,2) NOT NULL DEFAULT '0.00',
+  `total_cost` decimal(14,2) NOT NULL DEFAULT '0.00',
   `days_worked` decimal(5,2) DEFAULT NULL,
-  `days_absent` decimal(5,2) NOT NULL DEFAULT 0.00,
-  `leave_days` decimal(5,2) NOT NULL DEFAULT 0.00,
-  `currency` varchar(3) NOT NULL DEFAULT 'XAF',
-  `status` varchar(255) NOT NULL DEFAULT 'draft',
-  `payment_method` varchar(255) DEFAULT NULL,
-  `payment_reference` varchar(255) DEFAULT NULL,
+  `days_absent` decimal(5,2) NOT NULL DEFAULT '0.00',
+  `leave_days` decimal(5,2) NOT NULL DEFAULT '0.00',
+  `currency` varchar(3) COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT 'XAF',
+  `status` varchar(255) COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT 'draft',
+  `payment_method` varchar(255) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `payment_reference` varchar(255) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
   `paid_on` date DEFAULT NULL,
-  `snapshot` longtext CHARACTER SET utf8mb4 COLLATE utf8mb4_bin DEFAULT NULL CHECK (json_valid(`snapshot`)),
-  `note` text DEFAULT NULL,
+  `snapshot` json DEFAULT NULL,
+  `note` text COLLATE utf8mb4_unicode_ci,
   `created_at` timestamp NULL DEFAULT NULL,
   `updated_at` timestamp NULL DEFAULT NULL,
   PRIMARY KEY (`id`),
@@ -1694,10 +1680,10 @@ CREATE TABLE `payslips` (
 /*!40000 ALTER TABLE `payslips` ENABLE KEYS */;
 DROP TABLE IF EXISTS `permission_role`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
-/*!40101 SET character_set_client = utf8mb4 */;
+/*!50503 SET character_set_client = utf8mb4 */;
 CREATE TABLE `permission_role` (
-  `role_id` bigint(20) unsigned NOT NULL,
-  `permission_id` bigint(20) unsigned NOT NULL,
+  `role_id` bigint unsigned NOT NULL,
+  `permission_id` bigint unsigned NOT NULL,
   PRIMARY KEY (`role_id`,`permission_id`),
   KEY `permission_role_permission_id_foreign` (`permission_id`),
   CONSTRAINT `permission_role_permission_id_foreign` FOREIGN KEY (`permission_id`) REFERENCES `permissions` (`id`) ON DELETE CASCADE,
@@ -1706,456 +1692,61 @@ CREATE TABLE `permission_role` (
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 /*!40000 ALTER TABLE `permission_role` DISABLE KEYS */;
-INSERT INTO `permission_role` VALUES
-(1,1),
-(1,2),
-(1,3),
-(1,4),
-(1,5),
-(1,6),
-(1,7),
-(1,8),
-(1,9),
-(1,10),
-(1,11),
-(1,12),
-(1,13),
-(1,14),
-(1,15),
-(1,16),
-(1,17),
-(1,18),
-(1,19),
-(1,20),
-(1,21),
-(1,22),
-(1,23),
-(1,24),
-(1,25),
-(1,26),
-(1,27),
-(1,28),
-(1,29),
-(1,30),
-(1,31),
-(1,32),
-(1,33),
-(1,34),
-(1,35),
-(1,36),
-(1,37),
-(1,38),
-(1,39),
-(1,40),
-(1,41),
-(1,42),
-(1,43),
-(1,44),
-(1,45),
-(1,46),
-(1,47),
-(1,48),
-(1,49),
-(1,50),
-(1,51),
-(1,52),
-(1,53),
-(1,54),
-(1,55),
-(1,56),
-(1,57),
-(1,58),
-(1,59),
-(1,60),
-(1,61),
-(1,62),
-(1,63),
-(1,64),
-(1,65),
-(1,66),
-(1,67),
-(1,68),
-(1,69),
-(1,70),
-(1,71),
-(1,72),
-(1,73),
-(1,74),
-(1,75),
-(1,76),
-(1,77),
-(1,78),
-(1,79),
-(1,80),
-(1,81),
-(1,82),
-(1,83),
-(1,84),
-(1,85),
-(1,86),
-(2,1),
-(2,2),
-(2,3),
-(2,4),
-(2,5),
-(2,6),
-(2,7),
-(2,8),
-(2,9),
-(2,10),
-(2,11),
-(2,12),
-(2,13),
-(2,14),
-(2,15),
-(2,16),
-(2,17),
-(2,18),
-(2,19),
-(2,20),
-(2,21),
-(2,22),
-(2,23),
-(2,24),
-(2,25),
-(2,26),
-(2,27),
-(2,28),
-(2,29),
-(2,30),
-(2,31),
-(2,32),
-(2,33),
-(2,34),
-(2,35),
-(2,36),
-(2,37),
-(2,38),
-(2,39),
-(2,40),
-(2,41),
-(2,42),
-(2,43),
-(2,44),
-(2,45),
-(2,46),
-(2,47),
-(2,48),
-(2,49),
-(2,50),
-(2,51),
-(2,52),
-(2,53),
-(2,54),
-(2,55),
-(2,56),
-(2,57),
-(2,58),
-(2,59),
-(2,60),
-(2,61),
-(2,62),
-(2,63),
-(2,64),
-(2,65),
-(2,66),
-(2,67),
-(2,68),
-(2,69),
-(2,70),
-(2,71),
-(2,72),
-(2,73),
-(2,74),
-(2,75),
-(2,76),
-(2,77),
-(2,78),
-(2,79),
-(2,80),
-(2,81),
-(2,82),
-(2,83),
-(2,84),
-(2,85),
-(2,86),
-(3,1),
-(3,5),
-(3,6),
-(3,7),
-(3,8),
-(3,10),
-(3,11),
-(3,12),
-(3,14),
-(3,15),
-(3,17),
-(3,18),
-(3,19),
-(3,20),
-(3,22),
-(3,23),
-(3,24),
-(3,26),
-(3,27),
-(3,31),
-(3,32),
-(3,33),
-(3,34),
-(3,35),
-(3,36),
-(3,38),
-(3,39),
-(3,40),
-(3,42),
-(3,43),
-(3,44),
-(3,49),
-(3,53),
-(3,54),
-(3,55),
-(3,57),
-(3,58),
-(3,59),
-(3,60),
-(3,61),
-(3,62),
-(3,63),
-(3,64),
-(3,65),
-(3,66),
-(3,67),
-(3,68),
-(3,69),
-(3,70),
-(3,71),
-(3,72),
-(3,73),
-(3,74),
-(3,75),
-(3,76),
-(3,77),
-(3,79),
-(3,83),
-(3,85),
-(4,1),
-(4,5),
-(4,6),
-(4,7),
-(4,8),
-(4,11),
-(4,12),
-(4,14),
-(4,15),
-(4,16),
-(4,17),
-(4,18),
-(4,19),
-(4,20),
-(4,21),
-(4,22),
-(4,24),
-(4,26),
-(4,27),
-(4,29),
-(4,31),
-(4,34),
-(4,35),
-(4,36),
-(4,38),
-(4,44),
-(4,45),
-(4,46),
-(4,47),
-(4,48),
-(4,49),
-(4,50),
-(4,51),
-(4,52),
-(4,53),
-(4,54),
-(4,57),
-(4,61),
-(4,62),
-(4,67),
-(4,70),
-(4,71),
-(4,72),
-(4,73),
-(4,74),
-(4,85),
-(5,1),
-(5,5),
-(5,6),
-(5,7),
-(5,11),
-(5,12),
-(5,14),
-(5,15),
-(5,34),
-(5,35),
-(5,36),
-(5,38),
-(5,53),
-(5,54),
-(5,57),
-(5,58),
-(5,59),
-(5,61),
-(5,62),
-(5,63),
-(5,64),
-(5,66),
-(5,67),
-(5,69),
-(5,70),
-(5,75),
-(5,77),
-(6,1),
-(6,5),
-(6,11),
-(6,12),
-(6,14),
-(6,15),
-(6,34),
-(6,35),
-(6,38),
-(6,62),
-(6,66),
-(6,67),
-(6,69),
-(7,1),
-(7,5),
-(7,11),
-(7,14),
-(7,17),
-(7,34),
-(7,38),
-(7,44),
-(7,49),
-(7,53),
-(7,57),
-(7,61),
-(7,62),
-(7,67),
-(7,70);
+INSERT INTO `permission_role` VALUES (1,1),(2,1),(3,1),(4,1),(5,1),(6,1),(7,1),(1,2),(2,2),(1,3),(2,3),(1,4),(2,4),(1,5),(2,5),(3,5),(4,5),(5,5),(6,5),(7,5),(1,6),(2,6),(3,6),(4,6),(5,6),(1,7),(2,7),(3,7),(4,7),(5,7),(1,8),(2,8),(3,8),(4,8),(1,9),(2,9),(1,10),(2,10),(3,10),(1,11),(2,11),(3,11),(4,11),(5,11),(6,11),(7,11),(1,12),(2,12),(3,12),(4,12),(5,12),(6,12),(1,13),(2,13),(1,14),(2,14),(3,14),(4,14),(5,14),(6,14),(7,14),(1,15),(2,15),(3,15),(4,15),(5,15),(6,15),(1,16),(2,16),(4,16),(1,17),(2,17),(3,17),(4,17),(7,17),(1,18),(2,18),(3,18),(4,18),(1,19),(2,19),(3,19),(4,19),(1,20),(2,20),(3,20),(4,20),(1,21),(2,21),(4,21),(1,22),(2,22),(3,22),(4,22),(1,23),(2,23),(3,23),(1,24),(2,24),(3,24),(4,24),(1,25),(2,25),(1,26),(2,26),(3,26),(4,26),(1,27),(2,27),(3,27),(4,27),(1,28),(2,28),(1,29),(2,29),(4,29),(1,30),(2,30),(1,31),(2,31),(3,31),(4,31),(1,32),(2,32),(3,32),(1,33),(2,33),(3,33),(1,34),(2,34),(3,34),(4,34),(5,34),(6,34),(7,34),(1,35),(2,35),(3,35),(4,35),(5,35),(6,35),(1,36),(2,36),(3,36),(4,36),(5,36),(1,37),(2,37),(1,38),(2,38),(3,38),(4,38),(5,38),(7,38),(1,39),(2,39),(3,39),(5,39),(1,40),(2,40),(3,40),(5,40),(1,41),(2,41),(3,41),(5,41),(1,42),(2,42),(3,42),(4,42),(5,42),(6,42),(7,42),(1,43),(2,43),(3,43),(1,44),(2,44),(3,44),(1,45),(2,45),(1,46),(2,46),(3,46),(1,47),(2,47),(3,47),(1,48),(2,48),(3,48),(4,48),(7,48),(1,49),(2,49),(4,49),(1,50),(2,50),(4,50),(1,51),(2,51),(4,51),(1,52),(2,52),(4,52),(1,53),(2,53),(3,53),(4,53),(7,53),(1,54),(2,54),(4,54),(1,55),(2,55),(4,55),(1,56),(2,56),(4,56),(1,57),(2,57),(3,57),(4,57),(5,57),(7,57),(1,58),(2,58),(3,58),(4,58),(5,58),(1,59),(2,59),(3,59),(1,60),(2,60),(1,61),(2,61),(3,61),(4,61),(5,61),(7,61),(1,62),(2,62),(3,62),(5,62),(1,63),(2,63),(3,63),(5,63),(1,64),(2,64),(3,64),(1,65),(2,65),(3,65),(4,65),(5,65),(7,65),(1,66),(2,66),(3,66),(4,66),(5,66),(6,66),(7,66),(1,67),(2,67),(3,67),(5,67),(1,68),(2,68),(3,68),(5,68),(1,69),(2,69),(3,69),(1,70),(2,70),(3,70),(5,70),(6,70),(1,71),(2,71),(3,71),(4,71),(5,71),(6,71),(7,71),(1,72),(2,72),(3,72),(1,73),(2,73),(3,73),(5,73),(6,73),(1,74),(2,74),(3,74),(4,74),(5,74),(7,74),(1,75),(2,75),(3,75),(4,75),(1,76),(2,76),(3,76),(4,76),(1,77),(2,77),(3,77),(4,77),(1,78),(2,78),(3,78),(4,78),(1,79),(2,79),(3,79),(5,79),(1,80),(2,80),(3,80),(1,81),(2,81),(3,81),(5,81),(1,82),(2,82),(1,83),(2,83),(3,83),(1,84),(2,84),(1,85),(2,85),(1,86),(2,86),(1,87),(2,87),(3,87),(1,88),(2,88),(1,89),(2,89),(3,89),(4,89),(1,90),(2,90);
 /*!40000 ALTER TABLE `permission_role` ENABLE KEYS */;
 DROP TABLE IF EXISTS `permissions`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
-/*!40101 SET character_set_client = utf8mb4 */;
+/*!50503 SET character_set_client = utf8mb4 */;
 CREATE TABLE `permissions` (
-  `id` bigint(20) unsigned NOT NULL AUTO_INCREMENT,
-  `slug` varchar(255) NOT NULL,
-  `name` varchar(255) NOT NULL,
-  `group` varchar(255) NOT NULL,
+  `id` bigint unsigned NOT NULL AUTO_INCREMENT,
+  `slug` varchar(255) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `name` varchar(255) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `group` varchar(255) COLLATE utf8mb4_unicode_ci NOT NULL,
   `created_at` timestamp NULL DEFAULT NULL,
   `updated_at` timestamp NULL DEFAULT NULL,
   PRIMARY KEY (`id`),
   UNIQUE KEY `permissions_slug_unique` (`slug`)
-) ENGINE=InnoDB AUTO_INCREMENT=87 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=91 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 /*!40000 ALTER TABLE `permissions` DISABLE KEYS */;
-INSERT INTO `permissions` VALUES
-(1,'business.view','View Business','Business','2026-08-02 14:00:40','2026-08-02 14:00:40'),
-(2,'business.update','Update Business','Business','2026-08-02 14:00:40','2026-08-02 14:00:40'),
-(3,'business.manage-branding','Manage Branding Business','Business','2026-08-02 14:00:40','2026-08-02 14:00:40'),
-(4,'business.manage-stationery','Manage Stationery Business','Business','2026-08-02 14:00:40','2026-08-02 14:00:40'),
-(5,'sales.view','View Sales','Sales','2026-08-02 14:00:40','2026-08-02 14:00:40'),
-(6,'sales.create','Create Sales','Sales','2026-08-02 14:00:40','2026-08-02 14:00:40'),
-(7,'sales.update','Update Sales','Sales','2026-08-02 14:00:40','2026-08-02 14:00:40'),
-(8,'sales.issue','Issue Sales','Sales','2026-08-02 14:00:40','2026-08-02 14:00:40'),
-(9,'sales.void','Void Sales','Sales','2026-08-02 14:00:40','2026-08-02 14:00:40'),
-(10,'sales.approve','Approve Sales','Sales','2026-08-02 14:00:40','2026-08-02 14:00:40'),
-(11,'receipts.view','View Receipts','Receipts','2026-08-02 14:00:40','2026-08-02 14:00:40'),
-(12,'receipts.create','Create Receipts','Receipts','2026-08-02 14:00:40','2026-08-02 14:00:40'),
-(13,'receipts.void','Void Receipts','Receipts','2026-08-02 14:00:40','2026-08-02 14:00:40'),
-(14,'payments.view','View Payments','Payments','2026-08-02 14:00:40','2026-08-02 14:00:40'),
-(15,'payments.record','Record Payments','Payments','2026-08-02 14:00:40','2026-08-02 14:00:40'),
-(16,'payments.refund','Refund Payments','Payments','2026-08-02 14:00:40','2026-08-02 14:00:40'),
-(17,'expenses.view','View Expenses','Expenses','2026-08-02 14:00:40','2026-08-02 14:00:40'),
-(18,'expenses.create','Create Expenses','Expenses','2026-08-02 14:00:40','2026-08-02 14:00:40'),
-(19,'expenses.update','Update Expenses','Expenses','2026-08-02 14:00:40','2026-08-02 14:00:40'),
-(20,'expenses.pay','Pay Expenses','Expenses','2026-08-02 14:00:40','2026-08-02 14:00:40'),
-(21,'expenses.void','Void Expenses','Expenses','2026-08-02 14:00:40','2026-08-02 14:00:40'),
-(22,'employees.view','View Employees','Employees','2026-08-02 14:00:40','2026-08-02 14:00:40'),
-(23,'employees.create','Create Employees','Employees','2026-08-02 14:00:40','2026-08-02 14:00:40'),
-(24,'employees.update','Update Employees','Employees','2026-08-02 14:00:40','2026-08-02 14:00:40'),
-(25,'employees.delete','Delete Employees','Employees','2026-08-02 14:00:40','2026-08-02 14:00:40'),
-(26,'payroll.view','View Payroll','Payroll','2026-08-02 14:00:40','2026-08-02 14:00:40'),
-(27,'payroll.run','Run Payroll','Payroll','2026-08-02 14:00:40','2026-08-02 14:00:40'),
-(28,'payroll.approve','Approve Payroll','Payroll','2026-08-02 14:00:40','2026-08-02 14:00:40'),
-(29,'payroll.pay','Pay Payroll','Payroll','2026-08-02 14:00:40','2026-08-02 14:00:40'),
-(30,'payroll.void','Void Payroll','Payroll','2026-08-02 14:00:40','2026-08-02 14:00:40'),
-(31,'leave.view','View Leave','Leave','2026-08-02 14:00:40','2026-08-02 14:00:40'),
-(32,'leave.request','Request Leave','Leave','2026-08-02 14:00:40','2026-08-02 14:00:40'),
-(33,'leave.approve','Approve Leave','Leave','2026-08-02 14:00:40','2026-08-02 14:00:40'),
-(34,'customers.view','View Customers','Customers','2026-08-02 14:00:40','2026-08-02 14:00:40'),
-(35,'customers.create','Create Customers','Customers','2026-08-02 14:00:40','2026-08-02 14:00:40'),
-(36,'customers.update','Update Customers','Customers','2026-08-02 14:00:40','2026-08-02 14:00:40'),
-(37,'customers.delete','Delete Customers','Customers','2026-08-02 14:00:40','2026-08-02 14:00:40'),
-(38,'products.view','View Products','Products','2026-08-02 14:00:40','2026-08-02 14:00:40'),
-(39,'products.create','Create Products','Products','2026-08-02 14:00:40','2026-08-02 14:00:40'),
-(40,'products.update','Update Products','Products','2026-08-02 14:00:40','2026-08-02 14:00:40'),
-(41,'products.delete','Delete Products','Products','2026-08-02 14:00:40','2026-08-02 14:00:40'),
-(42,'products.adjust-stock','Adjust Stock Products','Products','2026-08-02 14:00:40','2026-08-02 14:00:40'),
-(43,'products.manage-locations','Manage Locations Products','Products','2026-08-02 14:00:40','2026-08-02 14:00:40'),
-(44,'assets.view','View Assets','Assets','2026-08-02 14:00:40','2026-08-02 14:00:40'),
-(45,'assets.create','Create Assets','Assets','2026-08-02 14:00:40','2026-08-02 14:00:40'),
-(46,'assets.update','Update Assets','Assets','2026-08-02 14:00:40','2026-08-02 14:00:40'),
-(47,'assets.depreciate','Depreciate Assets','Assets','2026-08-02 14:00:40','2026-08-02 14:00:40'),
-(48,'assets.dispose','Dispose Assets','Assets','2026-08-02 14:00:40','2026-08-02 14:00:40'),
-(49,'banking.view','View Banking','Banking','2026-08-02 14:00:40','2026-08-02 14:00:40'),
-(50,'banking.manage','Manage Banking','Banking','2026-08-02 14:00:40','2026-08-02 14:00:40'),
-(51,'banking.import','Import Banking','Banking','2026-08-02 14:00:40','2026-08-02 14:00:40'),
-(52,'banking.reconcile','Reconcile Banking','Banking','2026-08-02 14:00:40','2026-08-02 14:00:40'),
-(53,'papers.view','View Papers','Papers','2026-08-02 14:00:40','2026-08-02 14:00:40'),
-(54,'papers.create','Create Papers','Papers','2026-08-02 14:00:40','2026-08-02 14:00:40'),
-(55,'papers.issue','Issue Papers','Papers','2026-08-02 14:00:40','2026-08-02 14:00:40'),
-(56,'papers.void','Void Papers','Papers','2026-08-02 14:00:40','2026-08-02 14:00:40'),
-(57,'forms.view','View Forms','Forms','2026-08-02 14:00:40','2026-08-02 14:00:40'),
-(58,'forms.create','Create Forms','Forms','2026-08-02 14:00:40','2026-08-02 14:00:40'),
-(59,'forms.update','Update Forms','Forms','2026-08-02 14:00:40','2026-08-02 14:00:40'),
-(60,'forms.delete','Delete Forms','Forms','2026-08-02 14:00:40','2026-08-02 14:00:40'),
-(61,'forms.responses','Responses Forms','Forms','2026-08-02 14:00:40','2026-08-02 14:00:40'),
-(62,'events.view','View Events','Events','2026-08-02 14:00:40','2026-08-02 14:00:40'),
-(63,'events.create','Create Events','Events','2026-08-02 14:00:40','2026-08-02 14:00:40'),
-(64,'events.update','Update Events','Events','2026-08-02 14:00:40','2026-08-02 14:00:40'),
-(65,'events.void','Void Events','Events','2026-08-02 14:00:40','2026-08-02 14:00:40'),
-(66,'events.check-in','Check In Events','Events','2026-08-02 14:00:40','2026-08-02 14:00:40'),
-(67,'loyalty.view','View Loyalty','Loyalty','2026-08-02 14:00:40','2026-08-02 14:00:40'),
-(68,'loyalty.manage','Manage Loyalty','Loyalty','2026-08-02 14:00:40','2026-08-02 14:00:40'),
-(69,'loyalty.redeem','Redeem Loyalty','Loyalty','2026-08-02 14:00:40','2026-08-02 14:00:40'),
-(70,'reports.view','View Reports','Reports','2026-08-02 14:00:40','2026-08-02 14:00:40'),
-(71,'reports.export','Export Reports','Reports','2026-08-02 14:00:40','2026-08-02 14:00:40'),
-(72,'accounting.view','View Accounting','Accounting','2026-08-02 14:00:40','2026-08-02 14:00:40'),
-(73,'accounting.export','Export Accounting','Accounting','2026-08-02 14:00:40','2026-08-02 14:00:40'),
-(74,'accounting.manage','Manage Accounting','Accounting','2026-08-02 14:00:40','2026-08-02 14:00:40'),
-(75,'partners.view','View Partners','Partners','2026-08-02 14:00:40','2026-08-02 14:00:40'),
-(76,'partners.manage','Manage Partners','Partners','2026-08-02 14:00:40','2026-08-02 14:00:40'),
-(77,'partners.issue','Issue Partners','Partners','2026-08-02 14:00:40','2026-08-02 14:00:40'),
-(78,'partners.withdraw','Withdraw Partners','Partners','2026-08-02 14:00:40','2026-08-02 14:00:40'),
-(79,'users.view','View Users','Users','2026-08-02 14:00:40','2026-08-02 14:00:40'),
-(80,'users.invite','Invite Users','Users','2026-08-02 14:00:40','2026-08-02 14:00:40'),
-(81,'users.update-role','Update Role Users','Users','2026-08-02 14:00:40','2026-08-02 14:00:40'),
-(82,'users.remove','Remove Users','Users','2026-08-02 14:00:40','2026-08-02 14:00:40'),
-(83,'devices.view','View Devices','Devices','2026-08-02 14:00:40','2026-08-02 14:00:40'),
-(84,'devices.revoke','Revoke Devices','Devices','2026-08-02 14:00:40','2026-08-02 14:00:40'),
-(85,'settings.view','View Settings','Settings','2026-08-02 14:00:40','2026-08-02 14:00:40'),
-(86,'settings.update','Update Settings','Settings','2026-08-02 14:00:40','2026-08-02 14:00:40');
+INSERT INTO `permissions` VALUES (1,'business.view','View Business','Business','2026-08-13 10:29:40','2026-08-13 10:29:40'),(2,'business.update','Update Business','Business','2026-08-13 10:29:40','2026-08-13 10:29:40'),(3,'business.manage-branding','Manage Branding Business','Business','2026-08-13 10:29:40','2026-08-13 10:29:40'),(4,'business.manage-stationery','Manage Stationery Business','Business','2026-08-13 10:29:40','2026-08-13 10:29:40'),(5,'sales.view','View Sales','Sales','2026-08-13 10:29:40','2026-08-13 10:29:40'),(6,'sales.create','Create Sales','Sales','2026-08-13 10:29:40','2026-08-13 10:29:40'),(7,'sales.update','Update Sales','Sales','2026-08-13 10:29:40','2026-08-13 10:29:40'),(8,'sales.issue','Issue Sales','Sales','2026-08-13 10:29:40','2026-08-13 10:29:40'),(9,'sales.void','Void Sales','Sales','2026-08-13 10:29:40','2026-08-13 10:29:40'),(10,'sales.approve','Approve Sales','Sales','2026-08-13 10:29:40','2026-08-13 10:29:40'),(11,'receipts.view','View Receipts','Receipts','2026-08-13 10:29:40','2026-08-13 10:29:40'),(12,'receipts.create','Create Receipts','Receipts','2026-08-13 10:29:40','2026-08-13 10:29:40'),(13,'receipts.void','Void Receipts','Receipts','2026-08-13 10:29:40','2026-08-13 10:29:40'),(14,'payments.view','View Payments','Payments','2026-08-13 10:29:40','2026-08-13 10:29:40'),(15,'payments.record','Record Payments','Payments','2026-08-13 10:29:40','2026-08-13 10:29:40'),(16,'payments.refund','Refund Payments','Payments','2026-08-13 10:29:40','2026-08-13 10:29:40'),(17,'expenses.view','View Expenses','Expenses','2026-08-13 10:29:40','2026-08-13 10:29:40'),(18,'expenses.create','Create Expenses','Expenses','2026-08-13 10:29:40','2026-08-13 10:29:40'),(19,'expenses.update','Update Expenses','Expenses','2026-08-13 10:29:41','2026-08-13 10:29:41'),(20,'expenses.pay','Pay Expenses','Expenses','2026-08-13 10:29:41','2026-08-13 10:29:41'),(21,'expenses.void','Void Expenses','Expenses','2026-08-13 10:29:41','2026-08-13 10:29:41'),(22,'employees.view','View Employees','Employees','2026-08-13 10:29:41','2026-08-13 10:29:41'),(23,'employees.create','Create Employees','Employees','2026-08-13 10:29:41','2026-08-13 10:29:41'),(24,'employees.update','Update Employees','Employees','2026-08-13 10:29:41','2026-08-13 10:29:41'),(25,'employees.delete','Delete Employees','Employees','2026-08-13 10:29:41','2026-08-13 10:29:41'),(26,'payroll.view','View Payroll','Payroll','2026-08-13 10:29:41','2026-08-13 10:29:41'),(27,'payroll.run','Run Payroll','Payroll','2026-08-13 10:29:41','2026-08-13 10:29:41'),(28,'payroll.approve','Approve Payroll','Payroll','2026-08-13 10:29:41','2026-08-13 10:29:41'),(29,'payroll.pay','Pay Payroll','Payroll','2026-08-13 10:29:41','2026-08-13 10:29:41'),(30,'payroll.void','Void Payroll','Payroll','2026-08-13 10:29:41','2026-08-13 10:29:41'),(31,'leave.view','View Leave','Leave','2026-08-13 10:29:41','2026-08-13 10:29:41'),(32,'leave.request','Request Leave','Leave','2026-08-13 10:29:41','2026-08-13 10:29:41'),(33,'leave.approve','Approve Leave','Leave','2026-08-13 10:29:41','2026-08-13 10:29:41'),(34,'customers.view','View Customers','Customers','2026-08-13 10:29:41','2026-08-13 10:29:41'),(35,'customers.create','Create Customers','Customers','2026-08-13 10:29:41','2026-08-13 10:29:41'),(36,'customers.update','Update Customers','Customers','2026-08-13 10:29:41','2026-08-13 10:29:41'),(37,'customers.delete','Delete Customers','Customers','2026-08-13 10:29:41','2026-08-13 10:29:41'),(38,'deals.view','View Deals','Deals','2026-08-13 10:29:41','2026-08-13 10:29:41'),(39,'deals.create','Create Deals','Deals','2026-08-13 10:29:41','2026-08-13 10:29:41'),(40,'deals.update','Update Deals','Deals','2026-08-13 10:29:41','2026-08-13 10:29:41'),(41,'deals.delete','Delete Deals','Deals','2026-08-13 10:29:41','2026-08-13 10:29:41'),(42,'products.view','View Products','Products','2026-08-13 10:29:41','2026-08-13 10:29:41'),(43,'products.create','Create Products','Products','2026-08-13 10:29:41','2026-08-13 10:29:41'),(44,'products.update','Update Products','Products','2026-08-13 10:29:41','2026-08-13 10:29:41'),(45,'products.delete','Delete Products','Products','2026-08-13 10:29:41','2026-08-13 10:29:41'),(46,'products.adjust-stock','Adjust Stock Products','Products','2026-08-13 10:29:41','2026-08-13 10:29:41'),(47,'products.manage-locations','Manage Locations Products','Products','2026-08-13 10:29:41','2026-08-13 10:29:41'),(48,'assets.view','View Assets','Assets','2026-08-13 10:29:41','2026-08-13 10:29:41'),(49,'assets.create','Create Assets','Assets','2026-08-13 10:29:41','2026-08-13 10:29:41'),(50,'assets.update','Update Assets','Assets','2026-08-13 10:29:41','2026-08-13 10:29:41'),(51,'assets.depreciate','Depreciate Assets','Assets','2026-08-13 10:29:41','2026-08-13 10:29:41'),(52,'assets.dispose','Dispose Assets','Assets','2026-08-13 10:29:41','2026-08-13 10:29:41'),(53,'banking.view','View Banking','Banking','2026-08-13 10:29:41','2026-08-13 10:29:41'),(54,'banking.manage','Manage Banking','Banking','2026-08-13 10:29:41','2026-08-13 10:29:41'),(55,'banking.import','Import Banking','Banking','2026-08-13 10:29:41','2026-08-13 10:29:41'),(56,'banking.reconcile','Reconcile Banking','Banking','2026-08-13 10:29:41','2026-08-13 10:29:41'),(57,'papers.view','View Papers','Papers','2026-08-13 10:29:41','2026-08-13 10:29:41'),(58,'papers.create','Create Papers','Papers','2026-08-13 10:29:41','2026-08-13 10:29:41'),(59,'papers.issue','Issue Papers','Papers','2026-08-13 10:29:41','2026-08-13 10:29:41'),(60,'papers.void','Void Papers','Papers','2026-08-13 10:29:41','2026-08-13 10:29:41'),(61,'forms.view','View Forms','Forms','2026-08-13 10:29:41','2026-08-13 10:29:41'),(62,'forms.create','Create Forms','Forms','2026-08-13 10:29:41','2026-08-13 10:29:41'),(63,'forms.update','Update Forms','Forms','2026-08-13 10:29:41','2026-08-13 10:29:41'),(64,'forms.delete','Delete Forms','Forms','2026-08-13 10:29:41','2026-08-13 10:29:41'),(65,'forms.responses','Responses Forms','Forms','2026-08-13 10:29:41','2026-08-13 10:29:41'),(66,'events.view','View Events','Events','2026-08-13 10:29:41','2026-08-13 10:29:41'),(67,'events.create','Create Events','Events','2026-08-13 10:29:41','2026-08-13 10:29:41'),(68,'events.update','Update Events','Events','2026-08-13 10:29:41','2026-08-13 10:29:41'),(69,'events.void','Void Events','Events','2026-08-13 10:29:41','2026-08-13 10:29:41'),(70,'events.check-in','Check In Events','Events','2026-08-13 10:29:41','2026-08-13 10:29:41'),(71,'loyalty.view','View Loyalty','Loyalty','2026-08-13 10:29:41','2026-08-13 10:29:41'),(72,'loyalty.manage','Manage Loyalty','Loyalty','2026-08-13 10:29:41','2026-08-13 10:29:41'),(73,'loyalty.redeem','Redeem Loyalty','Loyalty','2026-08-13 10:29:41','2026-08-13 10:29:41'),(74,'reports.view','View Reports','Reports','2026-08-13 10:29:41','2026-08-13 10:29:41'),(75,'reports.export','Export Reports','Reports','2026-08-13 10:29:41','2026-08-13 10:29:41'),(76,'accounting.view','View Accounting','Accounting','2026-08-13 10:29:41','2026-08-13 10:29:41'),(77,'accounting.export','Export Accounting','Accounting','2026-08-13 10:29:41','2026-08-13 10:29:41'),(78,'accounting.manage','Manage Accounting','Accounting','2026-08-13 10:29:41','2026-08-13 10:29:41'),(79,'partners.view','View Partners','Partners','2026-08-13 10:29:41','2026-08-13 10:29:41'),(80,'partners.manage','Manage Partners','Partners','2026-08-13 10:29:41','2026-08-13 10:29:41'),(81,'partners.issue','Issue Partners','Partners','2026-08-13 10:29:41','2026-08-13 10:29:41'),(82,'partners.withdraw','Withdraw Partners','Partners','2026-08-13 10:29:41','2026-08-13 10:29:41'),(83,'users.view','View Users','Users','2026-08-13 10:29:41','2026-08-13 10:29:41'),(84,'users.invite','Invite Users','Users','2026-08-13 10:29:41','2026-08-13 10:29:41'),(85,'users.update-role','Update Role Users','Users','2026-08-13 10:29:41','2026-08-13 10:29:41'),(86,'users.remove','Remove Users','Users','2026-08-13 10:29:41','2026-08-13 10:29:41'),(87,'devices.view','View Devices','Devices','2026-08-13 10:29:41','2026-08-13 10:29:41'),(88,'devices.revoke','Revoke Devices','Devices','2026-08-13 10:29:41','2026-08-13 10:29:41'),(89,'settings.view','View Settings','Settings','2026-08-13 10:29:41','2026-08-13 10:29:41'),(90,'settings.update','Update Settings','Settings','2026-08-13 10:29:41','2026-08-13 10:29:41');
 /*!40000 ALTER TABLE `permissions` ENABLE KEYS */;
+DROP TABLE IF EXISTS `personal_access_tokens`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!50503 SET character_set_client = utf8mb4 */;
+CREATE TABLE `personal_access_tokens` (
+  `id` bigint unsigned NOT NULL AUTO_INCREMENT,
+  `tokenable_type` varchar(255) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `tokenable_id` bigint unsigned NOT NULL,
+  `name` text COLLATE utf8mb4_unicode_ci NOT NULL,
+  `token` varchar(64) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `abilities` text COLLATE utf8mb4_unicode_ci,
+  `last_used_at` timestamp NULL DEFAULT NULL,
+  `expires_at` timestamp NULL DEFAULT NULL,
+  `created_at` timestamp NULL DEFAULT NULL,
+  `updated_at` timestamp NULL DEFAULT NULL,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `personal_access_tokens_token_unique` (`token`),
+  KEY `personal_access_tokens_tokenable_type_tokenable_id_index` (`tokenable_type`,`tokenable_id`),
+  KEY `personal_access_tokens_expires_at_index` (`expires_at`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+/*!40101 SET character_set_client = @saved_cs_client */;
+
+/*!40000 ALTER TABLE `personal_access_tokens` DISABLE KEYS */;
+/*!40000 ALTER TABLE `personal_access_tokens` ENABLE KEYS */;
 DROP TABLE IF EXISTS `platform_admin_activity`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
-/*!40101 SET character_set_client = utf8mb4 */;
+/*!50503 SET character_set_client = utf8mb4 */;
 CREATE TABLE `platform_admin_activity` (
-  `id` bigint(20) unsigned NOT NULL AUTO_INCREMENT,
-  `platform_admin_id` bigint(20) unsigned NOT NULL,
-  `action` varchar(255) NOT NULL,
-  `subject_type` varchar(255) DEFAULT NULL,
-  `subject_id` varchar(255) DEFAULT NULL,
-  `meta` longtext CHARACTER SET utf8mb4 COLLATE utf8mb4_bin DEFAULT NULL CHECK (json_valid(`meta`)),
-  `ip_address` varchar(45) DEFAULT NULL,
-  `user_agent` varchar(512) DEFAULT NULL,
+  `id` bigint unsigned NOT NULL AUTO_INCREMENT,
+  `platform_admin_id` bigint unsigned NOT NULL,
+  `action` varchar(255) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `subject_type` varchar(255) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `subject_id` varchar(255) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `meta` json DEFAULT NULL,
+  `ip_address` varchar(45) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `user_agent` varchar(512) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
   `created_at` timestamp NULL DEFAULT NULL,
   `updated_at` timestamp NULL DEFAULT NULL,
   PRIMARY KEY (`id`),
@@ -2169,10 +1760,10 @@ CREATE TABLE `platform_admin_activity` (
 /*!40000 ALTER TABLE `platform_admin_activity` ENABLE KEYS */;
 DROP TABLE IF EXISTS `platform_admin_password_reset_tokens`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
-/*!40101 SET character_set_client = utf8mb4 */;
+/*!50503 SET character_set_client = utf8mb4 */;
 CREATE TABLE `platform_admin_password_reset_tokens` (
-  `email` varchar(255) NOT NULL,
-  `token` varchar(255) NOT NULL,
+  `email` varchar(255) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `token` varchar(255) COLLATE utf8mb4_unicode_ci NOT NULL,
   `created_at` timestamp NULL DEFAULT NULL,
   PRIMARY KEY (`email`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
@@ -2182,18 +1773,18 @@ CREATE TABLE `platform_admin_password_reset_tokens` (
 /*!40000 ALTER TABLE `platform_admin_password_reset_tokens` ENABLE KEYS */;
 DROP TABLE IF EXISTS `platform_admins`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
-/*!40101 SET character_set_client = utf8mb4 */;
+/*!50503 SET character_set_client = utf8mb4 */;
 CREATE TABLE `platform_admins` (
-  `id` bigint(20) unsigned NOT NULL AUTO_INCREMENT,
-  `name` varchar(255) NOT NULL,
-  `email` varchar(255) NOT NULL,
-  `role` varchar(255) NOT NULL DEFAULT 'admin',
+  `id` bigint unsigned NOT NULL AUTO_INCREMENT,
+  `name` varchar(255) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `email` varchar(255) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `role` varchar(255) COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT 'admin',
   `email_verified_at` timestamp NULL DEFAULT NULL,
-  `password` varchar(255) NOT NULL,
-  `two_factor_secret` text DEFAULT NULL,
-  `two_factor_recovery_codes` text DEFAULT NULL,
+  `password` varchar(255) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `two_factor_secret` text COLLATE utf8mb4_unicode_ci,
+  `two_factor_recovery_codes` text COLLATE utf8mb4_unicode_ci,
   `two_factor_confirmed_at` timestamp NULL DEFAULT NULL,
-  `remember_token` varchar(100) DEFAULT NULL,
+  `remember_token` varchar(100) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
   `created_at` timestamp NULL DEFAULT NULL,
   `updated_at` timestamp NULL DEFAULT NULL,
   `deleted_at` timestamp NULL DEFAULT NULL,
@@ -2206,25 +1797,25 @@ CREATE TABLE `platform_admins` (
 /*!40000 ALTER TABLE `platform_admins` ENABLE KEYS */;
 DROP TABLE IF EXISTS `receipts`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
-/*!40101 SET character_set_client = utf8mb4 */;
+/*!50503 SET character_set_client = utf8mb4 */;
 CREATE TABLE `receipts` (
-  `id` char(26) NOT NULL,
-  `company_id` char(26) NOT NULL,
-  `payment_id` char(26) NOT NULL,
-  `contact_id` char(26) DEFAULT NULL,
-  `number` varchar(255) NOT NULL,
-  `number_lease_id` char(26) DEFAULT NULL,
-  `format` varchar(255) NOT NULL DEFAULT 'thermal80',
+  `id` char(26) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `company_id` char(26) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `payment_id` char(26) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `contact_id` char(26) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `number` varchar(255) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `number_lease_id` char(26) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `format` varchar(255) COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT 'thermal80',
   `total` decimal(15,2) NOT NULL,
-  `currency` varchar(3) NOT NULL DEFAULT 'USD',
-  `status` varchar(255) NOT NULL DEFAULT 'issued',
-  `content_hash` varchar(255) DEFAULT NULL,
-  `signature_path` varchar(255) DEFAULT NULL,
-  `verification_token_id` char(26) DEFAULT NULL,
-  `pdf_path` varchar(255) DEFAULT NULL,
+  `currency` varchar(3) COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT 'USD',
+  `status` varchar(255) COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT 'issued',
+  `content_hash` varchar(255) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `signature_path` varchar(255) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `verification_token_id` char(26) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `pdf_path` varchar(255) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
   `issued_at` timestamp NOT NULL,
-  `cashier_id` bigint(20) unsigned DEFAULT NULL,
-  `device_id` char(26) DEFAULT NULL,
+  `cashier_id` bigint unsigned DEFAULT NULL,
+  `device_id` char(26) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
   `synced_at` timestamp NULL DEFAULT NULL,
   `created_at` timestamp NULL DEFAULT NULL,
   `updated_at` timestamp NULL DEFAULT NULL,
@@ -2238,7 +1829,7 @@ CREATE TABLE `receipts` (
   KEY `receipts_company_id_issued_at_index` (`company_id`,`issued_at`),
   CONSTRAINT `receipts_cashier_id_foreign` FOREIGN KEY (`cashier_id`) REFERENCES `users` (`id`) ON DELETE SET NULL,
   CONSTRAINT `receipts_company_id_foreign` FOREIGN KEY (`company_id`) REFERENCES `companies` (`id`) ON DELETE CASCADE,
-  CONSTRAINT `receipts_contact_id_foreign` FOREIGN KEY (`contact_id`) REFERENCES `contacts` (`id`),
+  CONSTRAINT `receipts_contact_id_foreign` FOREIGN KEY (`contact_id`) REFERENCES `contacts` (`id`) ON DELETE RESTRICT,
   CONSTRAINT `receipts_number_lease_id_foreign` FOREIGN KEY (`number_lease_id`) REFERENCES `number_leases` (`id`) ON DELETE SET NULL,
   CONSTRAINT `receipts_payment_id_foreign` FOREIGN KEY (`payment_id`) REFERENCES `payments` (`id`) ON DELETE CASCADE,
   CONSTRAINT `receipts_verification_token_id_foreign` FOREIGN KEY (`verification_token_id`) REFERENCES `verification_tokens` (`id`) ON DELETE SET NULL
@@ -2249,14 +1840,14 @@ CREATE TABLE `receipts` (
 /*!40000 ALTER TABLE `receipts` ENABLE KEYS */;
 DROP TABLE IF EXISTS `roles`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
-/*!40101 SET character_set_client = utf8mb4 */;
+/*!50503 SET character_set_client = utf8mb4 */;
 CREATE TABLE `roles` (
-  `id` bigint(20) unsigned NOT NULL AUTO_INCREMENT,
-  `slug` varchar(255) NOT NULL,
-  `name` varchar(255) NOT NULL,
-  `description` varchar(255) DEFAULT NULL,
-  `level` tinyint(3) unsigned NOT NULL,
-  `is_system` tinyint(1) NOT NULL DEFAULT 1,
+  `id` bigint unsigned NOT NULL AUTO_INCREMENT,
+  `slug` varchar(255) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `name` varchar(255) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `description` varchar(255) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `level` tinyint unsigned NOT NULL,
+  `is_system` tinyint(1) NOT NULL DEFAULT '1',
   `created_at` timestamp NULL DEFAULT NULL,
   `updated_at` timestamp NULL DEFAULT NULL,
   PRIMARY KEY (`id`),
@@ -2265,32 +1856,25 @@ CREATE TABLE `roles` (
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 /*!40000 ALTER TABLE `roles` DISABLE KEYS */;
-INSERT INTO `roles` VALUES
-(1,'owner','Owner',NULL,1,1,'2026-08-02 14:00:40','2026-08-02 14:00:40'),
-(2,'administrator','Administrator',NULL,2,1,'2026-08-02 14:00:40','2026-08-02 14:00:40'),
-(3,'manager','Manager',NULL,3,1,'2026-08-02 14:00:40','2026-08-02 14:00:40'),
-(4,'accountant','Accountant',NULL,4,1,'2026-08-02 14:00:41','2026-08-02 14:00:41'),
-(5,'sales-officer','Sales Officer',NULL,5,1,'2026-08-02 14:00:41','2026-08-02 14:00:41'),
-(6,'cashier','Cashier',NULL,6,1,'2026-08-02 14:00:41','2026-08-02 14:00:41'),
-(7,'read-only','Read Only',NULL,7,1,'2026-08-02 14:00:41','2026-08-02 14:00:41');
+INSERT INTO `roles` VALUES (1,'owner','Owner',NULL,1,1,'2026-08-13 10:29:41','2026-08-13 10:29:41'),(2,'administrator','Administrator',NULL,2,1,'2026-08-13 10:29:42','2026-08-13 10:29:42'),(3,'manager','Manager',NULL,3,1,'2026-08-13 10:29:43','2026-08-13 10:29:43'),(4,'accountant','Accountant',NULL,4,1,'2026-08-13 10:29:43','2026-08-13 10:29:43'),(5,'sales-officer','Sales Officer',NULL,5,1,'2026-08-13 10:29:44','2026-08-13 10:29:44'),(6,'cashier','Cashier',NULL,6,1,'2026-08-13 10:29:44','2026-08-13 10:29:44'),(7,'read-only','Read Only',NULL,7,1,'2026-08-13 10:29:44','2026-08-13 10:29:44');
 /*!40000 ALTER TABLE `roles` ENABLE KEYS */;
 DROP TABLE IF EXISTS `salary_components`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
-/*!40101 SET character_set_client = utf8mb4 */;
+/*!50503 SET character_set_client = utf8mb4 */;
 CREATE TABLE `salary_components` (
-  `id` char(26) NOT NULL,
-  `company_id` char(26) NOT NULL,
-  `employee_id` char(26) NOT NULL,
-  `name` varchar(255) NOT NULL,
-  `kind` varchar(255) NOT NULL DEFAULT 'allowance',
-  `amount` decimal(14,2) NOT NULL DEFAULT 0.00,
+  `id` char(26) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `company_id` char(26) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `employee_id` char(26) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `name` varchar(255) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `kind` varchar(255) COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT 'allowance',
+  `amount` decimal(14,2) NOT NULL DEFAULT '0.00',
   `rate` decimal(6,4) DEFAULT NULL,
-  `taxable` tinyint(1) NOT NULL DEFAULT 1,
-  `cnps_liable` tinyint(1) NOT NULL DEFAULT 1,
-  `active` tinyint(1) NOT NULL DEFAULT 1,
+  `taxable` tinyint(1) NOT NULL DEFAULT '1',
+  `cnps_liable` tinyint(1) NOT NULL DEFAULT '1',
+  `active` tinyint(1) NOT NULL DEFAULT '1',
   `starts_on` date DEFAULT NULL,
   `ends_on` date DEFAULT NULL,
-  `note` text DEFAULT NULL,
+  `note` text COLLATE utf8mb4_unicode_ci,
   `created_at` timestamp NULL DEFAULT NULL,
   `updated_at` timestamp NULL DEFAULT NULL,
   PRIMARY KEY (`id`),
@@ -2305,14 +1889,14 @@ CREATE TABLE `salary_components` (
 /*!40000 ALTER TABLE `salary_components` ENABLE KEYS */;
 DROP TABLE IF EXISTS `sessions`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
-/*!40101 SET character_set_client = utf8mb4 */;
+/*!50503 SET character_set_client = utf8mb4 */;
 CREATE TABLE `sessions` (
-  `id` varchar(255) NOT NULL,
-  `user_id` bigint(20) unsigned DEFAULT NULL,
-  `ip_address` varchar(45) DEFAULT NULL,
-  `user_agent` text DEFAULT NULL,
-  `payload` longtext NOT NULL,
-  `last_activity` int(11) NOT NULL,
+  `id` varchar(255) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `user_id` bigint unsigned DEFAULT NULL,
+  `ip_address` varchar(45) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `user_agent` text COLLATE utf8mb4_unicode_ci,
+  `payload` longtext COLLATE utf8mb4_unicode_ci NOT NULL,
+  `last_activity` int NOT NULL,
   PRIMARY KEY (`id`),
   KEY `sessions_user_id_index` (`user_id`),
   KEY `sessions_last_activity_index` (`last_activity`)
@@ -2323,20 +1907,20 @@ CREATE TABLE `sessions` (
 /*!40000 ALTER TABLE `sessions` ENABLE KEYS */;
 DROP TABLE IF EXISTS `stock_locations`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
-/*!40101 SET character_set_client = utf8mb4 */;
+/*!50503 SET character_set_client = utf8mb4 */;
 CREATE TABLE `stock_locations` (
-  `id` char(26) NOT NULL,
-  `company_id` char(26) NOT NULL,
-  `name` varchar(255) NOT NULL,
-  `code` varchar(255) DEFAULT NULL,
-  `kind` varchar(255) NOT NULL DEFAULT 'shop',
-  `address` varchar(255) DEFAULT NULL,
-  `city` varchar(255) DEFAULT NULL,
-  `manager` varchar(255) DEFAULT NULL,
-  `phone` varchar(255) DEFAULT NULL,
-  `is_default` tinyint(1) NOT NULL DEFAULT 0,
-  `active` tinyint(1) NOT NULL DEFAULT 1,
-  `notes` text DEFAULT NULL,
+  `id` char(26) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `company_id` char(26) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `name` varchar(255) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `code` varchar(255) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `kind` varchar(255) COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT 'shop',
+  `address` varchar(255) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `city` varchar(255) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `manager` varchar(255) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `phone` varchar(255) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `is_default` tinyint(1) NOT NULL DEFAULT '0',
+  `active` tinyint(1) NOT NULL DEFAULT '1',
+  `notes` text COLLATE utf8mb4_unicode_ci,
   `created_at` timestamp NULL DEFAULT NULL,
   `updated_at` timestamp NULL DEFAULT NULL,
   `deleted_at` timestamp NULL DEFAULT NULL,
@@ -2351,19 +1935,19 @@ CREATE TABLE `stock_locations` (
 /*!40000 ALTER TABLE `stock_locations` ENABLE KEYS */;
 DROP TABLE IF EXISTS `stock_movements`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
-/*!40101 SET character_set_client = utf8mb4 */;
+/*!50503 SET character_set_client = utf8mb4 */;
 CREATE TABLE `stock_movements` (
-  `id` char(26) NOT NULL,
-  `company_id` char(26) NOT NULL,
-  `item_id` char(26) NOT NULL,
-  `stock_location_id` char(26) DEFAULT NULL,
+  `id` char(26) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `company_id` char(26) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `item_id` char(26) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `stock_location_id` char(26) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
   `quantity` decimal(15,3) NOT NULL,
   `unit_cost` decimal(15,2) DEFAULT NULL,
-  `reason` varchar(255) NOT NULL,
-  `reference_type` varchar(255) DEFAULT NULL,
-  `reference_id` varchar(255) DEFAULT NULL,
-  `user_id` bigint(20) unsigned DEFAULT NULL,
-  `device_id` char(26) DEFAULT NULL,
+  `reason` varchar(255) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `reference_type` varchar(255) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `reference_id` varchar(255) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `user_id` bigint unsigned DEFAULT NULL,
+  `device_id` char(26) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
   `occurred_at` timestamp NOT NULL,
   `created_at` timestamp NULL DEFAULT NULL,
   PRIMARY KEY (`id`),
@@ -2384,12 +1968,12 @@ CREATE TABLE `stock_movements` (
 /*!40000 ALTER TABLE `stock_movements` ENABLE KEYS */;
 DROP TABLE IF EXISTS `stock_transfer_lines`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
-/*!40101 SET character_set_client = utf8mb4 */;
+/*!50503 SET character_set_client = utf8mb4 */;
 CREATE TABLE `stock_transfer_lines` (
-  `id` char(26) NOT NULL,
-  `company_id` char(26) NOT NULL,
-  `stock_transfer_id` char(26) NOT NULL,
-  `item_id` char(26) NOT NULL,
+  `id` char(26) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `company_id` char(26) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `stock_transfer_id` char(26) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `item_id` char(26) COLLATE utf8mb4_unicode_ci NOT NULL,
   `quantity` decimal(15,3) NOT NULL,
   `created_at` timestamp NULL DEFAULT NULL,
   `updated_at` timestamp NULL DEFAULT NULL,
@@ -2407,17 +1991,17 @@ CREATE TABLE `stock_transfer_lines` (
 /*!40000 ALTER TABLE `stock_transfer_lines` ENABLE KEYS */;
 DROP TABLE IF EXISTS `stock_transfers`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
-/*!40101 SET character_set_client = utf8mb4 */;
+/*!50503 SET character_set_client = utf8mb4 */;
 CREATE TABLE `stock_transfers` (
-  `id` char(26) NOT NULL,
-  `company_id` char(26) NOT NULL,
-  `reference` varchar(255) DEFAULT NULL,
-  `from_location_id` char(26) NOT NULL,
-  `to_location_id` char(26) NOT NULL,
+  `id` char(26) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `company_id` char(26) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `reference` varchar(255) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `from_location_id` char(26) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `to_location_id` char(26) COLLATE utf8mb4_unicode_ci NOT NULL,
   `moved_on` date NOT NULL,
-  `status` varchar(255) NOT NULL DEFAULT 'completed',
-  `note` text DEFAULT NULL,
-  `created_by` bigint(20) unsigned DEFAULT NULL,
+  `status` varchar(255) COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT 'completed',
+  `note` text COLLATE utf8mb4_unicode_ci,
+  `created_by` bigint unsigned DEFAULT NULL,
   `created_at` timestamp NULL DEFAULT NULL,
   `updated_at` timestamp NULL DEFAULT NULL,
   `deleted_at` timestamp NULL DEFAULT NULL,
@@ -2437,15 +2021,15 @@ CREATE TABLE `stock_transfers` (
 /*!40000 ALTER TABLE `stock_transfers` ENABLE KEYS */;
 DROP TABLE IF EXISTS `stocktake_lines`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
-/*!40101 SET character_set_client = utf8mb4 */;
+/*!50503 SET character_set_client = utf8mb4 */;
 CREATE TABLE `stocktake_lines` (
-  `id` char(26) NOT NULL,
-  `stocktake_id` char(26) NOT NULL,
-  `item_id` char(26) NOT NULL,
-  `book_quantity` decimal(15,3) NOT NULL DEFAULT 0.000,
+  `id` char(26) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `stocktake_id` char(26) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `item_id` char(26) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `book_quantity` decimal(15,3) NOT NULL DEFAULT '0.000',
   `counted_quantity` decimal(15,3) DEFAULT NULL,
-  `unit_cost` decimal(15,2) NOT NULL DEFAULT 0.00,
-  `note` text DEFAULT NULL,
+  `unit_cost` decimal(15,2) NOT NULL DEFAULT '0.00',
+  `note` text COLLATE utf8mb4_unicode_ci,
   `created_at` timestamp NULL DEFAULT NULL,
   `updated_at` timestamp NULL DEFAULT NULL,
   PRIMARY KEY (`id`),
@@ -2460,19 +2044,19 @@ CREATE TABLE `stocktake_lines` (
 /*!40000 ALTER TABLE `stocktake_lines` ENABLE KEYS */;
 DROP TABLE IF EXISTS `stocktakes`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
-/*!40101 SET character_set_client = utf8mb4 */;
+/*!50503 SET character_set_client = utf8mb4 */;
 CREATE TABLE `stocktakes` (
-  `id` char(26) NOT NULL,
-  `company_id` char(26) NOT NULL,
-  `stock_location_id` char(26) DEFAULT NULL,
-  `reference` varchar(255) NOT NULL,
+  `id` char(26) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `company_id` char(26) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `stock_location_id` char(26) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `reference` varchar(255) COLLATE utf8mb4_unicode_ci NOT NULL,
   `counted_on` date NOT NULL,
-  `status` varchar(255) NOT NULL DEFAULT 'draft',
-  `note` text DEFAULT NULL,
-  `total_value` decimal(15,2) NOT NULL DEFAULT 0.00,
-  `variance_value` decimal(15,2) NOT NULL DEFAULT 0.00,
-  `opening_value` decimal(15,2) NOT NULL DEFAULT 0.00,
-  `counted_by` bigint(20) unsigned DEFAULT NULL,
+  `status` varchar(255) COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT 'draft',
+  `note` text COLLATE utf8mb4_unicode_ci,
+  `total_value` decimal(15,2) NOT NULL DEFAULT '0.00',
+  `variance_value` decimal(15,2) NOT NULL DEFAULT '0.00',
+  `opening_value` decimal(15,2) NOT NULL DEFAULT '0.00',
+  `counted_by` bigint unsigned DEFAULT NULL,
   `posted_at` timestamp NULL DEFAULT NULL,
   `created_at` timestamp NULL DEFAULT NULL,
   `updated_at` timestamp NULL DEFAULT NULL,
@@ -2491,22 +2075,22 @@ CREATE TABLE `stocktakes` (
 /*!40000 ALTER TABLE `stocktakes` ENABLE KEYS */;
 DROP TABLE IF EXISTS `subscription_payments`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
-/*!40101 SET character_set_client = utf8mb4 */;
+/*!50503 SET character_set_client = utf8mb4 */;
 CREATE TABLE `subscription_payments` (
-  `id` char(26) NOT NULL,
-  `company_id` char(26) NOT NULL,
-  `initiated_by` bigint(20) unsigned DEFAULT NULL,
-  `plan` varchar(255) NOT NULL,
-  `billing_cycle` varchar(255) NOT NULL DEFAULT 'monthly',
+  `id` char(26) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `company_id` char(26) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `initiated_by` bigint unsigned DEFAULT NULL,
+  `plan` varchar(255) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `billing_cycle` varchar(255) COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT 'monthly',
   `amount` decimal(15,2) NOT NULL,
-  `currency` varchar(3) NOT NULL DEFAULT 'XAF',
-  `provider` varchar(255) NOT NULL,
-  `phone` varchar(255) DEFAULT NULL,
-  `external_id` varchar(255) NOT NULL,
-  `provider_reference` varchar(255) DEFAULT NULL,
-  `status` varchar(255) NOT NULL DEFAULT 'pending',
-  `failure_reason` varchar(255) DEFAULT NULL,
-  `payload` longtext CHARACTER SET utf8mb4 COLLATE utf8mb4_bin DEFAULT NULL CHECK (json_valid(`payload`)),
+  `currency` varchar(3) COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT 'XAF',
+  `provider` varchar(255) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `phone` varchar(255) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `external_id` varchar(255) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `provider_reference` varchar(255) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `status` varchar(255) COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT 'pending',
+  `failure_reason` varchar(255) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `payload` json DEFAULT NULL,
   `paid_at` timestamp NULL DEFAULT NULL,
   `created_at` timestamp NULL DEFAULT NULL,
   `updated_at` timestamp NULL DEFAULT NULL,
@@ -2524,19 +2108,19 @@ CREATE TABLE `subscription_payments` (
 /*!40000 ALTER TABLE `subscription_payments` ENABLE KEYS */;
 DROP TABLE IF EXISTS `sync_receipts`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
-/*!40101 SET character_set_client = utf8mb4 */;
+/*!50503 SET character_set_client = utf8mb4 */;
 CREATE TABLE `sync_receipts` (
-  `id` char(26) NOT NULL,
-  `company_id` char(26) NOT NULL,
-  `user_id` bigint(20) unsigned DEFAULT NULL,
-  `device_id` char(26) DEFAULT NULL,
-  `entity_type` varchar(255) NOT NULL,
-  `entity_id` varchar(255) NOT NULL,
-  `operation` varchar(255) NOT NULL,
-  `status` varchar(255) NOT NULL,
-  `server_version` int(10) unsigned NOT NULL DEFAULT 1,
-  `assigned_number` varchar(255) DEFAULT NULL,
-  `error` text DEFAULT NULL,
+  `id` char(26) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `company_id` char(26) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `user_id` bigint unsigned DEFAULT NULL,
+  `device_id` char(26) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `entity_type` varchar(255) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `entity_id` varchar(255) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `operation` varchar(255) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `status` varchar(255) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `server_version` int unsigned NOT NULL DEFAULT '1',
+  `assigned_number` varchar(255) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `error` text COLLATE utf8mb4_unicode_ci,
   `created_at` timestamp NULL DEFAULT NULL,
   `updated_at` timestamp NULL DEFAULT NULL,
   PRIMARY KEY (`id`),
@@ -2555,10 +2139,10 @@ CREATE TABLE `sync_receipts` (
 /*!40000 ALTER TABLE `sync_receipts` ENABLE KEYS */;
 DROP TABLE IF EXISTS `sync_sequences`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
-/*!40101 SET character_set_client = utf8mb4 */;
+/*!50503 SET character_set_client = utf8mb4 */;
 CREATE TABLE `sync_sequences` (
-  `company_id` char(26) NOT NULL,
-  `value` bigint(20) unsigned NOT NULL DEFAULT 0,
+  `company_id` char(26) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `value` bigint unsigned NOT NULL DEFAULT '0',
   PRIMARY KEY (`company_id`),
   CONSTRAINT `sync_sequences_company_id_foreign` FOREIGN KEY (`company_id`) REFERENCES `companies` (`id`) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
@@ -2568,14 +2152,14 @@ CREATE TABLE `sync_sequences` (
 /*!40000 ALTER TABLE `sync_sequences` ENABLE KEYS */;
 DROP TABLE IF EXISTS `tax_rates`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
-/*!40101 SET character_set_client = utf8mb4 */;
+/*!50503 SET character_set_client = utf8mb4 */;
 CREATE TABLE `tax_rates` (
-  `id` char(26) NOT NULL,
-  `company_id` char(26) NOT NULL,
-  `name` varchar(255) NOT NULL,
+  `id` char(26) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `company_id` char(26) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `name` varchar(255) COLLATE utf8mb4_unicode_ci NOT NULL,
   `rate` decimal(7,4) NOT NULL,
-  `is_compound` tinyint(1) NOT NULL DEFAULT 0,
-  `is_default` tinyint(1) NOT NULL DEFAULT 0,
+  `is_compound` tinyint(1) NOT NULL DEFAULT '0',
+  `is_default` tinyint(1) NOT NULL DEFAULT '0',
   `created_at` timestamp NULL DEFAULT NULL,
   `updated_at` timestamp NULL DEFAULT NULL,
   PRIMARY KEY (`id`),
@@ -2588,16 +2172,16 @@ CREATE TABLE `tax_rates` (
 /*!40000 ALTER TABLE `tax_rates` ENABLE KEYS */;
 DROP TABLE IF EXISTS `ticket_types`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
-/*!40101 SET character_set_client = utf8mb4 */;
+/*!50503 SET character_set_client = utf8mb4 */;
 CREATE TABLE `ticket_types` (
-  `id` char(26) NOT NULL,
-  `company_id` char(26) NOT NULL,
-  `event_id` char(26) NOT NULL,
-  `name` varchar(255) NOT NULL,
-  `price` decimal(12,2) NOT NULL DEFAULT 0.00,
-  `quantity` int(10) unsigned DEFAULT NULL,
-  `sold` int(10) unsigned NOT NULL DEFAULT 0,
-  `sort` int(10) unsigned NOT NULL DEFAULT 0,
+  `id` char(26) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `company_id` char(26) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `event_id` char(26) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `name` varchar(255) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `price` decimal(12,2) NOT NULL DEFAULT '0.00',
+  `quantity` int unsigned DEFAULT NULL,
+  `sold` int unsigned NOT NULL DEFAULT '0',
+  `sort` int unsigned NOT NULL DEFAULT '0',
   `created_at` timestamp NULL DEFAULT NULL,
   `updated_at` timestamp NULL DEFAULT NULL,
   PRIMARY KEY (`id`),
@@ -2612,22 +2196,22 @@ CREATE TABLE `ticket_types` (
 /*!40000 ALTER TABLE `ticket_types` ENABLE KEYS */;
 DROP TABLE IF EXISTS `tickets`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
-/*!40101 SET character_set_client = utf8mb4 */;
+/*!50503 SET character_set_client = utf8mb4 */;
 CREATE TABLE `tickets` (
-  `id` char(26) NOT NULL,
-  `company_id` char(26) NOT NULL,
-  `event_id` char(26) NOT NULL,
-  `ticket_type_id` char(26) NOT NULL,
-  `serial` varchar(255) NOT NULL,
-  `buyer_name` varchar(255) NOT NULL,
-  `buyer_email` varchar(255) DEFAULT NULL,
-  `buyer_phone` varchar(255) DEFAULT NULL,
-  `price` decimal(12,2) NOT NULL DEFAULT 0.00,
-  `status` varchar(255) NOT NULL DEFAULT 'issued',
+  `id` char(26) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `company_id` char(26) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `event_id` char(26) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `ticket_type_id` char(26) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `serial` varchar(255) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `buyer_name` varchar(255) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `buyer_email` varchar(255) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `buyer_phone` varchar(255) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `price` decimal(12,2) NOT NULL DEFAULT '0.00',
+  `status` varchar(255) COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT 'issued',
   `checked_in_at` timestamp NULL DEFAULT NULL,
-  `checked_in_by` bigint(20) unsigned DEFAULT NULL,
+  `checked_in_by` bigint unsigned DEFAULT NULL,
   `paid_at` timestamp NULL DEFAULT NULL,
-  `verification_token_id` char(26) DEFAULT NULL,
+  `verification_token_id` char(26) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
   `created_at` timestamp NULL DEFAULT NULL,
   `updated_at` timestamp NULL DEFAULT NULL,
   PRIMARY KEY (`id`),
@@ -2648,23 +2232,23 @@ CREATE TABLE `tickets` (
 /*!40000 ALTER TABLE `tickets` ENABLE KEYS */;
 DROP TABLE IF EXISTS `users`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
-/*!40101 SET character_set_client = utf8mb4 */;
+/*!50503 SET character_set_client = utf8mb4 */;
 CREATE TABLE `users` (
-  `id` bigint(20) unsigned NOT NULL AUTO_INCREMENT,
-  `name` varchar(255) NOT NULL,
-  `email` varchar(255) NOT NULL,
-  `avatar_path` varchar(255) DEFAULT NULL,
-  `phone` varchar(255) DEFAULT NULL,
-  `current_company_id` char(26) DEFAULT NULL,
-  `theme` varchar(255) NOT NULL DEFAULT 'system',
-  `locale` varchar(5) NOT NULL DEFAULT 'en',
+  `id` bigint unsigned NOT NULL AUTO_INCREMENT,
+  `name` varchar(255) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `email` varchar(255) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `avatar_path` varchar(255) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `phone` varchar(255) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `current_company_id` char(26) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `theme` varchar(255) COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT 'system',
+  `locale` varchar(5) COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT 'en',
   `last_seen_at` timestamp NULL DEFAULT NULL,
   `email_verified_at` timestamp NULL DEFAULT NULL,
-  `password` varchar(255) DEFAULT NULL,
-  `two_factor_secret` text DEFAULT NULL,
-  `two_factor_recovery_codes` text DEFAULT NULL,
+  `password` varchar(255) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `two_factor_secret` text COLLATE utf8mb4_unicode_ci,
+  `two_factor_recovery_codes` text COLLATE utf8mb4_unicode_ci,
   `two_factor_confirmed_at` timestamp NULL DEFAULT NULL,
-  `remember_token` varchar(100) DEFAULT NULL,
+  `remember_token` varchar(100) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
   `created_at` timestamp NULL DEFAULT NULL,
   `updated_at` timestamp NULL DEFAULT NULL,
   `deleted_at` timestamp NULL DEFAULT NULL,
@@ -2679,14 +2263,14 @@ CREATE TABLE `users` (
 /*!40000 ALTER TABLE `users` ENABLE KEYS */;
 DROP TABLE IF EXISTS `verification_scans`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
-/*!40101 SET character_set_client = utf8mb4 */;
+/*!50503 SET character_set_client = utf8mb4 */;
 CREATE TABLE `verification_scans` (
-  `id` char(26) NOT NULL,
-  `verification_token_id` char(26) NOT NULL,
-  `country` varchar(2) DEFAULT NULL,
-  `region` varchar(255) DEFAULT NULL,
-  `device_class` varchar(255) DEFAULT NULL,
-  `referrer` varchar(255) DEFAULT NULL,
+  `id` char(26) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `verification_token_id` char(26) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `country` varchar(2) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `region` varchar(255) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `device_class` varchar(255) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `referrer` varchar(255) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
   `scanned_at` timestamp NOT NULL,
   PRIMARY KEY (`id`),
   KEY `verification_scans_verification_token_id_scanned_at_index` (`verification_token_id`,`scanned_at`),
@@ -2698,13 +2282,13 @@ CREATE TABLE `verification_scans` (
 /*!40000 ALTER TABLE `verification_scans` ENABLE KEYS */;
 DROP TABLE IF EXISTS `verification_tokens`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
-/*!40101 SET character_set_client = utf8mb4 */;
+/*!50503 SET character_set_client = utf8mb4 */;
 CREATE TABLE `verification_tokens` (
-  `id` char(26) NOT NULL,
-  `token` varchar(22) NOT NULL,
-  `company_id` char(26) NOT NULL,
-  `subject_type` varchar(255) NOT NULL,
-  `subject_id` varchar(255) NOT NULL,
+  `id` char(26) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `token` varchar(22) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `company_id` char(26) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `subject_type` varchar(255) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `subject_id` varchar(255) COLLATE utf8mb4_unicode_ci NOT NULL,
   `revoked_at` timestamp NULL DEFAULT NULL,
   `created_at` timestamp NULL DEFAULT NULL,
   `updated_at` timestamp NULL DEFAULT NULL,
