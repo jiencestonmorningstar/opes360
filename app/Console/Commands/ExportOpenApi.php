@@ -114,6 +114,15 @@ class ExportOpenApi extends Command
         'webhooks.deliveries' => 'What we tried to send, with the body, the response and the error.',
         'webhooks.redeliver' => 'Send a failed delivery again, with the body it originally carried and the same delivery id.',
 
+        'partners.clients' => "A secretariat's client book.",
+        'partners.clients.store' => 'Add a client to the book.',
+        'partners.clients.show' => 'One client.',
+        'partners.clients.update' => 'Change a client.',
+        'partners.earnings' => 'What the programme has earned, and what is withdrawable now.',
+        'partners.commissions' => 'The commission lines behind that balance.',
+        'partners.payouts' => 'Payouts requested and settled.',
+        'partners.payouts.request' => 'Ask for the balance to be paid out. The amount is not a parameter.',
+
         'imports.preview' => 'Read a CSV or Excel file and report what would happen. Writes nothing.',
         'imports.store' => 'Import the rows a preview showed.',
     ];
@@ -124,6 +133,7 @@ class ExportOpenApi extends Command
         'documents.store', 'documents.issue', 'documents.void',
         'documents.convert', 'documents.credit-note',
         'events.tickets.store', 'loyalty.redeem', 'payments.refund',
+        'partners.payouts.request',
     ];
 
     public function handle(): int

@@ -899,19 +899,68 @@ all.
 
 ---
 
-## 18. What is not here yet
+## 18. The secretariat programme
 
-The partner programme has screens but no API. It will follow the pattern above
-when it is next touched.
+`GET /api/v1/partners/clients` · `POST` · `GET|PATCH /api/v1/partners/clients/{id}`
+`GET /api/v1/partners/earnings` · `/commissions` · `/payouts` ·
+`POST /api/v1/partners/payouts`
 
-Creating and editing events, building forms, and awarding or adjusting loyalty
-points are absent by choice rather than by omission; the sections above say why
-in each case.
+Client filters: `q` (name, contact or phone), `converted`, `per_page`.
 
-Also absent by design, not by omission: voiding a sales document, refunding a
-payment, and anything that posts to the ledger by hand.
+**Every route here answers `403` for a business that is not a secretariat, and
+that is not a role decision.** The programme is a property of the account: a
+plain business has no client book to manage and no balance to withdraw, so
+every `partners.*` ability is denied before any role is consulted. The Owner of
+an ordinary business is refused exactly as a cashier is.
 
-`PATCH /api/v1/deals/{id}` accepts a `stage` and applies the same closure rules as
-`/move`, so neither can leave `closed_at` disagreeing with the stage. Prefer
+`GET /partners/earnings` returns what has been earned, what has been charged in
+card fees, what has already been withdrawn, the balance, and the minimum a
+payout needs. It comes from the same service the earnings screen reads, so a
+figure pulled over HTTP and one shown in the app cannot differ.
+
+### Asking to be paid
+
+```json
+{ "method": "mtn", "destination": "+237670000000" }
+```
+
+**The amount is not a parameter.** It is recomputed from the ledger at the
+moment of the request, because a balance a client read a few minutes ago is not
+a promise and the figure a partner is paid has to be the one the ledger says
+now. It also removes the obvious attack: an amount a caller can name is an
+amount a caller can inflate. Below the minimum, the request is refused with the
+balance and the minimum in the body.
+
+Takes an `Idempotency-Key`. A payout empties the balance, so a retry that
+created a second request would ask to be paid twice for the same earnings.
+
+Adding a client is `write`; asking to be paid is `money`. Putting a name in a
+book and moving money are not the same trust.
+
+The invite token a client is enrolled with is **never returned**. It is a
+capability — whoever holds it can claim the referral — so a list endpoint that
+handed one out per row would turn a read scope into a way to redirect somebody
+else's commission.
+
+---
+
+## 19. What is not here yet
+
+Every module now has an API. What remains absent is absent by choice, and each
+section above says why in its own place:
+
+- Creating and editing events, and building forms — write-once things that
+  nothing else produces.
+- Awarding or adjusting loyalty points by hand. Earning already happens as a
+  side effect of a payment.
+- Deleting an issued ticket. Voiding keeps the serial, and a vanished serial
+  makes an honest buyer indistinguishable from a forged one.
+- Posting to the ledger by hand. Every entry is the consequence of a business
+  event that already has its own endpoint.
+- Running, approving or paying a payroll month. That is the owner's signature,
+  not a token's.
+
+`PATCH /api/v1/deals/{id}` accepts a `stage` and applies the same closure rules
+as `/move`, so neither can leave `closed_at` disagreeing with the stage. Prefer
 `/move` anyway: it is the action a board performs, and `lost_reason` belongs
 with it.

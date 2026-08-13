@@ -2514,6 +2514,366 @@
                 ]
             }
         },
+        "/api/v1/partners/clients": {
+            "get": {
+                "operationId": "partnersClients",
+                "summary": "A secretariat's client book.",
+                "tags": [
+                    "Partners"
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Success"
+                    },
+                    "401": {
+                        "description": "No token, or a revoked one"
+                    },
+                    "403": {
+                        "description": "The permission, module switch or token scope says no"
+                    },
+                    "404": {
+                        "description": "Not found, or belongs to another business"
+                    },
+                    "422": {
+                        "description": "Validation failed, or a rule of the domain refused"
+                    },
+                    "429": {
+                        "description": "Rate limited"
+                    }
+                },
+                "description": "Requires the `read` token scope, on top of the permission the same action needs in the app.",
+                "security": [
+                    {
+                        "bearerAuth": [
+                            "read"
+                        ]
+                    }
+                ]
+            },
+            "post": {
+                "operationId": "partnersClientsStore",
+                "summary": "Add a client to the book.",
+                "tags": [
+                    "Partners"
+                ],
+                "responses": {
+                    "201": {
+                        "description": "Success"
+                    },
+                    "401": {
+                        "description": "No token, or a revoked one"
+                    },
+                    "403": {
+                        "description": "The permission, module switch or token scope says no"
+                    },
+                    "404": {
+                        "description": "Not found, or belongs to another business"
+                    },
+                    "422": {
+                        "description": "Validation failed, or a rule of the domain refused"
+                    },
+                    "429": {
+                        "description": "Rate limited"
+                    }
+                },
+                "description": "Requires the `write` token scope, on top of the permission the same action needs in the app.",
+                "security": [
+                    {
+                        "bearerAuth": [
+                            "write"
+                        ]
+                    }
+                ]
+            }
+        },
+        "/api/v1/partners/clients/{client}": {
+            "get": {
+                "operationId": "partnersClientsShow",
+                "summary": "One client.",
+                "tags": [
+                    "Partners"
+                ],
+                "parameters": [
+                    {
+                        "name": "client",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Success"
+                    },
+                    "401": {
+                        "description": "No token, or a revoked one"
+                    },
+                    "403": {
+                        "description": "The permission, module switch or token scope says no"
+                    },
+                    "404": {
+                        "description": "Not found, or belongs to another business"
+                    },
+                    "422": {
+                        "description": "Validation failed, or a rule of the domain refused"
+                    },
+                    "429": {
+                        "description": "Rate limited"
+                    }
+                },
+                "description": "Requires the `read` token scope, on top of the permission the same action needs in the app.",
+                "security": [
+                    {
+                        "bearerAuth": [
+                            "read"
+                        ]
+                    }
+                ]
+            },
+            "put": {
+                "operationId": "partnersClientsUpdate",
+                "summary": "Change a client.",
+                "tags": [
+                    "Partners"
+                ],
+                "parameters": [
+                    {
+                        "name": "client",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Success"
+                    },
+                    "401": {
+                        "description": "No token, or a revoked one"
+                    },
+                    "403": {
+                        "description": "The permission, module switch or token scope says no"
+                    },
+                    "404": {
+                        "description": "Not found, or belongs to another business"
+                    },
+                    "422": {
+                        "description": "Validation failed, or a rule of the domain refused"
+                    },
+                    "429": {
+                        "description": "Rate limited"
+                    }
+                },
+                "description": "Requires the `write` token scope, on top of the permission the same action needs in the app.",
+                "security": [
+                    {
+                        "bearerAuth": [
+                            "write"
+                        ]
+                    }
+                ]
+            },
+            "patch": {
+                "operationId": "partnersClientsUpdate",
+                "summary": "Change a client.",
+                "tags": [
+                    "Partners"
+                ],
+                "parameters": [
+                    {
+                        "name": "client",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Success"
+                    },
+                    "401": {
+                        "description": "No token, or a revoked one"
+                    },
+                    "403": {
+                        "description": "The permission, module switch or token scope says no"
+                    },
+                    "404": {
+                        "description": "Not found, or belongs to another business"
+                    },
+                    "422": {
+                        "description": "Validation failed, or a rule of the domain refused"
+                    },
+                    "429": {
+                        "description": "Rate limited"
+                    }
+                },
+                "description": "Requires the `write` token scope, on top of the permission the same action needs in the app.",
+                "security": [
+                    {
+                        "bearerAuth": [
+                            "write"
+                        ]
+                    }
+                ]
+            }
+        },
+        "/api/v1/partners/commissions": {
+            "get": {
+                "operationId": "partnersCommissions",
+                "summary": "The commission lines behind that balance.",
+                "tags": [
+                    "Partners"
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Success"
+                    },
+                    "401": {
+                        "description": "No token, or a revoked one"
+                    },
+                    "403": {
+                        "description": "The permission, module switch or token scope says no"
+                    },
+                    "404": {
+                        "description": "Not found, or belongs to another business"
+                    },
+                    "422": {
+                        "description": "Validation failed, or a rule of the domain refused"
+                    },
+                    "429": {
+                        "description": "Rate limited"
+                    }
+                },
+                "description": "Requires the `read` token scope, on top of the permission the same action needs in the app.",
+                "security": [
+                    {
+                        "bearerAuth": [
+                            "read"
+                        ]
+                    }
+                ]
+            }
+        },
+        "/api/v1/partners/earnings": {
+            "get": {
+                "operationId": "partnersEarnings",
+                "summary": "What the programme has earned, and what is withdrawable now.",
+                "tags": [
+                    "Partners"
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Success"
+                    },
+                    "401": {
+                        "description": "No token, or a revoked one"
+                    },
+                    "403": {
+                        "description": "The permission, module switch or token scope says no"
+                    },
+                    "404": {
+                        "description": "Not found, or belongs to another business"
+                    },
+                    "422": {
+                        "description": "Validation failed, or a rule of the domain refused"
+                    },
+                    "429": {
+                        "description": "Rate limited"
+                    }
+                },
+                "description": "Requires the `read` token scope, on top of the permission the same action needs in the app.",
+                "security": [
+                    {
+                        "bearerAuth": [
+                            "read"
+                        ]
+                    }
+                ]
+            }
+        },
+        "/api/v1/partners/payouts": {
+            "get": {
+                "operationId": "partnersPayouts",
+                "summary": "Payouts requested and settled.",
+                "tags": [
+                    "Partners"
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Success"
+                    },
+                    "401": {
+                        "description": "No token, or a revoked one"
+                    },
+                    "403": {
+                        "description": "The permission, module switch or token scope says no"
+                    },
+                    "404": {
+                        "description": "Not found, or belongs to another business"
+                    },
+                    "422": {
+                        "description": "Validation failed, or a rule of the domain refused"
+                    },
+                    "429": {
+                        "description": "Rate limited"
+                    }
+                },
+                "description": "Requires the `read` token scope, on top of the permission the same action needs in the app.",
+                "security": [
+                    {
+                        "bearerAuth": [
+                            "read"
+                        ]
+                    }
+                ]
+            },
+            "post": {
+                "operationId": "partnersPayoutsRequest",
+                "summary": "Ask for the balance to be paid out. The amount is not a parameter.",
+                "tags": [
+                    "Partners"
+                ],
+                "parameters": [
+                    {
+                        "$ref": "#/components/parameters/idempotencyKey"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Success"
+                    },
+                    "401": {
+                        "description": "No token, or a revoked one"
+                    },
+                    "403": {
+                        "description": "The permission, module switch or token scope says no"
+                    },
+                    "404": {
+                        "description": "Not found, or belongs to another business"
+                    },
+                    "422": {
+                        "description": "Validation failed, or a rule of the domain refused"
+                    },
+                    "429": {
+                        "description": "Rate limited"
+                    }
+                },
+                "description": "Requires the `money` token scope, on top of the permission the same action needs in the app.",
+                "security": [
+                    {
+                        "bearerAuth": [
+                            "money"
+                        ]
+                    }
+                ]
+            }
+        },
         "/api/v1/payments": {
             "get": {
                 "operationId": "paymentsIndex",

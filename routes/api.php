@@ -11,6 +11,7 @@ use App\Http\Controllers\Api\FormController;
 use App\Http\Controllers\Api\ImportController;
 use App\Http\Controllers\Api\ItemController;
 use App\Http\Controllers\Api\LoyaltyController;
+use App\Http\Controllers\Api\PartnerController;
 use App\Http\Controllers\Api\PaymentController;
 use App\Http\Controllers\Api\PayrollController;
 use App\Http\Controllers\Api\TicketController;
@@ -117,6 +118,18 @@ Route::prefix('v1')->group(function (): void {
             Route::get('loyalty/contacts/{contact}/transactions', [LoyaltyController::class, 'transactions'])->name('api.v1.loyalty.transactions');
 
             /*
+             * The secretariat programme. Every route here is denied outright
+             * to a company that is not a secretariat — the programme is a
+             * property of the account rather than of the person, so an Owner
+             * of an ordinary business is refused exactly as a cashier is.
+             */
+            Route::get('partners/clients', [PartnerController::class, 'clients'])->name('api.v1.partners.clients');
+            Route::get('partners/clients/{client}', [PartnerController::class, 'showClient'])->name('api.v1.partners.clients.show');
+            Route::get('partners/earnings', [PartnerController::class, 'earnings'])->name('api.v1.partners.earnings');
+            Route::get('partners/commissions', [PartnerController::class, 'commissions'])->name('api.v1.partners.commissions');
+            Route::get('partners/payouts', [PartnerController::class, 'payouts'])->name('api.v1.partners.payouts');
+
+            /*
              * The books, read only and deliberately so — every entry is the
              * consequence of a business event that already has its own
              * endpoint, and a hand-written entry would be a way to make the
@@ -147,6 +160,11 @@ Route::prefix('v1')->group(function (): void {
 
         // ── Ordinary writes ──────────────────────────────────────────────
         Route::middleware('ability:write')->group(function (): void {
+            // A name in a client book is ordinary work. Asking to be paid what
+            // that book earned is not, and lives under `money` below.
+            Route::post('partners/clients', [PartnerController::class, 'storeClient'])->name('api.v1.partners.clients.store');
+            Route::match(['put', 'patch'], 'partners/clients/{client}', [PartnerController::class, 'updateClient'])->name('api.v1.partners.clients.update');
+
             Route::post('deals', [DealController::class, 'store'])->name('api.v1.deals.store');
             Route::match(['put', 'patch'], 'deals/{deal}', [DealController::class, 'update'])->name('api.v1.deals.update');
             Route::delete('deals/{deal}', [DealController::class, 'destroy'])->name('api.v1.deals.destroy');
@@ -238,6 +256,13 @@ Route::prefix('v1')->group(function (): void {
          * Idempotency-Key it can simply send the same request again.
          */
         Route::middleware(['ability:money', 'idempotent'])->group(function (): void {
+            /*
+             * A payout empties the partner's balance, so a retry that created
+             * a second request would ask to be paid twice for the same
+             * earnings. The amount is never a parameter — see the controller.
+             */
+            Route::post('partners/payouts', [PartnerController::class, 'requestPayout'])->name('api.v1.partners.payouts.request');
+
             Route::post('payments', [PaymentController::class, 'store'])->name('api.v1.payments.store');
 
             /*
