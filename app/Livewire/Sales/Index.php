@@ -15,9 +15,14 @@ class Index extends Component
 {
     use WithPagination;
 
-    /** Active document type tab. */
+    /**
+     * Active document type tab.
+     *
+     * Empty rather than 'invoice', because the landing tab is decided in
+     * mount() from what the business actually has. See there for why.
+     */
     #[Url]
-    public string $type = 'invoice';
+    public string $type = '';
 
     /** Payment-state filter: all|paid|pending|overdue|draft. */
     #[Url]
@@ -25,6 +30,35 @@ class Index extends Component
 
     #[Url(as: 'q')]
     public string $search = '';
+
+    /**
+     * Land on a tab that has something in it.
+     *
+     * The default used to be Invoices unconditionally, which meant a business
+     * whose only documents were quotations opened this screen, saw an empty
+     * list, and reasonably concluded its work had not saved. The counts are
+     * already fetched for the badges, so choosing the first tab that has any
+     * costs nothing.
+     *
+     * Invoices still win when they exist — they are what most businesses come
+     * here for — and an explicit ?type= in the URL is always honoured, so a
+     * bookmark or a link still lands where it says.
+     */
+    public function mount(): void
+    {
+        if ($this->type !== '' && DocumentType::tryFrom($this->type)) {
+            return;
+        }
+
+        $counts = $this->typeCounts();
+
+        $this->type = match (true) {
+            ($counts[DocumentType::Invoice->value] ?? 0) > 0 => DocumentType::Invoice->value,
+            default => collect(DocumentType::cases())
+                ->first(fn (DocumentType $t) => ($counts[$t->value] ?? 0) > 0)?->value
+                ?? DocumentType::Invoice->value,
+        };
+    }
 
     public function setType(string $type): void
     {

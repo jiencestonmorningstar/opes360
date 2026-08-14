@@ -200,6 +200,22 @@
                 </div>
             </x-ui.panel>
 
+            {{-- Notes and terms were previously visible only on the printed
+                 copy, which meant somebody could type a quotation's whole scope
+                 and payment schedule and then not find it anywhere on screen.
+                 `whitespace-pre-line` keeps the paragraphs they typed. --}}
+            @if ($document->notes || $document->terms)
+                <x-ui.panel title="Notes & terms">
+                    @if ($document->notes)
+                        <p class="whitespace-pre-line text-[13.5px] leading-relaxed text-ink-2">{{ $document->notes }}</p>
+                    @endif
+
+                    @if ($document->terms)
+                        <p class="mt-4 whitespace-pre-line border-t border-border pt-4 text-[13px] leading-relaxed text-muted">{{ $document->terms }}</p>
+                    @endif
+                </x-ui.panel>
+            @endif
+
             {{-- What has already been given back on this invoice. Shown on the
                  invoice rather than only on the notes themselves, because the
                  question it answers — "why does this say 100 000 when we agreed
@@ -441,6 +457,47 @@
                 @else
                     <p class="text-[13.5px] text-muted">A verification QR is attached when the document is issued.</p>
                 @endif
+            </x-ui.panel>
+
+            {{-- History. Composed from the document's own records rather than a
+                 separate activity log, so it cannot claim something the data
+                 does not. --}}
+            <x-ui.panel title="History">
+                <ol class="relative space-y-4">
+                    @foreach ($history as $entry)
+                        <li class="flex gap-3">
+                            <span class="relative flex flex-col items-center">
+                                <span class="flex size-8 shrink-0 items-center justify-center rounded-full {{ \App\Support\Accent::tint($entry['accent']) }}">
+                                    <x-icon :name="$entry['icon']" class="size-[15px] {{ \App\Support\Accent::text($entry['accent']) }}" stroke-width="2" />
+                                </span>
+                                @if (! $loop->last)
+                                    <span class="mt-1 w-px flex-1 bg-border"></span>
+                                @endif
+                            </span>
+
+                            <div class="min-w-0 flex-1 pb-1">
+                                <p class="text-[13.5px] font-semibold text-ink">
+                                    @isset($entry['href'])
+                                        <a href="{{ $entry['href'] }}" wire:navigate class="focusable hover:text-brand hover:underline">{{ $entry['title'] }}</a>
+                                    @else
+                                        {{ $entry['title'] }}
+                                    @endisset
+                                </p>
+
+                                @if (! empty($entry['detail']))
+                                    <p class="mt-0.5 text-[12.5px] leading-relaxed text-muted">{{ $entry['detail'] }}</p>
+                                @endif
+
+                                <p class="mt-0.5 text-[11.5px] text-faint">
+                                    {{ $entry['at']?->format('j M Y, H:i') ?? 'Date unknown' }}
+                                    @if (! empty($entry['who']))
+                                        · {{ $entry['who'] }}
+                                    @endif
+                                </p>
+                            </div>
+                        </li>
+                    @endforeach
+                </ol>
             </x-ui.panel>
         </div>
     </div>

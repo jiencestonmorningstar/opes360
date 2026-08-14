@@ -114,6 +114,24 @@ class DocumentIssuer
                 'issued_at' => $document->issued_at?->toIso8601String(),
             ], $company);
 
+            /*
+             * Write the issue into the document's own trail.
+             *
+             * `issued_by` and `issued_at` already sit on the row, but they are
+             * the *current* state — a single slot that says who issued it, with
+             * nowhere for anything that happened afterwards. Voiding already
+             * recorded itself here, which meant the history a user could read
+             * showed the cancellation of a document and not its creation. One
+             * row per event, in one place, so the timeline is a list rather
+             * than a reconstruction.
+             */
+            $document->approvals()->create([
+                'company_id' => $document->company_id,
+                'user_id' => $user->id,
+                'action' => 'issued',
+                'created_at' => now(),
+            ]);
+
             return $document;
         });
     }

@@ -6,8 +6,10 @@ use App\Enums\DocumentType;
 use App\Enums\PaymentMethod;
 use App\Models\Document;
 use App\Models\Payment;
+use App\Models\User;
 use App\Services\DocumentConverter;
 use App\Services\PaymentRecorder;
+use App\Support\Money;
 use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Contracts\View\View;
 use Illuminate\Foundation\Auth\Access\AuthorizesRequests;
@@ -196,6 +198,96 @@ class Show extends Component
         ]);
     }
 
+    /**
+     * Everything that has happened to this document, oldest first.
+     *
+     * Composed from the records that already exist rather than from a separate
+     * activity log, because a log written alongside the facts can disagree with
+     * them. Each entry here is derived from the thing itself — the row's own
+     * timestamps, its approvals trail, the payments allocated to it, and the
+     * document it was converted from — so the history cannot claim something
+     * the data does not.
+     *
+     * The consequence worth knowing: documents issued before the issuer began
+     * writing an `issued` row show their issue from `issued_at` instead. Same
+     * entry, reconstructed rather than recorded.
+     *
+     * @return array<int, array<string, mixed>>
+     */
+    protected function history(): array
+    {
+        $entries = [];
+
+        $entries[] = [
+            'at' => $this->document->created_at,
+            'icon' => 'plus',
+            'accent' => 'slate',
+            'title' => 'Created',
+            'detail' => $this->document->type->label().' drafted',
+            'who' => optional(User::find($this->document->created_by))->name,
+        ];
+
+        if ($this->document->parent) {
+            $entries[] = [
+                'at' => $this->document->created_at,
+                'icon' => 'sync',
+                'accent' => 'purple',
+                'title' => 'Converted',
+                'detail' => 'From '.($this->document->parent->number ?? 'a draft'),
+                'who' => null,
+                'href' => route('documents.show', $this->document->parent),
+            ];
+        }
+
+        $approvals = $this->document->approvals()->with('user')->orderBy('created_at')->get();
+
+        foreach ($approvals as $approval) {
+            $entries[] = [
+                'at' => $approval->created_at,
+                'icon' => $approval->action === 'voided' ? 'alert' : 'check-circle',
+                'accent' => $approval->action === 'voided' ? 'orange' : 'green',
+                'title' => ucfirst($approval->action),
+                'detail' => $approval->comment,
+                'who' => $approval->user?->name,
+            ];
+        }
+
+        // Older documents predate the issuer recording its own row.
+        if ($this->document->issued_at && ! $approvals->contains('action', 'issued')) {
+            $entries[] = [
+                'at' => $this->document->issued_at,
+                'icon' => 'check-circle',
+                'accent' => 'green',
+                'title' => 'Issued',
+                'detail' => $this->document->number,
+                'who' => optional(User::find($this->document->issued_by))->name,
+            ];
+        }
+
+        foreach ($this->document->allocations()->with('payment.receipt')->get() as $allocation) {
+            $payment = $allocation->payment;
+
+            if ($payment === null) {
+                continue;
+            }
+
+            $entries[] = [
+                'at' => $payment->received_at ?? $payment->created_at,
+                'icon' => 'banknotes',
+                'accent' => 'blue',
+                'title' => 'Payment received',
+                'detail' => Money::format($allocation->amount, $this->document->currency)
+                    .' · '.($payment->method?->label() ?? $payment->method?->value)
+                    .($payment->receipt?->number ? ' · '.$payment->receipt->number : ''),
+                'who' => optional(User::find($payment->received_by))->name,
+            ];
+        }
+
+        usort($entries, fn ($a, $b) => ($a['at']?->timestamp ?? 0) <=> ($b['at']?->timestamp ?? 0));
+
+        return $entries;
+    }
+
     public function render(): View
     {
         $converter = app(DocumentConverter::class);
@@ -219,6 +311,7 @@ class Show extends Component
                     ->orderBy('issue_date')
                     ->get(['id', 'number', 'issue_date', 'total', 'notes'])
                 : collect(),
+            'history' => $this->history(),
         ])->layout('components.layouts.app', [
             'title' => $this->document->number ?? 'Document',
             'active' => 'sales',

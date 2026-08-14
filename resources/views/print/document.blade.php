@@ -194,9 +194,14 @@
     </div>
 
     @if ($document->notes)
-        <div style="margin-top:22px">
+        {{-- `white-space: pre-line` because notes are typed as prose with
+             paragraphs, and a quotation whose terms, exclusions and payment
+             schedule collapse into one wall of text is not a document anybody
+             signs. Blank lines stay blank; a line that merely wrapped in the
+             textarea still wraps here. --}}
+        <div style="margin-top:22px" class="notes">
             <div class="label">Notes</div>
-            <div class="small">{{ $document->notes }}</div>
+            <div class="small" style="white-space: pre-line; line-height: 1.5;">{{ $document->notes }}</div>
         </div>
     @endif
 

@@ -67,8 +67,17 @@
                 $docState = $document->paymentState();
                 $accent = Accent::byIndex($index);
             @endphp
-            <a href="{{ route('documents.show', $document) }}" wire:key="{{ $document->id }}"
-               class="focusable flex items-center gap-3.5 rounded-xl px-3 py-3 hover:bg-surface-2 {{ $index > 0 ? 'border-t border-border' : '' }}">
+            {{-- The row links to the document, and the customer's name links to
+                 their profile. A link inside a link is not valid HTML, so the
+                 document link is stretched across the row behind everything and
+                 the name is lifted above it — the whole row stays clickable
+                 without nesting one anchor in another. --}}
+            <div wire:key="{{ $document->id }}"
+                 class="relative flex items-center gap-3.5 rounded-xl px-3 py-3 hover:bg-surface-2 {{ $index > 0 ? 'border-t border-border' : '' }}">
+                <a href="{{ route('documents.show', $document) }}"
+                   class="focusable absolute inset-0 rounded-xl"
+                   aria-label="Open {{ $document->number ?? 'draft' }}"></a>
+
                 <span class="flex size-[46px] shrink-0 items-center justify-center rounded-xl {{ Accent::tint($accent) }}">
                     <x-icon name="document" class="size-[23px] {{ Accent::text($accent) }}" />
                 </span>
@@ -76,7 +85,14 @@
                 <span class="min-w-0 flex-1">
                     <span class="block truncate text-[15px] font-semibold text-ink">{{ $document->number ?? 'Draft' }}</span>
                     <span class="block truncate text-[13px] text-muted">
-                        {{ $document->contact?->displayName() ?? 'No customer' }}
+                        @if ($document->contact)
+                            <a href="{{ route('customers.show', $document->contact) }}" wire:navigate
+                               class="focusable relative z-10 font-medium text-ink-2 hover:text-brand hover:underline">
+                                {{ $document->contact->displayName() }}
+                            </a>
+                        @else
+                            No customer
+                        @endif
                         <span class="hidden min-[480px]:inline">· {{ $document->issue_date?->format('M j, Y') }}</span>
                     </span>
                 </span>
@@ -89,7 +105,7 @@
                 </span>
 
                 <x-icon name="chevron-right" class="size-[18px] shrink-0 text-faint" stroke-width="2" />
-            </a>
+            </div>
         @empty
             <div class="flex flex-col items-center px-6 py-14 text-center">
                 <span class="flex size-[58px] items-center justify-center rounded-full bg-tint-blue">
