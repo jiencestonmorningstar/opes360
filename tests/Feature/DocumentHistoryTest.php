@@ -233,17 +233,25 @@ class DocumentHistoryTest extends TestCase
             ->assertSee('60% on acceptance.');
     }
 
-    /** Paragraphs must survive to the printed page, not collapse into a blob. */
-    public function test_the_printed_copy_preserves_the_paragraphs_in_notes(): void
+    /**
+     * The structure must survive to the printed page rather than collapsing
+     * into one block — a heading printed as a heading, a list as a list.
+     */
+    public function test_the_printed_copy_keeps_the_structure_of_the_notes(): void
     {
         $document = $this->makeDocument(DocumentType::Quotation);
 
-        $document->forceFill(['notes' => "VALIDITY\n\n30 days from issue."])->saveQuietly();
+        $document->forceFill([
+            'notes' => "VALIDITY\n\n30 days from issue.\n\nINCLUDED\n\n• Cloud hosting\n• Backups",
+        ])->saveQuietly();
 
-        $this->actingAs($this->owner)
+        $response = $this->actingAs($this->owner)
             ->get(route('documents.print', $document->fresh()))
             ->assertOk()
-            ->assertSee('pre-line', false)
             ->assertSee('30 days from issue.');
+
+        // A heading rendered as one, and the bullets as real list items.
+        $response->assertSee('<p class="notes-h">VALIDITY</p>', false);
+        $response->assertSee('<li>Cloud hosting</li>', false);
     }
 }

@@ -35,6 +35,20 @@
         .doc-type { font-size: 13pt; font-weight: 800; text-transform: uppercase; letter-spacing: 0.06em; color: #2563eb; text-align: right; }
         .doc-number { font-size: 11pt; font-weight: 700; text-align: right; }
 
+        /* Notes are a document inside the document — a scope, terms, exclusions.
+           Given real headings and lists they read as one; run together as a
+           single block they do not, and a quotation nobody reads is a quotation
+           nobody signs. `break-inside: avoid` keeps a heading with what follows
+           it rather than orphaned at a page break. */
+        .notes-body { font-size: 8.5pt; line-height: 1.55; }
+        .notes-body > * { margin: 0 0 6px; }
+        .notes-h { font-size: 8pt; font-weight: 700; text-transform: uppercase; letter-spacing: 0.06em;
+                   margin: 12px 0 5px; break-after: avoid; }
+        .notes-body > .notes-h:first-child { margin-top: 0; }
+        .notes-rule { border: 0; border-top: 1px solid #e2e8f0; margin: 10px 0; }
+        .notes-body ul, .notes-body ol { margin: 0 0 6px; padding-left: 16px; }
+        .notes-body li { margin-bottom: 2px; break-inside: avoid; }
+
         .parties { display: flex; justify-content: space-between; gap: 24px; margin-top: 28px; }
         .label { font-size: 7.5pt; font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em; color: #94a3b8; margin-bottom: 4px; }
         .party-name { font-weight: 700; font-size: 11pt; }
@@ -194,14 +208,43 @@
     </div>
 
     @if ($document->notes)
-        {{-- `white-space: pre-line` because notes are typed as prose with
-             paragraphs, and a quotation whose terms, exclusions and payment
-             schedule collapse into one wall of text is not a document anybody
-             signs. Blank lines stay blank; a line that merely wrapped in the
-             textarea still wraps here. --}}
+        {{-- Parsed back into the structure it was written with — headings,
+             lists, rules — rather than printed as one pre-wrapped block. See
+             App\Support\DocumentNotes for the conventions it reads. --}}
         <div style="margin-top:22px" class="notes">
             <div class="label">Notes</div>
-            <div class="small" style="white-space: pre-line; line-height: 1.5;">{{ $document->notes }}</div>
+            <div class="notes-body">
+                @foreach (\App\Support\DocumentNotes::parse($document->notes) as $block)
+                    @switch($block['type'])
+                        @case('heading')
+                            <p class="notes-h">{{ $block['text'] }}</p>
+                            @break
+
+                        @case('rule')
+                            <hr class="notes-rule">
+                            @break
+
+                        @case('bullets')
+                            <ul>
+                                @foreach ($block['items'] as $item)
+                                    <li>{{ $item }}</li>
+                                @endforeach
+                            </ul>
+                            @break
+
+                        @case('numbers')
+                            <ol>
+                                @foreach ($block['items'] as $item)
+                                    <li>{{ $item }}</li>
+                                @endforeach
+                            </ol>
+                            @break
+
+                        @default
+                            <p>{{ $block['text'] }}</p>
+                    @endswitch
+                @endforeach
+            </div>
         </div>
     @endif
 

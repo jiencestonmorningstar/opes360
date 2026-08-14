@@ -206,12 +206,11 @@
                  `whitespace-pre-line` keeps the paragraphs they typed. --}}
             @if ($document->notes || $document->terms)
                 <x-ui.panel title="Notes & terms">
-                    @if ($document->notes)
-                        <p class="whitespace-pre-line text-[13.5px] leading-relaxed text-ink-2">{{ $document->notes }}</p>
-                    @endif
+                    <x-ui.notes :text="$document->notes" />
 
                     @if ($document->terms)
-                        <p class="mt-4 whitespace-pre-line border-t border-border pt-4 text-[13px] leading-relaxed text-muted">{{ $document->terms }}</p>
+                        <x-ui.notes :text="$document->terms"
+                                    class="mt-4 border-t border-border pt-4 text-[13px] text-muted" />
                     @endif
                 </x-ui.panel>
             @endif
