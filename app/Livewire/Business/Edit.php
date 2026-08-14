@@ -6,6 +6,7 @@ use App\Enums\TaxRegime;
 use App\Models\Company;
 use App\Models\CompanyReview;
 use App\Models\VerificationToken;
+use App\Services\LogoProcessor;
 use App\Support\CurrentCompany;
 use Illuminate\Contracts\View\View;
 use Illuminate\Foundation\Auth\Access\AuthorizesRequests;
@@ -103,6 +104,30 @@ class Edit extends Component
         ];
     }
 
+    /**
+     * Put the upload back as it arrived.
+     *
+     * The clean-up is right almost always and wrong occasionally — a logo whose
+     * background genuinely is a pale wash, a mark that was meant to sit in a
+     * white roundel. When it is wrong the business should not be asked to go
+     * and find the file again, so the original is kept and this hands it back.
+     */
+    public function restoreOriginalLogo(): void
+    {
+        $company = app(CurrentCompany::class)->get();
+
+        abort_if($company === null, 403);
+        $this->authorize('update', $company);
+
+        if (! $company->logo_original_path) {
+            return;
+        }
+
+        $company->forceFill(['logo_path' => $company->logo_original_path])->save();
+
+        session()->flash('logoNotice', 'Your original image is back on the letterhead.');
+    }
+
     public function save(): void
     {
         $this->authorize('business.update');
@@ -135,8 +160,23 @@ class Edit extends Component
         $company = app(CurrentCompany::class)->get();
 
         if ($this->logoUpload) {
-            $company->logo_path = $this->logoUpload->store('logos/'.$company->id, 'public');
+            /*
+             * Cleaned on the way in rather than every template coping with
+             * whatever arrived. A white box behind a logo prints as a grey
+             * rectangle on the letterhead, and a 4000px photograph of a
+             * signboard is downloaded in full by every customer who opens the
+             * PDF. See LogoProcessor for what it refuses to guess at.
+             */
+            $result = app(LogoProcessor::class)->store($this->logoUpload, $company->id);
+
+            $company->logo_path = $result['path'];
+            $company->logo_original_path = $result['original_path'];
+
             $this->logoUpload = null;
+
+            session()->flash('logoNotice', $result['cleaned']
+                ? 'Logo cleaned up: background removed and trimmed to fit.'
+                : 'Logo saved.');
         }
 
         $company->fill([

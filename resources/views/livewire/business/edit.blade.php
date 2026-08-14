@@ -56,8 +56,25 @@
                             {{ $company->logo_path || $logoUpload ? 'Change logo' : 'Upload logo' }}
                             <input type="file" wire:model="logoUpload" accept="image/*" class="hidden">
                         </label>
-                        <p class="mt-1.5 text-[12px] text-muted">PNG or JPG, up to 4&nbsp;MB. The AI logo generator arrives in Phase&nbsp;2.</p>
+                        <p class="mt-1.5 text-[12px] text-muted">
+                            PNG or JPG, up to 4&nbsp;MB. A plain background is removed and the
+                            logo trimmed to fit automatically.
+                        </p>
                         @error('logoUpload') <p class="mt-1 text-[12.5px] font-medium text-warning">{{ $message }}</p> @enderror
+
+                        @if (session('logoNotice'))
+                            <p class="mt-1.5 text-[12.5px] font-medium text-positive">{{ session('logoNotice') }}</p>
+                        @endif
+
+                        {{-- The clean-up is right almost always and wrong
+                             occasionally. When it is wrong the business should
+                             not have to go and find the file again. --}}
+                        @if ($company->logo_original_path && $company->logo_original_path !== $company->logo_path)
+                            <button type="button" wire:click="restoreOriginalLogo"
+                                    class="focusable mt-1.5 text-[12.5px] font-semibold text-muted underline hover:text-ink">
+                                Use my original image instead
+                            </button>
+                        @endif
                     </div>
                 </div>
 
