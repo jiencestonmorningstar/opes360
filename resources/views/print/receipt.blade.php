@@ -25,6 +25,7 @@
         @media print { .slip { width: {{ $width - ($thermal ? 6 : 24) }}mm; margin: 0 auto; } .no-print { display: none !important; } }
         .center { text-align: center; }
         .name { font-weight: 800; font-size: {{ $thermal ? '10pt' : '13pt' }}; }
+        .letterhead-logo { max-height: 16mm; max-width: 50mm; object-fit: contain; margin: 0 auto 6px; }
         .muted { color: #444; }
         .rule { border-top: 1px dashed #000; margin: 8px 0; }
         .row { display: flex; justify-content: space-between; gap: 8px; }
@@ -42,6 +43,12 @@
 <body>
 <div class="slip">
     <div class="center">
+        {{-- A4 only. A thermal head renders an image as slow, muddy dithering
+             on 58mm paper, and every millimetre of roll is a cost the business
+             pays per sale — so the till slip stays the name in bold type. --}}
+        @if (! $thermal && $company->logoUrl())
+            <img class="letterhead-logo" src="{{ $company->logoUrl() }}" alt="{{ $company->name }}">
+        @endif
         <div class="name">{{ $company->name }}</div>
         @if ($company->motto)<div class="muted">{{ $company->motto }}</div>@endif
         <div class="muted">

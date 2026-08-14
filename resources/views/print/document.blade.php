@@ -30,6 +30,13 @@
            which is how a long business name pushes the sheet sideways. */
         header > div, .parties > div, footer > div { min-width: 0; }
         .brand-name { font-size: 17pt; font-weight: 800; letter-spacing: -0.02em; }
+        /* Bounded in both directions: a business uploads whatever it has, and a
+           tall logo left unconstrained pushes the whole sheet down the page.
+           `object-fit: contain` keeps a wide banner and a square mark both
+           undistorted within that box. */
+        .letterhead-logo { max-height: 20mm; max-width: 60mm; object-fit: contain; display: block; margin-bottom: 8px; }
+        .letterhead-center { text-align: center; }
+        .letterhead-center .letterhead-logo { margin-left: auto; margin-right: auto; }
         .muted { color: #64748b; }
         .small { font-size: 8.5pt; }
         .doc-type { font-size: 13pt; font-weight: 800; text-transform: uppercase; letter-spacing: 0.06em; color: #2563eb; text-align: right; }
@@ -91,24 +98,11 @@
 <div class="sheet">
     <header>
         <div>
-            <div class="brand-name">{{ $company->name }}</div>
-            @if ($company->motto)<div class="muted small">{{ $company->motto }}</div>@endif
-            <div class="muted small" style="margin-top:6px">
-                {{ implode(' · ', array_filter([
-                    $company->address_line1,
-                    trim(($company->city ? $company->city.', ' : '').($company->country ?? ''), ', ') ?: null,
-                ])) }}<br>
-                {{ implode(' · ', array_filter([data_get($company->phones, 0), $company->email, $company->website])) }}
-            </div>
-            {{-- The fiscal identity a DGI-acceptable invoice has to state. The
-                 NIU is the mention most closely checked: without the supplier's,
-                 a customer cannot deduct the TVA they were charged. --}}
-            @if ($company->registration_number)
-                <div class="muted small">RCCM {{ $company->registration_number }}</div>
-            @endif
-            @if ($company->tax_id)
-                <div class="muted small">NIU {{ $company->tax_id }}</div>
-            @endif
+            {{-- Shared with every other printed document, and read from the
+                 company at render time so a changed logo or address reaches
+                 documents already issued. See the partial. --}}
+            @include('print.partials.letterhead', ['company' => $company])
+
             @if ($company->tax_regime || $company->tax_centre)
                 <div class="muted small">
                     {{ implode(' · ', array_filter([

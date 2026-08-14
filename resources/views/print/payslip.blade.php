@@ -32,6 +32,9 @@
 
         .head { display: flex; justify-content: space-between; gap: 16px; align-items: flex-start; border-bottom: 2px solid #000; padding-bottom: 10px; }
         .name { font-weight: 800; font-size: 14pt; letter-spacing: -0.02em; }
+        /* Smaller than on an invoice: a payslip packs a lot of statutory
+           detail onto one sheet and the logo must not cost it a page. */
+        .letterhead-logo { max-height: 14mm; max-width: 45mm; object-fit: contain; display: block; margin-bottom: 6px; }
         .muted { color: #444; }
         .small { font-size: 8.5pt; }
         .title { text-align: center; font-weight: 800; font-size: 12pt; letter-spacing: 0.04em; text-transform: uppercase; margin: 14px 0 4px; }
@@ -69,6 +72,9 @@
 
     <div class="head">
         <div>
+            @if ($company->logoUrl())
+                <img class="letterhead-logo" src="{{ $company->logoUrl() }}" alt="{{ $company->name }}">
+            @endif
             <div class="name">{{ $company->name }}</div>
             <div class="small muted">
                 @if ($company->address){{ $company->address }}<br>@endif

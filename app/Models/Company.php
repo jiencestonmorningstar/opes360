@@ -11,6 +11,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\MorphMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
+use Illuminate\Support\Facades\Storage;
 
 class Company extends Model
 {
@@ -253,6 +254,29 @@ class Company extends Model
     public function cardDesign(): string
     {
         return in_array($this->card_design, self::cardDesigns(), true) ? $this->card_design : 'classic';
+    }
+
+    /**
+     * The logo, as a URL a printed page can load.
+     *
+     * One place rather than the same three lines in every print view: the
+     * letterhead appears on invoices, receipts, statements and payslips, and a
+     * business that changes its logo expects all four to change together.
+     *
+     * Nothing is cached and nothing is copied onto the document. The letterhead
+     * is read from the company each time a page is rendered, so editing it
+     * updates every document ever issued — which is what a business means by
+     * "we changed our letterhead". The document's *content* is a separate
+     * question and stays frozen: numbers, dates, lines and totals are covered
+     * by the content hash its QR verifies against, and the logo is not.
+     */
+    public function logoUrl(): ?string
+    {
+        if (! $this->logo_path) {
+            return null;
+        }
+
+        return Storage::disk('public')->url($this->logo_path);
     }
 
     public function initials(): string

@@ -29,6 +29,9 @@
 
         .head { display: flex; justify-content: space-between; align-items: flex-start; gap: 16mm; border-bottom: 1.5pt solid #0f172a; padding-bottom: 6mm; }
         .name { font-size: 20pt; font-weight: 800; letter-spacing: -0.02em; }
+        /* Bounded both ways: a business uploads whatever it has, and an
+           unconstrained tall logo pushes the sheet down the page. */
+        .letterhead-logo { max-height: 20mm; max-width: 60mm; object-fit: contain; display: block; margin-bottom: 8px; }
         .motto { font-size: 9.5pt; color: #64748b; margin-top: 1mm; }
         .head-meta { text-align: right; font-size: 8pt; color: #64748b; line-height: 1.7; }
 
@@ -69,6 +72,11 @@
 <div class="sheet">
     <div class="head">
         <div>
+            {{-- Read from the company at render time, so a changed logo shows
+                 on statements of periods already closed. --}}
+            @if ($company?->logoUrl())
+                <img class="letterhead-logo" src="{{ $company->logoUrl() }}" alt="{{ $company->name }}">
+            @endif
             <div class="name">{{ $company?->name }}</div>
             @if ($company?->motto)<div class="motto">{{ $company->motto }}</div>@endif
         </div>
