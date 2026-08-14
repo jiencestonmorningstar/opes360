@@ -14,6 +14,7 @@ use App\Models\Payment;
 use App\Models\Receipt;
 use App\Models\Ticket;
 use App\Models\User;
+use App\Models\VipMembership;
 use App\Policies\ArtisanPolicy;
 use App\Policies\BusinessDocumentPolicy;
 use App\Policies\ContactPolicy;
@@ -25,6 +26,7 @@ use App\Policies\ItemPolicy;
 use App\Policies\PaymentPolicy;
 use App\Policies\ReceiptPolicy;
 use App\Policies\TicketPolicy;
+use App\Policies\VipMembershipPolicy;
 use App\Support\CurrentCompany;
 use App\Support\Modules;
 use App\Support\Permissions;
@@ -49,6 +51,7 @@ class AuthServiceProvider extends ServiceProvider
         Form::class => FormPolicy::class,
         Event::class => EventPolicy::class,
         Ticket::class => TicketPolicy::class,
+        VipMembership::class => VipMembershipPolicy::class,
     ];
 
     public function boot(): void

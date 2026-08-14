@@ -73,7 +73,15 @@ class ModulesTest extends TestCase
     {
         $enabled = Modules::enabledFor($this->company);
 
+        // `vip` is the one documented exception (see config/modules.php): it
+        // is meaningless until a business has configured a tier, and most
+        // businesses never will, so it ships off rather than as an empty
+        // screen nobody asked for.
         foreach (array_keys(Modules::catalogue()) as $key) {
+            if ($key === 'vip') {
+                continue;
+            }
+
             $this->assertContains($key, $enabled, "[{$key}] should be on by default.");
         }
     }

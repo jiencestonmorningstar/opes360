@@ -53,6 +53,11 @@ class Permissions
         'Forms' => ['view', 'create', 'update', 'delete', 'responses'],
         'Events' => ['view', 'create', 'update', 'void', 'check-in'],
         'Loyalty' => ['view', 'manage', 'redeem'],
+        // VIP membership. `sell` is separate from `manage` for the same
+        // reason `sales.issue` is separate from `sales.create`: a
+        // receptionist may sign somebody up for Gold without being able to
+        // redesign the programme — change what Gold costs or what it gives.
+        'Vip' => ['view', 'manage', 'sell'],
         'Reports' => ['view', 'export'],
         'Accounting' => ['view', 'export', 'manage'],
         // The secretariat programme. Not plan-gated — it is how a partner pays

@@ -67,6 +67,11 @@ return [
         ['key' => 'papers', 'label' => 'Documents', 'icon' => 'document', 'route' => 'papers', 'ability' => 'papers.view'],
         ['key' => 'forms', 'label' => 'Forms', 'icon' => 'clipboard', 'route' => 'forms', 'ability' => 'forms.view'],
         ['key' => 'events', 'label' => 'Events', 'icon' => 'ticket', 'route' => 'events', 'ability' => 'events.view'],
+        // The route does not exist yet — VIP screens are a later task. Left
+        // out of the navigation until then rather than added with a
+        // placeholder route, matching how the module ships off by default
+        // (see config/modules.php): nothing points at it until there is
+        // somewhere for it to go.
         // Secretariat only. The ability itself carries that condition (see
         // AuthServiceProvider), so no extra flag is needed here — a plain
         // business simply never renders these two.

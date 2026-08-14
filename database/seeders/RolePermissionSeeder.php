@@ -41,6 +41,8 @@ class RolePermissionSeeder extends Seeder
             'Forms' => ['view', 'create', 'update', 'delete', 'responses'],
             'Events' => ['view', 'create', 'update', 'void', 'check-in'],
             'Loyalty' => ['view', 'manage', 'redeem'],
+            // Runs the programme: sets up tiers and can sign a customer up.
+            'Vip' => ['view', 'manage', 'sell'],
             'Reports' => ['view', 'export'],
             'Accounting' => ['view', 'export', 'manage'],
             // Runs the counter in a secretariat: adds clients and prints their

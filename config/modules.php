@@ -19,6 +19,8 @@ use App\Models\Receipt;
 use App\Models\StockLocation;
 use App\Models\Stocktake;
 use App\Models\Ticket;
+use App\Models\VipMembership;
+use App\Models\VipTier;
 
 /*
  * The module catalogue — what a business can switch on and off.
@@ -212,6 +214,29 @@ return [
         'icon' => 'spark',
         'default' => true,
         'groups' => ['loyalty'],
+    ],
+
+    /*
+     * The one module that ships off. Every module above defaults on so a
+     * business discovers what it needs rather than never finding it — but
+     * VIP is meaningless until somebody has configured at least one tier,
+     * and most small businesses run no membership programme at all. Leaving
+     * it on by default would put an empty screen with nothing to do on it
+     * in front of every business that will never use it, which is the exact
+     * cost this catalogue's "everything on" default exists to avoid for the
+     * businesses that need something narrower. Deliberate exception, not an
+     * oversight.
+     */
+    'vip' => [
+        'label' => 'VIP membership',
+        'description' => 'Paid tiers that discount a member\'s invoices for the term they bought.',
+        'icon' => 'spark',
+        'default' => false,
+        // A membership belongs to somebody. Without the customer book there
+        // is no one to sell a tier to.
+        'requires' => ['customers'],
+        'groups' => ['vip'],
+        'models' => [VipTier::class, VipMembership::class],
     ],
 
     'reports' => [
