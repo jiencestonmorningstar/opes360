@@ -9,7 +9,7 @@ use App\Models\Company;
  * Turns a set of priced lines into the three figures a compliant invoice has to
  * show: total hors taxes, the TVA on it, and the total toutes taxes comprises.
  *
- * Two things make this less trivial than multiplying by a rate.
+ * Three things make this less trivial than multiplying by a rate.
  *
  * First, prices can be keyed either way. A consultancy quotes 100 000 HT and
  * the TVA goes on top; a shop quotes 100 000 on the shelf and the TVA is
@@ -24,6 +24,10 @@ use App\Models\Company;
  * sum of the printed figures — so the invoice adds up in the customer's hand,
  * which is the version anyone will check it against.
  *
+ * Third, a discount changes what the tax is owed on, not just what is owed.
+ * It has to reduce the taxable base before the rate is applied — applying the
+ * rate first and discounting the result taxes money the customer never paid.
+ *
  * XAF has no minor unit: FCFA amounts are whole francs, and there is no such
  * thing as half a franc to round to.
  */
@@ -36,10 +40,10 @@ class Vat
      * @param  array<int, array{quantity: float|string, unit_price: float|string}>  $lines
      * @return array{
      *     lines: array<int, array{net: float, tax: float, gross: float, unit_net: float}>,
-     *     subtotal: float, tax_total: float, total: float, rate: float, applies: bool
+     *     subtotal: float, discount_total: float, tax_total: float, total: float, rate: float, applies: bool
      * }
      */
-    public static function forCompany(Company $company, array $lines): array
+    public static function forCompany(Company $company, array $lines, float $discountPercent = 0.0): array
     {
         return self::compute(
             $lines,
@@ -47,6 +51,7 @@ class Vat
             (bool) $company->vat_registered,
             (bool) $company->prices_include_tax,
             (string) ($company->currency ?: 'XAF'),
+            $discountPercent,
         );
     }
 
@@ -54,7 +59,7 @@ class Vat
      * @param  array<int, array{quantity: float|string, unit_price: float|string}>  $lines
      * @return array{
      *     lines: array<int, array{net: float, tax: float, gross: float, unit_net: float}>,
-     *     subtotal: float, tax_total: float, total: float, rate: float, applies: bool
+     *     subtotal: float, discount_total: float, tax_total: float, total: float, rate: float, applies: bool
      * }
      */
     public static function compute(
@@ -63,9 +68,15 @@ class Vat
         bool $registered,
         bool $pricesIncludeTax,
         string $currency = 'XAF',
+        float $discountPercent = 0.0,
     ): array {
         $applies = $registered && $rate > 0;
         $decimals = self::decimalsFor($currency);
+
+        // A percentage outside 0–100 is a mistake, not an instruction. Left
+        // unclamped, a negative one would add money to the invoice and one
+        // over 100 would make the customer a creditor.
+        $discountPercent = max(0.0, min(100.0, $discountPercent));
 
         $computed = [];
 
@@ -103,13 +114,43 @@ class Vat
             ];
         }
 
+        // Summed from the rounded per-line figures, which are the ones
+        // printed — so the column adds up to the total beneath it.
+        $subtotal = round(array_sum(array_column($computed, 'net')), $decimals);
+        $taxTotal = round(array_sum(array_column($computed, 'tax')), $decimals);
+        $total = round(array_sum(array_column($computed, 'gross')), $decimals);
+        $discountTotal = 0.0;
+
+        // The lines above are untouched by the discount — they stay at list
+        // price because that is what the customer reads down the page, and
+        // the discount is shown as its own figure beneath them. Only the
+        // totals below are reduced, and the tax is recomputed on what is
+        // left after the discount, not on the pre-discount subtotal.
+        if ($discountPercent > 0) {
+            $fraction = $discountPercent / 100;
+
+            if ($applies && $pricesIncludeTax) {
+                // Keyed TTC: take the discount off the gross, then re-extract.
+                $discountedGross = round($total * (1 - $fraction), $decimals);
+                $net = round($discountedGross / (1 + ($rate / 100)), $decimals);
+
+                $discountTotal = round($subtotal - $net, $decimals);
+                $taxTotal = round($discountedGross - $net, $decimals);
+                $total = $discountedGross;
+            } else {
+                $discountTotal = round($subtotal * $fraction, $decimals);
+                $net = round($subtotal - $discountTotal, $decimals);
+                $taxTotal = $applies ? round($net * ($rate / 100), $decimals) : 0.0;
+                $total = round($net + $taxTotal, $decimals);
+            }
+        }
+
         return [
             'lines' => $computed,
-            // Summed from the rounded per-line figures, which are the ones
-            // printed — so the column adds up to the total beneath it.
-            'subtotal' => round(array_sum(array_column($computed, 'net')), $decimals),
-            'tax_total' => round(array_sum(array_column($computed, 'tax')), $decimals),
-            'total' => round(array_sum(array_column($computed, 'gross')), $decimals),
+            'subtotal' => $subtotal,
+            'discount_total' => $discountTotal,
+            'tax_total' => $taxTotal,
+            'total' => $total,
             'rate' => $rate,
             'applies' => $applies,
         ];
