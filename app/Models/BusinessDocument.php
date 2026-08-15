@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use App\Models\Concerns\BelongsToCompany;
+use App\Support\DocumentKinds;
 use App\Support\DocumentTemplates;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Concerns\HasUlids;
@@ -31,9 +32,59 @@ class BusinessDocument extends Model
     {
         return [
             'fields' => 'array',
+            'tags' => 'array',
             'issued_at' => 'datetime',
             'voided_at' => 'datetime',
+            'expires_on' => 'date',
         ];
+    }
+
+    /** Never throws — a renamed kind must not lose a row from a list. */
+    public function kindLabel(): string
+    {
+        return DocumentKinds::label($this->kind);
+    }
+
+    /**
+     * Confidential and above. Used by the policy, never by a view: hiding a
+     * link is not access control.
+     */
+    public function isConfidential(): bool
+    {
+        return DocumentKinds::securityRank($this->security)
+            >= DocumentKinds::securityRank('confidential');
+    }
+
+    public function owner(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'owner_id');
+    }
+
+    /**
+     * Documents that will lapse soon.
+     *
+     * Already-expired ones are excluded on purpose: they belong on a different
+     * list. "Expiring" is a prompt to act before a deadline, and mixing in the
+     * deadlines already missed makes the list something people stop opening.
+     */
+    public function scopeExpiringWithin(Builder $query, int $days): Builder
+    {
+        return $query
+            ->whereNotNull('expires_on')
+            ->whereDate('expires_on', '>=', now()->toDateString())
+            ->whereDate('expires_on', '<=', now()->addDays($days)->toDateString());
+    }
+
+    public function scopeExpired(Builder $query): Builder
+    {
+        return $query
+            ->whereNotNull('expires_on')
+            ->whereDate('expires_on', '<', now()->toDateString());
+    }
+
+    public function scopeOfKind(Builder $query, string $kind): Builder
+    {
+        return $query->where('kind', $kind);
     }
 
     protected static function booted(): void
@@ -43,11 +94,26 @@ class BusinessDocument extends Model
                 return;
             }
 
-            // Voiding is the one thing an issued document may still undergo,
-            // so the columns that record it are permitted. Its content is not.
+            /*
+             * Voiding is the one thing an issued document may still undergo,
+             * so the columns that record it are permitted. Its content is not.
+             *
+             * Filing is permitted too, and the distinction is worth stating:
+             * putting a signed contract in a folder, tagging it, handing it to
+             * a new owner or noting when it expires does not change the
+             * document — it changes where the business keeps it. None of these
+             * columns appear in canonicalPayload(), so an issued document
+             * survives every one of them with its hash still valid, and there
+             * is a test asserting exactly that.
+             *
+             * Refusing them would make the module useless for the documents
+             * that most need managing: the issued ones.
+             */
             $mutable = [
                 'status', 'updated_at', 'deleted_at', 'verification_token_id',
                 'voided_at', 'voided_by', 'void_reason',
+                'kind', 'description', 'security', 'language', 'tags',
+                'owner_id', 'expires_on', 'folder_id',
             ];
             $illegal = array_diff(array_keys($document->getDirty()), $mutable);
 
