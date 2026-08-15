@@ -1,12 +1,13 @@
 @php
     $primary = \App\Support\Navigation::primary();
+    $glass = \App\Support\BrandPalette::skinClass();
 @endphp
 
 {{--
     Fixed thumb-reach navigation. Hidden from `lg` up, where the sidebar takes over.
     The safe-area padding keeps the labels clear of the iOS home indicator.
 --}}
-<nav class="fixed inset-x-0 bottom-0 z-30 border-t border-border bg-surface lg:hidden"
+<nav class="fixed inset-x-0 bottom-0 z-30 border-t {{ $glass ?: 'border-border bg-surface' }} {{ $glass }} lg:hidden"
      style="padding-bottom: env(safe-area-inset-bottom)"
      aria-label="Primary">
     {{-- The column count follows the permitted entries, so a restricted role

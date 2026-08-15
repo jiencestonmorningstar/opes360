@@ -3,7 +3,8 @@
     $currentCompany = app(\App\Support\CurrentCompany::class)->get();
 @endphp
 
-<header class="sticky top-0 z-20 bg-surface/95 backdrop-blur-sm dark:bg-canvas/95 lg:bg-transparent lg:backdrop-blur-none lg:dark:bg-transparent">
+@php $glass = \App\Support\BrandPalette::skinClass(); @endphp
+<header class="sticky top-0 z-20 {{ $glass ?: 'bg-surface/95 backdrop-blur-sm dark:bg-canvas/95 lg:bg-transparent lg:backdrop-blur-none lg:dark:bg-transparent' }} {{ $glass }}">
     <div class="flex items-start gap-3 px-5 pt-5 pb-4 lg:h-24 lg:items-center lg:justify-end lg:px-6 lg:pt-0 lg:pb-0">
 
         {{-- Mobile: the brand lives in the header. Desktop: it lives in the sidebar. --}}

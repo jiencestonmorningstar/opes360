@@ -3,9 +3,11 @@
     static collapsible rail from `lg` up. Keeping it as a single markup tree means
     the nav list has exactly one source of truth.
 --}}
+@php $glass = \App\Support\BrandPalette::skinClass(); @endphp
 <aside x-cloak
-       class="fixed inset-y-0 left-0 z-40 flex w-[280px] shrink-0 flex-col bg-surface transition-transform duration-200 ease-out
-              lg:sticky lg:top-0 lg:z-auto lg:h-screen lg:translate-x-0 lg:bg-canvas lg:transition-[width]"
+       class="fixed inset-y-0 left-0 z-40 flex w-[280px] shrink-0 flex-col transition-transform duration-200 ease-out
+              {{ $glass ?: 'bg-surface lg:bg-canvas' }} {{ $glass }}
+              lg:sticky lg:top-0 lg:z-auto lg:h-screen lg:translate-x-0 lg:transition-[width]"
        :class="{
            '-translate-x-full': ! drawer,
            'translate-x-0': drawer,

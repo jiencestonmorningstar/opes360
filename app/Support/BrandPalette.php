@@ -3,6 +3,7 @@
 namespace App\Support;
 
 use App\Models\Company;
+use App\Support\CurrentCompany;
 use Illuminate\Support\Facades\Cache;
 
 /**
@@ -37,6 +38,23 @@ class BrandPalette
             now()->addDay(),
             fn () => self::derive($inputs),
         );
+    }
+
+    /**
+     * `glass` when the company has chosen the glass skin, otherwise an empty
+     * string.
+     *
+     * Chrome calls this instead of always carrying the class and letting the
+     * tokens neutralise it. `.glass` and `bg-surface` are both utilities of the
+     * same specificity, so which one won would depend on their order in the
+     * compiled sheet rather than on the class attribute — and in solid mode the
+     * requirement is that nothing changes at all.
+     */
+    public static function skinClass(?Company $company = null): string
+    {
+        $company ??= app(CurrentCompany::class)->get();
+
+        return self::inputsFor($company)['skin'] === 'glass' ? 'glass' : '';
     }
 
     /** @return array<string, mixed> */

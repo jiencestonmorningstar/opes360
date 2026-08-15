@@ -359,3 +359,55 @@
     height: 2.75rem;
     border-radius: 0.5rem;
 }
+
+/*
+ * Liquid glass, for chrome only.
+ *
+ * The sidebar, top bar and bottom nav can be translucent; the cards holding
+ * figures cannot. A total's legibility must not depend on what happens to be
+ * scrolling behind it, and this platform guarantees AA on every text token —
+ * a guarantee that evaporates the moment the background is unknown.
+ *
+ * The three tokens come from BrandPalette. When the skin is `solid` they
+ * resolve to a 0px blur over an opaque surface, so this class stays inert
+ * rather than needing a second code path at every call site.
+ *
+ * `backdrop-filter` is the most expensive thing a page can ask a GPU for, and
+ * this product runs as an offline PWA on budget Android. Restricting it to
+ * three always-on-screen elements is the difference between a nice effect and
+ * a scroll that stutters.
+ */
+@utility glass {
+    background-color: var(--glass-bg, var(--color-surface));
+    border-color: var(--glass-border, var(--color-border));
+}
+
+@supports (backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px)) {
+    .glass {
+        -webkit-backdrop-filter: blur(var(--glass-blur, 0px)) saturate(180%);
+        backdrop-filter: blur(var(--glass-blur, 0px)) saturate(180%);
+    }
+}
+
+/*
+ * Anybody who has asked their system to cut transparency gets a solid surface.
+ * This is an accessibility setting, not a preference to be talked out of —
+ * translucency is a genuine problem for some vestibular and low-vision users.
+ */
+@media (prefers-reduced-transparency: reduce) {
+    .glass {
+        background-color: var(--color-surface) !important;
+        border-color: var(--color-border) !important;
+        -webkit-backdrop-filter: none !important;
+        backdrop-filter: none !important;
+    }
+}
+
+/* Never on paper. A blur costs ink and renders as a grey smear. */
+@media print {
+    .glass {
+        background-color: #fff !important;
+        -webkit-backdrop-filter: none !important;
+        backdrop-filter: none !important;
+    }
+}
