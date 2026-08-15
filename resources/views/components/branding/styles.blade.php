@@ -15,10 +15,16 @@
      * and anything applied after first paint flashes the default blue before
      * the company's own colour arrives.
      *
-     * $palette may be passed explicitly (the marketing site does this, since it
-     * has no current company); otherwise it comes from whoever is signed in.
+     * Resolution order:
+     *
+     *   $palette  an explicit token map, used by the preview and by tests
+     *   $company  the business whose pages these are. Public pages — a shared
+     *             form, an event, a verification link — have no signed-in user
+     *             to infer it from, and a customer opening their supplier's
+     *             quotation should see their supplier's colours, not ours.
+     *   current   whoever is signed in
      */
-    $tokens = $palette ?? BrandPalette::for(app(CurrentCompany::class)->get());
+    $tokens = $palette ?? BrandPalette::for($company ?? app(CurrentCompany::class)->get());
 
     /**
      * Values are whitelisted, not escaped.

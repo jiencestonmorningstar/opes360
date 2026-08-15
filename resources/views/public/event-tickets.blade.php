@@ -1,6 +1,6 @@
 @php use App\Support\Money; @endphp
 
-<x-layouts.public :title="'Your tickets · '.$event->title" robots="noindex" width="max-w-[440px]">
+<x-layouts.public :title="'Your tickets · '.$event->title" :brand-company="$company ?? $event->company" robots="noindex" width="max-w-[440px]">
     <div class="text-center">
         <span class="inline-flex size-[60px] items-center justify-center rounded-full bg-tint-green">
             <x-icon name="check-circle" class="size-8 text-positive" stroke-width="1.8" />

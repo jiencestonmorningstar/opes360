@@ -13,7 +13,7 @@
     $toneTint = ['positive' => 'bg-tint-green', 'warning' => 'bg-tint-orange', 'muted' => 'bg-surface-2'][$tone];
 @endphp
 
-<x-layouts.public :title="$headline" robots="noindex" width="max-w-[440px]">
+<x-layouts.public :title="$headline" :brand-company="$company ?? null" robots="noindex" width="max-w-[440px]">
     {{-- Verdict --}}
     <div class="card flex flex-col items-center p-7 text-center">
         <span class="flex size-[74px] items-center justify-center rounded-full {{ $toneTint }}">

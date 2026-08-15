@@ -11,7 +11,7 @@
     $labelClass = 'mb-1.5 block text-[13px] font-semibold text-ink-2 text-left';
 @endphp
 
-<x-layouts.public :title="$company->name" :description="$company->motto ?? $company->name" width="max-w-[480px]">
+<x-layouts.public :title="$company->name" :description="$company->motto ?? $company->name" :brand-company="$company" width="max-w-[480px]">
     {{-- Identity card --}}
     <div class="card flex flex-col items-center p-7 text-center">
         @if ($company->logo_path)

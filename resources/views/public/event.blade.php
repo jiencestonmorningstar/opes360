@@ -1,6 +1,6 @@
 @php use App\Support\Money; @endphp
 
-<x-layouts.public :title="$event->title.' · '.$company->name" robots="noindex" width="max-w-[560px]">
+<x-layouts.public :title="$event->title.' · '.$company->name" :brand-company="$company" robots="noindex" width="max-w-[560px]">
     <div class="card overflow-hidden">
         <div class="border-t-4 border-t-brand p-6">
             <p class="text-[12px] font-semibold uppercase tracking-wide text-faint">{{ $company->name }} presents</p>

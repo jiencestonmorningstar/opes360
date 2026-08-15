@@ -1,4 +1,4 @@
-<x-layouts.public :title="'Response recorded · '.$company->name" robots="noindex" width="max-w-[440px]">
+<x-layouts.public :title="'Response recorded · '.$company->name" :brand-company="$company" robots="noindex" width="max-w-[440px]">
     <div class="card flex flex-col items-center p-8 text-center">
         <span class="flex size-[74px] items-center justify-center rounded-full bg-tint-green">
             <x-icon name="check-circle" class="size-9 text-positive" stroke-width="1.8" />

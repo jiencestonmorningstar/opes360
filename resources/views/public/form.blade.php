@@ -10,7 +10,7 @@
     $action = $embed ? route('form.embed.submit', $form->share_token) : route('form.submit', $form->share_token);
 @endphp
 
-<x-layouts.public :title="$form->title.' · '.$company->name" robots="noindex" width="max-w-[560px]">
+<x-layouts.public :title="$form->title.' · '.$company->name" :brand-company="$company" robots="noindex" width="max-w-[560px]">
     <div class="card border-t-4 border-t-brand p-6">
         <p class="text-[12px] font-semibold uppercase tracking-wide text-faint">{{ $company->name }}</p>
         <h1 class="mt-1.5 text-[24px] font-bold leading-tight tracking-[-0.02em] text-ink">{{ $form->title }}</h1>

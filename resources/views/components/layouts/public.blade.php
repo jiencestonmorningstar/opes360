@@ -9,6 +9,10 @@
     'variant' => 'column',
     'width' => 'max-w-[480px]',
     'bodyClass' => '',
+    // The business whose page this is, when there is one. A customer opening a
+    // shared form or a verification link is not signed in, so nothing else can
+    // work out whose colours to use.
+    'brandCompany' => null,
 ])
 
 {{--
@@ -56,7 +60,7 @@
     @vite(['resources/css/app.css', 'resources/js/app.js'])
 
     {{-- After Vite, so the company palette wins the cascade. --}}
-    <x-branding.styles />
+    <x-branding.styles :company="$brandCompany" />
     @livewireStyles
 
     {{ $head ?? '' }}
