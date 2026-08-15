@@ -75,3 +75,18 @@ Schedule::command('opes:expire-vip-memberships')
     ->daily()
     ->at('00:30')
     ->withoutOverlapping();
+
+/*
+ * Raise the invoices standing arrangements are due to produce.
+ *
+ * Just after the VIP sweep, and early, so a business that bills on the first of
+ * the month finds the drafts waiting when it opens rather than during the day.
+ *
+ * Unlike the sweeps above this is not housekeeping: nothing else will bill the
+ * customer if this does not run, so the service catches up every period a
+ * schedule has fallen behind rather than only the most recent one.
+ */
+Schedule::command('opes:generate-recurring-invoices')
+    ->daily()
+    ->at('00:45')
+    ->withoutOverlapping();
