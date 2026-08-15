@@ -17,6 +17,7 @@ use App\Http\Controllers\Api\PayrollController;
 use App\Http\Controllers\Api\TicketController;
 use App\Http\Controllers\Api\TokenController;
 use App\Http\Controllers\Api\VipController;
+use App\Http\Controllers\Api\BrandingController;
 use App\Http\Controllers\Api\WebhookController;
 use Illuminate\Support\Facades\Route;
 
@@ -155,6 +156,10 @@ Route::prefix('v1')->group(function (): void {
              * a token whose user is not an Owner or Administrator, and the
              * signing secret is never in a read response.
              */
+            // Branding is readable by anyone who can see the business: a
+            // companion app has to match the colours, and the customer-
+            // facing pages render them publicly anyway.
+            Route::get('branding', [BrandingController::class, 'show'])->name('api.v1.branding.show');
             Route::get('webhooks', [WebhookController::class, 'index'])->name('api.v1.webhooks.index');
             Route::get('webhooks/deliveries', [WebhookController::class, 'deliveries'])->name('api.v1.webhooks.deliveries');
             Route::get('webhooks/{webhook}', [WebhookController::class, 'show'])->name('api.v1.webhooks.show');
@@ -239,6 +244,8 @@ Route::prefix('v1')->group(function (): void {
              * than under `money` because the money already moved; this only
              * repeats the sentence describing it.
              */
+            Route::match(['put', 'patch'], 'branding', [BrandingController::class, 'update'])->name('api.v1.branding.update');
+            Route::delete('branding', [BrandingController::class, 'destroy'])->name('api.v1.branding.destroy');
             Route::post('webhooks', [WebhookController::class, 'store'])->name('api.v1.webhooks.store');
             Route::match(['put', 'patch'], 'webhooks/{webhook}', [WebhookController::class, 'update'])->name('api.v1.webhooks.update');
             Route::delete('webhooks/{webhook}', [WebhookController::class, 'destroy'])->name('api.v1.webhooks.destroy');

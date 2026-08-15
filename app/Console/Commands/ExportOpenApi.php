@@ -106,6 +106,9 @@ class ExportOpenApi extends Command
         'loyalty.transactions' => 'The points a customer has earned and spent.',
         'loyalty.redeem' => 'Spend a customer\'s points.',
 
+        'branding.show' => "The business's branding: the choices it made, the palette derived from them, and the values each choice accepts. Paint with the palette rather than the inputs — the derivation is what guarantees the colours stay readable.",
+        'branding.update' => 'Change branding. Send only the keys you mean to change; the rest are left alone. Colours are hex, and anything that cannot meet contrast is derived into something that can.',
+        'branding.destroy' => 'Reset branding to the Opes360 default.',
         'webhooks.index' => 'List registered webhook endpoints. The signing secret is never returned here.',
         'webhooks.store' => 'Register an endpoint. The response carries the signing secret, and it is the only one that ever will.',
         'webhooks.show' => 'One endpoint.',

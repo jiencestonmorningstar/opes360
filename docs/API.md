@@ -1026,7 +1026,77 @@ count, so a subscriber can act on it.
 
 ---
 
-## 20. What is not here yet
+## 20. Branding
+
+A business can re-skin the platform: two seed colours, a background tone, a
+corner radius, a spacing density, and an optional liquid-glass surface
+treatment. The same palette drives the app, the printed documents, the loyalty
+and VIP cards, and the customer-facing pages.
+
+```
+GET    /api/v1/branding      read   business.view
+PUT    /api/v1/branding      write  business.manage-branding
+PATCH  /api/v1/branding      write  business.manage-branding
+DELETE /api/v1/branding      write  business.manage-branding
+```
+
+### Paint with the palette, not the inputs
+
+The response carries both, and the distinction matters:
+
+```json
+{
+  "data": {
+    "inputs":  { "primary": "#1db954", "radius": "rounded", "skin": "solid" },
+    "palette": {
+      "light": { "--color-brand": "#0f7038", "--color-fill-brand": "#0f7038" },
+      "dark":  { "--color-brand": "#3fce6f" },
+      "root":  { "--spacing": "0.25rem", "--radius-card": "1rem" }
+    },
+    "options": { "radius": ["sharp", "soft", "rounded", "pill"] }
+  }
+}
+```
+
+`inputs` is what the owner chose. `palette` is what to render with. They differ
+on purpose.
+
+A brand colour is a signature, not a text colour. Spotify's green scores 2.30
+against this platform's page background — less than half the 4.5:1 the WCAG AA
+standard asks for — which is why Spotify itself puts black text on its green
+button and never sets green type on white. So the seed is kept exactly where it
+is safe, and the roles that carry text are derived from it: same hue, same
+chroma, lightness moved in OKLCH until the contrast target is met.
+
+The near-misses are the reason to take this seriously rather than the obvious
+failures. Stripe's indigo and Shopify's green are both perfectly legal as
+buttons and both illegal as body text here, by 4.18 and 4.39 against a 4.5
+floor. That is a margin nobody detects by eye, and a client that paints with
+`inputs.primary` will ship it.
+
+### Partial updates
+
+Send only what you are changing:
+
+```
+PATCH /api/v1/branding
+{ "radius": "pill" }
+```
+
+The keys you leave out keep their current values. `DELETE` resets everything to
+the Opes360 default — a different statement from setting the colours to nothing.
+
+### What cannot be branded
+
+`positive`, `warning` and `negative` are fixed. A business cannot make "overdue"
+green. Those three mean the same thing in every company on the platform, and a
+bookkeeper working across two of them has to be able to trust that.
+
+Typography is not brandable either, and glass is applied only to menus and bars
+— never to a card showing a figure, because a total's legibility must not depend
+on what happens to be behind it.
+
+## 21. What is not here yet
 
 Every module now has an API. What remains absent is absent by choice, and each
 section above says why in its own place:

@@ -226,6 +226,148 @@
                 ]
             }
         },
+        "/api/v1/branding": {
+            "get": {
+                "operationId": "brandingShow",
+                "summary": "The business's branding: the choices it made, the palette derived from them, and the values each choice accepts. Paint with the palette rather than the inputs — the derivation is what guarantees the colours stay readable.",
+                "tags": [
+                    "Branding"
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Success"
+                    },
+                    "401": {
+                        "description": "No token, or a revoked one"
+                    },
+                    "403": {
+                        "description": "The permission, module switch or token scope says no"
+                    },
+                    "404": {
+                        "description": "Not found, or belongs to another business"
+                    },
+                    "422": {
+                        "description": "Validation failed, or a rule of the domain refused"
+                    },
+                    "429": {
+                        "description": "Rate limited"
+                    }
+                },
+                "description": "Requires the `read` token scope, on top of the permission the same action needs in the app.",
+                "security": [
+                    {
+                        "bearerAuth": [
+                            "read"
+                        ]
+                    }
+                ]
+            },
+            "put": {
+                "operationId": "brandingUpdate",
+                "summary": "Change branding. Send only the keys you mean to change; the rest are left alone. Colours are hex, and anything that cannot meet contrast is derived into something that can.",
+                "tags": [
+                    "Branding"
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Success"
+                    },
+                    "401": {
+                        "description": "No token, or a revoked one"
+                    },
+                    "403": {
+                        "description": "The permission, module switch or token scope says no"
+                    },
+                    "404": {
+                        "description": "Not found, or belongs to another business"
+                    },
+                    "422": {
+                        "description": "Validation failed, or a rule of the domain refused"
+                    },
+                    "429": {
+                        "description": "Rate limited"
+                    }
+                },
+                "description": "Requires the `write` token scope, on top of the permission the same action needs in the app.",
+                "security": [
+                    {
+                        "bearerAuth": [
+                            "write"
+                        ]
+                    }
+                ]
+            },
+            "patch": {
+                "operationId": "brandingUpdate",
+                "summary": "Change branding. Send only the keys you mean to change; the rest are left alone. Colours are hex, and anything that cannot meet contrast is derived into something that can.",
+                "tags": [
+                    "Branding"
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Success"
+                    },
+                    "401": {
+                        "description": "No token, or a revoked one"
+                    },
+                    "403": {
+                        "description": "The permission, module switch or token scope says no"
+                    },
+                    "404": {
+                        "description": "Not found, or belongs to another business"
+                    },
+                    "422": {
+                        "description": "Validation failed, or a rule of the domain refused"
+                    },
+                    "429": {
+                        "description": "Rate limited"
+                    }
+                },
+                "description": "Requires the `write` token scope, on top of the permission the same action needs in the app.",
+                "security": [
+                    {
+                        "bearerAuth": [
+                            "write"
+                        ]
+                    }
+                ]
+            },
+            "delete": {
+                "operationId": "brandingDestroy",
+                "summary": "Reset branding to the Opes360 default.",
+                "tags": [
+                    "Branding"
+                ],
+                "responses": {
+                    "204": {
+                        "description": "Success"
+                    },
+                    "401": {
+                        "description": "No token, or a revoked one"
+                    },
+                    "403": {
+                        "description": "The permission, module switch or token scope says no"
+                    },
+                    "404": {
+                        "description": "Not found, or belongs to another business"
+                    },
+                    "422": {
+                        "description": "Validation failed, or a rule of the domain refused"
+                    },
+                    "429": {
+                        "description": "Rate limited"
+                    }
+                },
+                "description": "Requires the `write` token scope, on top of the permission the same action needs in the app.",
+                "security": [
+                    {
+                        "bearerAuth": [
+                            "write"
+                        ]
+                    }
+                ]
+            }
+        },
         "/api/v1/contacts": {
             "get": {
                 "operationId": "contactsIndex",
