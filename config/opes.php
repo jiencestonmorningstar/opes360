@@ -67,11 +67,10 @@ return [
         ['key' => 'papers', 'label' => 'Documents', 'icon' => 'document', 'route' => 'papers', 'ability' => 'papers.view'],
         ['key' => 'forms', 'label' => 'Forms', 'icon' => 'clipboard', 'route' => 'forms', 'ability' => 'forms.view'],
         ['key' => 'events', 'label' => 'Events', 'icon' => 'ticket', 'route' => 'events', 'ability' => 'events.view'],
-        // The route does not exist yet — VIP screens are a later task. Left
-        // out of the navigation until then rather than added with a
-        // placeholder route, matching how the module ships off by default
-        // (see config/modules.php): nothing points at it until there is
-        // somewhere for it to go.
+        // Only rendered for a business that switched the module on: the
+        // ability is denied outright when it is off (see AuthServiceProvider),
+        // so this never offers a link that answers 403.
+        ['key' => 'vip', 'label' => 'VIP members', 'icon' => 'spark', 'route' => 'vip.members', 'ability' => 'vip.view'],
         // Secretariat only. The ability itself carries that condition (see
         // AuthServiceProvider), so no extra flag is needed here — a plain
         // business simply never renders these two.

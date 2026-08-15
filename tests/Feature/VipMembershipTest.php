@@ -15,6 +15,7 @@ use App\Support\CurrentCompany;
 use Database\Seeders\RolePermissionSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Laravel\Sanctum\Sanctum;
+use Livewire\Livewire;
 use Illuminate\Support\Str;
 use RuntimeException;
 use Tests\TestCase;
@@ -238,5 +239,104 @@ class VipMembershipTest extends TestCase
             'lines' => [['description' => 'Dinner', 'quantity' => 1, 'unit_price' => 100000]],
         ])->assertCreated()
             ->assertJsonPath('data.discount_total', fn ($v) => (float) $v === 0.0);
+    }
+
+    // ── The screens ──────────────────────────────────────────────────────
+
+    public function test_the_members_screen_renders(): void
+    {
+        VipMembership::factory()->create([
+            'company_id' => $this->company->id,
+            'contact_id' => $this->customer->id,
+        ]);
+
+        $this->actingAs($this->owner)
+            ->get(route('vip.members'))
+            ->assertOk()
+            ->assertSee('VIP members')
+            ->assertSee($this->customer->name);
+    }
+
+    public function test_a_membership_can_be_sold_from_the_screen(): void
+    {
+        $tier = VipTier::factory()->create(['company_id' => $this->company->id]);
+
+        Livewire::actingAs($this->owner)
+            ->test(\App\Livewire\Vip\Members::class)
+            ->set('sellTo', $this->customer->id)
+            ->set('sellTier', $tier->id)
+            ->call('sell')
+            ->assertHasNoErrors();
+
+        $this->assertSame(1, VipMembership::count());
+    }
+
+    /** A withdrawn tier must not be sellable, and the reason must be shown. */
+    public function test_selling_a_withdrawn_tier_shows_the_reason(): void
+    {
+        $tier = VipTier::factory()->create([
+            'company_id' => $this->company->id,
+            'is_active' => false,
+        ]);
+
+        Livewire::actingAs($this->owner)
+            ->test(\App\Livewire\Vip\Members::class)
+            ->set('sellTo', $this->customer->id)
+            ->set('sellTier', $tier->id)
+            ->call('sell')
+            ->assertHasErrors('sellTier');
+
+        $this->assertSame(0, VipMembership::count());
+    }
+
+    public function test_a_tier_can_be_added_and_withdrawn(): void
+    {
+        Livewire::actingAs($this->owner)
+            ->test(\App\Livewire\Vip\Tiers::class)
+            ->set('name', 'Platinum')
+            ->set('price', '120000')
+            ->set('periodMonths', '12')
+            ->set('discountPercent', '25')
+            ->call('save')
+            ->assertHasNoErrors();
+
+        $tier = VipTier::where('name', 'Platinum')->firstOrFail();
+        $this->assertTrue((bool) $tier->is_active);
+
+        Livewire::actingAs($this->owner)
+            ->test(\App\Livewire\Vip\Tiers::class)
+            ->call('withdraw', $tier->id);
+
+        $this->assertFalse((bool) $tier->fresh()->is_active);
+    }
+
+    public function test_a_discount_over_a_hundred_percent_is_refused(): void
+    {
+        Livewire::actingAs($this->owner)
+            ->test(\App\Livewire\Vip\Tiers::class)
+            ->set('name', 'Impossible')
+            ->set('price', '1000')
+            ->set('periodMonths', '12')
+            ->set('discountPercent', '150')
+            ->call('save')
+            ->assertHasErrors('discountPercent');
+    }
+
+    public function test_a_cashier_cannot_reach_the_members_screen(): void
+    {
+        $cashier = User::factory()->create();
+        $this->joinCompany($this->company, $cashier, 'cashier');
+        $cashier->forceFill(['current_company_id' => $this->company->id])->save();
+
+        $this->actingAs($cashier)->get(route('vip.members'))->assertForbidden();
+    }
+
+    /** With the module off, the screens close even for the owner. */
+    public function test_the_screens_close_when_the_module_is_off(): void
+    {
+        $this->company->forceFill(['modules' => ['vip' => false]])->save();
+
+        $this->actingAs($this->owner)->get(route('vip.members'))->assertForbidden();
+        $this->actingAs($this->owner)->get(route('vip.tiers'))->assertForbidden();
     }
 }

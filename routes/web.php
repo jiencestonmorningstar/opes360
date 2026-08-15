@@ -29,6 +29,8 @@ use App\Livewire\Customers\Form as CustomerForm;
 use App\Livewire\Customers\Index as CustomersIndex;
 use App\Livewire\Deals\Form as DealForm;
 use App\Livewire\Imports\Index as ImportsIndex;
+use App\Livewire\Vip\Members as VipMembers;
+use App\Livewire\Vip\Tiers as VipTiers;
 use App\Livewire\Deals\Index as DealsIndex;
 use App\Livewire\Customers\Show as CustomerShow;
 use App\Livewire\Dashboard;
@@ -171,6 +173,9 @@ Route::middleware('auth')->group(function () {
     Route::get('/sales', SalesIndex::class)->middleware('can:sales.view')->name('sales');
 
     Route::get('/import', ImportsIndex::class)->name('imports');
+
+    Route::get('/vip', VipMembers::class)->middleware('can:vip.view')->name('vip.members');
+    Route::get('/vip/tiers', VipTiers::class)->middleware('can:vip.view')->name('vip.tiers');
 
     Route::get('/deals', DealsIndex::class)->middleware('can:deals.view')->name('deals');
     Route::get('/deals/create', DealForm::class)->middleware('can:deals.create')->name('deals.create');
