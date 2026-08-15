@@ -38,6 +38,26 @@ return [
             'report' => false,
         ],
 
+        /*
+         * Uploaded documents. Private, and deliberately its own disk.
+         *
+         * Everything the product stored until now went on the `public` disk,
+         * which serves a guessable URL to anybody who asks — fine for a company
+         * logo, not for a signed employment contract or a settlement agreement.
+         * Nothing here is reachable by URL at all; the only way out is through
+         * a controller that checks the policy first.
+         *
+         * Separate from `local` so retention sweeps and backup scoping can
+         * address documents without touching whatever else lives there.
+         */
+        'documents' => [
+            'driver' => 'local',
+            'root' => storage_path('app/documents'),
+            'visibility' => 'private',
+            'throw' => false,
+            'report' => false,
+        ],
+
         'public' => [
             'driver' => 'local',
             'root' => storage_path('app/public'),
