@@ -3211,6 +3211,341 @@
                 }
             }
         },
+        "/api/v1/vip/memberships": {
+            "get": {
+                "operationId": "vipMemberships",
+                "summary": "Memberships sold. Filter with active=1.",
+                "tags": [
+                    "Vip"
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Success"
+                    },
+                    "401": {
+                        "description": "No token, or a revoked one"
+                    },
+                    "403": {
+                        "description": "The permission, module switch or token scope says no"
+                    },
+                    "404": {
+                        "description": "Not found, or belongs to another business"
+                    },
+                    "422": {
+                        "description": "Validation failed, or a rule of the domain refused"
+                    },
+                    "429": {
+                        "description": "Rate limited"
+                    }
+                },
+                "description": "Requires the `read` token scope, on top of the permission the same action needs in the app.",
+                "security": [
+                    {
+                        "bearerAuth": [
+                            "read"
+                        ]
+                    }
+                ]
+            },
+            "post": {
+                "operationId": "vipMembershipsSell",
+                "summary": "Sell a membership. Raises a real invoice for the fee and starts the term.",
+                "tags": [
+                    "Vip"
+                ],
+                "parameters": [
+                    {
+                        "$ref": "#/components/parameters/idempotencyKey"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Success"
+                    },
+                    "401": {
+                        "description": "No token, or a revoked one"
+                    },
+                    "403": {
+                        "description": "The permission, module switch or token scope says no"
+                    },
+                    "404": {
+                        "description": "Not found, or belongs to another business"
+                    },
+                    "422": {
+                        "description": "Validation failed, or a rule of the domain refused"
+                    },
+                    "429": {
+                        "description": "Rate limited"
+                    }
+                },
+                "description": "Requires the `money` token scope, on top of the permission the same action needs in the app.",
+                "security": [
+                    {
+                        "bearerAuth": [
+                            "money"
+                        ]
+                    }
+                ]
+            }
+        },
+        "/api/v1/vip/memberships/{membership}": {
+            "get": {
+                "operationId": "vipMembershipsShow",
+                "summary": "One membership, on the terms it was sold under.",
+                "tags": [
+                    "Vip"
+                ],
+                "parameters": [
+                    {
+                        "name": "membership",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Success"
+                    },
+                    "401": {
+                        "description": "No token, or a revoked one"
+                    },
+                    "403": {
+                        "description": "The permission, module switch or token scope says no"
+                    },
+                    "404": {
+                        "description": "Not found, or belongs to another business"
+                    },
+                    "422": {
+                        "description": "Validation failed, or a rule of the domain refused"
+                    },
+                    "429": {
+                        "description": "Rate limited"
+                    }
+                },
+                "description": "Requires the `read` token scope, on top of the permission the same action needs in the app.",
+                "security": [
+                    {
+                        "bearerAuth": [
+                            "read"
+                        ]
+                    }
+                ]
+            }
+        },
+        "/api/v1/vip/memberships/{membership}/cancel": {
+            "post": {
+                "operationId": "vipMembershipsCancel",
+                "summary": "Cancel a membership, with a reason. The record is kept.",
+                "tags": [
+                    "Vip"
+                ],
+                "parameters": [
+                    {
+                        "name": "membership",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Success"
+                    },
+                    "401": {
+                        "description": "No token, or a revoked one"
+                    },
+                    "403": {
+                        "description": "The permission, module switch or token scope says no"
+                    },
+                    "404": {
+                        "description": "Not found, or belongs to another business"
+                    },
+                    "422": {
+                        "description": "Validation failed, or a rule of the domain refused"
+                    },
+                    "429": {
+                        "description": "Rate limited"
+                    }
+                },
+                "description": "Requires the `write` token scope, on top of the permission the same action needs in the app.",
+                "security": [
+                    {
+                        "bearerAuth": [
+                            "write"
+                        ]
+                    }
+                ]
+            }
+        },
+        "/api/v1/vip/tiers": {
+            "get": {
+                "operationId": "vipTiers",
+                "summary": "The membership tiers this business offers.",
+                "tags": [
+                    "Vip"
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Success"
+                    },
+                    "401": {
+                        "description": "No token, or a revoked one"
+                    },
+                    "403": {
+                        "description": "The permission, module switch or token scope says no"
+                    },
+                    "404": {
+                        "description": "Not found, or belongs to another business"
+                    },
+                    "422": {
+                        "description": "Validation failed, or a rule of the domain refused"
+                    },
+                    "429": {
+                        "description": "Rate limited"
+                    }
+                },
+                "description": "Requires the `read` token scope, on top of the permission the same action needs in the app.",
+                "security": [
+                    {
+                        "bearerAuth": [
+                            "read"
+                        ]
+                    }
+                ]
+            },
+            "post": {
+                "operationId": "vipTiersStore",
+                "summary": "Add a tier.",
+                "tags": [
+                    "Vip"
+                ],
+                "responses": {
+                    "201": {
+                        "description": "Success"
+                    },
+                    "401": {
+                        "description": "No token, or a revoked one"
+                    },
+                    "403": {
+                        "description": "The permission, module switch or token scope says no"
+                    },
+                    "404": {
+                        "description": "Not found, or belongs to another business"
+                    },
+                    "422": {
+                        "description": "Validation failed, or a rule of the domain refused"
+                    },
+                    "429": {
+                        "description": "Rate limited"
+                    }
+                },
+                "description": "Requires the `write` token scope, on top of the permission the same action needs in the app.",
+                "security": [
+                    {
+                        "bearerAuth": [
+                            "write"
+                        ]
+                    }
+                ]
+            }
+        },
+        "/api/v1/vip/tiers/{tier}": {
+            "put": {
+                "operationId": "vipTiersUpdate",
+                "summary": "Change a tier. Affects future sales only — members keep the terms they bought.",
+                "tags": [
+                    "Vip"
+                ],
+                "parameters": [
+                    {
+                        "name": "tier",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Success"
+                    },
+                    "401": {
+                        "description": "No token, or a revoked one"
+                    },
+                    "403": {
+                        "description": "The permission, module switch or token scope says no"
+                    },
+                    "404": {
+                        "description": "Not found, or belongs to another business"
+                    },
+                    "422": {
+                        "description": "Validation failed, or a rule of the domain refused"
+                    },
+                    "429": {
+                        "description": "Rate limited"
+                    }
+                },
+                "description": "Requires the `write` token scope, on top of the permission the same action needs in the app.",
+                "security": [
+                    {
+                        "bearerAuth": [
+                            "write"
+                        ]
+                    }
+                ]
+            },
+            "patch": {
+                "operationId": "vipTiersUpdate",
+                "summary": "Change a tier. Affects future sales only — members keep the terms they bought.",
+                "tags": [
+                    "Vip"
+                ],
+                "parameters": [
+                    {
+                        "name": "tier",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Success"
+                    },
+                    "401": {
+                        "description": "No token, or a revoked one"
+                    },
+                    "403": {
+                        "description": "The permission, module switch or token scope says no"
+                    },
+                    "404": {
+                        "description": "Not found, or belongs to another business"
+                    },
+                    "422": {
+                        "description": "Validation failed, or a rule of the domain refused"
+                    },
+                    "429": {
+                        "description": "Rate limited"
+                    }
+                },
+                "description": "Requires the `write` token scope, on top of the permission the same action needs in the app.",
+                "security": [
+                    {
+                        "bearerAuth": [
+                            "write"
+                        ]
+                    }
+                ]
+            }
+        },
         "/api/v1/webhooks": {
             "get": {
                 "operationId": "webhooksIndex",

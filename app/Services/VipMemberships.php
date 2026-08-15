@@ -10,11 +10,13 @@ use App\Models\Document;
 use App\Models\DocumentLine;
 use App\Models\User;
 use App\Models\VipMembership;
+use App\Models\VerificationToken;
 use App\Models\VipTier;
 use App\Support\CurrentCompany;
 use App\Support\Vat;
 use App\Support\WebhookEvents;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Str;
 use RuntimeException;
 
 /**
@@ -83,6 +85,8 @@ class VipMemberships
                 'document_id' => $document->id,
                 'created_by' => $actor->id,
             ]);
+
+            $this->issueCard($membership);
 
             $this->webhooks->send(WebhookEvents::VIP_SOLD, $this->payload($membership), $company);
 
@@ -161,6 +165,38 @@ class VipMemberships
         }
 
         return $lapsed->count();
+    }
+
+    /**
+     * A card number, and the token its QR resolves to.
+     *
+     * The same shape as the loyalty card rather than a second scheme: a prefix
+     * so a number read down a phone line is recognisable as what it is, and a
+     * verification token so somebody holding a printed card can check it
+     * against the business without an account. A member showing a card at the
+     * door is the case this exists for, and the person on the door has no way
+     * to look them up otherwise.
+     */
+    protected function issueCard(VipMembership $membership): void
+    {
+        $token = VerificationToken::create([
+            'company_id' => $membership->company_id,
+            'token' => VerificationToken::newToken(),
+            'subject_type' => VipMembership::class,
+            'subject_id' => $membership->id,
+        ]);
+
+        do {
+            $number = 'VIP-'.Str::upper(Str::random(8));
+        } while (VipMembership::withoutGlobalScopes()
+            ->where('company_id', $membership->company_id)
+            ->where('card_number', $number)
+            ->exists());
+
+        $membership->forceFill([
+            'card_number' => $number,
+            'verification_token_id' => $token->id,
+        ])->save();
     }
 
     /**

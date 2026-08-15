@@ -176,6 +176,8 @@ Route::middleware('auth')->group(function () {
 
     Route::get('/vip', VipMembers::class)->middleware('can:vip.view')->name('vip.members');
     Route::get('/vip/tiers', VipTiers::class)->middleware('can:vip.view')->name('vip.tiers');
+    Route::get('/vip/{membership}/card', [PrintController::class, 'vipCard'])
+        ->middleware('can:vip.view')->name('vip.card.print');
 
     Route::get('/deals', DealsIndex::class)->middleware('can:deals.view')->name('deals');
     Route::get('/deals/create', DealForm::class)->middleware('can:deals.create')->name('deals.create');

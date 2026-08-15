@@ -490,4 +490,62 @@ class VipMembershipTest extends TestCase
             WebhookDelivery::query()->where('event', WebhookEvents::VIP_SOLD)->count()
         );
     }
+
+    // ── The card ─────────────────────────────────────────────────────────
+
+    public function test_a_sold_membership_gets_a_verifiable_card(): void
+    {
+        $tier = VipTier::factory()->create(['company_id' => $this->company->id]);
+
+        $membership = $this->service()->sell($this->customer, $tier, $this->owner);
+
+        $this->assertStringStartsWith('VIP-', $membership->card_number);
+        $this->assertNotNull($membership->verification_token_id);
+
+        // The token points back at the membership, so scanning the card
+        // resolves to this member and not merely to the business.
+        $token = $membership->verificationToken;
+        $this->assertSame(VipMembership::class, $token->subject_type);
+        $this->assertSame($membership->id, $token->subject_id);
+    }
+
+    public function test_the_card_prints_with_what_the_door_needs(): void
+    {
+        $tier = VipTier::factory()->create(['company_id' => $this->company->id]);
+        $membership = $this->service()->sell($this->customer, $tier, $this->owner);
+
+        $this->actingAs($this->owner)
+            ->get(route('vip.card.print', $membership))
+            ->assertOk()
+            ->assertSee($this->customer->name)
+            ->assertSee('Gold')
+            ->assertSee($membership->card_number)
+            ->assertSee($membership->ends_on->format('j M Y'));
+    }
+
+    /** Two members of one business must never share a card number. */
+    public function test_card_numbers_do_not_collide(): void
+    {
+        $tier = VipTier::factory()->create(['company_id' => $this->company->id]);
+        $second = Contact::create(['type' => 'customer', 'name' => 'Marie Ngo']);
+
+        $a = $this->service()->sell($this->customer, $tier, $this->owner);
+        $b = $this->service()->sell($second, $tier, $this->owner);
+
+        $this->assertNotSame($a->card_number, $b->card_number);
+    }
+
+    public function test_a_cashier_cannot_print_a_card(): void
+    {
+        $tier = VipTier::factory()->create(['company_id' => $this->company->id]);
+        $membership = $this->service()->sell($this->customer, $tier, $this->owner);
+
+        $cashier = User::factory()->create();
+        $this->joinCompany($this->company, $cashier, 'cashier');
+        $cashier->forceFill(['current_company_id' => $this->company->id])->save();
+
+        $this->actingAs($cashier)
+            ->get(route('vip.card.print', $membership))
+            ->assertForbidden();
+    }
 }

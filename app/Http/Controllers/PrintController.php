@@ -13,6 +13,7 @@ use App\Models\Payment;
 use App\Models\Payslip;
 use App\Models\Receipt;
 use App\Models\VerificationToken;
+use App\Models\VipMembership;
 use App\Services\DocumentComposer;
 use App\Services\LogoComposer;
 use App\Services\LoyaltyLedger;
@@ -166,6 +167,30 @@ class PrintController extends Controller
             'company' => $company,
             'contact' => $contact,
             'qrSvg' => $qr->svg($contact->loyaltyVerificationToken->publicUrl(), 110),
+        ]);
+    }
+
+    /**
+     * A member's card.
+     *
+     * The QR resolves to the same public verification page every other printed
+     * artefact uses, so somebody on the door can check a card against the
+     * business without an account and without ringing the office.
+     */
+    public function vipCard(VipMembership $membership, QrCodes $qr)
+    {
+        $company = app(CurrentCompany::class)->get();
+        abort_if($company === null, 404);
+
+        $membership->loadMissing('contact', 'verificationToken');
+
+        return view('print.vip-card', [
+            'company' => $company,
+            'membership' => $membership,
+            // Older memberships predate card issuing, so this is not assumed.
+            'qrSvg' => $membership->verificationToken
+                ? $qr->svg($membership->verificationToken->publicUrl(), 110)
+                : null,
         ]);
     }
 

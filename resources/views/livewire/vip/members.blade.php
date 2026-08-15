@@ -131,6 +131,11 @@
                         <span class="rounded-full bg-surface-2 px-2.5 py-1 text-[11.5px] font-semibold text-muted">Lapsed</span>
                     @endif
 
+                    {{-- Opened in a new tab: the card is a print sheet, and
+                         losing the list to it is a back-button every time. --}}
+                    <a href="{{ route('vip.card.print', $membership) }}" target="_blank" rel="noopener"
+                       class="focusable text-[13px] font-semibold text-brand hover:underline">Card</a>
+
                     @can('vip.manage')
                         @if ($membership->status !== VipMembership::CANCELLED)
                             <button type="button" wire:click="cancel('{{ $membership->id }}')"

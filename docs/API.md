@@ -36,7 +36,7 @@ A token may be **narrower** than the person who created it, never wider:
 |---|---|
 | `read` | Lists and single records, across the business |
 | `write` | Add and change customers, products, deals and documents |
-| `money` | Record payments, enter and settle expenses, sell a ticket |
+| `money` | Record payments, enter and settle expenses, sell a ticket or a membership |
 | `people` | Read the staff file and payroll |
 
 They do not imply each other. A reporting token asking for `read` does not
@@ -944,7 +944,89 @@ else's commission.
 
 ---
 
-## 19. What is not here yet
+## 19. VIP membership
+
+`GET /api/v1/vip/tiers` · `POST` · `PATCH /api/v1/vip/tiers/{id}`
+`GET /api/v1/vip/memberships` · `GET /api/v1/vip/memberships/{id}` ·
+`POST /api/v1/vip/memberships` · `POST /api/v1/vip/memberships/{id}/cancel`
+
+A customer buys a **tier** for a term, and every invoice raised for them while
+it runs carries an automatic discount.
+
+**This module ships switched off.** Every other module defaults on so a business
+discovers what it needs, but VIP is meaningless until somebody configures a
+tier and most businesses have no membership programme. Switch it on in
+Settings → Modules; until then every route here answers `403`.
+
+### Tiers
+
+```json
+{ "name": "Gold", "price": 50000, "period_months": 12, "discount_percent": 15 }
+```
+
+`perks` is free text. It is honoured by staff at the counter and **not enforced
+by the system** — do not build logic on it.
+
+**Editing a tier changes what future sales get, never what a member already
+bought.** A membership carries its own copy of the name, discount and price, so
+raising Gold's rate next year does not rewrite what somebody was sold today.
+That is why `vip.memberships` reports the membership's terms rather than
+reading through to the tier.
+
+Tiers are withdrawn (`is_active: false`) rather than deleted, so the answer to
+"what was Gold, back then" survives.
+
+### Selling
+
+```json
+POST /api/v1/vip/memberships
+{ "contact_id": "01j…", "tier_id": "01j…" }
+```
+
+Selling **raises a real invoice** for the fee through the ordinary sales path,
+so the money reaches the ledger, gets a number and a verification QR, and moves
+the customer's balance like anything else the business sells. The response
+carries `document_id` so you can follow it.
+
+Because it takes money it sits under the `money` scope and accepts an
+`Idempotency-Key`: a retry after a dropped connection must not sell and charge
+for two memberships.
+
+**Buying while already a member extends the term rather than restarting it** —
+the new term begins the day after the current one ends, so nobody loses days
+they have paid for.
+
+The tier's own discount does **not** apply to the membership fee. What a tier
+grants is a discount on what the member buys afterwards.
+
+### The discount reaching an invoice
+
+Nothing extra is needed. `POST /api/v1/documents` applies an active member's
+rate automatically and returns it as `discount_total`.
+
+The tier proposes and the caller decides: send `discount_percent` to override
+it, or `0` to remove it. **TVA is computed on the discounted base** — see §4.
+
+`is_active` and the discount are decided by the **dates**, not by the `status`
+column. A membership that lapsed last night gives no discount this morning even
+though the nightly sweep has not run yet.
+
+### Cancelling
+
+`reason` is required. Cancelling stops the benefit and keeps the record, and
+sits under `write` rather than `money` because it stops a benefit rather than
+moving money. Refunding the fee, where one is owed, is a separate act through
+`POST /api/v1/payments/{id}/refund`.
+
+### Events
+
+`vip.membership.sold`, `vip.membership.cancelled`, `vip.membership.expired`.
+The `expired` event names the membership that lapsed rather than reporting a
+count, so a subscriber can act on it.
+
+---
+
+## 20. What is not here yet
 
 Every module now has an API. What remains absent is absent by choice, and each
 section above says why in its own place:
@@ -953,6 +1035,8 @@ section above says why in its own place:
   nothing else produces.
 - Awarding or adjusting loyalty points by hand. Earning already happens as a
   side effect of a payment.
+- Refunding a VIP membership fee as its own act. It is an ordinary payment
+  refund, because that is what it is.
 - Deleting an issued ticket. Voiding keeps the serial, and a vanished serial
   makes an honest buyer indistinguishable from a forged one.
 - Posting to the ledger by hand. Every entry is the consequence of a business

@@ -123,6 +123,14 @@ class ExportOpenApi extends Command
         'partners.payouts' => 'Payouts requested and settled.',
         'partners.payouts.request' => 'Ask for the balance to be paid out. The amount is not a parameter.',
 
+        'vip.tiers' => 'The membership tiers this business offers.',
+        'vip.tiers.store' => 'Add a tier.',
+        'vip.tiers.update' => 'Change a tier. Affects future sales only — members keep the terms they bought.',
+        'vip.memberships' => 'Memberships sold. Filter with active=1.',
+        'vip.memberships.show' => 'One membership, on the terms it was sold under.',
+        'vip.memberships.sell' => 'Sell a membership. Raises a real invoice for the fee and starts the term.',
+        'vip.memberships.cancel' => 'Cancel a membership, with a reason. The record is kept.',
+
         'imports.preview' => 'Read a CSV or Excel file and report what would happen. Writes nothing.',
         'imports.store' => 'Import the rows a preview showed.',
     ];
@@ -134,6 +142,7 @@ class ExportOpenApi extends Command
         'documents.convert', 'documents.credit-note',
         'events.tickets.store', 'loyalty.redeem', 'payments.refund',
         'partners.payouts.request',
+        'vip.memberships.sell',
     ];
 
     public function handle(): int

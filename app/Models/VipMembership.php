@@ -53,6 +53,11 @@ class VipMembership extends Model
         return $this->belongsTo(VipTier::class, 'vip_tier_id');
     }
 
+    public function verificationToken(): BelongsTo
+    {
+        return $this->belongsTo(VerificationToken::class);
+    }
+
     public function document(): BelongsTo
     {
         return $this->belongsTo(Document::class);
