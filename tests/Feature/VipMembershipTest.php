@@ -14,6 +14,7 @@ use App\Support\Accounting\ChartOfAccounts;
 use App\Support\CurrentCompany;
 use Database\Seeders\RolePermissionSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Laravel\Sanctum\Sanctum;
 use Illuminate\Support\Str;
 use RuntimeException;
 use Tests\TestCase;
@@ -164,5 +165,78 @@ class VipMembershipTest extends TestCase
         $this->expectException(RuntimeException::class);
 
         $this->service()->sell($this->customer, $tier, $this->owner);
+    }
+
+    // ── The discount reaching an invoice ─────────────────────────────────
+
+    public function test_an_invoice_for_a_member_carries_the_tier_discount(): void
+    {
+        VipMembership::factory()->create([
+            'company_id' => $this->company->id,
+            'contact_id' => $this->customer->id,
+        ]);
+
+        Sanctum::actingAs($this->owner, ['*']);
+
+        $this->postJson('/api/v1/documents', [
+            'type' => 'invoice',
+            'contact_id' => $this->customer->id,
+            'lines' => [['description' => 'Dinner', 'quantity' => 1, 'unit_price' => 100000]],
+        ])->assertCreated()
+            ->assertJsonPath('data.subtotal', fn ($v) => (float) $v === 100000.0)
+            ->assertJsonPath('data.discount_total', fn ($v) => (float) $v === 15000.0);
+    }
+
+    public function test_an_invoice_for_a_non_member_carries_no_discount(): void
+    {
+        Sanctum::actingAs($this->owner, ['*']);
+
+        $this->postJson('/api/v1/documents', [
+            'type' => 'invoice',
+            'contact_id' => $this->customer->id,
+            'lines' => [['description' => 'Dinner', 'quantity' => 1, 'unit_price' => 100000]],
+        ])->assertCreated()
+            ->assertJsonPath('data.discount_total', fn ($v) => (float) $v === 0.0);
+    }
+
+    /** The tier proposes; whoever raises the invoice decides. */
+    public function test_an_explicit_discount_overrides_the_tier(): void
+    {
+        VipMembership::factory()->create([
+            'company_id' => $this->company->id,
+            'contact_id' => $this->customer->id,
+        ]);
+
+        Sanctum::actingAs($this->owner, ['*']);
+
+        $this->postJson('/api/v1/documents', [
+            'type' => 'invoice',
+            'contact_id' => $this->customer->id,
+            'discount_percent' => 0,
+            'lines' => [['description' => 'Dinner', 'quantity' => 1, 'unit_price' => 100000]],
+        ])->assertCreated()
+            ->assertJsonPath('data.discount_total', fn ($v) => (float) $v === 0.0);
+    }
+
+    /**
+     * A lapsed member is charged the full price. The nightly sweep may not have
+     * run, so this is the case that proves the dates decide rather than the
+     * status column.
+     */
+    public function test_a_lapsed_member_is_charged_in_full(): void
+    {
+        VipMembership::factory()->expired()->create([
+            'company_id' => $this->company->id,
+            'contact_id' => $this->customer->id,
+        ]);
+
+        Sanctum::actingAs($this->owner, ['*']);
+
+        $this->postJson('/api/v1/documents', [
+            'type' => 'invoice',
+            'contact_id' => $this->customer->id,
+            'lines' => [['description' => 'Dinner', 'quantity' => 1, 'unit_price' => 100000]],
+        ])->assertCreated()
+            ->assertJsonPath('data.discount_total', fn ($v) => (float) $v === 0.0);
     }
 }

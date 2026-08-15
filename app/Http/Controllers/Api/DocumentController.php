@@ -10,6 +10,7 @@ use App\Models\Document;
 use App\Models\DocumentLine;
 use App\Services\DocumentConverter;
 use App\Services\DocumentIssuer;
+use App\Services\VipMemberships;
 use App\Support\CurrentCompany;
 use App\Support\Vat;
 use Illuminate\Database\Eloquent\Builder;
@@ -90,12 +91,29 @@ class DocumentController extends ApiController
             // Issuing on creation is offered because a till has no use for a
             // draft it must then issue in a second call.
             'issue' => ['sometimes', 'boolean'],
+            'discount_percent' => ['sometimes', 'numeric', 'min:0', 'max:100'],
         ]);
 
         $contact = Contact::findOrFail($data['contact_id']);
         $company = app(CurrentCompany::class)->get();
 
-        $vat = Vat::forCompany($company, $data['lines']);
+        /*
+         * A VIP member's tier proposes a discount; the caller decides.
+         *
+         * Sending `discount_percent` overrides it, and sending zero removes it
+         * — the tier never applies itself silently over the judgement of
+         * whoever is raising the invoice. Absent a membership the rate is zero,
+         * so nothing changes for a business that does not run the programme.
+         *
+         * The figure is written onto the document rather than recomputed when
+         * it is rendered, so a reprint years later shows what was actually
+         * charged, and the content hash its QR verifies against covers it.
+         */
+        $discountPercent = array_key_exists('discount_percent', $data)
+            ? (float) $data['discount_percent']
+            : app(VipMemberships::class)->discountFor($contact);
+
+        $vat = Vat::forCompany($company, $data['lines'], $discountPercent);
 
         $document = DB::transaction(function () use ($data, $contact, $company, $vat) {
             $document = Document::create([
@@ -106,6 +124,7 @@ class DocumentController extends ApiController
                 'due_date' => $data['due_date'] ?? null,
                 'currency' => $company->currency,
                 'subtotal' => $vat['subtotal'],
+                'discount_total' => $vat['discount_total'],
                 'tax_total' => $vat['tax_total'],
                 'total' => $vat['total'],
                 'amount_paid' => 0,
