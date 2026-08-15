@@ -1,0 +1,168 @@
+<?php
+
+namespace Tests\Feature;
+
+use App\Enums\DocumentStatus;
+use App\Models\Company;
+use App\Models\Contact;
+use App\Models\Role;
+use App\Models\User;
+use App\Models\VipMembership;
+use App\Models\VipTier;
+use App\Services\VipMemberships;
+use App\Support\Accounting\ChartOfAccounts;
+use App\Support\CurrentCompany;
+use Database\Seeders\RolePermissionSeeder;
+use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Str;
+use RuntimeException;
+use Tests\TestCase;
+
+/**
+ * Selling a VIP tier, and what that sale is worth on the books and on the
+ * invoices that follow it.
+ */
+class VipMembershipTest extends TestCase
+{
+    use RefreshDatabase;
+
+    protected User $owner;
+
+    protected Company $company;
+
+    protected Contact $customer;
+
+    protected function setUp(): void
+    {
+        parent::setUp();
+
+        $this->seed(RolePermissionSeeder::class);
+
+        $this->owner = User::factory()->create();
+        $this->company = Company::create([
+            'slug' => 'acme-'.Str::lower(Str::random(4)),
+            'name' => 'Acme Sarl',
+            'owner_id' => $this->owner->id,
+            'currency' => 'XAF',
+            'plan' => 'business',
+            'account_type' => 'active',
+        ]);
+
+        $this->joinCompany($this->company, $this->owner, Role::OWNER);
+        $this->owner->forceFill(['current_company_id' => $this->company->id])->save();
+        app(CurrentCompany::class)->set($this->company);
+
+        ChartOfAccounts::seed($this->company);
+
+        $this->company->forceFill(['modules' => ['vip' => true]])->save();
+
+        $this->customer = Contact::create(['name' => 'Un Client', 'balance' => 0]);
+    }
+
+    protected function service(): VipMemberships
+    {
+        return app(VipMemberships::class);
+    }
+
+    public function test_selling_a_membership_raises_an_invoice_and_starts_the_term(): void
+    {
+        $tier = VipTier::factory()->create();
+
+        $membership = $this->service()->sell($this->customer, $tier, $this->owner);
+
+        $this->assertSame(VipMembership::ACTIVE, $membership->status);
+        $this->assertSame('Gold', $membership->tier_name);
+        $this->assertEquals(15, $membership->discount_percent);
+        $this->assertNotNull($membership->document_id);
+        $this->assertTrue($membership->ends_on->isSameDay(now()->addYear()->subDay()));
+
+        $document = $membership->document;
+        $this->assertSame(DocumentStatus::Issued, $document->status);
+        $this->assertNotNull($document->number);
+    }
+
+    public function test_changing_a_tier_does_not_change_an_existing_membership(): void
+    {
+        $tier = VipTier::factory()->create();
+
+        $membership = $this->service()->sell($this->customer, $tier, $this->owner);
+
+        $tier->update(['discount_percent' => 40, 'price' => 999999]);
+
+        $membership->refresh();
+        $this->assertEquals(15, $membership->discount_percent);
+        $this->assertEquals(50000, $membership->price_paid);
+    }
+
+    public function test_buying_while_active_extends_from_the_current_end_date(): void
+    {
+        $tier = VipTier::factory()->create();
+
+        $first = $this->service()->sell($this->customer, $tier, $this->owner);
+        $second = $this->service()->sell($this->customer, $tier, $this->owner);
+
+        $this->assertTrue($second->starts_on->isSameDay($first->ends_on->copy()->addDay()));
+
+        $first->refresh();
+        $this->assertSame(VipMembership::EXPIRED, $first->status);
+    }
+
+    public function test_an_expired_membership_gives_no_discount(): void
+    {
+        $membership = VipMembership::factory()->expired()->create([
+            'company_id' => $this->company->id,
+            'contact_id' => $this->customer->id,
+        ]);
+
+        $this->assertEquals(0.0, $membership->effectiveDiscount());
+        $this->assertEquals(0.0, $this->service()->discountFor($this->customer));
+    }
+
+    public function test_the_active_membership_supplies_the_discount(): void
+    {
+        VipMembership::factory()->create([
+            'company_id' => $this->company->id,
+            'contact_id' => $this->customer->id,
+        ]);
+
+        $this->assertEquals(15.0, $this->service()->discountFor($this->customer));
+    }
+
+    public function test_cancelling_stops_the_benefit_and_keeps_the_record(): void
+    {
+        $membership = VipMembership::factory()->create([
+            'company_id' => $this->company->id,
+            'contact_id' => $this->customer->id,
+        ]);
+
+        $this->service()->cancel($membership, 'Customer requested a refund', $this->owner);
+
+        $membership->refresh();
+        $this->assertSame(VipMembership::CANCELLED, $membership->status);
+        $this->assertSame('Customer requested a refund', $membership->cancelled_reason);
+        $this->assertEquals(0.0, $this->service()->discountFor($this->customer));
+        $this->assertDatabaseHas('vip_memberships', ['id' => $membership->id]);
+    }
+
+    public function test_the_expiry_sweep_marks_lapsed_memberships(): void
+    {
+        $membership = VipMembership::factory()->expired()->create([
+            'company_id' => $this->company->id,
+            'contact_id' => $this->customer->id,
+        ]);
+
+        $count = $this->service()->expireLapsed();
+
+        $this->assertSame(1, $count);
+        $this->assertSame(VipMembership::EXPIRED, $membership->fresh()->status);
+    }
+
+    public function test_an_inactive_tier_cannot_be_sold(): void
+    {
+        $tier = VipTier::factory()->create(['is_active' => false]);
+
+        $this->expectException(RuntimeException::class);
+
+        $this->service()->sell($this->customer, $tier, $this->owner);
+    }
+}
