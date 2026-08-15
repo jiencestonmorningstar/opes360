@@ -47,6 +47,7 @@ class Company extends Model
             'socials' => 'array',
             'operating_hours' => 'array',
             'brand_tokens' => 'array',
+            'branding' => 'array',
             'payroll_settings' => 'array',
             'modules' => 'array',
             'latitude' => 'decimal:7',
@@ -240,11 +241,58 @@ class Company extends Model
 
     /**
      * Brand token with a fallback, e.g. brandToken('primary', '#2563eb').
-     * Phase 2 populates these; until then templates get the defaults.
+     *
+     * Resolution order, and the order matters:
+     *
+     *  1. An explicit `brand_tokens` entry. A business that pinned a specific
+     *     colour for its printed stationery keeps it, whatever it later does
+     *     on the branding screen.
+     *  2. The derived palette. This is what makes the loyalty and VIP cards,
+     *     and every other surface reading a brand token, pick up a company's
+     *     branding without any of those views being edited.
+     *  3. The caller's default.
      */
     public function brandToken(string $key, mixed $default = null): mixed
     {
-        return data_get($this->brand_tokens, $key, $default);
+        $explicit = data_get($this->brand_tokens, $key);
+
+        if ($explicit !== null && $explicit !== '') {
+            return $explicit;
+        }
+
+        // Guarded rather than a null coalesce into data_get: data_get($array,
+        // null) hands back the whole array, so an unrecognised token would
+        // return the entire palette instead of the caller's fallback.
+        if (! array_key_exists($key, self::PALETTE_ALIASES)) {
+            return $default;
+        }
+
+        return $this->palette()['light'][self::PALETTE_ALIASES[$key]] ?? $default;
+    }
+
+    /**
+     * Names the printed templates ask for, mapped onto palette tokens. Kept
+     * small on purpose — print asks for a handful of colours, not the whole
+     * design system.
+     */
+    protected const PALETTE_ALIASES = [
+        'primary' => '--color-fill-brand',
+        'secondary' => '--color-fill-secondary',
+        'ink' => '--color-ink',
+        'muted' => '--color-muted',
+        'accent' => '--color-fill-secondary',
+    ];
+
+    /** The derived token map for this company. Cached by BrandPalette. */
+    public function palette(): array
+    {
+        return \App\Support\BrandPalette::for($this);
+    }
+
+    /** The owner's branding inputs, with platform defaults merged underneath. */
+    public function brandingInputs(): array
+    {
+        return \App\Support\BrandPalette::inputsFor($this);
     }
 
     /**

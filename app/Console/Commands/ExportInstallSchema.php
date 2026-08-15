@@ -5,6 +5,7 @@ namespace App\Console\Commands;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\Config;
 use Illuminate\Support\Facades\DB;
+use Symfony\Component\Process\ExecutableFinder;
 use Symfony\Component\Process\Process;
 
 /**
@@ -93,14 +94,23 @@ class ExportInstallSchema extends Command
         return self::SUCCESS;
     }
 
+    /**
+     * Locate the dump binary.
+     *
+     * ExecutableFinder rather than shelling out to `which`: on Windows `which`
+     * is only present under Git Bash and answers with a POSIX path
+     * (/c/laragon/...) that Process then cannot execute, so the export failed
+     * with "The system cannot find the path specified" even when the binary was
+     * on PATH. The finder knows about PATHEXT and returns a path the platform
+     * can actually run.
+     */
     protected function dumpBinary(): string
     {
-        foreach (['mariadb-dump', 'mysqldump'] as $binary) {
-            $which = new Process(['which', $binary]);
-            $which->run();
+        $finder = new ExecutableFinder;
 
-            if ($which->isSuccessful()) {
-                return trim($which->getOutput());
+        foreach (['mariadb-dump', 'mysqldump'] as $binary) {
+            if ($found = $finder->find($binary)) {
+                return $found;
             }
         }
 
