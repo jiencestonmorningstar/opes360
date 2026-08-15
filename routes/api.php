@@ -16,6 +16,7 @@ use App\Http\Controllers\Api\PaymentController;
 use App\Http\Controllers\Api\PayrollController;
 use App\Http\Controllers\Api\TicketController;
 use App\Http\Controllers\Api\TokenController;
+use App\Http\Controllers\Api\VipController;
 use App\Http\Controllers\Api\WebhookController;
 use Illuminate\Support\Facades\Route;
 
@@ -118,6 +119,15 @@ Route::prefix('v1')->group(function (): void {
             Route::get('loyalty/contacts/{contact}/transactions', [LoyaltyController::class, 'transactions'])->name('api.v1.loyalty.transactions');
 
             /*
+             * VIP. Reading a tier is reading a price list; reading a
+             * membership is reading somebody's record, so that goes through
+             * the policy and another company's answers 404.
+             */
+            Route::get('vip/tiers', [VipController::class, 'tiers'])->name('api.v1.vip.tiers');
+            Route::get('vip/memberships', [VipController::class, 'memberships'])->name('api.v1.vip.memberships');
+            Route::get('vip/memberships/{membership}', [VipController::class, 'showMembership'])->name('api.v1.vip.memberships.show');
+
+            /*
              * The secretariat programme. Every route here is denied outright
              * to a company that is not a secretariat — the programme is a
              * property of the account rather than of the person, so an Owner
@@ -160,6 +170,13 @@ Route::prefix('v1')->group(function (): void {
 
         // ── Ordinary writes ──────────────────────────────────────────────
         Route::middleware('ability:write')->group(function (): void {
+            // Editing a tier changes what future sales get, never what a
+            // member was already sold. Cancelling stops a benefit rather than
+            // moving money, so it belongs here and not under `money`.
+            Route::post('vip/tiers', [VipController::class, 'storeTier'])->name('api.v1.vip.tiers.store');
+            Route::match(['put', 'patch'], 'vip/tiers/{tier}', [VipController::class, 'updateTier'])->name('api.v1.vip.tiers.update');
+            Route::post('vip/memberships/{membership}/cancel', [VipController::class, 'cancel'])->name('api.v1.vip.memberships.cancel');
+
             // A name in a client book is ordinary work. Asking to be paid what
             // that book earned is not, and lives under `money` below.
             Route::post('partners/clients', [PartnerController::class, 'storeClient'])->name('api.v1.partners.clients.store');
@@ -256,6 +273,10 @@ Route::prefix('v1')->group(function (): void {
          * Idempotency-Key it can simply send the same request again.
          */
         Route::middleware(['ability:money', 'idempotent'])->group(function (): void {
+            // Selling raises an invoice for the fee, so a retry after a
+            // dropped connection must not sell and charge twice.
+            Route::post('vip/memberships', [VipController::class, 'sell'])->name('api.v1.vip.memberships.sell');
+
             /*
              * A payout empties the partner's balance, so a retry that created
              * a second request would ask to be paid twice for the same

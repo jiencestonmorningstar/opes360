@@ -36,6 +36,12 @@ class WebhookEvents
 
     public const CONTACT_CREATED = 'contact.created';
 
+    public const VIP_SOLD = 'vip.membership.sold';
+
+    public const VIP_CANCELLED = 'vip.membership.cancelled';
+
+    public const VIP_EXPIRED = 'vip.membership.expired';
+
     /**
      * event => what a person setting this up should understand it to mean.
      *
@@ -52,6 +58,9 @@ class WebhookEvents
         self::EXPENSE_RECORDED => 'A supplier bill or an expense was entered.',
         self::DEAL_WON => 'A deal in the pipeline was moved to won.',
         self::CONTACT_CREATED => 'A customer or supplier was added.',
+        self::VIP_SOLD => 'A customer bought a VIP membership.',
+        self::VIP_CANCELLED => 'A VIP membership was cancelled before its end date.',
+        self::VIP_EXPIRED => 'A VIP membership reached its end date and lapsed.',
     ];
 
     /** @return array<int, string> */

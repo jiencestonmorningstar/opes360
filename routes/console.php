@@ -62,3 +62,16 @@ Schedule::command('opes:alert-low-stock')
     ->daily()
     ->at('07:15')
     ->withoutOverlapping();
+
+/*
+ * Lapse VIP memberships whose term has ended.
+ *
+ * Just after midnight so a membership that ran to yesterday is expired before
+ * the business opens, rather than reading as active for a morning. This is
+ * housekeeping — VipMembership::isActive() already refuses a discount past the
+ * end date, so a night it does not run costs a notification rather than money.
+ */
+Schedule::command('opes:expire-vip-memberships')
+    ->daily()
+    ->at('00:30')
+    ->withoutOverlapping();

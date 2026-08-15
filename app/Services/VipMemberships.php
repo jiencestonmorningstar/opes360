@@ -13,6 +13,7 @@ use App\Models\VipMembership;
 use App\Models\VipTier;
 use App\Support\CurrentCompany;
 use App\Support\Vat;
+use App\Support\WebhookEvents;
 use Illuminate\Support\Facades\DB;
 use RuntimeException;
 
@@ -26,7 +27,10 @@ use RuntimeException;
  */
 class VipMemberships
 {
-    public function __construct(protected DocumentIssuer $issuer) {}
+    public function __construct(
+        protected DocumentIssuer $issuer,
+        protected WebhookDispatcher $webhooks,
+    ) {}
 
     public function sell(Contact $contact, VipTier $tier, User $actor): VipMembership
     {
@@ -63,7 +67,7 @@ class VipMemberships
 
             $document = $this->invoiceFor($contact, $tier, $company, $actor);
 
-            return VipMembership::create([
+            $membership = VipMembership::create([
                 'contact_id' => $contact->id,
                 'vip_tier_id' => $tier->id,
                 // Copied rather than read live through the tier — see the
@@ -79,6 +83,10 @@ class VipMemberships
                 'document_id' => $document->id,
                 'created_by' => $actor->id,
             ]);
+
+            $this->webhooks->send(WebhookEvents::VIP_SOLD, $this->payload($membership), $company);
+
+            return $membership;
         });
     }
 
@@ -110,6 +118,11 @@ class VipMemberships
             'cancelled_reason' => $reason,
         ])->save();
 
+        $this->webhooks->send(
+            WebhookEvents::VIP_CANCELLED,
+            $this->payload($membership) + ['reason' => $reason],
+        );
+
         return $membership;
     }
 
@@ -122,10 +135,57 @@ class VipMemberships
      */
     public function expireLapsed(): int
     {
-        return VipMembership::withoutGlobalScopes()
+        /*
+         * Read the rows before updating them rather than issuing one bulk
+         * UPDATE. A subscriber wanting to win a lapsed member back needs to be
+         * told which membership lapsed, and a mass update knows only how many
+         * did. The volume is one night's expiries, so the extra reads cost
+         * nothing worth saving.
+         */
+        $lapsed = VipMembership::withoutGlobalScopes()
+            ->with('company')
             ->where('status', VipMembership::ACTIVE)
             ->whereDate('ends_on', '<', now())
-            ->update(['status' => VipMembership::EXPIRED]);
+            ->get();
+
+        foreach ($lapsed as $membership) {
+            $membership->forceFill(['status' => VipMembership::EXPIRED])->save();
+
+            // The company is passed explicitly: this runs from a console
+            // command, where there is no current company to fall back on.
+            $this->webhooks->send(
+                WebhookEvents::VIP_EXPIRED,
+                $this->payload($membership),
+                $membership->company,
+            );
+        }
+
+        return $lapsed->count();
+    }
+
+    /**
+     * What a subscriber is told about a membership.
+     *
+     * The terms are the membership's own rather than its tier's — a tier
+     * repriced since the sale must not change what this member is reported as
+     * holding.
+     *
+     * @return array<string, mixed>
+     */
+    protected function payload(VipMembership $membership): array
+    {
+        return [
+            'id' => $membership->id,
+            'contact_id' => $membership->contact_id,
+            'tier_name' => $membership->tier_name,
+            'discount_percent' => (float) $membership->discount_percent,
+            'price_paid' => (float) $membership->price_paid,
+            'currency' => $membership->currency,
+            'starts_on' => $membership->starts_on?->toDateString(),
+            'ends_on' => $membership->ends_on?->toDateString(),
+            'status' => $membership->status,
+            'document_id' => $membership->document_id,
+        ];
     }
 
     protected function invoiceFor(Contact $contact, VipTier $tier, Company $company, User $actor): Document

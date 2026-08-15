@@ -13,6 +13,11 @@ use App\Services\VipMemberships;
 use App\Support\Accounting\ChartOfAccounts;
 use App\Support\CurrentCompany;
 use Database\Seeders\RolePermissionSeeder;
+use App\Jobs\DeliverWebhook;
+use App\Models\WebhookDelivery;
+use App\Models\WebhookEndpoint;
+use App\Support\WebhookEvents;
+use Illuminate\Support\Facades\Queue;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Laravel\Sanctum\Sanctum;
 use Livewire\Livewire;
@@ -338,5 +343,151 @@ class VipMembershipTest extends TestCase
 
         $this->actingAs($this->owner)->get(route('vip.members'))->assertForbidden();
         $this->actingAs($this->owner)->get(route('vip.tiers'))->assertForbidden();
+    }
+
+    // ── The nightly sweep ────────────────────────────────────────────────
+
+    public function test_the_expiry_command_reports_what_it_did(): void
+    {
+        VipMembership::factory()->expired()->create([
+            'company_id' => $this->company->id,
+            'contact_id' => $this->customer->id,
+        ]);
+
+        $this->artisan('opes:expire-vip-memberships')
+            ->expectsOutputToContain('Expired 1 membership.')
+            ->assertSuccessful();
+
+        $this->assertSame(VipMembership::EXPIRED, VipMembership::first()->status);
+    }
+
+    public function test_the_expiry_command_is_quiet_when_there_is_nothing_to_do(): void
+    {
+        $this->artisan('opes:expire-vip-memberships')
+            ->expectsOutputToContain('No memberships to expire.')
+            ->assertSuccessful();
+    }
+
+    /**
+     * A membership still inside its term is left alone. The sweep runs nightly
+     * across every business, so an off-by-one here would cancel live
+     * memberships wholesale.
+     */
+    public function test_the_sweep_leaves_a_live_membership_alone(): void
+    {
+        VipMembership::factory()->create([
+            'company_id' => $this->company->id,
+            'contact_id' => $this->customer->id,
+        ]);
+
+        $this->assertSame(0, $this->service()->expireLapsed());
+        $this->assertSame(VipMembership::ACTIVE, VipMembership::first()->status);
+    }
+
+    /** A membership ending today has not ended yet. */
+    public function test_a_membership_ending_today_survives_the_sweep(): void
+    {
+        VipMembership::factory()->create([
+            'company_id' => $this->company->id,
+            'contact_id' => $this->customer->id,
+            'ends_on' => now()->toDateString(),
+        ]);
+
+        $this->assertSame(0, $this->service()->expireLapsed());
+    }
+
+    // ── Telling other systems ────────────────────────────────────────────
+
+    /** @param array<int, string> $events */
+    protected function endpoint(array $events): WebhookEndpoint
+    {
+        $endpoint = new WebhookEndpoint;
+
+        $endpoint->forceFill([
+            'company_id' => $this->company->id,
+            'url' => 'https://hooks.example.com/opes',
+            'secret' => WebhookEndpoint::newSecret(),
+            'events' => $events,
+            'is_active' => true,
+        ])->save();
+
+        return $endpoint;
+    }
+
+    public function test_selling_tells_a_subscribed_endpoint(): void
+    {
+        Queue::fake();
+
+        $this->endpoint([WebhookEvents::VIP_SOLD]);
+        $tier = VipTier::factory()->create(['company_id' => $this->company->id]);
+
+        $this->service()->sell($this->customer, $tier, $this->owner);
+
+        Queue::assertPushed(DeliverWebhook::class);
+
+        $delivery = WebhookDelivery::query()->firstOrFail();
+
+        $this->assertSame(WebhookEvents::VIP_SOLD, $delivery->event);
+        $this->assertSame('Gold', $delivery->payload['data']['tier_name']);
+        $this->assertEquals(15, $delivery->payload['data']['discount_percent']);
+    }
+
+    /**
+     * The sweep reads its rows before updating them precisely so it can say
+     * WHICH membership lapsed. A bulk update knows only how many did, and a
+     * subscriber wanting to win somebody back cannot act on a count.
+     */
+    public function test_the_sweep_says_which_membership_lapsed(): void
+    {
+        Queue::fake();
+
+        $this->endpoint([WebhookEvents::VIP_EXPIRED]);
+
+        $membership = VipMembership::factory()->expired()->create([
+            'company_id' => $this->company->id,
+            'contact_id' => $this->customer->id,
+        ]);
+
+        $this->service()->expireLapsed();
+
+        $delivery = WebhookDelivery::query()->firstOrFail();
+
+        $this->assertSame(WebhookEvents::VIP_EXPIRED, $delivery->event);
+        $this->assertSame($membership->id, $delivery->payload['data']['id']);
+        $this->assertSame($this->customer->id, $delivery->payload['data']['contact_id']);
+    }
+
+    public function test_cancelling_carries_the_reason(): void
+    {
+        Queue::fake();
+
+        $this->endpoint([WebhookEvents::VIP_CANCELLED]);
+
+        $membership = VipMembership::factory()->create([
+            'company_id' => $this->company->id,
+            'contact_id' => $this->customer->id,
+        ]);
+
+        $this->service()->cancel($membership, 'Moved away', $this->owner);
+
+        $delivery = WebhookDelivery::query()->firstOrFail();
+
+        $this->assertSame('Moved away', $delivery->payload['data']['reason']);
+    }
+
+    /** An endpoint that did not ask about VIP is not told about it. */
+    public function test_an_unsubscribed_endpoint_hears_nothing(): void
+    {
+        Queue::fake();
+
+        $this->endpoint([WebhookEvents::PAYMENT_RECORDED]);
+        $tier = VipTier::factory()->create(['company_id' => $this->company->id]);
+
+        $this->service()->sell($this->customer, $tier, $this->owner);
+
+        $this->assertSame(
+            0,
+            WebhookDelivery::query()->where('event', WebhookEvents::VIP_SOLD)->count()
+        );
     }
 }
