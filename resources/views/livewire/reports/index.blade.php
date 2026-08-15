@@ -18,6 +18,21 @@
         </button>
     </div>
 
+    {{-- Aging sits apart from the date range: it is a position at a moment,
+         not a total over a period, and putting it inside the range switcher
+         would imply it answers to one. --}}
+    <a href="{{ route('reports.aging') }}" wire:navigate
+       class="focusable mt-4 flex items-center gap-3.5 rounded-xl border border-border bg-surface px-4 py-3.5 transition-colors hover:bg-surface-2">
+        <span class="flex size-[42px] shrink-0 items-center justify-center rounded-full bg-tint-orange">
+            <x-icon name="clock" class="size-[19px] text-warning" stroke-width="1.9" />
+        </span>
+        <span class="min-w-0 flex-1">
+            <span class="block text-[15px] font-semibold text-ink">Aging</span>
+            <span class="block truncate text-[13px] text-muted">Who owes you, who you owe, and how late</span>
+        </span>
+        <x-icon name="chevron-right" class="size-[17px] shrink-0 text-faint" />
+    </a>
+
     {{-- Range switcher --}}
     <div class="no-scrollbar -mx-5 mt-4 flex gap-2 overflow-x-auto px-5 lg:mx-0 lg:px-0">
         @foreach (['week' => 'This Week', 'month' => 'This Month', 'quarter' => 'Quarter', 'year' => 'This Year'] as $key => $label)

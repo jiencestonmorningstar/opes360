@@ -411,3 +411,51 @@
         backdrop-filter: none !important;
     }
 }
+
+/*
+ * The navigation rail.
+ *
+ * Painted from --sidebar-bg, which BrandPalette derives from the brand FILL
+ * role — the value guaranteed to carry white text. That is what makes it safe
+ * for a business to pick any colour and still be able to read its own menu.
+ *
+ * Under the glass skin the same token arrives as a translucent version of that
+ * colour, so the rail is glass *over* the brand rather than glass instead of it.
+ */
+@utility sidebar-surface {
+    background-color: var(--sidebar-bg, var(--color-fill-brand));
+}
+
+/*
+ * Blur without a background, for surfaces that supply their own translucent
+ * colour. `.glass` sets a background too, which would paint over the brand.
+ */
+@utility glass-blur {
+    border-color: var(--glass-border, transparent);
+}
+
+@supports (backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px)) {
+    .glass-blur {
+        -webkit-backdrop-filter: blur(var(--glass-blur, 0px)) saturate(180%);
+        backdrop-filter: blur(var(--glass-blur, 0px)) saturate(180%);
+    }
+}
+
+@media (prefers-reduced-transparency: reduce) {
+    .glass-blur {
+        -webkit-backdrop-filter: none !important;
+        backdrop-filter: none !important;
+    }
+    /* Opaque again, so the rail does not sit half-see-through for somebody who
+       asked their system to stop exactly that. */
+    .sidebar-surface {
+        background-color: var(--color-fill-brand) !important;
+    }
+}
+
+@media print {
+    .glass-blur {
+        -webkit-backdrop-filter: none !important;
+        backdrop-filter: none !important;
+    }
+}

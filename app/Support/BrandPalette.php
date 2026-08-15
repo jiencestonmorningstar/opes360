@@ -134,7 +134,43 @@ class BrandPalette
         $tokens['--color-tint-blue'] = $tokens['--color-tint-brand'];
         $tokens['--color-tint-red'] = $light ? '#fdeeee' : '#2a1416';
 
+        $tokens += self::sidebar($inputs, $tokens['--color-fill-brand']);
+
         return $tokens;
+    }
+
+    /**
+     * The navigation rail wears the brand colour.
+     *
+     * It uses the **fill** role rather than the ink role, which is the whole
+     * reason this is safe: fill is the value guaranteed to carry white text, so
+     * whatever colour a business picks, the menu labels on it stay legible.
+     * Painting the rail with a raw seed would put white text on Spotify green
+     * at 2.6:1.
+     *
+     * Under the glass skin the rail becomes a translucent version of the same
+     * colour rather than translucent white — "glass over their existing colour"
+     * rather than glass instead of it.
+     *
+     * @param  array<string, mixed>  $inputs
+     * @return array<string, string>
+     */
+    protected static function sidebar(array $inputs, string $fill): array
+    {
+        if ($inputs['skin'] !== 'glass') {
+            return ['--sidebar-bg' => $fill];
+        }
+
+        $strength = max(0.0, min(1.0, (float) $inputs['glass_strength']));
+
+        // More strength, more transparency. The floor keeps enough of the brand
+        // for the rail to still read as the business's colour rather than as a
+        // smudge of whatever is scrolling behind it.
+        $alpha = round(0.85 - 0.3 * $strength, 3);
+
+        $rgb = array_map(fn (float $c) => (int) round($c * 255), Colour::fromHex($fill));
+
+        return ['--sidebar-bg' => 'rgb('.implode(' ', $rgb).' / '.$alpha.')'];
     }
 
     /**

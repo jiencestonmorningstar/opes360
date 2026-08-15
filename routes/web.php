@@ -57,6 +57,7 @@ use App\Livewire\Payroll\Index as PayrollIndex;
 use App\Livewire\Payroll\Show as PayrollShow;
 use App\Livewire\Products\Form as ProductForm;
 use App\Livewire\Products\Index as ProductsIndex;
+use App\Livewire\Reports\Aging as ReportsAging;
 use App\Livewire\Reports\Index as ReportsIndex;
 use App\Livewire\Sales\Index as SalesIndex;
 use App\Livewire\Scan;
@@ -248,6 +249,7 @@ Route::middleware('auth')->group(function () {
         ->middleware('can:payroll.view')->name('payroll.register');
     Route::get('/payslips/{payslip}/print', [PrintController::class, 'payslip'])->middleware('can:payroll.view')->name('payslips.print');
     Route::get('/reports', ReportsIndex::class)->middleware('can:reports.view')->name('reports');
+    Route::get('/reports/aging', ReportsAging::class)->middleware('can:reports.view')->name('reports.aging');
     Route::get('/accounting', AccountingIndex::class)->middleware('can:accounting.view')->name('accounting');
     // The month's returns, worked out from the books. See the screen: a
     // worksheet to copy onto the official forms, never the forms themselves.
