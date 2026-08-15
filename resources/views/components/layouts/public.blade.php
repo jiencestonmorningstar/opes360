@@ -54,6 +54,9 @@
          these pages shipped Alpine directives with no Alpine on the page, so
          the markup was inert and nothing said so. --}}
     @vite(['resources/css/app.css', 'resources/js/app.js'])
+
+    {{-- After Vite, so the company palette wins the cascade. --}}
+    <x-branding.styles />
     @livewireStyles
 
     {{ $head ?? '' }}
