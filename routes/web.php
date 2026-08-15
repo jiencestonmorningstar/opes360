@@ -21,6 +21,7 @@ use App\Livewire\Banking\Index as BankingIndex;
 use App\Livewire\Business\Artisans as BusinessArtisans;
 use App\Livewire\Business\Companies as BusinessCompanies;
 use App\Livewire\Business\Edit as BusinessEdit;
+use App\Livewire\Business\Branding as BusinessBranding;
 use App\Livewire\Business\Logo as BusinessLogo;
 use App\Livewire\Business\Reviews as BusinessReviews;
 use App\Livewire\Business\Stationery;
@@ -213,6 +214,8 @@ Route::middleware('auth')->group(function () {
     // Registered inside the auth group, so it wins over the public
     // /business/{company} wildcard declared further down.
     Route::get('/business/reviews', BusinessReviews::class)->middleware('can:business.update')->name('business.reviews');
+    Route::get('/business/branding', BusinessBranding::class)
+        ->middleware('can:business.manage-branding')->name('business.branding');
     Route::get('/business/logo', BusinessLogo::class)->middleware('can:business.manage-branding')->name('logo');
     Route::get('/business/logo/download', [PrintController::class, 'logo'])->middleware('can:business.manage-branding')->name('logo.download');
     Route::get('/business/stationery', Stationery::class)->middleware('can:business.manage-stationery')->name('stationery');
