@@ -139,6 +139,42 @@ class BrandingDeliveryTest extends TestCase
             ->assertSee('#4a154b', false);
     }
 
+    /**
+     * Order is load-bearing.
+     *
+     * Tailwind emits its own --spacing and --radius-* into :root, and our block
+     * uses the same selector. Same specificity means document order decides, so
+     * a branding block placed before the stylesheet would be silently overruled
+     * for every shape and density token — colours would still work, which is
+     * exactly the kind of half-working that goes unnoticed.
+     */
+    public function test_the_branding_block_comes_after_the_compiled_stylesheet(): void
+    {
+        $this->seed(RolePermissionSeeder::class);
+
+        $owner = User::factory()->create();
+        $company = Company::create([
+            'slug' => 'acme-'.Str::lower(Str::random(6)),
+            'name' => 'Acme Sarl',
+            'owner_id' => $owner->id,
+            'currency' => 'XAF',
+            'plan' => 'business',
+            'account_type' => 'active',
+        ]);
+
+        $this->joinCompany($company, $owner);
+        $owner->forceFill(['current_company_id' => $company->id])->save();
+
+        $html = $this->actingAs($owner)->get('/')->assertOk()->getContent();
+
+        $link = strpos($html, '/build/assets/app-');
+        $block = strpos($html, 'id="opes-branding"');
+
+        $this->assertNotFalse($link, 'no compiled stylesheet on the page');
+        $this->assertNotFalse($block, 'no branding block on the page');
+        $this->assertGreaterThan($link, $block, 'the branding block is before the stylesheet and will be overruled');
+    }
+
     public function test_the_landing_page_renders_with_the_platform_palette(): void
     {
         $this->get('/')->assertOk()->assertSee('opes-branding', false);
