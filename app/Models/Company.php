@@ -48,6 +48,7 @@ class Company extends Model
             'operating_hours' => 'array',
             'brand_tokens' => 'array',
             'branding' => 'array',
+            'dunning' => 'array',
             'payroll_settings' => 'array',
             'modules' => 'array',
             'latitude' => 'decimal:7',

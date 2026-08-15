@@ -90,3 +90,14 @@ Schedule::command('opes:generate-recurring-invoices')
     ->daily()
     ->at('00:45')
     ->withoutOverlapping();
+
+/*
+ * Chase overdue invoices, for the businesses that asked us to.
+ *
+ * Mid-morning rather than overnight: a reminder timestamped 01:00 reads as
+ * machinery, and one that lands while somebody is at their desk is likelier to
+ * be acted on than one at the bottom of an overnight pile.
+ */
+Schedule::command('opes:send-dunning-reminders')
+    ->dailyAt('09:15')
+    ->withoutOverlapping();
