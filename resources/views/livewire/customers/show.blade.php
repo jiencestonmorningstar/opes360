@@ -83,7 +83,8 @@
                 </a>
             </section>
 
-            {{-- Documents --}}
+            {{-- Documents: the sales records. The Library panel below
+                 holds contracts, letters and supporting paperwork. --}}
             <x-ui.panel title="Documents" body-class="-mx-1.5">
                 @forelse ($documents as $index => $document)
                     @php $state = $document->paymentState(); @endphp
@@ -103,6 +104,8 @@
                     <p class="px-1.5 py-6 text-center text-[13.5px] text-muted">Nothing issued to this customer yet.</p>
                 @endforelse
             </x-ui.panel>
+
+            <x-documents.library-panel :record="$contact" class="mt-5" />
 
             {{-- Payments --}}
             @if ($payments->isNotEmpty())

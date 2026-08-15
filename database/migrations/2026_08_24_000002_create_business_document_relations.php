@@ -32,12 +32,22 @@ return new class extends Migration
              * destroy the business's own paperwork as a side effect of tidying
              * a contact list.
              */
-            $table->string('related_type');
-            $table->string('related_id');
+            /*
+             * Lengths are explicit because these four columns share a unique
+             * key, and MySQL caps an index at 3072 bytes. At Laravel's default
+             * varchar(255) under utf8mb4 the key sums to 3164 and the table
+             * simply cannot be created — which SQLite accepts silently, so the
+             * test suite passed while production would have failed on deploy.
+             *
+             * 120 holds the longest model class name several times over, and an
+             * id is a ULID at 26 characters.
+             */
+            $table->string('related_type', 120);
+            $table->string('related_id', 40);
 
             // What the link means, so a document attached to an invoice can be
             // the thing it supports rather than merely "related".
-            $table->string('role')->default('about');
+            $table->string('role', 40)->default('about');
 
             $table->foreignId('created_by')->nullable()->constrained('users')->nullOnDelete();
             $table->timestamps();
