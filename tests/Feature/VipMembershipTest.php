@@ -5,6 +5,7 @@ namespace Tests\Feature;
 use App\Enums\DocumentStatus;
 use App\Models\Company;
 use App\Models\Contact;
+use App\Models\Document;
 use App\Models\Role;
 use App\Models\User;
 use App\Models\VipMembership;
@@ -547,5 +548,71 @@ class VipMembershipTest extends TestCase
         $this->actingAs($cashier)
             ->get(route('vip.card.print', $membership))
             ->assertForbidden();
+    }
+
+    // ── The counter, not just the API ────────────────────────────────────
+
+    /**
+     * The bug an adversarial review found and thirty-one passing tests missed.
+     *
+     * The discount was wired into the API controller only, and this screen is
+     * how most invoices are actually raised — so a member who had paid for the
+     * benefit was charged full price at the counter and discounted by a script.
+     * The same request answered two ways depending on which door it came
+     * through is worse than the feature not existing.
+     */
+    public function test_the_invoice_screen_applies_a_members_discount(): void
+    {
+        VipMembership::factory()->create([
+            'company_id' => $this->company->id,
+            'contact_id' => $this->customer->id,
+        ]);
+
+        Livewire::actingAs($this->owner)
+            ->test(\App\Livewire\Documents\Create::class)
+            ->call('save', [
+                'contact_id' => $this->customer->id,
+                'issue_date' => now()->toDateString(),
+                'lines' => [['description' => 'Dinner', 'quantity' => 1, 'unit_price' => 100000]],
+            ], false);
+
+        $document = Document::latest('id')->firstOrFail();
+
+        $this->assertEqualsWithDelta(100000, (float) $document->subtotal, 0.01);
+        $this->assertEqualsWithDelta(15000, (float) $document->discount_total, 0.01);
+    }
+
+    public function test_the_invoice_screen_charges_a_non_member_in_full(): void
+    {
+        Livewire::actingAs($this->owner)
+            ->test(\App\Livewire\Documents\Create::class)
+            ->call('save', [
+                'contact_id' => $this->customer->id,
+                'issue_date' => now()->toDateString(),
+                'lines' => [['description' => 'Dinner', 'quantity' => 1, 'unit_price' => 100000]],
+            ], false);
+
+        $this->assertEqualsWithDelta(0, (float) Document::latest('id')->firstOrFail()->discount_total, 0.01);
+    }
+
+    /**
+     * A one-month term sold on 31 January must not run to 2 March. Carbon
+     * rolls 31 February forward into the next month unless told not to, which
+     * would give the member 31 days and drift the anniversary.
+     */
+    public function test_a_term_sold_at_month_end_does_not_overflow(): void
+    {
+        $this->travelTo(now()->parse('2026-01-31'));
+
+        $tier = VipTier::factory()->create([
+            'company_id' => $this->company->id,
+            'period_months' => 1,
+        ]);
+
+        $membership = $this->service()->sell($this->customer, $tier, $this->owner);
+
+        $this->assertSame('2026-02-27', $membership->ends_on->toDateString());
+
+        $this->travelBack();
     }
 }

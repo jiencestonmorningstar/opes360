@@ -8,6 +8,7 @@ use App\Models\Contact;
 use App\Models\Document;
 use App\Models\DocumentLine;
 use App\Services\DocumentIssuer;
+use App\Services\VipMemberships;
 use App\Support\CurrentCompany;
 use App\Support\Vat;
 use Illuminate\Auth\Access\AuthorizationException;
@@ -150,10 +151,25 @@ class Create extends Component
 
         $company = app(CurrentCompany::class)->get();
 
+        /*
+         * A VIP member's tier discounts what they buy, and it has to be applied
+         * here as well as in the API.
+         *
+         * This screen is how most invoices are actually raised, so a discount
+         * wired only into the controller would mean a member who paid for the
+         * benefit is charged full price at the counter and discounted by a
+         * script — the same request answered two different ways depending on
+         * which door it came through.
+         *
+         * Absent a membership the rate is zero, so a business not running the
+         * programme sees no change.
+         */
+        $discountPercent = app(VipMemberships::class)->discountFor($contact);
+
         // TVA is computed once, here, and the per-line figures come back from
         // the same pass that produced the totals — so the tax column on the
         // printed sheet always sums to the tax line beneath it.
-        $vat = Vat::forCompany($company, $data['lines']);
+        $vat = Vat::forCompany($company, $data['lines'], $discountPercent);
         $lines = $this->normalisedLines($data['lines'], $vat['lines']);
 
         $document = DB::transaction(function () use ($contact, $company, $lines, $vat, $data, $issue) {
@@ -165,11 +181,14 @@ class Create extends Component
                 'due_date' => $data['due_date'] ?? null,
                 'currency' => $company->currency,
                 'subtotal' => $vat['subtotal'],
+                'discount_total' => $vat['discount_total'],
                 'tax_total' => $vat['tax_total'],
                 'total' => $vat['total'],
                 'amount_paid' => 0,
                 'balance' => $vat['total'],
-                'notes' => $data['notes'] ?: null,
+                // Coalesced, not indexed: notes are optional, so a payload that
+                // omits the key entirely is valid and reaches here without it.
+                'notes' => ($data['notes'] ?? '') ?: null,
                 'created_by' => auth()->id(),
             ]);
 

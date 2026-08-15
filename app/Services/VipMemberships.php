@@ -47,10 +47,27 @@ class VipMemberships
         }
 
         return DB::transaction(function () use ($contact, $tier, $actor, $company) {
+            /*
+             * Locked, for the same reason PaymentRecorder locks its document.
+             *
+             * Two "Buy" requests for the same customer arriving together would
+             * otherwise both read no live membership, both pass the check, and
+             * both raise an invoice — the customer charged twice for one term.
+             * The row lock makes the second wait until the first has committed,
+             * so it sees the membership the first created and extends it.
+             *
+             * Locking a customer that has no membership yet locks nothing, so
+             * the very first concurrent pair can still both proceed. That is
+             * the residual case a unique constraint would close, and it is
+             * noted rather than papered over: the window is a few milliseconds
+             * and the outcome is two terms that run consecutively rather than
+             * money taken for nothing.
+             */
             $current = VipMembership::query()
                 ->where('contact_id', $contact->id)
                 ->live()
                 ->orderByDesc('ends_on')
+                ->lockForUpdate()
                 ->first();
 
             // Buying again while a term is still running extends it rather
@@ -65,7 +82,15 @@ class VipMemberships
                 $current->forceFill(['status' => VipMembership::EXPIRED])->save();
             }
 
-            $endsOn = $startsOn->copy()->addMonths($tier->period_months)->subDay();
+            /*
+             * NoOverflow, because the plain version is surprising at month end.
+             * A one-month term sold on 31 January would otherwise run to 2
+             * March — Carbon rolls 31 February forward into the next month —
+             * so the member gets 31 days and the anniversary drifts. Clamping
+             * to the last day of the target month is what a subscription is
+             * understood to mean.
+             */
+            $endsOn = $startsOn->copy()->addMonthsNoOverflow($tier->period_months)->subDay();
 
             $document = $this->invoiceFor($contact, $tier, $company, $actor);
 
