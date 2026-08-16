@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use App\Models\Concerns\Approvable;
+use App\Models\Concerns\EmitsDomainEvents;
 use App\Models\Concerns\BelongsToCompany;
 use App\Support\Accounting\ChartOfAccounts;
 use Illuminate\Database\Eloquent\Concerns\HasUlids;
@@ -23,6 +24,7 @@ class Expense extends Model
 {
     use Approvable;
     use BelongsToCompany;
+    use EmitsDomainEvents;
     use HasFactory;
     use HasUlids;
     use SoftDeletes;
@@ -35,6 +37,20 @@ class Expense extends Model
     ];
 
     protected $guarded = ['id'];
+
+    /**
+     * What an automation rule may set here.
+     *
+     * Notes and category only. Not `status`, not `total`, not `amount_paid`:
+     * a rule that could mark an expense paid would be a way to settle a bill
+     * from a settings screen.
+     *
+     * @return array<int, string>
+     */
+    public function automatableFields(): array
+    {
+        return ['notes', 'category'];
+    }
 
     /** Expenses record who entered them as `recorded_by`, not `created_by`. */
     protected function workflowCreatorColumn(): string

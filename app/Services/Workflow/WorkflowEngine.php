@@ -44,6 +44,11 @@ class WorkflowEngine
 
             $this->record($instance, null, $submitter, 'submitted', null, 'Submitted');
 
+            $instance->emitDomainEvent('workflow.started', [
+                'subject_type' => $subject->getMorphClass(),
+                'subject_id' => $subject->getKey(),
+            ]);
+
             return $this->advance($instance);
         });
     }
@@ -209,6 +214,10 @@ class WorkflowEngine
             if ($approvers->isEmpty()) {
                 $instance->update(['status' => 'stalled', 'position' => $position]);
 
+                // Announced, so somebody can be told rather than discovering
+                // it when the invoice is a fortnight old.
+                $instance->emitDomainEvent('workflow.stalled', ['step' => $step->name]);
+
                 return $instance->fresh();
             }
 
@@ -269,6 +278,8 @@ class WorkflowEngine
          */
         $instance->update(['status' => 'changes_requested']);
 
+        $instance->emitDomainEvent('workflow.changes_requested');
+
         return $instance->fresh();
     }
 
@@ -277,6 +288,10 @@ class WorkflowEngine
         $instance->assignments()->pending()->update(['status' => 'superseded']);
 
         $instance->update(['status' => $status, 'completed_at' => now()]);
+
+        // workflow.approved / .rejected / .cancelled — the events a rule
+        // listens to in order to advance whatever comes next.
+        $instance->emitDomainEvent('workflow.'.$status);
 
         return $instance->fresh();
     }

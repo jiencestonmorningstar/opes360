@@ -89,6 +89,20 @@ class WorkflowApprovers
         return $user === null ? collect() : collect([$user]);
     }
 
+    /**
+     * Everyone holding a role in a company.
+     *
+     * Public because automation notifications need the same answer, and two
+     * implementations of "who holds this role" would eventually disagree about
+     * whether a removed member still counts.
+     *
+     * @return Collection<int, User>
+     */
+    public function holdingRole(?string $roleSlug, string $companyId): Collection
+    {
+        return $this->byRole($roleSlug, $companyId);
+    }
+
     /** @return Collection<int, User> */
     protected function byRole(?string $roleSlug, string $companyId): Collection
     {

@@ -2,6 +2,8 @@
 
 namespace App\Providers;
 
+use App\Events\DomainEvent;
+use App\Listeners\RunAutomationRules;
 use App\Models\Artisan;
 use App\Models\Company;
 use App\Models\Contact;
@@ -19,6 +21,7 @@ use Illuminate\Pagination\Paginator;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Blade;
 use Illuminate\Support\Facades\Date;
+use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\Facades\Vite;
 use Illuminate\Support\ServiceProvider;
@@ -36,6 +39,16 @@ class AppServiceProvider extends ServiceProvider
 
     public function boot(): void
     {
+        /*
+         * Automation listens to every domain event.
+         *
+         * Registered here rather than in an EventServiceProvider map because
+         * there is one event class carrying a name, not one class per event —
+         * so there is exactly one binding to make, and putting it anywhere
+         * else would only hide it.
+         */
+        Event::listen(DomainEvent::class, RunAutomationRules::class);
+
         // Fail loudly in development on lazy loads and bad attribute assignment,
         // rather than shipping N+1 queries to a phone on a slow connection.
         /*

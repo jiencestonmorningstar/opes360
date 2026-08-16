@@ -21,6 +21,7 @@ use App\Livewire\Banking\Index as BankingIndex;
 use App\Livewire\Business\Artisans as BusinessArtisans;
 use App\Livewire\Business\Companies as BusinessCompanies;
 use App\Livewire\Business\Departments as BusinessDepartments;
+use App\Livewire\Guides\Index as GuidesIndex;
 use App\Livewire\Workflow\Inbox as WorkflowInbox;
 use App\Livewire\Business\Edit as BusinessEdit;
 use App\Livewire\Business\Branding as BusinessBranding;
@@ -227,6 +228,13 @@ Route::middleware('auth')->group(function () {
     // mean somebody the engine had just asked to approve an invoice could not
     // open the page telling them so.
     Route::get('/actions', WorkflowInbox::class)->name('actions');
+    /*
+     * The in-product documentation. No permission gate: documentation only
+     * readable by somebody who already holds the permission it describes is
+     * documentation nobody can use to find out what that permission does.
+     */
+    Route::get('/guides', GuidesIndex::class)->name('guides');
+    Route::get('/guides/{slug}', GuidesIndex::class)->name('guides.show');
     Route::get('/businesses', BusinessCompanies::class)->name('businesses');
     Route::get('/artisans', BusinessArtisans::class)->middleware('can:business.view')->name('artisans');
     Route::get('/stationery/print', [PrintController::class, 'stationery'])->middleware('can:business.manage-stationery')->name('stationery.print');

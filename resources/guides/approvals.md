@@ -1,0 +1,89 @@
+# Approvals and workflows
+
+An approval is how something gets signed off: a purchase, an expense, a
+contract. A **workflow** is the rule that says who is asked, in what order, and
+what happens when they answer.
+
+There is one approval system for the whole product. Whether you are approving a
+document, a purchase order or an expense, it behaves the same way and appears in
+the same place — [My actions](/guides/my-actions).
+
+## The shape of a workflow
+
+A workflow is a list of **steps**, run in order. Each step says three things:
+
+1. **Who is asked** — a role, a department's manager, a named person, the
+   business owner, or whoever raised the record.
+2. **How many must agree** — the first to answer, everybody, or a set number.
+3. **When it applies** — optionally, a condition such as "only if the amount is
+   over 10,000,000".
+
+When a record is submitted, the first step that applies is assigned to whoever
+it names. When that step is satisfied, the next one is assigned. When there are
+no steps left, the record is approved.
+
+## Answering
+
+Whoever is asked sees the item in **My actions**, and has four choices:
+
+| Answer | What happens |
+|---|---|
+| **Approve** | Counts towards the step. When enough people have approved, it moves on. |
+| **Ask for changes** | Goes back to whoever submitted it. They fix it and send it round again. |
+| **Reject** | Stops it, permanently. |
+| **Hand over** | Passes your decision to a colleague. |
+
+**"Reject" and "ask for changes" are different answers, and the difference
+matters.** Rejecting is final — the request is dead and a new one must be
+raised. Asking for changes is an invitation: attach the missing receipt, correct
+the figure, resubmit. If it can be fixed, ask for changes.
+
+## Handing a decision over
+
+Going on leave? **Hand over** passes an outstanding decision to a colleague.
+They can then approve it as if they had been asked in the first place.
+
+The record keeps both halves — it shows that you were asked, that you handed it
+to them, and that they answered. Nobody can quietly pass a decision to a friend
+and have it look like their own.
+
+Once you have handed something over, you can no longer act on it yourself.
+
+## Conditions
+
+A step can be set to apply only in certain cases. The commonest is by amount:
+
+> Under 10,000,000, the manager signs.
+> At 10,000,000 and over, it goes to the manager *and then* the director.
+
+Steps whose condition does not match are skipped entirely — they do not wait,
+and they do not appear in anyone's list.
+
+## Things that surprise people
+
+**If nobody can fill a step, the approval stops and says so.** If a step is set
+to "the Finance manager" and that person has left, the approval goes to
+**Stalled** rather than quietly passing. This is on purpose: an approval that
+approves itself because its approver left is far worse than one that visibly
+gets stuck, because the stuck one gets noticed and fixed. Correct the workflow
+or the department manager, then resubmit.
+
+**You cannot approve the same thing twice.** If a step needs two approvals, it
+needs two *people*.
+
+**Being asked is your permission to answer.** There is no separate setting to
+grant somebody the ability to approve. If the workflow names you, you can act;
+if it does not, you cannot — even if you are an administrator.
+
+**Editing a workflow does not rewrite the past.** Rename a step and every
+approval already recorded under the old name keeps showing the old name. What
+happened, happened.
+
+## Who can create a workflow
+
+Only the **Owner** and an **Administrator**.
+
+This is deliberately narrow. Whoever can edit a workflow can write themselves a
+path with no approver in it — which amounts to being able to authorise their own
+spending. Managers and accountants can see what the rules are, so they know what
+to expect, but cannot change them.

@@ -140,6 +140,9 @@ From `docs/HANDOVER.md`, and non-negotiable:
   `export PATH="/c/laragon/bin/mysql/mysql-8.4.3-winx64/bin:$PATH"`
 - PHP is not on PATH by default:
   `export PATH="/c/laragon/bin/php/php-8.3.30-Win32-vs16-x64:$PATH"`
+- **Every feature ships with its guide**, added to `App\Support\Guides` and
+  `resources/guides/`, in the same commit as the feature. A feature nobody can
+  find out how to use is not finished; `GuidesTest` enforces the pairing
 - Never loosen an assertion to make a build pass; fix the generator
 - Semantic colours (`positive`/`warning`/`negative`) are not brandable
 - No new Composer packages without saying why
@@ -156,7 +159,11 @@ From `docs/HANDOVER.md`, and non-negotiable:
 - [x] 1.1 Departments — entity, nested, backfilled from the free-text column
 - [x] 1.2 Workflow & approval engine — `docs/workflows.md`. Automation triggers
       and the admin screen are carved out into 1.3 and 4.6 respectively
-- [ ] 1.3 Domain event bus — and with it the trigger half of trigger→condition→action
+- [x] 1.3 Domain event bus + automation rules — `docs/automation.md`
+- [x] **In-product documentation** — `/guides`, one guide per feature, with a
+      test that fails if a guide and its catalogue entry disagree in either
+      direction. **Every feature built from here on adds its guide in the same
+      commit.**
 - [ ] 1.4 Projects
 - [ ] 2.1–2.22 Documents to completion
 - [ ] 3.1–3.10 Tier-1 ERP holes

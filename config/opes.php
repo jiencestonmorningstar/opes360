@@ -90,6 +90,11 @@ return [
         // Reachable by anyone who may create the records it writes; the screen
         // itself asks for the same permission per import type.
         ['key' => 'imports', 'label' => 'Import records', 'icon' => 'arrow-up', 'route' => 'imports', 'ability' => 'customers.create'],
+        // Both ungated. Whatever is waiting on you is waiting on you whatever
+        // your role, and documentation only readable by somebody who already
+        // holds the permission it describes explains nothing to anybody.
+        ['key' => 'actions', 'label' => 'My actions', 'icon' => 'check-circle', 'route' => 'actions'],
+        ['key' => 'guides', 'label' => 'Guides', 'icon' => 'academic-cap', 'route' => 'guides'],
         ['key' => 'settings', 'label' => 'Settings', 'icon' => 'cog', 'route' => 'settings'],
         ['key' => 'help', 'label' => 'Help & Support', 'icon' => 'help', 'route' => 'help'],
     ],
