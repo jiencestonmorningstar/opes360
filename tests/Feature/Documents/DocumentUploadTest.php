@@ -4,11 +4,14 @@ namespace Tests\Feature\Documents;
 
 use App\Models\BusinessDocument;
 use App\Models\BusinessDocumentFolder;
+use App\Models\Company;
 use App\Models\Media;
+use App\Models\User;
 use App\Services\Documents\DocumentFiler;
 use App\Support\CurrentCompany;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Str;
 use RuntimeException;
 
 class DocumentUploadTest extends DocumentsTestCase
@@ -240,10 +243,10 @@ class DocumentUploadTest extends DocumentsTestCase
     {
         $this->filer()->upload($this->pdf(), $this->owner);
 
-        $other = \App\Models\Company::create([
-            'slug' => 'other-'.\Illuminate\Support\Str::lower(\Illuminate\Support\Str::random(6)),
+        $other = Company::create([
+            'slug' => 'other-'.Str::lower(Str::random(6)),
             'name' => 'Other Sarl',
-            'owner_id' => \App\Models\User::factory()->create()->id,
+            'owner_id' => User::factory()->create()->id,
             'currency' => 'XAF', 'plan' => 'business', 'account_type' => 'active',
         ]);
 

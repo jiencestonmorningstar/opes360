@@ -3,6 +3,7 @@
 namespace Tests\Feature\Hr;
 
 use App\Models\Company;
+use App\Models\Department;
 use App\Models\Employee;
 use App\Models\Position;
 use App\Support\CurrentCompany;
@@ -19,7 +20,7 @@ class PositionTest extends HrTestCase
 
     public function test_a_position_can_sit_inside_a_department(): void
     {
-        $department = \App\Models\Department::create(['name' => 'Finance']);
+        $department = Department::create(['name' => 'Finance']);
         $position = $this->position(['department_id' => $department->id]);
 
         $this->assertTrue($position->department->is($department));
@@ -32,7 +33,7 @@ class PositionTest extends HrTestCase
      */
     public function test_deleting_a_department_leaves_the_position_standing(): void
     {
-        $department = \App\Models\Department::create(['name' => 'Finance']);
+        $department = Department::create(['name' => 'Finance']);
         $position = $this->position(['department_id' => $department->id]);
 
         $department->forceDelete();

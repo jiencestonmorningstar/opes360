@@ -4,8 +4,10 @@ namespace Tests\Feature;
 
 use App\Models\Company;
 use App\Models\PartnerClient;
+use App\Models\PartnerCommission;
 use App\Models\PartnerPayout;
 use App\Models\Role;
+use App\Models\SubscriptionPayment;
 use App\Models\User;
 use App\Support\CurrentCompany;
 use App\Support\TokenAbilities;
@@ -279,7 +281,7 @@ class PartnerApiTest extends TestCase
      */
     protected function creditCommission(int $amount): void
     {
-        $payment = \App\Models\SubscriptionPayment::create([
+        $payment = SubscriptionPayment::create([
             'company_id' => $this->secretariat->id,
             'plan' => 'growth',
             'billing_cycle' => 'monthly',
@@ -294,7 +296,7 @@ class PartnerApiTest extends TestCase
             'paid_at' => now(),
         ]);
 
-        \App\Models\PartnerCommission::create([
+        PartnerCommission::create([
             'company_id' => $this->secretariat->id,
             'source_company_id' => $this->secretariat->id,
             'subscription_payment_id' => $payment->id,

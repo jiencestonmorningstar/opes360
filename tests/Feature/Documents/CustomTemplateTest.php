@@ -2,8 +2,8 @@
 
 namespace Tests\Feature\Documents;
 
-use App\Services\Documents\CustomDocumentTemplates;
 use App\Services\DocumentComposer;
+use App\Services\Documents\CustomDocumentTemplates;
 use RuntimeException;
 
 class CustomTemplateTest extends DocumentsTestCase

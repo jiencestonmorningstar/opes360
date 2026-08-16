@@ -5,6 +5,7 @@ namespace Tests\Feature\Documents;
 use App\Livewire\Papers\Compose;
 use App\Services\Documents\CustomDocumentTemplates;
 use Livewire\Livewire;
+use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
 
 /**
  * The Papers gallery has offered a business's own published templates since
@@ -67,6 +68,6 @@ class ComposeCustomTemplateTest extends DocumentsTestCase
     protected function expectAbort(int $status): void
     {
         $this->withoutExceptionHandling();
-        $this->expectException(\Symfony\Component\HttpKernel\Exception\NotFoundHttpException::class);
+        $this->expectException(NotFoundHttpException::class);
     }
 }

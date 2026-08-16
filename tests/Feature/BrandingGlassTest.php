@@ -25,7 +25,7 @@ class BrandingGlassTest extends TestCase
         $this->owner = User::factory()->create();
     }
 
-    protected function company(array $branding = null): Company
+    protected function company(?array $branding = null): Company
     {
         $company = Company::create([
             'slug' => 'acme-'.Str::lower(Str::random(6)),

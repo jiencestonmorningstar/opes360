@@ -2,8 +2,6 @@
 
 namespace Tests\Feature;
 
-use App\Enums\DocumentStatus;
-use App\Enums\DocumentType;
 use App\Models\Company;
 use App\Models\Contact;
 use App\Models\Document;

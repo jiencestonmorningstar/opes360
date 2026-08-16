@@ -12,6 +12,7 @@ use Illuminate\Foundation\Bus\Dispatchable;
 use Illuminate\Queue\InteractsWithQueue;
 use Illuminate\Queue\SerializesModels;
 use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Str;
 use Throwable;
 
 /**
@@ -181,7 +182,7 @@ class DeliverWebhook implements ShouldQueue
             'status' => $delay === null ? WebhookDelivery::FAILED : WebhookDelivery::PENDING,
             'response_status' => $status,
             'response_body' => WebhookDelivery::truncate($body),
-            'last_error' => \Illuminate\Support\Str::limit($error, 490),
+            'last_error' => Str::limit($error, 490),
             'next_attempt_at' => $delay === null ? null : now()->addSeconds($delay),
         ])->save();
 

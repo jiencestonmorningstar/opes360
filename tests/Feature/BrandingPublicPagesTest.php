@@ -5,6 +5,7 @@ namespace Tests\Feature;
 use App\Models\Company;
 use App\Models\Contact;
 use App\Models\User;
+use App\Models\VerificationToken;
 use App\Support\CurrentCompany;
 use Database\Seeders\RolePermissionSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -60,9 +61,9 @@ class BrandingPublicPagesTest extends TestCase
 
         $contact = Contact::create(['name' => 'Un Client', 'balance' => 0]);
 
-        $token = \App\Models\VerificationToken::create([
+        $token = VerificationToken::create([
             'company_id' => $this->company->id,
-            'token' => \App\Models\VerificationToken::newToken(),
+            'token' => VerificationToken::newToken(),
             'subject_type' => Contact::class,
             'subject_id' => $contact->id,
         ]);

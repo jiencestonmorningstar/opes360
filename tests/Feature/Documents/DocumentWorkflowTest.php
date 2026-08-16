@@ -2,7 +2,10 @@
 
 namespace Tests\Feature\Documents;
 
+use App\Listeners\TranslateDocumentWorkflowEvents;
 use App\Models\AutomationRule;
+use App\Models\BusinessDocument;
+use App\Models\Expense;
 use App\Models\Role;
 use App\Models\Workflow;
 use App\Services\Workflow\WorkflowEngine;
@@ -89,7 +92,7 @@ class DocumentWorkflowTest extends DocumentsTestCase
      */
     public function test_the_translator_has_no_path_back_to_itself(): void
     {
-        $translator = new \App\Listeners\TranslateDocumentWorkflowEvents;
+        $translator = new TranslateDocumentWorkflowEvents;
         $reflection = new \ReflectionClass($translator);
         $map = $reflection->getConstant('MAP');
 
@@ -103,13 +106,13 @@ class DocumentWorkflowTest extends DocumentsTestCase
     {
         $this->rule('document.submitted', 'description', 'Should never apply to an expense.');
         $this->memberAt(Role::MANAGER);
-        $expense = \App\Models\Expense::create([
+        $expense = Expense::create([
             'description' => 'Fuel', 'category' => 'fuel',
             'issue_date' => now()->toDateString(), 'amount' => 1000, 'total' => 1000,
             'status' => 'draft', 'recorded_by' => $this->owner->id,
         ]);
 
-        app(WorkflowEngine::class)->start($expense, $this->workflow(\App\Models\Expense::class), $this->owner);
+        app(WorkflowEngine::class)->start($expense, $this->workflow(Expense::class), $this->owner);
 
         $this->assertSame('Fuel', $expense->fresh()->description);
     }
@@ -125,7 +128,7 @@ class DocumentWorkflowTest extends DocumentsTestCase
         ]);
     }
 
-    protected function workflow(string $subjectType = \App\Models\BusinessDocument::class): Workflow
+    protected function workflow(string $subjectType = BusinessDocument::class): Workflow
     {
         $workflow = Workflow::create([
             'name' => 'Document approval',

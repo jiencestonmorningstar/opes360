@@ -10,6 +10,7 @@ use App\Notifications\WelcomeNotification;
 use App\Services\Partners\PartnerProgramme;
 use App\Support\Accounting\ChartOfAccounts;
 use App\Support\CurrentCompany;
+use App\Support\DefaultWorkflows;
 use Illuminate\Contracts\View\View;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
@@ -158,6 +159,9 @@ class Register extends Component
             // something to work from, and so the first invoice has somewhere
             // to post to.
             ChartOfAccounts::seed($company);
+            // Without these, every submit-for-approval in the product refuses:
+            // the engine is data-driven and a business with no rows has no path.
+            DefaultWorkflows::seed($company);
 
             $user->forceFill(['current_company_id' => $company->id])->save();
 

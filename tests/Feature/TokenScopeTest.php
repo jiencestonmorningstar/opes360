@@ -4,7 +4,6 @@ namespace Tests\Feature;
 
 use App\Enums\PaymentMethod;
 use App\Models\Company;
-use App\Models\Contact;
 use App\Models\Role;
 use App\Models\User;
 use App\Support\CurrentCompany;

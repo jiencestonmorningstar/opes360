@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Support\BrandPalette;
 use App\Support\CardCatalog;
 use Illuminate\Database\Eloquent\Concerns\HasUlids;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -287,13 +288,13 @@ class Company extends Model
     /** The derived token map for this company. Cached by BrandPalette. */
     public function palette(): array
     {
-        return \App\Support\BrandPalette::for($this);
+        return BrandPalette::for($this);
     }
 
     /** The owner's branding inputs, with platform defaults merged underneath. */
     public function brandingInputs(): array
     {
-        return \App\Support\BrandPalette::inputsFor($this);
+        return BrandPalette::inputsFor($this);
     }
 
     /**

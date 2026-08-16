@@ -5,8 +5,9 @@ namespace Tests\Feature\Documents;
 use App\Models\Contact;
 use App\Models\Employee;
 use App\Models\Project;
-use App\Services\Documents\DocumentFieldRegistry;
 use App\Services\DocumentComposer;
+use App\Services\Documents\CustomDocumentTemplates;
+use App\Services\Documents\DocumentFieldRegistry;
 
 class DocumentFieldRegistryTest extends DocumentsTestCase
 {
@@ -70,12 +71,12 @@ class DocumentFieldRegistryTest extends DocumentsTestCase
     public function test_a_custom_template_can_use_a_customer_field_through_compose(): void
     {
         $contact = Contact::create(['name' => 'A Customer', 'balance' => 0]);
-        $template = app(\App\Services\Documents\CustomDocumentTemplates::class)->create([
+        $template = app(CustomDocumentTemplates::class)->create([
             'key' => 'greeting',
             'name' => 'Greeting',
             'body' => 'Dear {{ customer.name }},',
         ], $this->owner);
-        app(\App\Services\Documents\CustomDocumentTemplates::class)->publish($template);
+        app(CustomDocumentTemplates::class)->publish($template);
 
         $merged = app(DocumentComposer::class)->merge('greeting', [], $this->company, ['customer' => $contact]);
 
@@ -85,12 +86,12 @@ class DocumentFieldRegistryTest extends DocumentsTestCase
     /** Composing with no context at all still works — every provider contributes nothing gracefully. */
     public function test_composing_with_no_context_leaves_erp_placeholders_blank_rather_than_erroring(): void
     {
-        $template = app(\App\Services\Documents\CustomDocumentTemplates::class)->create([
+        $template = app(CustomDocumentTemplates::class)->create([
             'key' => 'blank_greeting',
             'name' => 'Blank Greeting',
             'body' => 'Dear {{ customer.name }},',
         ], $this->owner);
-        app(\App\Services\Documents\CustomDocumentTemplates::class)->publish($template);
+        app(CustomDocumentTemplates::class)->publish($template);
 
         $merged = app(DocumentComposer::class)->merge('blank_greeting', [], $this->company);
 

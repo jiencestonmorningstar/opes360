@@ -25,6 +25,7 @@ use App\Support\DocumentKinds;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
+use Illuminate\Support\Carbon;
 use Illuminate\Validation\Rule;
 
 /**
@@ -278,7 +279,7 @@ class LibraryController extends ApiController
         $share = $this->sharing->create(
             $document,
             $request->user(),
-            isset($data['expires_at']) ? \Illuminate\Support\Carbon::parse($data['expires_at']) : null,
+            isset($data['expires_at']) ? Carbon::parse($data['expires_at']) : null,
             $data['password'] ?? null,
             $data['allow_download'] ?? true,
         );

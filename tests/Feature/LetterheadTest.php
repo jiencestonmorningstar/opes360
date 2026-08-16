@@ -2,6 +2,7 @@
 
 namespace Tests\Feature;
 
+use App\Enums\DocumentStatus;
 use App\Enums\DocumentType;
 use App\Models\Company;
 use App\Models\Contact;
@@ -65,7 +66,7 @@ class LetterheadTest extends TestCase
         $document = Document::create([
             'type' => DocumentType::Quotation,
             'contact_id' => $contact->id,
-            'status' => \App\Enums\DocumentStatus::Draft,
+            'status' => DocumentStatus::Draft,
             'issue_date' => now()->toDateString(),
             'currency' => 'XAF',
             'subtotal' => 900000,

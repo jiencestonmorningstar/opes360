@@ -20,6 +20,7 @@ use App\Support\WebhookEvents;
 use App\Support\WebhookSignature;
 use Database\Seeders\RolePermissionSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Http\Client\ConnectionException;
 use Illuminate\Http\Client\Request as ClientRequest;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Queue;
@@ -298,7 +299,7 @@ class WebhookTest extends TestCase
     /** A connection that never answers is a failure, not a hung worker. */
     public function test_a_connection_error_is_recorded_rather_than_thrown(): void
     {
-        Http::fake(fn () => throw new \Illuminate\Http\Client\ConnectionException('Connection refused'));
+        Http::fake(fn () => throw new ConnectionException('Connection refused'));
 
         $endpoint = $this->endpoint([WebhookEvents::DEAL_WON]);
         $delivery = $this->pendingDelivery($endpoint);
@@ -378,7 +379,7 @@ class WebhookTest extends TestCase
      */
     public function test_a_failing_webhook_does_not_roll_back_the_payment_that_triggered_it(): void
     {
-        Http::fake(fn () => throw new \Illuminate\Http\Client\ConnectionException('No route to host'));
+        Http::fake(fn () => throw new ConnectionException('No route to host'));
 
         $this->endpoint([WebhookEvents::PAYMENT_RECORDED]);
         $invoice = $this->issuedInvoice(30000);

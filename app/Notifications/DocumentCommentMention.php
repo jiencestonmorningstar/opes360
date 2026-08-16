@@ -7,6 +7,7 @@ use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Notifications\Messages\MailMessage;
 use Illuminate\Notifications\Notification;
+use Illuminate\Support\Str;
 
 /** Somebody named you in a comment on a document. */
 class DocumentCommentMention extends Notification implements ShouldQueue
@@ -28,7 +29,7 @@ class DocumentCommentMention extends Notification implements ShouldQueue
         return (new MailMessage)
             ->subject($this->comment->author->firstName().' mentioned you on '.$document->title)
             ->line($this->comment->author->name.' mentioned you in a comment on "'.$document->title.'".')
-            ->line('"'.\Illuminate\Support\Str::limit($this->comment->body, 200).'"');
+            ->line('"'.Str::limit($this->comment->body, 200).'"');
     }
 
     /** @return array<string, mixed> */

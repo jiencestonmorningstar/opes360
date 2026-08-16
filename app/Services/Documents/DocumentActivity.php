@@ -4,6 +4,7 @@ namespace App\Services\Documents;
 
 use App\Models\ActivityLog;
 use App\Models\BusinessDocument;
+use Illuminate\Support\Carbon;
 use Illuminate\Support\Collection;
 
 /**
@@ -19,7 +20,7 @@ use Illuminate\Support\Collection;
  */
 class DocumentActivity
 {
-    /** @return Collection<int, array{type: string, at: \Illuminate\Support\Carbon, actor: ?string, summary: string}> */
+    /** @return Collection<int, array{type: string, at: Carbon, actor: ?string, summary: string}> */
     public function timeline(BusinessDocument $document): Collection
     {
         $log = ActivityLog::query()

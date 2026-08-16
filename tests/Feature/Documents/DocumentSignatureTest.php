@@ -2,10 +2,9 @@
 
 namespace Tests\Feature\Documents;
 
-use App\Events\DomainEvent;
+use App\Models\BusinessDocument;
 use App\Models\Role;
 use App\Services\Documents\DocumentSignatureRequests;
-use Illuminate\Support\Facades\Notification;
 use RuntimeException;
 
 class DocumentSignatureTest extends DocumentsTestCase
@@ -171,7 +170,7 @@ class DocumentSignatureTest extends DocumentsTestCase
 
         $this->assertNotNull($paper->fresh()->verification_token_id);
         $this->assertSame(
-            \App\Models\BusinessDocument::class,
+            BusinessDocument::class,
             $paper->fresh()->verificationToken->subject_type,
         );
     }

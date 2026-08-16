@@ -3,7 +3,6 @@
 namespace Tests\Feature\Projects;
 
 use App\Livewire\Projects\Index;
-use App\Models\Project;
 use App\Models\Role;
 use Livewire\Livewire;
 

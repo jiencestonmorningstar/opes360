@@ -3,7 +3,11 @@
 namespace Tests\Feature\Documents;
 
 use App\Models\BusinessDocument;
+use App\Models\Company;
+use App\Models\User;
+use App\Support\CurrentCompany;
 use App\Support\DocumentKinds;
+use Illuminate\Support\Str;
 
 class DocumentMetadataTest extends DocumentsTestCase
 {
@@ -176,14 +180,14 @@ class DocumentMetadataTest extends DocumentsTestCase
     {
         $this->document(['kind' => 'contract']);
 
-        $other = \App\Models\Company::create([
-            'slug' => 'other-'.\Illuminate\Support\Str::lower(\Illuminate\Support\Str::random(6)),
+        $other = Company::create([
+            'slug' => 'other-'.Str::lower(Str::random(6)),
             'name' => 'Other Sarl',
-            'owner_id' => \App\Models\User::factory()->create()->id,
+            'owner_id' => User::factory()->create()->id,
             'currency' => 'XAF', 'plan' => 'business', 'account_type' => 'active',
         ]);
 
-        app(\App\Support\CurrentCompany::class)->set($other);
+        app(CurrentCompany::class)->set($other);
 
         $this->assertSame(0, BusinessDocument::count());
     }

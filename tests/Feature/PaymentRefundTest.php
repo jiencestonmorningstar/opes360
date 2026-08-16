@@ -4,6 +4,7 @@ namespace Tests\Feature;
 
 use App\Enums\DocumentStatus;
 use App\Enums\PaymentMethod;
+use App\Livewire\Payments\Index;
 use App\Models\Company;
 use App\Models\Contact;
 use App\Models\Document;
@@ -19,6 +20,7 @@ use Database\Seeders\RolePermissionSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Str;
 use Laravel\Sanctum\Sanctum;
+use Livewire\Livewire;
 use Tests\TestCase;
 
 /**
@@ -334,8 +336,8 @@ class PaymentRefundTest extends TestCase
         [$document, $payment] = $this->paidInvoice(50000);
         $total = (float) $document->total;
 
-        \Livewire\Livewire::actingAs($this->owner)
-            ->test(\App\Livewire\Payments\Index::class)
+        Livewire::actingAs($this->owner)
+            ->test(Index::class)
             ->call('startRefund', $payment->id)
             ->assertSet('refundAmount', (string) (float) $payment->amount)
             ->set('refundReason', 'Goods returned')
@@ -350,8 +352,8 @@ class PaymentRefundTest extends TestCase
     {
         [, $payment] = $this->paidInvoice();
 
-        \Livewire\Livewire::actingAs($this->owner)
-            ->test(\App\Livewire\Payments\Index::class)
+        Livewire::actingAs($this->owner)
+            ->test(Index::class)
             ->call('startRefund', $payment->id)
             ->set('refundReason', '')
             ->call('refund')

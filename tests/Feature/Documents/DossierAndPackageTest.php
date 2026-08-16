@@ -2,6 +2,7 @@
 
 namespace Tests\Feature\Documents;
 
+use App\Models\BusinessDocument;
 use App\Models\BusinessDocumentChecklist;
 use App\Models\BusinessDocumentPackage;
 use App\Models\Contact;
@@ -184,7 +185,7 @@ class DossierAndPackageTest extends DocumentsTestCase
         return Contact::create(['name' => 'A Customer', 'balance' => 0]);
     }
 
-    protected function linkTo(Contact $customer, \App\Models\BusinessDocument $document): void
+    protected function linkTo(Contact $customer, BusinessDocument $document): void
     {
         app(DocumentLinker::class)->attach($document, $customer, 'about', $this->owner);
     }

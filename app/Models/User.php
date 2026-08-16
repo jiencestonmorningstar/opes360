@@ -18,10 +18,10 @@ use Laravel\Sanctum\HasApiTokens;
 
 class User extends Authenticatable implements TwoFactorAuthenticatable
 {
+    use HasApiTokens;
+
     /** @use HasFactory<UserFactory> */
     use HasFactory;
-
-    use HasApiTokens;
     use HasTwoFactorAuthentication;
     use Notifiable;
     use SoftDeletes;

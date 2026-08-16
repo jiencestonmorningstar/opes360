@@ -2,6 +2,7 @@
 
 namespace Tests\Feature\Documents;
 
+use App\Models\BusinessDocument;
 use App\Models\BusinessDocumentNumberingScheme;
 use App\Services\DocumentComposer;
 
@@ -103,7 +104,7 @@ class DocumentNumberingTest extends DocumentsTestCase
         ]);
     }
 
-    protected function issue(\App\Models\BusinessDocument $document): \App\Models\BusinessDocument
+    protected function issue(BusinessDocument $document): BusinessDocument
     {
         return app(DocumentComposer::class)->issue($document, $this->owner);
     }

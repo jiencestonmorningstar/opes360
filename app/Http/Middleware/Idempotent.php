@@ -5,6 +5,7 @@ namespace App\Http\Middleware;
 use App\Models\IdempotencyKey;
 use App\Support\CurrentCompany;
 use Closure;
+use Illuminate\Database\QueryException;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Symfony\Component\HttpFoundation\Response;
@@ -70,7 +71,7 @@ class Idempotent
                     'request_hash' => $hash,
                 ]);
             });
-        } catch (\Illuminate\Database\QueryException) {
+        } catch (QueryException) {
             $existing = IdempotencyKey::query()
                 ->where('key', $key)
                 ->where('token_id', $tokenId)

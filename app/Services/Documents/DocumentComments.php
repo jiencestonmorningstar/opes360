@@ -16,8 +16,8 @@ class DocumentComments
 {
     /**
      * @param  array<int, int>  $mentionedUserIds  Explicit ids, not names
-     *                                              parsed out of the text —
-     *                                              see BusinessDocumentComment.
+     *                                             parsed out of the text —
+     *                                             see BusinessDocumentComment.
      */
     public function post(
         BusinessDocument $document,

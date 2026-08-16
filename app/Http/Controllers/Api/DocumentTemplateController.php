@@ -4,10 +4,8 @@ namespace App\Http\Controllers\Api;
 
 use App\Models\BusinessDocumentTemplate;
 use App\Services\Documents\CustomDocumentTemplates;
-use App\Support\DocumentKinds;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
-use Illuminate\Validation\Rule;
 
 /**
  * A business's own templates — §8. The built-in catalogue in

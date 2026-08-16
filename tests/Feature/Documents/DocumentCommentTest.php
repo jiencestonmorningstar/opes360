@@ -2,6 +2,7 @@
 
 namespace Tests\Feature\Documents;
 
+use App\Models\BusinessDocumentComment;
 use App\Models\Role;
 use App\Notifications\DocumentCommentMention;
 use App\Services\Documents\DocumentComments;
@@ -105,7 +106,7 @@ class DocumentCommentTest extends DocumentsTestCase
     {
         $officer = $this->memberAt(Role::SALES_OFFICER);
 
-        $this->assertTrue($officer->can('create', \App\Models\BusinessDocumentComment::class));
+        $this->assertTrue($officer->can('create', BusinessDocumentComment::class));
     }
 
     public function test_only_the_author_may_edit_their_own_comment(): void

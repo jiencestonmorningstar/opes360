@@ -3,8 +3,8 @@
 namespace App\Models;
 
 use App\Models\Concerns\Approvable;
-use App\Models\Concerns\EmitsDomainEvents;
 use App\Models\Concerns\BelongsToCompany;
+use App\Models\Concerns\EmitsDomainEvents;
 use App\Support\Accounting\ChartOfAccounts;
 use Illuminate\Database\Eloquent\Concerns\HasUlids;
 use Illuminate\Database\Eloquent\Factories\HasFactory;

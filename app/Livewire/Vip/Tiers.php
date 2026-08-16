@@ -4,6 +4,7 @@ namespace App\Livewire\Vip;
 
 use App\Models\VipMembership;
 use App\Models\VipTier;
+use App\Support\CurrentCompany;
 use Illuminate\Contracts\View\View;
 use Illuminate\Foundation\Auth\Access\AuthorizesRequests;
 use Illuminate\Support\Facades\Gate;
@@ -89,7 +90,7 @@ class Tiers extends Component
             session()->flash('status', 'Tier updated. Members already signed up keep what they bought.');
         } else {
             VipTier::create($attributes + [
-                'currency' => app(\App\Support\CurrentCompany::class)->get()?->currency ?? 'XAF',
+                'currency' => app(CurrentCompany::class)->get()?->currency ?? 'XAF',
                 'is_active' => true,
             ]);
             session()->flash('status', 'Tier added.');

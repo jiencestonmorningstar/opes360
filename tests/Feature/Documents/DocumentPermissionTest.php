@@ -2,8 +2,10 @@
 
 namespace Tests\Feature\Documents;
 
+use App\Models\BusinessDocument;
 use App\Models\Company;
 use App\Models\Role;
+use App\Models\User;
 use App\Support\CurrentCompany;
 use App\Support\Permissions;
 use Illuminate\Support\Facades\Gate;
@@ -148,9 +150,9 @@ class DocumentPermissionTest extends DocumentsTestCase
         $this->assertFalse($administrator->can('manage', $elsewhere));
     }
 
-    protected function documentInAnotherCompany(): \App\Models\BusinessDocument
+    protected function documentInAnotherCompany(): BusinessDocument
     {
-        $stranger = \App\Models\User::factory()->create();
+        $stranger = User::factory()->create();
 
         $other = Company::create([
             'slug' => 'other-'.Str::lower(Str::random(6)),

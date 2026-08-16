@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Api;
 use App\Models\WorkflowAssignment;
 use App\Models\WorkflowInstance;
 use App\Services\Workflow\WorkflowEngine;
+use App\Support\CurrentCompany;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use RuntimeException;
@@ -55,7 +56,7 @@ class ApprovalController extends ApiController
     {
         $this->authorize('workflows.view');
 
-        abort_unless($approval->company_id === app(\App\Support\CurrentCompany::class)->id(), 404);
+        abort_unless($approval->company_id === app(CurrentCompany::class)->id(), 404);
 
         return response()->json([
             'data' => $this->instance($approval->load('workflow', 'decisions.user')) + [
@@ -108,7 +109,7 @@ class ApprovalController extends ApiController
      */
     public function decide(Request $request, WorkflowInstance $approval): JsonResponse
     {
-        abort_unless($approval->company_id === app(\App\Support\CurrentCompany::class)->id(), 404);
+        abort_unless($approval->company_id === app(CurrentCompany::class)->id(), 404);
 
         $payload = $request->validate([
             'action' => ['required', 'string', 'in:approved,rejected,changes_requested'],

@@ -4,6 +4,7 @@ namespace App\Listeners;
 
 use App\Events\DomainEvent;
 use App\Models\AutomationRule;
+use App\Models\WorkflowStep;
 use App\Services\Automation\ActionRunner;
 use App\Support\WorkflowConditions;
 use Throwable;
@@ -64,7 +65,7 @@ class RunAutomationRules
 
         // WorkflowConditions reads `conditions` off whatever it is given, so a
         // step-shaped stand-in keeps one matcher rather than two.
-        $step = new \App\Models\WorkflowStep;
+        $step = new WorkflowStep;
         $step->conditions = $rule->conditions;
 
         return $this->conditions->passes($step, $event->subject);

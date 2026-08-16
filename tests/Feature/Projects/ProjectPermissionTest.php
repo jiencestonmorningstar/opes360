@@ -2,10 +2,14 @@
 
 namespace Tests\Feature\Projects;
 
+use App\Models\Company;
 use App\Models\Project;
 use App\Models\Role;
+use App\Models\User;
+use App\Support\CurrentCompany;
 use App\Support\Permissions;
 use Illuminate\Support\Facades\Gate;
+use Illuminate\Support\Str;
 
 class ProjectPermissionTest extends ProjectTestCase
 {
@@ -66,17 +70,17 @@ class ProjectPermissionTest extends ProjectTestCase
 
     protected function projectInAnotherCompany(): Project
     {
-        $stranger = \App\Models\User::factory()->create();
-        $other = \App\Models\Company::create([
-            'slug' => 'other-'.\Illuminate\Support\Str::lower(\Illuminate\Support\Str::random(6)),
+        $stranger = User::factory()->create();
+        $other = Company::create([
+            'slug' => 'other-'.Str::lower(Str::random(6)),
             'name' => 'Other Sarl', 'owner_id' => $stranger->id, 'currency' => 'XAF',
             'plan' => 'business', 'account_type' => 'active',
         ]);
         $this->joinCompany($other, $stranger, Role::OWNER);
 
-        app(\App\Support\CurrentCompany::class)->set($other);
+        app(CurrentCompany::class)->set($other);
         $project = $this->project(['created_by' => $stranger->id]);
-        app(\App\Support\CurrentCompany::class)->set($this->company);
+        app(CurrentCompany::class)->set($this->company);
 
         return $project;
     }

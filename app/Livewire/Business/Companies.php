@@ -7,6 +7,7 @@ use App\Models\Role;
 use App\Models\VerificationToken;
 use App\Support\Accounting\ChartOfAccounts;
 use App\Support\CurrentCompany;
+use App\Support\DefaultWorkflows;
 use Illuminate\Contracts\View\View;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
@@ -100,6 +101,9 @@ class Companies extends Component
             // something to work from, and so the first invoice has somewhere
             // to post to.
             ChartOfAccounts::seed($company);
+            // Without these, every submit-for-approval in the product refuses:
+            // the engine is data-driven and a business with no rows has no path.
+            DefaultWorkflows::seed($company);
 
             return $company;
         });

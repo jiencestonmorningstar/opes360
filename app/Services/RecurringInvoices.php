@@ -12,7 +12,6 @@ use App\Models\User;
 use App\Support\CurrentCompany;
 use App\Support\Vat;
 use Illuminate\Support\Carbon;
-use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 
 /**

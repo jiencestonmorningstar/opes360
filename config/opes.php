@@ -85,8 +85,21 @@ return [
         ['key' => 'stock', 'label' => 'Stock value', 'icon' => 'cube', 'route' => 'products.stock', 'ability' => 'products.view'],
         ['key' => 'locations', 'label' => 'Stock locations', 'icon' => 'cube', 'route' => 'products.locations', 'ability' => 'products.manage-locations'],
         ['key' => 'expenses', 'label' => 'Expenses', 'icon' => 'banknotes', 'route' => 'expenses', 'ability' => 'expenses.view'],
+        ['key' => 'contracts', 'label' => 'Contracts', 'icon' => 'document-check', 'route' => 'contracts.index', 'ability' => 'contracts.view'],
+        ['key' => 'payables', 'label' => 'Paying suppliers', 'icon' => 'banknotes', 'route' => 'payables.schedule', 'ability' => 'payables.view'],
+        ['key' => 'requisitions', 'label' => 'Requisitions', 'icon' => 'clipboard', 'route' => 'procurement.requisitions', 'ability' => 'procurement.requisition-view'],
+        ['key' => 'sourcing', 'label' => 'Quotations', 'icon' => 'clipboard', 'route' => 'procurement.sourcing', 'ability' => 'procurement.rfq-view'],
+        ['key' => 'service', 'label' => 'Service desk', 'icon' => 'briefcase', 'route' => 'service', 'ability' => 'service.view'],
+        ['key' => 'compliance', 'label' => 'Deadlines', 'icon' => 'calendar', 'route' => 'compliance', 'ability' => 'compliance.view'],
+        ['key' => 'risks', 'label' => 'Risks', 'icon' => 'clipboard', 'route' => 'risks', 'ability' => 'risks.view'],
+        ['key' => 'audit', 'label' => 'Audit trail', 'icon' => 'shield-check', 'route' => 'audit', 'ability' => 'audit.view'],
         ['key' => 'team', 'label' => 'Team', 'icon' => 'users', 'route' => 'team', 'ability' => 'employees.view'],
         ['key' => 'payroll', 'label' => 'Payroll', 'icon' => 'wallet', 'route' => 'payroll', 'ability' => 'payroll.view'],
+        ['key' => 'positions', 'label' => 'Positions', 'icon' => 'users', 'route' => 'business.positions', 'ability' => 'positions.view'],
+        ['key' => 'attendance', 'label' => 'Attendance', 'icon' => 'calendar', 'route' => 'hr.attendance', 'ability' => 'attendance.view'],
+        // Ungated, like My actions: everybody has their own review to sign,
+        // whatever else they may or may not see.
+        ['key' => 'reviews', 'label' => 'Reviews', 'icon' => 'clipboard', 'route' => 'hr.reviews'],
         ['key' => 'calendar', 'label' => 'Calendar', 'icon' => 'calendar', 'route' => 'calendar', 'ability' => 'sales.view'],
         // Reachable by anyone who may create the records it writes; the screen
         // itself asks for the same permission per import type.

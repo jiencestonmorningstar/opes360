@@ -2,7 +2,6 @@
 
 namespace Tests\Feature\Documents;
 
-use App\Models\BusinessDocument;
 use App\Models\BusinessDocumentFolder;
 use App\Models\Company;
 use App\Models\User;

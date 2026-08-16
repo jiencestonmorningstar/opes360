@@ -3,10 +3,10 @@
 namespace App\Services\Procurement;
 
 use App\Enums\DocumentType;
-use App\Models\Company;
 use App\Models\Contact;
 use App\Models\Document;
 use App\Models\DocumentLine;
+use App\Models\Expense;
 use App\Models\GoodsReceipt;
 use App\Models\GoodsReceiptLine;
 use App\Models\Item;
@@ -201,7 +201,7 @@ class GoodsReceiver
         );
 
         $billed = round(
-            (float) \App\Models\Expense::query()
+            (float) Expense::query()
                 ->where('purchase_order_id', $order->id)
                 ->where('status', '!=', 'void')
                 ->sum('total'),

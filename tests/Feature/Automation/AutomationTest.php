@@ -5,9 +5,11 @@ namespace Tests\Feature\Automation;
 use App\Events\DomainEvent;
 use App\Models\AutomationRule;
 use App\Models\Company;
+use App\Models\Expense;
 use App\Models\Role;
 use App\Models\User;
 use App\Models\Workflow;
+use App\Notifications\RuleNotification;
 use App\Support\CurrentCompany;
 use App\Support\DomainEvents;
 use Illuminate\Support\Facades\Event;
@@ -226,7 +228,7 @@ class AutomationTest extends AutomationTestCase
 
         app(CurrentCompany::class)->set(null);
 
-        $orphan = new \App\Models\Expense;
+        $orphan = new Expense;
         $orphan->emitDomainEvent('expense.recorded');
 
         Event::assertNotDispatched(DomainEvent::class);
@@ -240,7 +242,7 @@ class AutomationTest extends AutomationTestCase
 
         Workflow::create([
             'name' => 'Expense approval',
-            'subject_type' => \App\Models\Expense::class,
+            'subject_type' => Expense::class,
             'is_active' => true,
             'is_default' => true,
         ])->steps()->create([
@@ -281,6 +283,6 @@ class AutomationTest extends AutomationTestCase
          * and digest — and the notification settings screen would be quietly
          * lying about what it controls. See Phase 4.4.
          */
-        Notification::assertSentTo($manager, \App\Notifications\RuleNotification::class);
+        Notification::assertSentTo($manager, RuleNotification::class);
     }
 }

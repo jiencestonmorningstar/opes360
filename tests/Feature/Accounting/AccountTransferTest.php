@@ -2,6 +2,7 @@
 
 namespace Tests\Feature\Accounting;
 
+use App\Models\AccountTransfer;
 use App\Models\Company;
 use App\Models\JournalEntry;
 use App\Models\LedgerAccount;
@@ -136,7 +137,7 @@ class AccountTransferTest extends TestCase
         $this->assertDatabaseCount('account_transfers', 0);
     }
 
-    protected function transfer(float $amount, string $on = '2026-04-10'): \App\Models\AccountTransfer
+    protected function transfer(float $amount, string $on = '2026-04-10'): AccountTransfer
     {
         return app(AccountTransfers::class)->record(
             $this->company, $this->bank(), $this->cash(), $amount, $on, $this->owner,

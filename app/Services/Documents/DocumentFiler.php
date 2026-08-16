@@ -9,6 +9,7 @@ use App\Models\User;
 use App\Support\CurrentCompany;
 use App\Support\DocumentKinds;
 use Illuminate\Http\UploadedFile;
+use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 use RuntimeException;
@@ -130,7 +131,7 @@ class DocumentFiler
      * against two customers, and silently refusing — or worse, deleting — the
      * second one would lose a document somebody deliberately filed.
      *
-     * @return \Illuminate\Support\Collection<int, BusinessDocument>
+     * @return Collection<int, BusinessDocument>
      */
     public function duplicatesOf(string $checksum, ?string $exceptDocumentId = null)
     {

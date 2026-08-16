@@ -4,7 +4,6 @@ namespace App\Services\Documents;
 
 use App\Models\BusinessDocument;
 use App\Models\BusinessDocumentSignature;
-use App\Models\User;
 use App\Models\VerificationToken;
 use Illuminate\Support\Collection;
 use RuntimeException;

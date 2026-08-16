@@ -4,6 +4,8 @@ namespace Tests\Feature\Accounting;
 
 use App\Models\Company;
 use App\Models\CostCentre;
+use App\Models\Department;
+use App\Models\FiscalYear;
 use App\Models\Role;
 use App\Models\User;
 use App\Services\Accounting\FiscalPeriods;
@@ -218,7 +220,7 @@ class FiscalPeriodTest extends TestCase
 
     public function test_a_cost_centre_can_be_created_and_linked_to_a_department(): void
     {
-        $department = \App\Models\Department::create(['name' => 'Operations']);
+        $department = Department::create(['name' => 'Operations']);
         $centre = CostCentre::create([
             'code' => 'OPS-01', 'name' => 'Operations budget',
             'department_id' => $department->id, 'is_active' => true,
@@ -234,7 +236,7 @@ class FiscalPeriodTest extends TestCase
         $this->assertNull($centre->department_id);
     }
 
-    protected function createYear(string $name = '2026', string $startsOn = '2026-01-01'): \App\Models\FiscalYear
+    protected function createYear(string $name = '2026', string $startsOn = '2026-01-01'): FiscalYear
     {
         return $this->periods()->createYearWithMonths(
             $this->company,

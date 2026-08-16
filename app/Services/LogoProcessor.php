@@ -5,7 +5,6 @@ namespace App\Services;
 use GdImage;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Storage;
-use RuntimeException;
 
 /**
  * Cleans up a logo the moment it is uploaded.

@@ -4,8 +4,8 @@ namespace Tests\Feature;
 
 use App\Livewire\Business\Branding;
 use App\Models\Company;
-use App\Models\User;
 use App\Models\Role;
+use App\Models\User;
 use App\Support\CurrentCompany;
 use Database\Seeders\RolePermissionSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;

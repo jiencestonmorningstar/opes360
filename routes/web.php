@@ -29,9 +29,13 @@ use App\Livewire\Business\Companies as BusinessCompanies;
 use App\Livewire\Business\Departments as BusinessDepartments;
 use App\Livewire\Business\Edit as BusinessEdit;
 use App\Livewire\Business\Logo as BusinessLogo;
+use App\Livewire\Business\Positions as BusinessPositions;
 use App\Livewire\Business\Reviews as BusinessReviews;
 use App\Livewire\Business\Stationery;
 use App\Livewire\CalendarPage\Index as CalendarIndex;
+use App\Livewire\Compliance\Index as ComplianceIndex;
+use App\Livewire\Contracts\Index as ContractsIndex;
+use App\Livewire\Contracts\Show as ContractsShow;
 use App\Livewire\Customers\Form as CustomerForm;
 use App\Livewire\Customers\Index as CustomersIndex;
 use App\Livewire\Customers\Show as CustomerShow;
@@ -49,6 +53,8 @@ use App\Livewire\Forms\Builder as FormsBuilder;
 use App\Livewire\Forms\Index as FormsIndex;
 use App\Livewire\Forms\Responses as FormsResponses;
 use App\Livewire\Guides\Index as GuidesIndex;
+use App\Livewire\Hr\Attendance as HrAttendance;
+use App\Livewire\Hr\Reviews as HrReviews;
 use App\Livewire\Imports\Index as ImportsIndex;
 use App\Livewire\Invitations\Accept as InvitationAccept;
 use App\Livewire\Onboarding\Register;
@@ -58,9 +64,14 @@ use App\Livewire\Papers\Show as PapersShow;
 use App\Livewire\Partners\Clients as PartnerClients;
 use App\Livewire\Partners\ClientShow as PartnerClientShow;
 use App\Livewire\Partners\Earnings as PartnerEarnings;
+use App\Livewire\Payables\Reconcile as PayablesReconcile;
+use App\Livewire\Payables\Runs as PayablesRuns;
+use App\Livewire\Payables\Schedule as PayablesSchedule;
 use App\Livewire\Payments\Index as PaymentsIndex;
 use App\Livewire\Payroll\Index as PayrollIndex;
 use App\Livewire\Payroll\Show as PayrollShow;
+use App\Livewire\Procurement\Requisitions as ProcurementRequisitions;
+use App\Livewire\Procurement\Sourcing as ProcurementSourcing;
 use App\Livewire\Products\Form as ProductForm;
 use App\Livewire\Products\Index as ProductsIndex;
 use App\Livewire\Projects\Index as ProjectsIndex;
@@ -68,8 +79,12 @@ use App\Livewire\Reports\Aging as ReportsAging;
 use App\Livewire\Reports\Collections as ReportsCollections;
 use App\Livewire\Reports\Index as ReportsIndex;
 use App\Livewire\Reports\Statement as ReportsStatement;
+use App\Livewire\Risks\Index as RisksIndex;
 use App\Livewire\Sales\Index as SalesIndex;
 use App\Livewire\Scan;
+use App\Livewire\Service\Index as ServiceIndex;
+use App\Livewire\Service\Policies as ServicePolicies;
+use App\Livewire\Service\Show as ServiceShow;
 use App\Livewire\Settings\ApiTokens as SettingsApiTokens;
 use App\Livewire\Settings\Billing as SettingsBilling;
 use App\Livewire\Settings\Index as SettingsIndex;
@@ -304,6 +319,61 @@ Route::middleware('auth')->group(function () {
     // grant somebody the right to mute their own email.
     Route::get('/settings/notifications', NotificationSettings::class)
         ->name('settings.notifications');
+
+    /*
+     * Paying suppliers. Three screens rather than tabs on one, because they
+     * are three different jobs done at different moments: deciding what to
+     * pay, releasing it, and arguing with a supplier about what is owed.
+     */
+    Route::get('/payables', PayablesSchedule::class)
+        ->middleware('can:payables.view')->name('payables.schedule');
+    Route::get('/payables/runs', PayablesRuns::class)
+        ->middleware('can:payables.view')->name('payables.runs');
+    Route::get('/payables/reconcile', PayablesReconcile::class)
+        ->middleware('can:payables.reconcile')->name('payables.reconcile');
+
+    Route::get('/procurement/requisitions', ProcurementRequisitions::class)
+        ->middleware('can:procurement.requisition-view')->name('procurement.requisitions');
+    Route::get('/procurement/sourcing', ProcurementSourcing::class)
+        ->middleware('can:procurement.rfq-view')->name('procurement.sourcing');
+
+    Route::get('/business/positions', BusinessPositions::class)
+        ->middleware('can:positions.view')->name('business.positions');
+    /*
+     * Under /hr rather than /team: `/team/{employee}` sits in this same group
+     * and would read `attendance` as an employee's id.
+     */
+    Route::get('/hr/attendance', HrAttendance::class)
+        ->middleware('can:attendance.view')->name('hr.attendance');
+    /*
+     * Deliberately ungated. An employee with no HR permission at all must be
+     * able to reach their own review and sign it — an ability here would mean
+     * an administrator granting somebody the right to acknowledge a review
+     * about themselves. The component shows them only their own, and refuses
+     * anybody else's.
+     */
+    Route::get('/hr/reviews', HrReviews::class)->name('hr.reviews');
+
+    Route::get('/compliance', ComplianceIndex::class)
+        ->middleware('can:compliance.view')->name('compliance');
+    Route::get('/risks', RisksIndex::class)
+        ->middleware('can:risks.view')->name('risks');
+
+    Route::get('/service', ServiceIndex::class)
+        ->middleware('can:service.view')->name('service');
+    // Before the wildcard, or `sla` is read as a ticket id.
+    Route::get('/service/sla', ServicePolicies::class)
+        ->middleware('can:service.manage-sla')->name('service.sla');
+    Route::get('/service/tickets/{ticket}', ServiceShow::class)
+        ->middleware('can:service.view')->name('service.show');
+
+    // The watch — what is about to renew itself — is the landing page rather
+    // than a tab off a list. A contract list is a filing cabinet; the notice
+    // dates are the only part that costs money by being ignored.
+    Route::get('/contracts', ContractsIndex::class)
+        ->middleware('can:contracts.view')->name('contracts.index');
+    Route::get('/contracts/{contract}', ContractsShow::class)
+        ->middleware('can:contracts.view')->name('contracts.show');
 
     Route::get('/audit', AuditIndex::class)
         ->middleware('can:audit.view')->name('audit');

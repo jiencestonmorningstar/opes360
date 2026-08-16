@@ -3,6 +3,10 @@
 namespace Tests\Feature;
 
 use App\Enums\DocumentStatus;
+use App\Jobs\DeliverWebhook;
+use App\Livewire\Documents\Create;
+use App\Livewire\Vip\Members;
+use App\Livewire\Vip\Tiers;
 use App\Models\Company;
 use App\Models\Contact;
 use App\Models\Document;
@@ -10,19 +14,18 @@ use App\Models\Role;
 use App\Models\User;
 use App\Models\VipMembership;
 use App\Models\VipTier;
+use App\Models\WebhookDelivery;
+use App\Models\WebhookEndpoint;
 use App\Services\VipMemberships;
 use App\Support\Accounting\ChartOfAccounts;
 use App\Support\CurrentCompany;
-use Database\Seeders\RolePermissionSeeder;
-use App\Jobs\DeliverWebhook;
-use App\Models\WebhookDelivery;
-use App\Models\WebhookEndpoint;
 use App\Support\WebhookEvents;
-use Illuminate\Support\Facades\Queue;
+use Database\Seeders\RolePermissionSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Queue;
+use Illuminate\Support\Str;
 use Laravel\Sanctum\Sanctum;
 use Livewire\Livewire;
-use Illuminate\Support\Str;
 use RuntimeException;
 use Tests\TestCase;
 
@@ -268,7 +271,7 @@ class VipMembershipTest extends TestCase
         $tier = VipTier::factory()->create(['company_id' => $this->company->id]);
 
         Livewire::actingAs($this->owner)
-            ->test(\App\Livewire\Vip\Members::class)
+            ->test(Members::class)
             ->set('sellTo', $this->customer->id)
             ->set('sellTier', $tier->id)
             ->call('sell')
@@ -286,7 +289,7 @@ class VipMembershipTest extends TestCase
         ]);
 
         Livewire::actingAs($this->owner)
-            ->test(\App\Livewire\Vip\Members::class)
+            ->test(Members::class)
             ->set('sellTo', $this->customer->id)
             ->set('sellTier', $tier->id)
             ->call('sell')
@@ -298,7 +301,7 @@ class VipMembershipTest extends TestCase
     public function test_a_tier_can_be_added_and_withdrawn(): void
     {
         Livewire::actingAs($this->owner)
-            ->test(\App\Livewire\Vip\Tiers::class)
+            ->test(Tiers::class)
             ->set('name', 'Platinum')
             ->set('price', '120000')
             ->set('periodMonths', '12')
@@ -310,7 +313,7 @@ class VipMembershipTest extends TestCase
         $this->assertTrue((bool) $tier->is_active);
 
         Livewire::actingAs($this->owner)
-            ->test(\App\Livewire\Vip\Tiers::class)
+            ->test(Tiers::class)
             ->call('withdraw', $tier->id);
 
         $this->assertFalse((bool) $tier->fresh()->is_active);
@@ -319,7 +322,7 @@ class VipMembershipTest extends TestCase
     public function test_a_discount_over_a_hundred_percent_is_refused(): void
     {
         Livewire::actingAs($this->owner)
-            ->test(\App\Livewire\Vip\Tiers::class)
+            ->test(Tiers::class)
             ->set('name', 'Impossible')
             ->set('price', '1000')
             ->set('periodMonths', '12')
@@ -569,7 +572,7 @@ class VipMembershipTest extends TestCase
         ]);
 
         Livewire::actingAs($this->owner)
-            ->test(\App\Livewire\Documents\Create::class)
+            ->test(Create::class)
             ->call('save', [
                 'contact_id' => $this->customer->id,
                 'issue_date' => now()->toDateString(),
@@ -585,7 +588,7 @@ class VipMembershipTest extends TestCase
     public function test_the_invoice_screen_charges_a_non_member_in_full(): void
     {
         Livewire::actingAs($this->owner)
-            ->test(\App\Livewire\Documents\Create::class)
+            ->test(Create::class)
             ->call('save', [
                 'contact_id' => $this->customer->id,
                 'issue_date' => now()->toDateString(),

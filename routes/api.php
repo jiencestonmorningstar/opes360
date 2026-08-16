@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\Api\AccountingController;
 use App\Http\Controllers\Api\ApprovalController;
+use App\Http\Controllers\Api\BrandingController;
 use App\Http\Controllers\Api\ContactController;
 use App\Http\Controllers\Api\DealController;
 use App\Http\Controllers\Api\DocumentController;
@@ -20,7 +21,6 @@ use App\Http\Controllers\Api\PayrollController;
 use App\Http\Controllers\Api\TicketController;
 use App\Http\Controllers\Api\TokenController;
 use App\Http\Controllers\Api\VipController;
-use App\Http\Controllers\Api\BrandingController;
 use App\Http\Controllers\Api\WebhookController;
 use Illuminate\Support\Facades\Route;
 

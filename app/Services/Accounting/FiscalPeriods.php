@@ -30,7 +30,7 @@ class FiscalPeriods
      */
     public function createYearWithMonths(Company $company, string $name, CarbonImmutable $startsOn, ?User $actor = null): FiscalYear
     {
-        return DB::transaction(function () use ($company, $name, $startsOn, $actor) {
+        return DB::transaction(function () use ($company, $name, $startsOn) {
             $endsOn = $startsOn->addYear()->subDay();
 
             $year = FiscalYear::create([
