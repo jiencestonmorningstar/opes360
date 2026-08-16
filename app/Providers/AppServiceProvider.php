@@ -26,7 +26,9 @@ use App\Models\ExpensePayment;
 use App\Models\FiscalPeriod;
 use App\Models\FixedAsset;
 use App\Models\InsuranceClaim;
+use App\Models\InsuranceEndorsement;
 use App\Models\InsurancePolicy;
+use App\Models\InsurancePolicyRenewal;
 use App\Models\Item;
 use App\Models\JournalEntry;
 use App\Models\Lead;
@@ -38,6 +40,7 @@ use App\Models\PaymentRunItem;
 use App\Models\PayrollRun;
 use App\Models\Payslip;
 use App\Models\PerformanceReview;
+use App\Models\PolicyCommission;
 use App\Models\Position;
 use App\Models\Project;
 use App\Models\Property;
@@ -208,6 +211,7 @@ class AppServiceProvider extends ServiceProvider
             // The verticals' commitments: cover promised, stock promised to a
             // customer, cargo entrusted, somebody's home and their deposit.
             InsurancePolicy::class, InsuranceClaim::class,
+            PolicyCommission::class, InsurancePolicyRenewal::class, InsuranceEndorsement::class,
             SalesOrder::class, DeliveryNote::class,
             Shipment::class, TripManifest::class,
             Property::class, Tenancy::class,

@@ -151,7 +151,7 @@ class DomainEvents
         'estate' => [
             'estate.tenancy.started',
             'estate.tenancy.ended',
-            'estate.tenancy.rent-changed',
+            'estate.tenancy.rent_changed',
         ],
 
         'hr' => [

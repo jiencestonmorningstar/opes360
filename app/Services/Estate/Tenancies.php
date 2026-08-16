@@ -424,7 +424,7 @@ class Tenancies
                 $schedule->forceFill(['lines' => $lines])->save();
             }
 
-            $tenancy->emitDomainEvent('estate.tenancy.rent-changed', [
+            $tenancy->emitDomainEvent('estate.tenancy.rent_changed', [
                 'tenancy_id' => $tenancy->id,
                 'rent_before' => $before,
                 'rent_after' => $newRent,
