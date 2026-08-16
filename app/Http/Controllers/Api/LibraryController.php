@@ -4,11 +4,14 @@ namespace App\Http\Controllers\Api;
 
 use App\Http\Resources\BusinessDocumentResource;
 use App\Models\BusinessDocument;
+use App\Models\BusinessDocumentVersion;
 use App\Models\Contact;
 use App\Models\Document;
 use App\Models\Employee;
 use App\Models\Project;
 use App\Services\Documents\DocumentLinker;
+use App\Services\Documents\DocumentVersioner;
+use App\Services\Documents\VersionComparator;
 use App\Support\DocumentKinds;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -37,7 +40,11 @@ class LibraryController extends ApiController
         'project' => Project::class,
     ];
 
-    public function __construct(private readonly DocumentLinker $linker) {}
+    public function __construct(
+        private readonly DocumentLinker $linker,
+        private readonly DocumentVersioner $versioner,
+        private readonly VersionComparator $comparator,
+    ) {}
 
     public function index(Request $request): AnonymousResourceCollection
     {
@@ -133,6 +140,54 @@ class LibraryController extends ApiController
         $document->delete();
 
         return response()->json(null, 204);
+    }
+
+    public function versions(BusinessDocument $document): JsonResponse
+    {
+        $this->authorize('view', $document);
+
+        return response()->json(['data' => $document->versions()
+            ->orderBy('version_number')
+            ->get()
+            ->map(fn (BusinessDocumentVersion $v) => [
+                'id' => $v->id,
+                'version' => $v->version_number,
+                'title' => $v->title,
+                'created_by' => $v->created_by,
+                'created_at' => $v->created_at?->toIso8601String(),
+            ])]);
+    }
+
+    /** Diff between two versions of the same document. Word-level, per field. */
+    public function compareVersions(Request $request, BusinessDocument $document): JsonResponse
+    {
+        $this->authorize('view', $document);
+
+        $data = $request->validate([
+            'from' => ['required', 'integer', 'min:1'],
+            'to' => ['required', 'integer', 'min:1'],
+        ]);
+
+        $from = $document->versions()->where('version_number', $data['from'])->firstOrFail();
+        $to = $document->versions()->where('version_number', $data['to'])->firstOrFail();
+
+        return response()->json(['data' => $this->comparator->compare($from, $to)]);
+    }
+
+    /** Only a draft can be restored — the same rule the service itself enforces. */
+    public function restoreVersion(BusinessDocument $document, BusinessDocumentVersion $version): JsonResponse
+    {
+        $this->authorize('update', $document);
+
+        abort_unless($version->business_document_id === $document->id, 404);
+
+        try {
+            $restored = $this->versioner->restore($document, $version, request()->user());
+        } catch (\RuntimeException $e) {
+            return response()->json(['message' => $e->getMessage()], 422);
+        }
+
+        return response()->json(['data' => BusinessDocumentResource::make($restored)]);
     }
 
     /**

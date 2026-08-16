@@ -38,7 +38,7 @@ half delivered. The table follows the master spec's own section numbers.
 | 67 | Context carried from the ERP record it was opened from | same |
 | 69 | Duplicate detection by checksum — warns, never deletes | `DocumentFiler` |
 | 70 | Issued documents immutable; filing columns allow-listed and outside the hash. **Locking added 2026-08-16** — a draft can be frozen against edits without being issued | `BusinessDocument::booted()` |
-| 12 | Versions — one snapshot per content change, filing never versions, restore adds a version rather than rewriting one | `DocumentVersioner`, `business_document_versions` |
+| 12–13 | Versions and comparison — one snapshot per content change, filing never versions, restore adds a version rather than rewriting one, word-level diff between any two versions | `DocumentVersioner`, `VersionComparator`, `business_document_versions` |
 | 71 | Finalisation — not rebuilt; issuance already does this (freeze, hash, record who/when) | `BusinessDocument::booted()`, `canonicalPayload()` |
 | 3 | Workspace — search, kind/security/folder/tag filters, five overview counters | `Livewire\Papers\Index` |
 | 47 | Library API — list/show/create/file/delete, attach/detach relations | `LibraryController` |
@@ -84,7 +84,6 @@ roadmap:**
 | 5 | Creation routes beyond blank/template/upload — duplicate, from existing, from ERP record, from workflow, from automation |
 | 7 | Dynamic ERP field registry — modules registering their own authorised fields |
 | 8 | Templates as data (create/edit/version/publish/permission). Templates are a hard-coded PHP catalogue today |
-| 13 | Version comparison — versions themselves now exist (see the Built table) |
 | 15 | Comments, replies, mentions, resolution |
 | 17–18 | Workflow stages and the approval engine |
 | 19 | Signature requests, fields, ordering, status |

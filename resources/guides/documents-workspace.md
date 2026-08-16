@@ -75,9 +75,14 @@ checked, but are not ready to commit to it being final. A locked draft can
 still be unlocked, or issued outright; locking is not a step on the way to
 issuing, it is a separate hold you can put on and take off.
 
+## Comparing versions
+
+Two versions can be compared side by side, word by word — not just "this
+changed" but exactly which words were added and which were removed, the same
+way a word processor's track-changes view works.
+
 ## For developers
 
 Everything on this screen is also reachable over the API — see §22 of
-`docs/API.md` for `GET /api/v1/library` and the filing endpoints. Versions do
-not have an API yet; see `docs/API.md` §23 for what is intentionally absent
-versus what simply has not shipped.
+`docs/API.md` for `GET /api/v1/library` and the filing endpoints, and its
+"Versions" subsection for listing, comparing and restoring.

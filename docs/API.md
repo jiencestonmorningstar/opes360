@@ -1164,12 +1164,30 @@ reasoning that already separates `share` from `view`.
 `content_hash` is never returned by any endpoint here. It exists to detect
 tampering, not to be handed to whoever is checking.
 
+### Versions
+
+`GET /api/v1/library/{document}/versions` — every version, oldest first.
+
+`GET /api/v1/library/{document}/versions/compare?from=1&to=3` — a word-level
+diff of `title`, `recipient` and `body` between two version numbers. Each
+field reports whether it changed and the diff itself as a sequence of
+`kept`/`added`/`removed` tokens, in order — reassembling the `kept` and
+`added` tokens reconstructs the newer text; `kept` and `removed` reconstructs
+the older one.
+
+`POST /api/v1/library/{document}/versions/{version}/restore` — replace the
+document's current content with a past version's. Refused with 403 for an
+issued document — the same `update` ability content edits use, which already
+requires a draft, catches this before the service beneath it ever runs.
+Restoring does not delete anything: it adds a new version on top, so the
+history still shows exactly what happened and in what order.
+
 ## 23. What is not here yet
 
-Every module through Library has an API. **Projects and document versions do
-not yet** — both shipped 2026-08-16 with a screen (or, for versions, a working
-model) and no API, and that is a gap to close, not a choice; noted here rather
-than let the claim below overstate what exists.
+Every module through Library, including its versions, has an API. **Projects
+does not yet** — it shipped 2026-08-16 with a screen and no API, and that is a
+gap to close, not a choice; noted here rather than let the claim below
+overstate what exists.
 
 Everything else absent below is absent by choice, and each section above says
 why in its own place:

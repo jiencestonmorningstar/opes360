@@ -175,6 +175,10 @@ Route::prefix('v1')->group(function (): void {
 
             Route::get('library', [LibraryController::class, 'index'])->name('api.v1.library.index');
             Route::get('library/{document}', [LibraryController::class, 'show'])->name('api.v1.library.show');
+            Route::get('library/{document}/versions', [LibraryController::class, 'versions'])
+                ->name('api.v1.library.versions.index');
+            Route::get('library/{document}/versions/compare', [LibraryController::class, 'compareVersions'])
+                ->name('api.v1.library.versions.compare');
 
             Route::prefix('accounting')->name('api.v1.accounting.')->group(function (): void {
                 Route::get('accounts', [AccountingController::class, 'accounts'])->name('accounts');
@@ -205,6 +209,8 @@ Route::prefix('v1')->group(function (): void {
                 ->name('api.v1.library.relations.attach');
             Route::delete('library/{document}/relations', [LibraryController::class, 'detachRelation'])
                 ->name('api.v1.library.relations.detach');
+            Route::post('library/{document}/versions/{version}/restore', [LibraryController::class, 'restoreVersion'])
+                ->name('api.v1.library.versions.restore');
 
             // Editing a tier changes what future sales get, never what a
             // member was already sold. Cancelling stops a benefit rather than
