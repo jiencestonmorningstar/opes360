@@ -107,6 +107,30 @@ if it does not, you cannot — even if you are an administrator.
 approval already recorded under the old name keeps showing the old name. What
 happened, happened.
 
+## Editing the rules
+
+**Settings → Approval rules** is where workflows are written: the steps, who
+each one asks (by role, department or relationship — naming a person is the
+deliberate exception, because a workflow naming a person is wrong the day
+they leave), the quorum, the conditions, the deadlines.
+
+Two behaviours worth knowing:
+
+- **Editing never disturbs approvals already running.** Change a workflow
+  while something is mid-approval and the old definition is kept for it —
+  it finishes under exactly the rules it started under, and only the next
+  submission gets the new ones. You are never told "wait until it
+  finishes", because the moment you discover a workflow is broken is
+  precisely when something is stuck in it.
+- **A step naming a role nobody holds is warned about, not blocked.** You
+  may be about to hire — but an approval reaching that step will stall
+  visibly rather than pass silently, so the warning is worth heeding.
+
+A new workflow starts switched off and cannot be made default until it has
+at least one step. A workflow with no steps would approve everything
+instantly, and that is the one way this screen could turn the engine into a
+rubber stamp.
+
 ## Who can create a workflow
 
 Only the **Owner** and an **Administrator**.

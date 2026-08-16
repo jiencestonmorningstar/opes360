@@ -47,6 +47,20 @@ class Guides
             'audience' => 'admin',
         ],
 
+        'leads' => [
+            'title' => 'Leads',
+            'group' => 'Working together',
+            'summary' => 'Enquiries before they are deals: working them, converting them, and keeping why you lost the rest.',
+            'audience' => 'everyone',
+        ],
+
+        'recruitment' => [
+            'title' => 'Hiring',
+            'group' => 'Your business',
+            'summary' => 'From a public advert to a real employee: applications, interviews, offers and the approval behind them.',
+            'audience' => 'admin',
+        ],
+
         'service-desk' => [
             'title' => 'The service desk',
             'group' => 'Working together',

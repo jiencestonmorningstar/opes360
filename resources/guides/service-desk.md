@@ -82,6 +82,30 @@ quarter of the warning window on a four-hour target could pass before anybody
 was told, which turns an early warning into an announcement that it is already
 too late.
 
+## Walk-in triage
+
+Print your business QR at the door — it is the same QR already on your
+stationery. A customer scans it, describes the problem on their phone at
+`/triage/…`, and gets a ticket reference shown large: that is their queue
+number, along with how many walk-ins are ahead of them. No login, no queue
+at the counter.
+
+The ticket lands in this same desk with the SLA already running — triage is
+a front door, not a second desk.
+
+Two deliberate limits:
+
+- **Their "very urgent" becomes at most High.** Urgent carries an SLA
+  promise, and the promise is yours to make, not the visitor's. Escalate
+  from the queue as normal.
+- **The page never creates customers.** A known phone number is matched to
+  your existing contact; an unknown visitor's name and phone ride on the
+  ticket itself, so an open public page cannot fill your customer book with
+  junk.
+
+Submissions are throttled per device and per business, and if you switch the
+service module off the page politely says the desk is closed.
+
 ## Who can do what
 
 | Ability | What it allows |
