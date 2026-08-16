@@ -57,6 +57,7 @@ class TripManifest extends Model
     public function shipments(): BelongsToMany
     {
         return $this->belongsToMany(Shipment::class, 'trip_manifest_shipments')
+            ->using(TripManifestShipment::class)
             ->withTimestamps();
     }
 

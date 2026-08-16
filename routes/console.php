@@ -88,6 +88,19 @@ Schedule::command('service:sla-sweep')
     ->withoutOverlapping();
 
 /*
+ * Remind people of what is quietly waiting on them: overdue approvals,
+ * documents about to expire, signatures nobody has answered.
+ *
+ * Raises domain events only, so the notification rules, mutes, quiet hours
+ * and digests all apply — and the delivery log's own fingerprints keep it to
+ * one reminder per subject per day. Early enough to land before the day's
+ * work starts.
+ */
+Schedule::command('opes:remind-actions')
+    ->dailyAt('07:30')
+    ->withoutOverlapping();
+
+/*
  * Trim the audit log under each business's retention policy.
  *
  * Small hours, because the deletes are chunked but plentiful on a busy
