@@ -7,6 +7,7 @@ use App\Models\Company;
 use App\Models\User;
 use App\Models\VerificationToken;
 use App\Services\Documents\CustomDocumentTemplates;
+use App\Services\Documents\DocumentFieldRegistry;
 use App\Support\DocumentTemplates;
 use Carbon\CarbonImmutable;
 use Illuminate\Support\Facades\DB;
@@ -53,9 +54,15 @@ class DocumentComposer
      *  - A whole line that reduces to a bare label or bullet is dropped.
      *  - Runs of blank lines left behind are collapsed.
      *
+     * $context carries whatever ERP record compose already knows — a
+     * document started from a customer already knows its customer (§67) —
+     * keyed by the relation a registered field provider expects:
+     * `['customer' => $contact]`. See DocumentFieldRegistry.
+     *
      * @param  array<string, mixed>  $fields
+     * @param  array<string, mixed>  $context
      */
-    public function merge(string $templateKey, array $fields, Company $company): string
+    public function merge(string $templateKey, array $fields, Company $company, array $context = []): string
     {
         $template = $this->resolveTemplate($templateKey);
 
@@ -63,7 +70,7 @@ class DocumentComposer
             throw new RuntimeException("Unknown template [{$templateKey}].");
         }
 
-        $values = $this->automaticValues($company)
+        $values = $this->automaticValues($company, $context)
             + $this->presentableFields($template, $fields);
 
         $body = $this->resolveOptionalSegments($this->dedent($template['body']), $values);
@@ -134,27 +141,17 @@ class DocumentComposer
     }
 
     /** @return array<string, string> */
-    protected function automaticValues(Company $company): array
+    /**
+     * Every field a registered provider offers — §7: not hard-coded here.
+     * `company` and `today` are themselves just the default provider
+     * registered in AppServiceProvider; nothing about this method needs to
+     * know that.
+     *
+     * @param  array<string, mixed>  $context
+     */
+    protected function automaticValues(Company $company, array $context = []): array
     {
-        return [
-            'company.name' => (string) $company->name,
-            'company.address' => $this->addressLine($company),
-            'company.email' => (string) ($company->email ?? ''),
-            'company.phone' => (string) data_get($company->phones, 0, ''),
-            'today' => now()->format('j F Y'),
-        ];
-    }
-
-    /** Matches how the letterhead and public profile compose an address. */
-    protected function addressLine(Company $company): string
-    {
-        return collect([
-            $company->address_line1,
-            $company->address_line2,
-            $company->city,
-            $company->region,
-            $company->country,
-        ])->filter()->implode(', ');
+        return app(DocumentFieldRegistry::class)->all($company, $context);
     }
 
     /** Heredocs in the template library are indented for readability. */

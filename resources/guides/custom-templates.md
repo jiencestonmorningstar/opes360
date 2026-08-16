@@ -14,6 +14,20 @@ New templates start **unpublished**. They do not appear in the gallery, and
 nobody can compose from them, until you publish them. This lets you draft and
 check a template before offering it to the business.
 
+## Fields from the rest of the business
+
+Besides the answers someone types in, a template can use fields that come
+from your business itself — `{{ company.name }}`, `{{ company.address }}`,
+`{{ today }}` — filled in automatically every time. When a document is
+started from a specific customer, employee or project, fields for that record
+become available too — `{{ customer.name }}`, `{{ employee.job_title }}`,
+`{{ project.code }}`.
+
+If a document is not started from a particular record, those fields simply
+come out blank rather than causing an error — a template written to use
+`{{ customer.name }}` still works perfectly well for a document that has
+nothing to do with a customer.
+
 ## Publishing
 
 **Publish** puts a template in the gallery next to the built-in ones, exactly

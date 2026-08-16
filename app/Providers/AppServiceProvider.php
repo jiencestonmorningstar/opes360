@@ -15,6 +15,7 @@ use App\Models\Payment;
 use App\Models\Receipt;
 use App\Models\User;
 use App\Observers\AuditObserver;
+use App\Services\Documents\DocumentFieldRegistry;
 use App\Support\Csp;
 use App\Support\CurrentCompany;
 use Illuminate\Cache\RateLimiting\Limit;
@@ -37,6 +38,10 @@ class AppServiceProvider extends ServiceProvider
         $this->app->singleton(CurrentCompany::class);
         // One nonce per request, shared by the header and every inline script.
         $this->app->singleton(Csp::class);
+        // Singleton so providers registered in boot() below are the same
+        // instance DocumentComposer resolves — a fresh instance per
+        // app()->make() call would lose every registration between them.
+        $this->app->singleton(DocumentFieldRegistry::class);
     }
 
     public function boot(): void
@@ -51,6 +56,8 @@ class AppServiceProvider extends ServiceProvider
          */
         Event::listen(DomainEvent::class, RunAutomationRules::class);
         Event::listen(DomainEvent::class, TranslateDocumentWorkflowEvents::class);
+
+        $this->registerDocumentFieldProviders();
 
         // Fail loudly in development on lazy loads and bad attribute assignment,
         // rather than shipping N+1 queries to a phone on a slow connection.
@@ -117,5 +124,80 @@ class AppServiceProvider extends ServiceProvider
             BusinessDocument::class] as $model) {
             $model::observe(AuditObserver::class);
         }
+    }
+
+    /**
+     * The default document field providers — §7 of the master spec.
+     *
+     * `company` is every field that used to be hard-coded inside
+     * DocumentComposer::automaticValues(); moving it here changed where the
+     * values come from, not what they are, so no existing template broke.
+     * `customer`, `employee` and `project` are new: they read from whatever
+     * the caller already has in hand when composing (§67 — a document
+     * started from a customer already knows its customer), and contribute
+     * nothing when nothing was supplied. Any future module registers its own
+     * provider the same way, here or in its own service provider.
+     */
+    protected function registerDocumentFieldProviders(): void
+    {
+        $registry = $this->app->make(DocumentFieldRegistry::class);
+
+        $registry->register('company', function (Company $company): array {
+            $addressLine = collect([
+                $company->address_line1,
+                $company->address_line2,
+                $company->city,
+                $company->region,
+                $company->country,
+            ])->filter()->implode(', ');
+
+            return [
+                'company.name' => (string) $company->name,
+                'company.address' => $addressLine,
+                'company.email' => (string) ($company->email ?? ''),
+                'company.phone' => (string) data_get($company->phones, 0, ''),
+                'today' => now()->format('j F Y'),
+            ];
+        });
+
+        $registry->register('customer', function (Company $company, array $context): array {
+            $customer = $context['customer'] ?? null;
+
+            if (! $customer instanceof \App\Models\Contact) {
+                return [];
+            }
+
+            return [
+                'customer.name' => (string) $customer->name,
+                'customer.email' => (string) ($customer->email ?? ''),
+            ];
+        });
+
+        $registry->register('employee', function (Company $company, array $context): array {
+            $employee = $context['employee'] ?? null;
+
+            if (! $employee instanceof \App\Models\Employee) {
+                return [];
+            }
+
+            return [
+                'employee.name' => $employee->name(),
+                'employee.job_title' => (string) ($employee->job_title ?? ''),
+                'employee.department' => (string) ($employee->department ?? ''),
+            ];
+        });
+
+        $registry->register('project', function (Company $company, array $context): array {
+            $project = $context['project'] ?? null;
+
+            if (! $project instanceof \App\Models\Project) {
+                return [];
+            }
+
+            return [
+                'project.name' => (string) $project->name,
+                'project.code' => (string) ($project->code ?? ''),
+            ];
+        });
     }
 }

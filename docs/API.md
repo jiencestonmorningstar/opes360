@@ -1190,6 +1190,25 @@ from the document's own version history, its comments, and the audit log
 already kept on it; there is no separate table for this, so nothing here can
 disagree with the records it is describing.
 
+### Dynamic fields
+
+Beyond what a caller fills in explicitly, `company.name`, `company.address`,
+`company.email`, `company.phone` and `today` are always available to a
+template — the same fields `DocumentComposer` has always exposed, now sourced
+from an extensible field registry rather than hard-coded.
+
+`customer.name`, `customer.email`, `employee.name`, `employee.job_title`,
+`employee.department`, `project.name` and `project.code` are available when
+the composing party already has the relevant record in hand and passes it as
+context — `merge()`'s fourth, optional argument. No API endpoint accepts this
+context yet; it exists at the service layer for a module (or a future
+"create from this customer" screen, §67) to pass through. Composing with none
+of it supplied leaves those placeholders blank rather than erroring.
+
+Any module can register a further field provider —
+`App\Services\Documents\DocumentFieldRegistry::register()` — without OPES360
+Documents needing to know that module exists.
+
 ### Templates
 
 A business's own templates, alongside the built-in catalogue — which has no

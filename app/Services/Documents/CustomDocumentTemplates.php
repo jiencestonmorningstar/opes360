@@ -87,6 +87,12 @@ class CustomDocumentTemplates
         return $template->fresh();
     }
 
+    /** Whether a key names a published custom template — the compose screen's counterpart to DocumentTemplates::exists(). */
+    public function exists(string $key): bool
+    {
+        return $this->find($key) !== null;
+    }
+
     /**
      * A published custom template, in the same array shape
      * App\Support\DocumentTemplates::find() returns — or null, so

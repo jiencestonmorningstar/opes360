@@ -3,6 +3,7 @@
 namespace App\Livewire\Papers;
 
 use App\Models\BusinessDocument;
+use App\Services\Documents\CustomDocumentTemplates;
 use App\Services\DocumentComposer;
 use App\Support\CurrentCompany;
 use App\Support\DocumentTemplates;
@@ -44,10 +45,13 @@ class Compose extends Component
             $this->title = $this->paper->title;
             $this->fields = array_map(fn ($v) => (string) $v, $this->paper->fields ?? []);
         } else {
-            abort_unless(DocumentTemplates::exists((string) $template), 404);
+            $exists = DocumentTemplates::exists((string) $template)
+                || app(CustomDocumentTemplates::class)->exists((string) $template);
+
+            abort_unless($exists, 404);
 
             $this->templateKey = (string) $template;
-            $this->title = DocumentTemplates::find($this->templateKey)['name'];
+            $this->title = $this->definition()['name'];
             $this->fields = collect($this->definition()['fields'])
                 ->mapWithKeys(fn (array $field) => [$field['key'] => (string) ($field['default'] ?? '')])
                 ->all();
@@ -57,7 +61,7 @@ class Compose extends Component
     /** @return array<string, mixed> */
     protected function definition(): array
     {
-        return DocumentTemplates::find($this->templateKey);
+        return app(CustomDocumentTemplates::class)->find($this->templateKey) ?? DocumentTemplates::find($this->templateKey);
     }
 
     public function preview(): string
