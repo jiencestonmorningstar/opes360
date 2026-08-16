@@ -7,32 +7,28 @@
 
 ---
 
-## 1. First thing to do: push
+## 1. The push is done
 
-**The merge is complete locally but nothing is pushed.** Every push from this
-session failed or hung on credentials.
+*Resolved 2026-08-16. Kept for the next person who hits the same wall.*
+
+Every push from the session that wrote this document failed or hung:
 
 ```
 remote: Permission to jiencestonmorningstar/opes360.git denied to exerateanalytical.
 ```
 
-Windows Credential Manager is cycling between at least three GitHub identities —
+Windows Credential Manager cycles between at least three GitHub identities —
 `exerateanalytical`, `opeshealthsystems`, and the correct one. Reads always
 work (`git ls-remote` succeeds instantly); only writes fail. When the wrong
 identity is cached it 403s; when Credential Manager decides to prompt it opens a
 **GUI dialog**, which is why some pushes hung indefinitely rather than erroring.
-
-Clear the cache, then push:
+If it happens again, clear the cache and push:
 
 ```bash
 cmdkey /delete:git:https://github.com
 ```
 
-```bash
-git push origin main && git push origin claude/api-first-crm-and-imports
-```
-
-`main` is 46 commits ahead of `origin/main`; the feature branch is 2 ahead.
+Both branches are now on the remote and nothing is outstanding.
 
 ---
 
@@ -40,8 +36,8 @@ git push origin main && git push origin claude/api-first-crm-and-imports
 
 | | |
 |---|---|
-| `main` | `0d13f83` — everything merged, fast-forward only |
-| `claude/api-first-crm-and-imports` | same commit, the working branch |
+| `main` | `05882a3` — everything merged, fast-forward only, pushed |
+| `claude/api-first-crm-and-imports` | `0d13f83`, pushed — the working branch |
 | `claude/opes360-phase-planning-min3mv` | the repo's default branch on GitHub, now behind |
 
 Working tree is clean. Nothing is half-applied.
@@ -140,6 +136,19 @@ that payload.
 
 ## 5. What is next
 
+**Read `docs/GAP-ANALYSIS.md` first.** It measures the product against the
+master brief (`docs/superpowers/specs/2026-08-16-documents-master-spec.md`,
+received 2026-08-16) and is more current than this section. Three findings
+change the order of work:
+
+- There is **no workflow/automation engine**, and the brief forbids a
+  Documents-only approval engine. Documents §17–19 either wait for the platform
+  engine or ship something that will have to be undone.
+- **Projects do not exist at all** — a Tier-1 ERP gap that also blocks project
+  folders, relationships, dossiers and field binding in Documents.
+- **Departments are a free-text string** on `employees`, not an entity. Small
+  to promote, and it unblocks a disproportionate amount of the brief.
+
 ### Documents (plan: `docs/superpowers/plans/2026-08-15-documents-core.md`)
 
 Done: metadata, folders, relations, uploads, Library panel.
@@ -192,6 +201,8 @@ than realtime; print-to-PDF kept. All recorded in the plan.
 
 | Path | What |
 |---|---|
+| `docs/GAP-ANALYSIS.md` | **Built / part-built / not built**, Documents and the whole ERP |
+| `docs/superpowers/specs/2026-08-16-documents-master-spec.md` | The authoritative Documents brief + ERP checklist |
 | `docs/API.md` | The whole API, 21 sections |
 | `docs/branding.md` | Token contract, the three roles, adding a token |
 | `docs/superpowers/specs/2026-08-15-documents-module-audit.md` | Capability map and blockers |
