@@ -7,15 +7,23 @@ use App\Models\BusinessDocument;
 use App\Models\Company;
 use App\Models\Contact;
 use App\Models\Contract;
+use App\Models\DeliveryNote;
 use App\Models\Document;
 use App\Models\Employee;
+use App\Models\InsuranceClaim;
+use App\Models\InsurancePolicy;
 use App\Models\Item;
 use App\Models\Lead;
 use App\Models\Project;
+use App\Models\Property;
 use App\Models\PurchaseRequisition;
+use App\Models\SalesOrder;
 use App\Models\Scopes\CompanyScope;
 use App\Models\SearchEntry;
 use App\Models\ServiceTicket;
+use App\Models\Shipment;
+use App\Models\Tenancy;
+use App\Models\TripManifest;
 use App\Models\User;
 use App\Support\Modules;
 use Illuminate\Database\Eloquent\Model;
@@ -52,6 +60,14 @@ class GlobalSearch
         Project::class => 'Projects',
         Lead::class => 'Leads',
         PurchaseRequisition::class => 'Requisitions',
+        Shipment::class => 'Shipments',
+        TripManifest::class => 'Trip manifests',
+        InsurancePolicy::class => 'Policies',
+        InsuranceClaim::class => 'Claims',
+        Property::class => 'Properties',
+        Tenancy::class => 'Tenancies',
+        SalesOrder::class => 'Sales orders',
+        DeliveryNote::class => 'Delivery notes',
     ];
 
     /**
@@ -173,6 +189,36 @@ class GlobalSearch
                 'ability' => 'deals.view',
             ],
 
+            InsurancePolicy::class => function (InsurancePolicy $p) {
+                // Explicit query, not a lazy load: the observer often holds a
+                // model whose relations were never loaded.
+                $holderName = $p->holder()->value('name');
+
+                return [
+                    'title' => trim(($holderName ?? 'No policyholder').' — '.$p->productLineLabel()),
+                    'subtitle' => $p->policy_number,
+                    'body' => trim(($p->policy_number ?? '').' '.($holderName ?? '')) ?: null,
+                    'route_name' => 'insurance.show',
+                    'route_params' => ['policy' => $p->getKey()],
+                    'ability' => 'insurance.view',
+                ];
+            },
+
+            // A claim routes to the policy it sits under — that screen is
+            // where the claim lives; it has no page of its own.
+            InsuranceClaim::class => function (InsuranceClaim $c) {
+                $holderName = $c->policy()->first()?->holder()->value('name');
+
+                return [
+                    'title' => trim(($c->claim_number ?? 'Claim').' — '.($holderName ?? 'claim')),
+                    'subtitle' => $c->statusLabel(),
+                    'body' => Str::limit((string) $c->description, 2000, ''),
+                    'route_name' => 'insurance.show',
+                    'route_params' => ['policy' => $c->insurance_policy_id],
+                    'ability' => 'insurance.view',
+                ];
+            },
+
             PurchaseRequisition::class => fn (PurchaseRequisition $r) => [
                 'title' => $r->title ?: $r->number,
                 'subtitle' => $r->number,
@@ -181,6 +227,103 @@ class GlobalSearch
                 'route_params' => [],
                 'ability' => 'procurement.requisition-view',
             ],
+
+            /*
+             * The counter question is "where is the Fotso cement?", so the
+             * party names and the route are in the body. Never the tracking
+             * token: an index row must not be a way to mint a public link.
+             */
+            Shipment::class => function (Shipment $s) {
+                // Explicit queries, not lazy loads — the observer often holds
+                // a model whose relations were never loaded.
+                $sender = $s->sender()->value('name');
+                $receiver = $s->receiver()->value('name');
+
+                return [
+                    'title' => $s->reference,
+                    'subtitle' => trim($s->cargo_description.' · '.$s->from_location.' → '.$s->to_location),
+                    'body' => trim(($sender ?? '').' '.($receiver ?? '')) ?: null,
+                    'route_name' => 'logistics.show',
+                    'route_params' => ['shipment' => $s->getKey()],
+                    'ability' => 'logistics.view',
+                ];
+            },
+
+            TripManifest::class => fn (TripManifest $m) => [
+                'title' => $m->reference,
+                'subtitle' => trim($m->statusLabel().' · departs '.$m->departs_on?->format('d/m/Y'), ' ·'),
+                'body' => null,
+                // No manifest detail page; the board is where manifests live.
+                'route_name' => 'logistics',
+                'route_params' => [],
+                'ability' => 'logistics.view',
+            ],
+
+            Property::class => fn (Property $p) => [
+                'title' => $p->name,
+                'subtitle' => $p->kindLabel(),
+                'body' => $p->address,
+                'route_name' => 'estate.show',
+                'route_params' => ['property' => $p->getKey()],
+                'ability' => 'estate.view',
+            ],
+
+            Tenancy::class => function (Tenancy $t) {
+                // Explicit queries, not lazy loads — the observer often holds
+                // a model whose relations were never loaded.
+                $tenantName = $t->tenant()->value('name');
+                $unit = $t->unit()->first();
+
+                if ($unit === null) {
+                    return null;
+                }
+
+                return [
+                    'title' => trim(($tenantName ?? 'Tenancy').' — '.$unit->label, ' —'),
+                    'subtitle' => $t->status === 'active' ? 'Active tenancy' : 'Ended tenancy',
+                    'body' => $tenantName,
+                    'route_name' => 'estate.show',
+                    'route_params' => ['property' => $unit->property_id],
+                    'ability' => 'estate.view',
+                ];
+            },
+
+            // Cancelled orders stay findable — they still answer "where is
+            // that order?" — and the subtitle carries the status so the
+            // answer is honest at a glance.
+            SalesOrder::class => function (SalesOrder $o) {
+                // Explicit query, not a lazy load — the observer often holds
+                // a model whose relations were never loaded.
+                $contactName = $o->contact()->value('name');
+
+                return [
+                    'title' => (string) $o->number,
+                    'subtitle' => trim(ucfirst((string) $o->status).' · '.($contactName ?? ''), ' ·'),
+                    'body' => $contactName,
+                    'route_name' => 'orders.show',
+                    'route_params' => ['order' => $o->getKey()],
+                    'ability' => 'orders.view',
+                ];
+            },
+
+            DeliveryNote::class => function (DeliveryNote $n) {
+                // A voided note drops out of the index, like a void Document.
+                if ($n->status === DeliveryNote::STATUS_VOID) {
+                    return null;
+                }
+
+                $contactName = $n->order()->first()?->contact()->value('name');
+
+                return [
+                    'title' => (string) $n->number,
+                    'subtitle' => trim(($contactName ?? '').' · '.($n->delivered_on?->format('M j, Y') ?? ''), ' ·'),
+                    'body' => $contactName,
+                    // The print page is the note's one page of its own.
+                    'route_name' => 'orders.delivery-note',
+                    'route_params' => ['note' => $n->getKey()],
+                    'ability' => 'orders.view',
+                ];
+            },
         ];
     }
 

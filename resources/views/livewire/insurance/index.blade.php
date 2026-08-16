@@ -232,6 +232,12 @@
                                 @if ($claim->settled_amount && $claim->isSettled()) · settled {{ number_format((float) $claim->settled_amount) }} @endif
                             </p>
                             <p class="mt-0.5 line-clamp-2 text-[13px] text-ink-2">{{ $claim->description }}</p>
+                            @php $evidence = $claim->papers()->count(); @endphp
+                            @if ($evidence > 0)
+                                <p class="mt-0.5 text-[12.5px] text-faint">
+                                    {{ $evidence }} evidence {{ Str::plural('document', $evidence) }} — on the policy page.
+                                </p>
+                            @endif
                         </div>
                     @empty
                         <p class="py-4 text-center text-[13px] text-muted">Nothing here.</p>

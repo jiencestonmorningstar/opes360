@@ -2,8 +2,10 @@
 
 namespace App\Livewire\Orders;
 
+use App\Models\DeliveryNote;
 use App\Models\SalesOrder;
 use App\Services\Orders\Fulfilment;
+use App\Services\Orders\Returns;
 use App\Support\CurrentCompany;
 use Illuminate\Contracts\View\View;
 use Illuminate\Support\Facades\Gate;
@@ -28,17 +30,37 @@ class Show extends Component
     /** @var array<string, string> line id → quantity going out now */
     public array $picks = [];
 
-    public function mount(string $orderId): void
+    // ── Credit control ──────────────────────────────────────────────────
+    /** Shown only after a confirm is refused on the customer's credit. */
+    public bool $creditBlocked = false;
+
+    public string $creditOverride = '';
+
+    // ── Returning ───────────────────────────────────────────────────────
+    /** The delivery note a return is being recorded against, if any. */
+    public ?string $returningNoteId = null;
+
+    /** @var array<string, string> delivery note line id → quantity back */
+    public array $returnQuantities = [];
+
+    public string $returnReason = '';
+
+    /**
+     * Accepts the id under either name: the production route binds
+     * `/orders/{order}` while direct component tests pass `orderId`.
+     */
+    public function mount(?string $orderId = null, ?string $order = null): void
     {
         Gate::authorize('orders.view');
 
+        $this->orderId = $orderId ?? $order ?? '';
         $this->orderId = $this->order()->id;
     }
 
     protected function order(): SalesOrder
     {
         return SalesOrder::query()
-            ->with(['contact', 'lines.item', 'deliveryNotes.lines', 'invoices'])
+            ->with(['contact', 'lines.item', 'deliveryNotes.lines', 'invoices', 'sourceDocument'])
             ->findOrFail($this->orderId ?? '');
     }
 
@@ -47,12 +69,25 @@ class Show extends Component
         Gate::authorize('orders.confirm');
 
         try {
-            $shortages = app(Fulfilment::class)->confirm($this->order(), auth()->user());
+            $shortages = app(Fulfilment::class)->confirm(
+                $this->order(),
+                auth()->user(),
+                trim($this->creditOverride) ?: null,
+            );
         } catch (RuntimeException $e) {
+            /*
+             * A credit refusal opens the override field rather than dead-
+             * ending: the service names the figures, and going ahead anyway
+             * requires writing down why — which lands on the order.
+             */
+            $this->creditBlocked = str_contains($e->getMessage(), 'credit limit');
             $this->addError('order', $e->getMessage());
 
             return;
         }
+
+        $this->creditBlocked = false;
+        $this->creditOverride = '';
 
         $this->dispatch('toast', message: $shortages === []
             ? 'Confirmed — everything is reserved.'
@@ -111,6 +146,63 @@ class Show extends Component
         $this->delivering = false;
         $this->picks = [];
         $this->dispatch('toast', message: "{$note->number} issued — the stock has moved.");
+    }
+
+    public function startReturn(string $noteId): void
+    {
+        Gate::authorize('orders.deliver');
+
+        $note = $this->order()->deliveryNotes->firstWhere('id', $noteId);
+
+        if ($note === null) {
+            return;
+        }
+
+        $this->returningNoteId = $note->id;
+        $this->returnReason = '';
+        $this->returnQuantities = [];
+
+        foreach ($note->lines as $line) {
+            $this->returnQuantities[$line->id] = '';
+        }
+    }
+
+    /**
+     * Record goods coming back: restocked through the ordinary ledger and,
+     * where they were invoiced, credited through the ordinary credit note.
+     * Behind orders.deliver — receiving the shelf is the same trust as
+     * moving it.
+     */
+    public function recordReturn(): void
+    {
+        Gate::authorize('orders.deliver');
+
+        $note = DeliveryNote::query()->with('lines')->find($this->returningNoteId ?? '');
+
+        if ($note === null) {
+            return;
+        }
+
+        try {
+            $result = app(Returns::class)->record(
+                $note,
+                array_map(fn ($q) => $q === '' ? 0.0 : (float) $q, $this->returnQuantities),
+                auth()->user(),
+                trim($this->returnReason),
+            );
+        } catch (RuntimeException $e) {
+            $this->addError('return', $e->getMessage());
+
+            return;
+        }
+
+        $this->returningNoteId = null;
+        $this->returnQuantities = [];
+        $this->returnReason = '';
+
+        $this->dispatch('toast', message: $result['credit_note'] !== null
+            ? "Return recorded — the stock is back and {$result['credit_note']->number} credits the customer."
+            : 'Return recorded — the stock is back on the shelf.');
     }
 
     public function invoice(): void

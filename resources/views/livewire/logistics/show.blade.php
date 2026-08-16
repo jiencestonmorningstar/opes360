@@ -13,7 +13,11 @@
             </p>
         </div>
 
-        <span class="shrink-0 rounded-full bg-surface-2 px-4 py-1.5 text-[13.5px] font-semibold text-ink">
+        <span @class([
+            'shrink-0 rounded-full px-4 py-1.5 text-[13.5px] font-semibold',
+            'bg-rose-100 text-rose-700 dark:bg-rose-500/15 dark:text-rose-300' => $shipment->inException(),
+            'bg-surface-2 text-ink' => ! $shipment->inException(),
+        ])>
             {{ $shipment->statusLabel() }}
         </span>
     </div>
@@ -35,6 +39,22 @@
                         class="tap focusable rounded-full bg-fill-brand px-5 py-2.5 text-[14.5px] font-semibold text-white">
                     Mark delivered
                 </button>
+                <button type="button" wire:click="$toggle('failing')"
+                        class="tap focusable rounded-full border border-rose-300 px-5 py-2.5 text-[14.5px] font-semibold text-rose-600">
+                    Delivery failed…
+                </button>
+            @endif
+
+            @if ($shipment->inException())
+                <button type="button" wire:click="retry"
+                        class="tap focusable rounded-full bg-fill-brand px-5 py-2.5 text-[14.5px] font-semibold text-white">
+                    Retry delivery
+                </button>
+                <button type="button" wire:click="returnToSender"
+                        wire:confirm="Return {{ $shipment->reference }} to {{ $shipment->sender?->name }}? This ends the shipment."
+                        class="tap focusable rounded-full border border-border px-5 py-2.5 text-[14.5px] font-semibold text-ink">
+                    Return to sender
+                </button>
             @endif
 
             @if ($shipment->status === 'booked')
@@ -50,7 +70,30 @@
                     Draft freight invoice
                 </button>
             @endif
+
+            @if (Route::has('logistics.waybill.print'))
+                <a href="{{ route('logistics.waybill.print', $shipment) }}" target="_blank"
+                   class="tap focusable rounded-full border border-border px-5 py-2.5 text-[14.5px] font-semibold text-ink">
+                    Print waybill
+                </a>
+            @endif
         </div>
+
+        {{-- The failed-attempt strip: the reason is required, in words the
+             tracking page will repeat to the customer. --}}
+        @if ($failing)
+            <form wire:submit="fail" class="card mt-4 flex flex-wrap items-end gap-3 p-4">
+                <div class="min-w-64 grow">
+                    <label class="mb-1.5 block text-[13px] font-semibold text-ink-2">Why did the delivery fail?</label>
+                    <input type="text" wire:model="failReason" placeholder="Absent receiver, cargo refused…"
+                           class="h-12 w-full rounded-xl border border-border bg-surface px-3.5 text-[15px] text-ink placeholder:text-faint focus:border-brand focus:outline-none focus:ring-2 focus:ring-brand/20">
+                    @error('failReason') <p class="mt-1 text-[13px] text-rose-600">{{ $message }}</p> @enderror
+                </div>
+                <button type="submit" class="tap focusable rounded-full bg-rose-600 px-5 py-2.5 text-[14.5px] font-semibold text-white">
+                    Record failed attempt
+                </button>
+            </form>
+        @endif
     @endcan
 
     <div class="mt-6 grid gap-5 lg:grid-cols-3">

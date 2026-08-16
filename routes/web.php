@@ -381,6 +381,12 @@ Route::middleware('auth')->group(function () {
         ->middleware('can:logistics.view')->name('logistics');
     Route::get('/logistics/{shipment}', LogisticsShow::class)
         ->middleware('can:logistics.view')->name('logistics.show');
+    // The two papers of the trade: the waybill travels with the cargo, the
+    // manifest stays with the driver. Both print through the one pipeline.
+    Route::get('/logistics/{shipment}/waybill', [PrintController::class, 'waybill'])
+        ->middleware('can:logistics.view')->name('logistics.waybill.print');
+    Route::get('/logistics/manifests/{manifest}/print', [PrintController::class, 'manifest'])
+        ->middleware('can:logistics.view')->name('logistics.manifest.print');
 
     Route::get('/estate', EstateIndex::class)
         ->middleware('can:estate.view')->name('estate');

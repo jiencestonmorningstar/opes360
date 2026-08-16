@@ -8,6 +8,9 @@ use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Concerns\HasUlids;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\MorphMany;
+use Illuminate\Support\Collection;
 
 /**
  * Somebody living in (or trading from) a unit, on a lease, paying rent.
@@ -76,6 +79,30 @@ class Tenancy extends Model
     public function creator(): BelongsTo
     {
         return $this->belongsTo(User::class, 'created_by');
+    }
+
+    /** The rent's history, oldest first — written only by Tenancies::reviewRent(). */
+    public function rentChanges(): HasMany
+    {
+        return $this->hasMany(TenancyRentChange::class)->orderBy('effective_on');
+    }
+
+    /**
+     * The paperwork — move-in and move-out inspection checklists above all —
+     * through the same shared relations table Property and Contract use.
+     * An inspection IS a managed paper (Documents 2.14 checklists), attached
+     * here rather than run by an inspection engine of our own.
+     */
+    public function documentRelations(): MorphMany
+    {
+        return $this->morphMany(BusinessDocumentRelation::class, 'related', 'related_type', 'related_id');
+    }
+
+    /** @return Collection<int, BusinessDocument> */
+    public function papers()
+    {
+        return $this->documentRelations()->with('document')->get()
+            ->pluck('document')->filter()->values();
     }
 
     public function isActive(): bool

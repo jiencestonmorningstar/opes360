@@ -44,6 +44,38 @@ A fault reported by a tenant opens an ordinary **service ticket** (category
 maintenance), pinned to the unit — same desk, same clock, same board as every
 other job.
 
+## Reviewing the rent
+
+Rent changes from a date, never backwards. A review keeps the history (what
+it was, what it became, from when, and why), updates the tenancy, and
+rewrites the recurring schedule's line so **the next bill carries the new
+figure** — invoices already issued stand exactly as they were. A change dated
+beyond the next billing run is refused rather than applied early: record it
+when its period is next to bill.
+
+## The landlord statement
+
+If you manage the building for an owner, the property page keeps their
+account: **rent collected** on their units (collected, not billed — the
+landlord is owed what actually came in), minus your **commission** at the
+property's percentage, minus **expenses recorded against the property** (a
+repair, a guard, a water bill you covered), minus **payouts already made**.
+The closing balance is what the landlord is owed — the page you lay beside
+the landlord's own arithmetic before anybody argues.
+
+Paying them out turns that figure into an ordinary **payable**: an expense to
+the landlord contact (category rent, account 622), settled from the expenses
+screen like any other bill, and shown on the next statement as a payout line.
+Paying more than the statement says is owed is refused — handing a landlord
+money you have not collected is lending, and that is not this button.
+
+## Inspections
+
+A move-in or move-out inspection is a **managed paper** — use a checklist
+document from the documents workspace and link it to the tenancy (or the
+property); it appears in the Papers panel with its signatures and versions,
+no separate inspection machinery to learn.
+
 ## Moving out: the deposit answered for
 
 Ending a tenancy settles everything in one act:
@@ -65,8 +97,8 @@ Ending a tenancy settles everything in one act:
 | Ability | What it allows |
 |---|---|
 | `estate.view` | The occupancy board and the properties |
-| `estate.manage` | Add properties and units, move tenants in, log maintenance |
-| `estate.end-tenancy` | End a tenancy — the act that moves deposit money |
+| `estate.manage` | Add properties and units, move tenants in, review rents, record property expenses, log maintenance |
+| `estate.end-tenancy` | End a tenancy, and pay a landlord out — the acts that move money |
 
 Ending a tenancy is the one money-committing act: it decides how much of the
 caution the business keeps and pays the rest out of the bank, and it can

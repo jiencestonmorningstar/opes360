@@ -5,9 +5,11 @@ namespace App\Livewire\Orders;
 use App\Models\Contact;
 use App\Models\Item;
 use App\Models\SalesOrder;
+use App\Models\StockLocation;
 use App\Services\Orders\Fulfilment;
 use App\Support\CurrentCompany;
 use App\Support\FulfilmentBoard;
+use App\Support\Modules;
 use Illuminate\Contracts\View\View;
 use Illuminate\Support\Facades\Gate;
 use Livewire\Attributes\Url;
@@ -32,6 +34,9 @@ class Index extends Component
 
     public ?string $contactId = null;
 
+    /** Which shelf ships this order — offered only when locations are on. */
+    public ?string $stockLocationId = null;
+
     public string $promisedDate = '';
 
     public string $notes = '';
@@ -50,6 +55,7 @@ class Index extends Component
 
         $this->drafting = true;
         $this->contactId = null;
+        $this->stockLocationId = null;
         $this->promisedDate = '';
         $this->notes = '';
         $this->lines = [['item_id' => '', 'quantity' => '', 'unit_price' => '']];
@@ -87,6 +93,7 @@ class Index extends Component
         try {
             app(Fulfilment::class)->create([
                 'contact_id' => $this->contactId,
+                'stock_location_id' => $this->stockLocationId ?: null,
                 'promised_date' => $this->promisedDate ?: null,
                 'notes' => $this->notes ?: null,
                 'lines' => array_map(fn (array $line) => [
@@ -124,6 +131,12 @@ class Index extends Component
             'board' => (new FulfilmentBoard($company))->rows(),
             'customers' => Contact::query()->orderBy('name')->get(['id', 'name']),
             'products' => Item::query()->active()->orderBy('name')->get(['id', 'name', 'sku', 'price']),
+            // Which shelf ships the order — offered only when the
+            // stock_locations module is on, following StockLedger's
+            // "one location or none" stance.
+            'locations' => $company !== null && Modules::enabled($company, 'stock_locations')
+                ? StockLocation::query()->orderBy('name')->get(['id', 'name'])
+                : collect(),
             'currency' => $company?->currency ?? 'XAF',
         ])->layout('components.layouts.app', ['title' => 'Orders', 'active' => 'orders']);
     }

@@ -32,11 +32,18 @@ class SearchReindex extends Command
         foreach (array_keys(GlobalSearch::sources()) as $class) {
             $count = 0;
 
+            $model = new $class;
+
             $class::query()->withoutGlobalScopes()
                 ->when($companyId, fn ($q) => $q->where('company_id', $companyId))
                 // withoutGlobalScopes drops SoftDeletingScope too; trashed
-                // records must not come back into the index.
-                ->whereNull((new $class)->getQualifiedDeletedAtColumn())
+                // records must not come back into the index. Only models that
+                // soft-delete have the column — shipments and manifests, for
+                // example, are never deleted at all.
+                ->when(
+                    method_exists($model, 'getQualifiedDeletedAtColumn'),
+                    fn ($q) => $q->whereNull($model->getQualifiedDeletedAtColumn()),
+                )
                 ->chunkById(200, function ($models) use (&$count) {
                     foreach ($models as $model) {
                         GlobalSearch::index($model);

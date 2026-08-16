@@ -53,19 +53,20 @@
                 <input type="text" wire:model="cargo" class="{{ $inputClass }}" placeholder="What is being carried">
                 @error('cargo') <p class="mt-1 text-[13px] text-rose-600">{{ $message }}</p> @enderror
             </div>
+            {{-- Route and weight sync on blur so the rate card can quote. --}}
             <div>
                 <label class="{{ $labelClass }}">From</label>
-                <input type="text" wire:model="fromLocation" class="{{ $inputClass }}">
+                <input type="text" wire:model.blur="fromLocation" class="{{ $inputClass }}">
                 @error('fromLocation') <p class="mt-1 text-[13px] text-rose-600">{{ $message }}</p> @enderror
             </div>
             <div>
                 <label class="{{ $labelClass }}">To</label>
-                <input type="text" wire:model="toLocation" class="{{ $inputClass }}">
+                <input type="text" wire:model.blur="toLocation" class="{{ $inputClass }}">
                 @error('toLocation') <p class="mt-1 text-[13px] text-rose-600">{{ $message }}</p> @enderror
             </div>
             <div>
                 <label class="{{ $labelClass }}">Weight (kg)</label>
-                <input type="number" step="0.01" wire:model="weightKg" class="{{ $inputClass }}">
+                <input type="number" step="0.01" wire:model.blur="weightKg" class="{{ $inputClass }}">
             </div>
             <div>
                 <label class="{{ $labelClass }}">Declared value</label>
@@ -74,6 +75,9 @@
             <div>
                 <label class="{{ $labelClass }}">Freight charge</label>
                 <input type="number" step="0.01" wire:model="freightAmount" class="{{ $inputClass }}">
+                @if ($proposedFreight !== null && $freightAmount === $proposedFreight)
+                    <p class="mt-1 text-[12.5px] text-faint">Proposed from the rate card — edit as agreed.</p>
+                @endif
             </div>
             <div class="flex items-end">
                 <button type="submit" class="tap focusable rounded-full bg-fill-brand px-6 py-2.5 text-[14.5px] font-semibold text-white">
@@ -116,6 +120,25 @@
                 </button>
             </div>
         </form>
+    @endif
+
+    {{-- ── Failed deliveries — the loudest thing on the board ──────────── --}}
+    @if ($exceptions->isNotEmpty())
+        <section class="mt-6">
+            <h2 class="text-[15px] font-bold text-rose-600">Delivery exceptions <span class="opacity-70">({{ $exceptions->count() }})</span></h2>
+            <div class="mt-3 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+                @foreach ($exceptions as $shipment)
+                    <a href="{{ route('logistics.show', $shipment) }}" wire:navigate wire:key="exc-{{ $shipment->id }}"
+                       class="block rounded-2xl border border-rose-300 bg-rose-50 p-4 dark:border-rose-500/50 dark:bg-rose-500/10">
+                        <p class="text-[14.5px] font-semibold text-rose-700 dark:text-rose-300">{{ $shipment->reference }}</p>
+                        <p class="mt-0.5 text-[13.5px] text-rose-800/80 dark:text-rose-200/80">{{ $shipment->cargo_description }}</p>
+                        <p class="mt-0.5 text-[13px] text-rose-700/70 dark:text-rose-300/70">
+                            {{ $shipment->to_location }} · {{ $shipment->receiver?->name }} — retry or return to sender
+                        </p>
+                    </a>
+                @endforeach
+            </div>
+        </section>
     @endif
 
     <div class="mt-6 grid gap-5 lg:grid-cols-3">
@@ -177,6 +200,12 @@
                                             class="tap focusable rounded-full border border-border px-4 py-2 text-[13.5px] font-semibold text-ink">
                                         Load cargo
                                     </button>
+                                    @if (Route::has('logistics.manifest.print'))
+                                        <a href="{{ route('logistics.manifest.print', $manifest) }}" target="_blank"
+                                           class="tap focusable rounded-full border border-border px-4 py-2 text-[13.5px] font-semibold text-ink">
+                                            Loading sheet
+                                        </a>
+                                    @endif
                                     @can('logistics.dispatch')
                                         <button type="button" wire:click="dispatchManifest('{{ $manifest->id }}')"
                                                 wire:confirm="Dispatch {{ $manifest->reference }}? Everything aboard goes in transit."
@@ -214,7 +243,9 @@
                                     <a href="{{ route('logistics.show', $shipment) }}" wire:navigate class="font-semibold text-ink underline-offset-2 hover:underline">
                                         {{ $shipment->reference }}
                                     </a>
-                                    <span class="text-muted">— {{ $shipment->receiver?->name }}, {{ $shipment->statusLabel() }}</span>
+                                    <span @class(['text-rose-600 font-semibold' => $shipment->inException(), 'text-muted' => ! $shipment->inException()])>
+                                        — {{ $shipment->receiver?->name }}, {{ $shipment->statusLabel() }}
+                                    </span>
                                 </li>
                             @endforeach
                         </ul>

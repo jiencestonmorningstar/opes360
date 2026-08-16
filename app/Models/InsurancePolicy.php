@@ -90,6 +90,18 @@ class InsurancePolicy extends Model
         return $this->hasMany(InsuranceClaim::class)->orderByDesc('incident_on');
     }
 
+    /** Every renewal, most recent first — how the current term came to be. */
+    public function renewals(): HasMany
+    {
+        return $this->hasMany(InsurancePolicyRenewal::class)->orderByDesc('renewed_on');
+    }
+
+    /** Mid-term changes to the cover, most recent first. */
+    public function endorsements(): HasMany
+    {
+        return $this->hasMany(InsuranceEndorsement::class)->orderByDesc('effective_on');
+    }
+
     public function commissions(): HasMany
     {
         return $this->hasMany(PolicyCommission::class)->orderByDesc('earned_on');

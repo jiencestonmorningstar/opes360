@@ -88,6 +88,17 @@
                     <label class="{{ $labelClass }}" for="ord-promised">Promised for <span class="font-normal text-faint">(optional)</span></label>
                     <input id="ord-promised" type="date" wire:model="promisedDate" class="{{ $inputClass }}">
                 </div>
+                @if ($locations->isNotEmpty())
+                    <div>
+                        <label class="{{ $labelClass }}" for="ord-location">Ships from <span class="font-normal text-faint">(optional)</span></label>
+                        <select id="ord-location" wire:model="stockLocationId" class="{{ $inputClass }}">
+                            <option value="">Default location</option>
+                            @foreach ($locations as $location)
+                                <option value="{{ $location->id }}">{{ $location->name }}</option>
+                            @endforeach
+                        </select>
+                    </div>
+                @endif
             </div>
 
             <div class="mt-5 space-y-3">

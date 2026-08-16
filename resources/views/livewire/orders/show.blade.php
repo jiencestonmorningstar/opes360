@@ -26,6 +26,7 @@
             <h1 class="text-[25px] font-bold leading-tight tracking-[-0.03em] text-ink lg:text-[28px]">{{ $order->number }}</h1>
             <p class="mt-1 text-[14.5px] text-muted">
                 {{ $order->contact?->name }}
+                @if ($order->sourceDocument) · from quotation {{ $order->sourceDocument->number }} @endif
                 @if ($order->promised_date) · promised {{ $order->promised_date->format('M j, Y') }} @endif
                 · {{ $money($order->total()) }} {{ $currency }}
             </p>
@@ -38,6 +39,21 @@
     @error('order')
         <div class="mt-4 rounded-xl bg-tint-red px-4 py-3 text-[13.5px] font-medium text-negative">{{ $message }}</div>
     @enderror
+
+    {{-- Credit block: confirming anyway requires a written reason, stored on the order. --}}
+    @if ($creditBlocked && $order->isDraft())
+        @can('orders.confirm')
+            <div class="card mt-4 p-5">
+                <label class="{{ $labelClass }}" for="credit-override">Reason for confirming over the credit limit</label>
+                <input id="credit-override" type="text" wire:model="creditOverride" maxlength="255"
+                       placeholder="e.g. Cheque received, clearing Thursday" class="{{ $inputClass }}">
+                <button type="button" wire:click="confirm"
+                        class="focusable mt-3 rounded-xl bg-tint-amber px-4 py-2.5 text-[13.5px] font-semibold text-warning hover:opacity-80">
+                    Confirm despite the limit
+                </button>
+            </div>
+        @endcan
+    @endif
 
     {{-- Lines: the whole story of the promise, quantity by quantity. --}}
     <div class="card mt-5 p-5">
@@ -169,13 +185,77 @@
                             <p class="text-[12.5px] text-muted">
                                 {{ $note->delivered_on?->format('M j, Y') }} ·
                                 {{ $note->lines->count() }} {{ str('line')->plural($note->lines->count()) }}
+                                @if (($returned = $note->lines->sum('quantity_returned')) > 0)
+                                    · <span class="font-semibold text-warning">{{ $qty($returned) }} returned</span>
+                                @endif
                             </p>
                         </div>
-                        <a href="{{ route('orders.delivery-note', $note) }}" target="_blank"
-                           class="focusable shrink-0 rounded-lg bg-surface-2 px-3 py-2 text-[12.5px] font-semibold text-ink-2 hover:bg-tint-blue hover:text-brand">
-                            Print
-                        </a>
+                        <div class="flex shrink-0 items-center gap-2">
+                            @can('orders.deliver')
+                                @if ($note->status !== \App\Models\DeliveryNote::STATUS_VOID && $note->lines->sum(fn ($l) => $l->returnableQuantity()) > 0)
+                                    <button type="button" wire:click="startReturn('{{ $note->id }}')"
+                                            class="focusable rounded-lg px-3 py-2 text-[12.5px] font-semibold text-muted hover:bg-tint-amber hover:text-warning">
+                                        Record return
+                                    </button>
+                                @endif
+                            @endcan
+                            <a href="{{ route('orders.delivery-note', $note) }}" target="_blank"
+                               class="focusable rounded-lg bg-surface-2 px-3 py-2 text-[12.5px] font-semibold text-ink-2 hover:bg-tint-blue hover:text-brand">
+                                Print
+                            </a>
+                            <a href="{{ route('orders.delivery-note', $note) }}?format=pdf"
+                               class="focusable rounded-lg bg-surface-2 px-3 py-2 text-[12.5px] font-semibold text-ink-2 hover:bg-tint-blue hover:text-brand">
+                                PDF
+                            </a>
+                        </div>
                     </div>
+
+                    @if ($returningNoteId === $note->id)
+                        <div class="rounded-xl border border-border bg-surface-2 p-4">
+                            <p class="text-[13.5px] font-semibold text-ink">Goods coming back on {{ $note->number }}</p>
+                            <p class="mt-1 text-[12.5px] leading-relaxed text-muted">
+                                The stock returns to the shelf through the ordinary ledger; anything already invoiced is
+                                credited with an ordinary credit note. No more can come back than was delivered.
+                            </p>
+
+                            <div class="mt-3 space-y-3">
+                                @foreach ($note->lines as $line)
+                                    @if ($line->returnableQuantity() > 0)
+                                        <div wire:key="rl-{{ $line->id }}" class="flex flex-col gap-2 sm:flex-row sm:items-end sm:gap-4">
+                                            <div class="flex-1">
+                                                <p class="text-[13.5px] font-semibold text-ink">{{ $line->description }}</p>
+                                                <p class="text-[12.5px] text-muted">{{ $qty($line->returnableQuantity()) }} can still come back</p>
+                                            </div>
+                                            <div class="sm:w-[140px]">
+                                                <label class="{{ $labelClass }}" for="ret-{{ $line->id }}">Coming back</label>
+                                                <input id="ret-{{ $line->id }}" type="number" step="any" min="0" inputmode="decimal"
+                                                       wire:model="returnQuantities.{{ $line->id }}" class="{{ $inputClass }} tnum">
+                                            </div>
+                                        </div>
+                                    @endif
+                                @endforeach
+                            </div>
+
+                            <div class="mt-3">
+                                <label class="{{ $labelClass }}" for="ret-reason">Why</label>
+                                <input id="ret-reason" type="text" wire:model="returnReason" maxlength="255"
+                                       placeholder="e.g. Damaged in transit" class="{{ $inputClass }}">
+                            </div>
+
+                            @error('return') <p class="mt-3 text-[13px] font-medium text-negative">{{ $message }}</p> @enderror
+
+                            <div class="mt-4 flex flex-col gap-3 sm:flex-row-reverse">
+                                <button type="button" wire:click="recordReturn"
+                                        class="tap focusable flex h-11 items-center justify-center rounded-xl bg-fill-brand px-5 text-[14px] font-semibold text-white hover:opacity-90">
+                                    Record the return
+                                </button>
+                                <button type="button" wire:click="$set('returningNoteId', null)"
+                                        class="tap focusable flex h-11 items-center justify-center rounded-xl border border-border bg-surface px-5 text-[14px] font-semibold text-ink">
+                                    Cancel
+                                </button>
+                            </div>
+                        </div>
+                    @endif
                 @endforeach
             </div>
         </div>

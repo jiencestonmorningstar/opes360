@@ -19,6 +19,7 @@ class DeliveryNoteLine extends Model
     {
         return [
             'quantity' => 'decimal:3',
+            'quantity_returned' => 'decimal:3',
         ];
     }
 
@@ -35,5 +36,11 @@ class DeliveryNoteLine extends Model
     public function item(): BelongsTo
     {
         return $this->belongsTo(Item::class);
+    }
+
+    /** What may still come back: delivered minus already returned. */
+    public function returnableQuantity(): float
+    {
+        return round((float) $this->quantity - (float) $this->quantity_returned, 3);
     }
 }

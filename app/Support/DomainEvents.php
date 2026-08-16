@@ -79,6 +79,18 @@ class DomainEvents
         ],
 
         /*
+         * Customer orders and fulfilment. Each is the moment the services
+         * emit it — confirm commits stock, deliver moves it, invoice bills
+         * it, and a recorded return is goods physically back on the shelf.
+         */
+        'orders' => [
+            'order.confirmed',
+            'order.delivered',
+            'order.invoiced',
+            'order.return.recorded',
+        ],
+
+        /*
          * Compliance. The events a business wants a rule against: tell the
          * accountant when a return is filed, tell the director when one is
          * refused. Deliberately no `compliance.obligation.overdue` — overdue
@@ -91,9 +103,55 @@ class DomainEvents
             'compliance.filing.rejected',
         ],
 
+        /*
+         * The brokerage book. These are the moments a rule wants: tell the
+         * account handler when cover binds or renews, tell the principal when
+         * a claim opens or a settlement lands. `premium.invoiced` fires when
+         * the draft is created — issuing it is Sales' moment and already has
+         * `sales.document.issued`.
+         */
+        'insurance' => [
+            'insurance.policy.placed',
+            'insurance.policy.bound',
+            'insurance.policy.renewed',
+            'insurance.policy.endorsed',
+            'insurance.policy.cancelled',
+            'insurance.premium.invoiced',
+            'insurance.claim.opened',
+            'insurance.claim.settled',
+            'insurance.claim.rejected',
+        ],
+
         'risk' => [
             'risk.reviewed',
             'risk.closed',
+        ],
+
+        /*
+         * Logistics. The booked and delivered events carry `tracking_url` in
+         * their context, so a notification rule can hand the receiver their
+         * tracking link without asking the module anything. `failed` is the
+         * exception path — a delivery attempt that did not land, with the
+         * reason in context — the event a "ring the customer" rule wants.
+         * Dispatch is announced by the manifest, not shipment-by-shipment:
+         * one van leaving is one fact.
+         */
+        'logistics' => [
+            'logistics.shipment.booked',
+            'logistics.shipment.delivered',
+            'logistics.shipment.failed',
+            'logistics.shipment.invoiced',
+            'logistics.manifest.dispatched',
+        ],
+
+        // Estate. The three moments a rule would want: somebody moved in,
+        // somebody moved out, the rent changed. All emitted by the Tenancies
+        // service; vacancy and arrears are states the board computes, not
+        // moments, so they are deliberately not here.
+        'estate' => [
+            'estate.tenancy.started',
+            'estate.tenancy.ended',
+            'estate.tenancy.rent-changed',
         ],
 
         'hr' => [

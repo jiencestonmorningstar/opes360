@@ -4,6 +4,7 @@ namespace Database\Seeders;
 
 use App\Enums\DocumentStatus;
 use App\Enums\DocumentType;
+use App\Enums\PaymentMethod;
 use App\Models\AssetLocation;
 use App\Models\AssetMaintenance;
 use App\Models\Company;
@@ -11,6 +12,7 @@ use App\Models\ComplianceObligation;
 use App\Models\Contact;
 use App\Models\Contract;
 use App\Models\Document;
+use App\Models\DocumentLine;
 use App\Models\FixedAsset;
 use App\Models\InsuranceClaim;
 use App\Models\InsurancePolicy;
@@ -31,12 +33,17 @@ use App\Models\WorkflowStep;
 use App\Services\Assets\AssetMovements;
 use App\Services\Compliance\RiskRegister;
 use App\Services\Contracts\ContractLifecycle;
+use App\Services\DocumentIssuer;
+use App\Services\Estate\Landlords;
 use App\Services\Estate\Tenancies;
 use App\Services\Insurance\Claims;
 use App\Services\Insurance\Policies;
 use App\Services\LeadFunnel;
 use App\Services\Logistics\Dispatch;
+use App\Services\Logistics\RateCards;
 use App\Services\Orders\Fulfilment;
+use App\Services\Orders\Returns;
+use App\Services\PaymentRecorder;
 use App\Services\Procurement\Requisitions;
 use App\Services\Service\TicketDesk;
 use App\Services\Stock\StockLedger;
@@ -588,6 +595,83 @@ class DemoModulesSeeder extends Seeder
         // The amount goes on the claim BEFORE the engine is asked, so what
         // lands in the owner's inbox is a number, not a blank.
         $claims->submitSettlement($claim->fresh(), 380000, $this->owner);
+
+        /*
+         * A policy that has actually been renewed — the answer button to the
+         * watch's alarm, demonstrated: the old term in the history row, the
+         * premium moved, and a mid-term endorsement on the new term with its
+         * additional premium drafted as a debit note in Sales.
+         */
+        $renewed = $policies->place([
+            'policy_number' => 'PRO-2025-1180',
+            'holder_contact_id' => $this->customer('Boulangerie du Rond-Point')->id,
+            'insurer_contact_id' => $this->supplier('Activa Assurances')->id,
+            'product_line' => 'property',
+            'premium' => 600000,
+            'commission_percent' => 15,
+            'covers_from' => now()->subMonths(14)->toDateString(),
+            'covers_to' => now()->subMonths(2)->toDateString(),
+            'renewal_type' => 'manual',
+            'renewal_term_months' => 12,
+            'notice_period_days' => 30,
+        ], $this->owner);
+
+        $policies->bind($renewed, $this->owner);
+
+        $policies->renew($renewed, [
+            'new_premium' => 660000,
+            'method' => 'negotiated',
+            'on' => now()->subMonths(2)->toDateString(),
+            'notes' => 'Rebroked and renewed at the client\'s sit-down; sum insured indexed.',
+        ], $this->owner);
+
+        $policies->endorse($renewed->fresh(), [
+            'description' => 'Second bakery oven added to the contents schedule.',
+            'new_premium' => 700000,
+            'effective_on' => now()->subWeeks(3)->toDateString(),
+        ], $this->owner);
+
+        /*
+         * A premium billed by instalments, part-way through: all four
+         * invoices exist from day one (the whole schedule visible to the
+         * collector), the first two issued and paid, the last two still
+         * drafts with their due dates already set.
+         */
+        $instalment = $policies->place([
+            'policy_number' => 'HLT-2026-0092',
+            'holder_contact_id' => $this->customer('Clinique des Palmiers')->id,
+            'insurer_contact_id' => $this->supplier('Activa Assurances')->id,
+            'product_line' => 'health',
+            'premium' => 1200000,
+            'commission_percent' => 10,
+            'covers_from' => now()->subMonths(2)->toDateString(),
+            'covers_to' => now()->addMonths(10)->toDateString(),
+            'renewal_type' => 'manual',
+            'renewal_term_months' => 12,
+            'notice_period_days' => 30,
+        ], $this->owner);
+
+        $policies->bind($instalment, $this->owner);
+
+        $schedule = $policies->invoicePremiumInstalments(
+            $instalment,
+            $this->owner,
+            4,
+            now()->subMonths(2)->addDays(7),
+        );
+
+        $issuer = app(DocumentIssuer::class);
+        $recorder = app(PaymentRecorder::class);
+
+        foreach (array_slice($schedule, 0, 2) as $paid) {
+            $issuer->issue($paid, $this->owner);
+            $recorder->record(
+                $paid->fresh(),
+                $this->owner,
+                (float) $paid->fresh()->total,
+                PaymentMethod::BankTransfer,
+            );
+        }
     }
 
     /**
@@ -651,7 +735,59 @@ class DemoModulesSeeder extends Seeder
 
         $fulfilment->confirm($delivered, $this->owner);
         $fulfilment->deliver($delivered->fresh(), actor: $this->owner);
-        $fulfilment->invoice($delivered->fresh(), $this->owner);
+        $invoice = $fulfilment->invoice($delivered->fresh(), $this->owner);
+
+        /*
+         * The third scene: 2 bars come back damaged. Issuing the invoice
+         * first gives the return something to credit — the demo then shows
+         * the whole hardening pass in one order: a 'return' movement back
+         * onto the shelf and an ordinary credit note against the invoice.
+         */
+        app(DocumentIssuer::class)->issue($invoice, $this->owner);
+
+        $note = $delivered->fresh()->deliveryNotes()->with('lines')->first();
+
+        app(Returns::class)->record(
+            $note,
+            [$note->lines->first()->id => 2],
+            $this->owner,
+            'Endommagé pendant le transport',
+        );
+
+        /*
+         * The fourth scene: the sales flow's front door. A quotation for
+         * paint, issued like any other document, converted into an order
+         * that carries its lines and prices and links back to it.
+         */
+        $paint = $item('Peinture blanche 20L', 'PEI-20', 18000, 10);
+        $ledger->receive($this->company, $paint, 12, 14500, actor: $this->owner);
+
+        $quotation = Document::create([
+            'type' => DocumentType::Quotation,
+            'contact_id' => $this->customer('Quincaillerie du Marché Central')->id,
+            'status' => DocumentStatus::Draft,
+            'issue_date' => now()->toDateString(),
+            'currency' => $this->company->currency ?: 'XAF',
+            'subtotal' => 90000,
+            'total' => 90000,
+            'balance' => 0,
+            'created_by' => $this->owner->id,
+        ]);
+
+        DocumentLine::create([
+            'document_id' => $quotation->id,
+            'item_id' => $paint->id,
+            'description' => $paint->name,
+            'quantity' => 5,
+            'unit' => 'unit',
+            'unit_price' => 18000,
+            'line_total' => 90000,
+            'sort_order' => 0,
+        ]);
+
+        app(DocumentIssuer::class)->issue($quotation, $this->owner);
+
+        $fulfilment->fromQuotation($quotation->fresh(), $this->owner);
     }
 
     /**
@@ -692,6 +828,20 @@ class DemoModulesSeeder extends Seeder
 
         $dispatch = app(Dispatch::class);
 
+        /*
+         * The rate card the booking form quotes from: Douala → Yaoundé at
+         * 120/kg with a 60 000 floor. The first booking below is priced by
+         * the card (1 800 kg × 120 = 216 000) rather than typed — the card
+         * proposes, and here the counter accepted the proposal.
+         */
+        $rates = app(RateCards::class);
+        $rates->put([
+            'from_location' => 'Douala',
+            'to_location' => 'Yaoundé',
+            'per_kg' => 120,
+            'minimum' => 60000,
+        ], $this->owner);
+
         $booking = fn (Contact $sender, Contact $receiver, string $cargo, float $freight) => $dispatch->book([
             'sender_id' => $sender->id,
             'receiver_id' => $receiver->id,
@@ -706,8 +856,10 @@ class DemoModulesSeeder extends Seeder
         $wouri = $this->customer('Quincaillerie du Wouri');
         $santa = $this->customer('Dépôt Santa Barbara');
 
-        $arrived = $booking($fotso, $wouri, '40 sacs de ciment', 220000);
+        // Priced off the rate card just written — quote(), not a typed figure.
+        $arrived = $booking($fotso, $wouri, '40 sacs de ciment', $rates->quote('Douala', 'Yaoundé', 1800));
         $rolling = $booking($santa, $wouri, 'Tôles ondulées — 120 feuilles', 180000);
+        $refused = $booking($fotso, $santa, 'Groupe électrogène 15 kVA', 95000);
 
         // Waiting column: booked, not yet aboard anything.
         $booking($wouri, $fotso, 'Retour palettes vides', 60000);
@@ -715,7 +867,12 @@ class DemoModulesSeeder extends Seeder
         $manifest = $dispatch->openManifest($truck, $this->owner, now()->toDateString(), $this->owner);
         $dispatch->load($arrived, $manifest, $this->owner);
         $dispatch->load($rolling, $manifest, $this->owner);
+        $dispatch->load($refused, $manifest, $this->owner);
         $dispatch->dispatch($manifest, $this->owner);
+
+        // One delivery attempt fails — the red exception card on the board,
+        // waiting for somebody to choose retry or return-to-sender.
+        $dispatch->failDelivery($refused->fresh(), $this->owner, 'Destinataire absent au dépôt');
 
         // One arrives, with the POD paper drafted and sent for signature
         // through the one signature flow, and the freight invoice drafted.
@@ -746,6 +903,9 @@ class DemoModulesSeeder extends Seeder
             'address' => 'Rue Joffre, Bonanjo, Douala',
             'kind' => 'residential',
             'landlord_contact_id' => $this->customer('M. Etonde Njoh')->id,
+            // The agency's cut of collected rent — what the landlord
+            // statement deducts before saying what M. Etonde is owed.
+            'commission_percent' => 10,
             'created_by' => $this->owner->id,
         ]);
 
@@ -806,5 +966,53 @@ class DemoModulesSeeder extends Seeder
             'notes' => 'Loyer — Studio RDC, Immeuble Bonanjo',
             'created_by' => $this->owner->id,
         ]);
+
+        /*
+         * The landlord statement, computable on first open: rent actually
+         * collected from the sitting tenant (through the one payment
+         * recorder, so the receipt and the books exist), the agency's 10%
+         * commission, and one repair paid on the landlord's behalf. The
+         * statement page should show money in, two deductions, and a net
+         * figure M. Etonde is owed.
+         */
+        $rentInvoice = Document::create([
+            'type' => DocumentType::Invoice,
+            'contact_id' => $this->customer('Mme Catherine Eyenga')->id,
+            'status' => DocumentStatus::Issued,
+            'number' => 'INV-'.Str::upper(Str::random(6)),
+            'issue_date' => now()->toDateString(),
+            'due_date' => now()->addDays(7)->toDateString(),
+            'currency' => $this->company->currency ?: 'XAF',
+            'subtotal' => 150000,
+            'discount_total' => 0,
+            'tax_total' => 0,
+            'total' => 150000,
+            'amount_paid' => 0,
+            'balance' => 150000,
+            'notes' => 'Loyer — Appartement 1A, Immeuble Bonanjo',
+            'created_by' => $this->owner->id,
+        ]);
+
+        app(PaymentRecorder::class)->record(
+            $rentInvoice,
+            $this->owner,
+            150000,
+            PaymentMethod::MobileMoney,
+        );
+
+        app(Landlords::class)->recordPropertyExpense($property, [
+            'description' => 'Réparation plomberie — Immeuble Bonanjo',
+            'amount' => 25000,
+            'category' => 'maintenance',
+            'payment_method' => 'cash',
+        ], $this->owner);
+
+        // A rent review on the occupied tenancy: history kept, the schedule's
+        // next bill carries the new figure, nothing retroactive.
+        $tenancies->reviewRent(
+            $occupied->refresh()->currentTenancy,
+            ['rent' => 165000, 'reason' => 'Révision annuelle'],
+            $this->owner,
+        );
     }
 }

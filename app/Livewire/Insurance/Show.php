@@ -42,6 +42,25 @@ class Show extends Component
 
     public string $cancellationReason = '';
 
+    // ── Renewal ─────────────────────────────────────────────────────────
+    public bool $renewing = false;
+
+    public string $renewCoversTo = '';
+
+    public string $renewPremium = '';
+
+    // ── Endorsement ─────────────────────────────────────────────────────
+    public bool $endorsing = false;
+
+    public string $endorsementEffectiveOn = '';
+
+    public string $endorsementDescription = '';
+
+    public string $endorsementPremium = '';
+
+    // ── Instalments ─────────────────────────────────────────────────────
+    public string $instalmentCount = '';
+
     public function mount(InsurancePolicy $policy): void
     {
         Gate::authorize('insurance.view');
@@ -115,6 +134,114 @@ class Show extends Component
 
         $this->refresh();
         $this->dispatch('toast', message: 'Commission invoice drafted to the insurer.');
+    }
+
+    public function startRenewing(): void
+    {
+        Gate::authorize('insurance.manage');
+
+        $this->resetValidation();
+
+        // Prefill from the agreed term, so the ordinary case is one click —
+        // and an unusual one is an edit, not a calculation.
+        $this->renewCoversTo = $this->policy->covers_to !== null && $this->policy->renewal_term_months !== null
+            ? $this->policy->covers_to->copy()->addDay()->addMonths($this->policy->renewal_term_months)->toDateString()
+            : '';
+        $this->renewPremium = $this->policy->premium !== null ? (string) $this->policy->premium : '';
+        $this->renewing = true;
+    }
+
+    public function renew(): void
+    {
+        Gate::authorize('insurance.manage');
+
+        $this->validate([
+            'renewCoversTo' => ['nullable', 'date'],
+            'renewPremium' => ['nullable', 'numeric', 'min:0'],
+        ]);
+
+        try {
+            app(Policies::class)->renew($this->policy, [
+                'new_covers_to' => $this->renewCoversTo ?: null,
+                'new_premium' => $this->renewPremium === '' ? null : (float) $this->renewPremium,
+                'method' => 'negotiated',
+            ], auth()->user());
+        } catch (RuntimeException $e) {
+            $this->addError('renewing', $e->getMessage());
+
+            return;
+        }
+
+        $this->renewing = false;
+        $this->refresh();
+        $this->dispatch('toast', message: 'Renewed — the new term is on the record, history kept.');
+    }
+
+    public function startEndorsing(): void
+    {
+        Gate::authorize('insurance.manage');
+
+        $this->resetValidation();
+        $this->endorsementEffectiveOn = now()->toDateString();
+        $this->endorsementDescription = '';
+        $this->endorsementPremium = $this->policy->premium !== null ? (string) $this->policy->premium : '';
+        $this->endorsing = true;
+    }
+
+    public function endorse(): void
+    {
+        Gate::authorize('insurance.manage');
+
+        $this->validate([
+            'endorsementEffectiveOn' => ['required', 'date'],
+            'endorsementDescription' => ['required', 'string', 'max:2000'],
+            'endorsementPremium' => ['nullable', 'numeric', 'min:0'],
+        ], [
+            'endorsementDescription.required' => 'What changed on the cover?',
+        ]);
+
+        try {
+            $endorsement = app(Policies::class)->endorse($this->policy, [
+                'effective_on' => $this->endorsementEffectiveOn,
+                'description' => $this->endorsementDescription,
+                'new_premium' => $this->endorsementPremium === '' ? null : (float) $this->endorsementPremium,
+            ], auth()->user());
+        } catch (RuntimeException $e) {
+            $this->addError('endorsing', $e->getMessage());
+
+            return;
+        }
+
+        $this->endorsing = false;
+        $this->refresh();
+        $this->dispatch('toast', message: $endorsement->movesMoney()
+            ? 'Endorsed — the premium adjustment is drafted in Sales.'
+            : 'Endorsed, on the record.');
+    }
+
+    public function invoiceInstalments(): void
+    {
+        Gate::authorize('insurance.manage');
+
+        $this->validate(['instalmentCount' => ['required', 'integer', 'min:2', 'max:12']], [
+            'instalmentCount.required' => 'How many instalments?',
+        ]);
+
+        try {
+            app(Policies::class)->invoicePremiumInstalments(
+                $this->policy,
+                auth()->user(),
+                (int) $this->instalmentCount,
+            );
+        } catch (RuntimeException $e) {
+            $this->addError('policy', $e->getMessage());
+
+            return;
+        }
+
+        $this->instalmentCount = '';
+        $this->refresh();
+        $this->dispatch('toast', message: 'Instalment invoices drafted — the whole schedule, due dates set.');
     }
 
     public function startClaiming(): void
@@ -277,11 +404,12 @@ class Show extends Component
 
         return view('livewire.insurance.show', [
             'claims' => $policy->claims()->get(),
+            'renewals' => $policy->renewals()->get(),
+            'endorsements' => $policy->endorsements()->with('adjustmentDocument')->get(),
             'commissions' => $policy->commissions()->with('invoice')->get(),
             // The premium invoices are ordinary sales documents — this screen
             // links to them and reads their status; it never restates them.
             'invoices' => $policy->premiumInvoices(),
-            'papers' => $policy->papers(),
         ])->layout('components.layouts.app', [
             'title' => $policy->label(),
             'active' => 'insurance',

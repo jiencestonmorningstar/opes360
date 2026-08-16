@@ -8,6 +8,7 @@ use App\Models\Shipment;
 use App\Models\TripManifest;
 use App\Models\User;
 use App\Services\Logistics\Dispatch;
+use App\Services\Logistics\RateCards;
 use App\Support\CurrentCompany;
 use Illuminate\Contracts\View\View;
 use Illuminate\Support\Facades\Gate;
@@ -44,6 +45,14 @@ class Index extends Component
 
     public ?string $freightAmount = null;
 
+    /**
+     * What the rate card last proposed, so the proposal only ever overwrites
+     * itself. The clerk's own figure — typed over the proposal or entered
+     * before one existed — is never replaced: the card proposes, the person
+     * decides.
+     */
+    public ?string $proposedFreight = null;
+
     // ── Open a manifest ─────────────────────────────────────────────────
     public bool $opening = false;
 
@@ -58,6 +67,30 @@ class Index extends Component
     public ?string $loading = null;
 
     public ?string $loadShipmentId = null;
+
+    /** Re-quote from the rate card whenever the route or the weight changes. */
+    public function updated(string $property): void
+    {
+        if (! in_array($property, ['fromLocation', 'toLocation', 'weightKg'], true)) {
+            return;
+        }
+
+        $quote = app(RateCards::class)->quote(
+            $this->fromLocation,
+            $this->toLocation,
+            $this->weightKg !== null && $this->weightKg !== '' ? (float) $this->weightKg : null,
+        );
+
+        // Only an untouched field, or one still holding our own last
+        // proposal, is overwritten. A figure the clerk typed stands.
+        $untouched = $this->freightAmount === null
+            || $this->freightAmount === ''
+            || $this->freightAmount === $this->proposedFreight;
+
+        if ($quote !== null && $untouched) {
+            $this->freightAmount = $this->proposedFreight = rtrim(rtrim(number_format($quote, 2, '.', ''), '0'), '.');
+        }
+    }
 
     public function book(): void
     {
@@ -91,7 +124,7 @@ class Index extends Component
             return;
         }
 
-        $this->reset('booking', 'senderId', 'receiverId', 'cargo', 'weightKg', 'declaredValue', 'fromLocation', 'toLocation', 'freightAmount');
+        $this->reset('booking', 'senderId', 'receiverId', 'cargo', 'weightKg', 'declaredValue', 'fromLocation', 'toLocation', 'freightAmount', 'proposedFreight');
         $this->dispatch('toast', message: 'Shipment booked.');
     }
 
@@ -172,6 +205,13 @@ class Index extends Component
         $company = app(CurrentCompany::class)->get();
 
         return view('livewire.logistics.index', [
+            // Failed deliveries first: an exception is the board's loudest
+            // fact, and it must stay visible after its manifest closes.
+            'exceptions' => Shipment::query()
+                ->with(['sender', 'receiver'])
+                ->where('status', 'exception')
+                ->latest('updated_at')
+                ->get(),
             'unassigned' => Shipment::query()
                 ->with(['sender', 'receiver'])
                 ->where('status', 'booked')

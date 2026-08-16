@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use App\Models\Concerns\BelongsToCompany;
+use App\Models\Concerns\EmitsDomainEvents;
 use Illuminate\Database\Eloquent\Concerns\HasUlids;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -22,6 +23,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 class SalesOrder extends Model
 {
     use BelongsToCompany;
+    use EmitsDomainEvents;
     use HasUlids;
 
     public const STATUS_DRAFT = 'draft';
@@ -76,6 +78,12 @@ class SalesOrder extends Model
     public function location(): BelongsTo
     {
         return $this->belongsTo(StockLocation::class, 'stock_location_id');
+    }
+
+    /** The accepted quotation this order was converted from, when there was one. */
+    public function sourceDocument(): BelongsTo
+    {
+        return $this->belongsTo(Document::class, 'source_document_id');
     }
 
     public function creator(): BelongsTo

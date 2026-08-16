@@ -7,10 +7,13 @@ use App\Models\Property;
 use App\Models\PropertyUnit;
 use App\Models\ServiceTicket;
 use App\Models\Tenancy;
+use App\Services\Estate\Landlords;
 use App\Services\Estate\Tenancies;
 use App\Support\Aging;
 use App\Support\CurrentCompany;
+use App\Support\LandlordStatement;
 use Illuminate\Contracts\View\View;
+use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Gate;
 use Livewire\Component;
 use RuntimeException;
@@ -60,6 +63,32 @@ class Show extends Component
     public bool $force = false;
 
     public string $forceReason = '';
+
+    // ── A rent review ───────────────────────────────────────────────────
+    public ?string $reviewTenancyId = null;
+
+    public string $newRent = '';
+
+    public string $rentEffectiveOn = '';
+
+    public string $rentReason = '';
+
+    // ── The landlord's money ────────────────────────────────────────────
+    public string $statementFrom = '';
+
+    public string $statementTo = '';
+
+    public bool $recordingExpense = false;
+
+    public string $expenseDescription = '';
+
+    public string $expenseAmount = '';
+
+    public string $expensePaidFrom = 'cash';
+
+    public bool $payingOut = false;
+
+    public string $payoutAmount = '';
 
     // ── A maintenance request ───────────────────────────────────────────
     public ?string $maintenanceTenancyId = null;
@@ -242,11 +271,131 @@ class Show extends Component
         $this->dispatch('toast', message: 'Logged at the service desk — it is on the board with a clock.');
     }
 
+    public function startRentReview(string $tenancyId): void
+    {
+        Gate::authorize('estate.manage');
+
+        $this->reset(['newRent', 'rentReason']);
+        $this->resetValidation();
+        $this->rentEffectiveOn = now()->toDateString();
+        $this->reviewTenancyId = $tenancyId;
+    }
+
+    public function reviewRent(): void
+    {
+        Gate::authorize('estate.manage');
+
+        $this->validate([
+            'newRent' => ['required', 'numeric', 'min:1'],
+            'rentEffectiveOn' => ['required', 'date'],
+            'rentReason' => ['nullable', 'string', 'max:500'],
+        ], [
+            'newRent.required' => 'What does the rent become?',
+        ]);
+
+        $tenancy = Tenancy::query()->findOrFail($this->reviewTenancyId);
+
+        try {
+            app(Tenancies::class)->reviewRent($tenancy, [
+                'rent' => (float) $this->newRent,
+                'effective_on' => $this->rentEffectiveOn,
+                'reason' => $this->rentReason ?: null,
+            ], auth()->user());
+        } catch (RuntimeException $e) {
+            $this->addError('review', $e->getMessage());
+
+            return;
+        }
+
+        $this->reviewTenancyId = null;
+        $this->dispatch('toast', message: 'Rent reviewed — the history is kept and the next bill carries the new figure.');
+    }
+
+    public function startRecordingExpense(): void
+    {
+        Gate::authorize('estate.manage');
+
+        $this->reset(['expenseDescription', 'expenseAmount']);
+        $this->resetValidation();
+        $this->expensePaidFrom = 'cash';
+        $this->recordingExpense = true;
+    }
+
+    public function recordExpense(): void
+    {
+        Gate::authorize('estate.manage');
+
+        $this->validate([
+            'expenseDescription' => ['required', 'string', 'max:255'],
+            'expenseAmount' => ['required', 'numeric', 'min:1'],
+            'expensePaidFrom' => ['required', 'in:cash,bank_transfer,mobile_money'],
+        ], [
+            'expenseDescription.required' => 'What was the money spent on?',
+            'expenseAmount.required' => 'How much was spent?',
+        ]);
+
+        try {
+            app(Landlords::class)->recordPropertyExpense($this->property, [
+                'description' => $this->expenseDescription,
+                'amount' => (float) $this->expenseAmount,
+                'payment_method' => $this->expensePaidFrom,
+            ], auth()->user());
+        } catch (RuntimeException $e) {
+            $this->addError('propertyExpense', $e->getMessage());
+
+            return;
+        }
+
+        $this->recordingExpense = false;
+        $this->dispatch('toast', message: 'Expense recorded against the property — the next landlord statement deducts it.');
+    }
+
+    public function startPayingOut(): void
+    {
+        Gate::authorize('estate.end-tenancy');
+
+        $this->reset(['payoutAmount']);
+        $this->resetValidation();
+        $this->payingOut = true;
+    }
+
+    public function payOut(): void
+    {
+        // The money-committing act, at the same level as ending a tenancy.
+        Gate::authorize('estate.end-tenancy');
+
+        $this->validate([
+            'payoutAmount' => ['nullable', 'numeric', 'min:1'],
+            'statementFrom' => ['required', 'date'],
+            'statementTo' => ['required', 'date'],
+        ]);
+
+        try {
+            app(Landlords::class)->payOut($this->property, [
+                'from' => $this->statementFrom,
+                'to' => $this->statementTo,
+                'amount' => $this->payoutAmount === '' ? null : (float) $this->payoutAmount,
+            ], auth()->user());
+        } catch (RuntimeException $e) {
+            $this->addError('payout', $e->getMessage());
+
+            return;
+        }
+
+        $this->payingOut = false;
+        $this->dispatch('toast', message: 'Payout recorded as a payable to the landlord — settle it from the expenses screen.');
+    }
+
     public function render(): View
     {
         Gate::authorize('estate.view');
 
-        $this->property->load(['landlord', 'units.currentTenancy.tenant', 'units.currentTenancy.lease']);
+        $this->property->load(['landlord', 'units.currentTenancy.tenant', 'units.currentTenancy.lease', 'units.currentTenancy.rentChanges']);
+
+        if ($this->statementFrom === '' || $this->statementTo === '') {
+            $this->statementFrom = now()->startOfMonth()->toDateString();
+            $this->statementTo = now()->toDateString();
+        }
 
         $aging = new Aging;
 
@@ -256,8 +405,26 @@ class Show extends Component
             ->filter(fn (Tenancy $t) => $t->tenant !== null)
             ->mapWithKeys(fn (Tenancy $t) => [$t->id => $aging->forParty($t->tenant)['total']]);
 
+        $statement = null;
+
+        if ($this->property->landlord !== null) {
+            // A hand-typed period that does not parse falls back to the month
+            // to date rather than taking the page down.
+            try {
+                $from = Carbon::parse($this->statementFrom);
+                $to = Carbon::parse($this->statementTo);
+            } catch (\Exception) {
+                $from = now()->startOfMonth();
+                $to = now();
+            }
+
+            $statement = (new LandlordStatement($this->property->landlord, $from, $to))->build();
+        }
+
         return view('livewire.estate.show', [
             'arrears' => $arrears,
+            'statement' => $statement,
+            'unitLabels' => $this->property->units->pluck('label', 'id'),
             'tickets' => ServiceTicket::query()
                 ->whereIn('property_unit_id', $this->property->units->pluck('id'))
                 ->with('contact')

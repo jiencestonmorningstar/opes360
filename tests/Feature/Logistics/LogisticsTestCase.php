@@ -2,6 +2,7 @@
 
 namespace Tests\Feature\Logistics;
 
+use App\Http\Controllers\PrintController;
 use App\Http\Controllers\ShipmentTrackingController;
 use App\Livewire\Logistics\Index;
 use App\Livewire\Logistics\Show;
@@ -111,7 +112,18 @@ abstract class LogisticsTestCase extends TestCase
         Route::middleware(['web', 'auth'])->group(function () {
             Route::get('/logistics', Index::class)->name('logistics');
             Route::get('/logistics/{shipment}', Show::class)->name('logistics.show');
+
+            // The print pair — the same lines the handoff hands the
+            // orchestrator, hardening doc included.
+            Route::get('/logistics/{shipment}/waybill/print', [PrintController::class, 'waybill'])
+                ->name('logistics.waybill.print');
+            Route::get('/logistics/manifests/{manifest}/print', [PrintController::class, 'manifest'])
+                ->name('logistics.manifest.print');
         });
+
+        // Names assigned after the collection was built need the lookup
+        // rebuilt, or route('logistics.waybill.print') cannot find them.
+        Route::getRoutes()->refreshNameLookups();
 
         $this->truck = FixedAsset::create([
             'company_id' => $this->company->id,

@@ -76,9 +76,14 @@ class Dispatch
 
             $this->record($shipment, 'booked', 'Booking received', $by);
 
+            // The tracking URL travels on the event so a notification rule
+            // can hand the receiver their link without asking this module
+            // anything. Events only — the notification system decides
+            // whether, how and to whom anything is actually sent.
             $shipment->emitDomainEvent('logistics.shipment.booked', [
                 'shipment_id' => $shipment->id,
                 'reference' => $shipment->reference,
+                'tracking_url' => $shipment->trackingUrl(),
             ]);
 
             return $shipment;
@@ -245,7 +250,79 @@ class Dispatch
             $shipment->emitDomainEvent('logistics.shipment.delivered', [
                 'shipment_id' => $shipment->id,
                 'reference' => $shipment->reference,
+                'tracking_url' => $shipment->trackingUrl(),
             ]);
+
+            return $shipment->refresh();
+        });
+    }
+
+    /**
+     * A delivery attempt that failed: receiver absent, cargo refused, address
+     * wrong. The reason is REQUIRED — an exception with no reason is a red
+     * flag nobody can act on — and it is written into the event history in
+     * the words given, so the tracking page tells the customer the same
+     * story the office reads.
+     *
+     * Exception is a loud state, not an end state: the cargo still exists.
+     * From here it either goes out again (retryDelivery) or goes home
+     * (returnToSender). Nothing else touches an excepted shipment.
+     */
+    public function failDelivery(Shipment $shipment, User $by, string $reason): Shipment
+    {
+        if ($shipment->status !== 'in_transit') {
+            throw new RuntimeException("{$shipment->reference} is {$shipment->statusLabel()} — only cargo in transit can fail delivery.");
+        }
+
+        if (trim($reason) === '') {
+            throw new RuntimeException('A failed delivery needs a reason — "absent receiver", "cargo refused" — so somebody can decide what happens next.');
+        }
+
+        return DB::transaction(function () use ($shipment, $by, $reason) {
+            $shipment->forceFill(['status' => 'exception'])->save();
+            $this->record($shipment, 'exception', 'Delivery attempt failed: '.trim($reason), $by);
+
+            $shipment->emitDomainEvent('logistics.shipment.failed', [
+                'shipment_id' => $shipment->id,
+                'reference' => $shipment->reference,
+                'reason' => trim($reason),
+                'tracking_url' => $shipment->trackingUrl(),
+            ]);
+
+            return $shipment->refresh();
+        });
+    }
+
+    /** Out for delivery again. The exception clears; the history keeps it. */
+    public function retryDelivery(Shipment $shipment, User $by): Shipment
+    {
+        if (! $shipment->inException()) {
+            throw new RuntimeException("{$shipment->reference} is {$shipment->statusLabel()} — only an excepted delivery can be retried.");
+        }
+
+        return DB::transaction(function () use ($shipment, $by) {
+            $shipment->forceFill(['status' => 'in_transit'])->save();
+            $this->record($shipment, 'in_transit', 'Out for delivery again', $by);
+
+            return $shipment->refresh();
+        });
+    }
+
+    /**
+     * The cargo goes home. A settled end state, like delivered and cancelled:
+     * the shipment's story is over, the manifest can close over it, and
+     * whether the failed trip still gets invoiced is the office's argument
+     * to have with the sender — not this method's.
+     */
+    public function returnToSender(Shipment $shipment, User $by): Shipment
+    {
+        if (! $shipment->inException()) {
+            throw new RuntimeException("{$shipment->reference} is {$shipment->statusLabel()} — only an excepted delivery can be returned to sender.");
+        }
+
+        return DB::transaction(function () use ($shipment, $by) {
+            $shipment->forceFill(['status' => 'returned'])->save();
+            $this->record($shipment, 'returned', 'Returned to sender at '.$shipment->from_location, $by);
 
             return $shipment->refresh();
         });
@@ -282,8 +359,12 @@ class Dispatch
             throw new RuntimeException("{$manifest->reference} is {$manifest->statusLabel()} — only a dispatched manifest can be closed.");
         }
 
+        // Settled states, plus 'exception': an excepted shipment came back on
+        // the van — the depot is exactly where it retries or returns from,
+        // and holding the manifest open would strand the truck's odometer
+        // readings on an argument about somebody else's absent receiver.
         $undelivered = $manifest->shipments()
-            ->whereNotIn('shipments.status', ['delivered', 'cancelled'])
+            ->whereNotIn('shipments.status', ['delivered', 'cancelled', 'exception', 'returned'])
             ->count();
 
         if ($undelivered > 0) {

@@ -33,6 +33,11 @@ class Shipment extends Model
         'in_transit' => 'In transit',
         'delivered' => 'Delivered',
         'cancelled' => 'Cancelled',
+        // A delivery attempt that failed: absent receiver, refused cargo.
+        // The cargo still exists and still must go somewhere — retry, or
+        // return to sender — so exception is a loud state, not an end state.
+        'exception' => 'Delivery exception',
+        'returned' => 'Returned to sender',
     ];
 
     protected $guarded = ['id'];
@@ -94,12 +99,24 @@ class Shipment extends Model
 
     public function isSettled(): bool
     {
-        return in_array($this->status, ['delivered', 'cancelled'], true);
+        return in_array($this->status, ['delivered', 'cancelled', 'returned'], true);
     }
 
     public function isInvoiced(): bool
     {
         return $this->document_id !== null;
+    }
+
+    /** A delivery attempt failed and nobody has yet decided retry or return. */
+    public function inException(): bool
+    {
+        return $this->status === 'exception';
+    }
+
+    /** The public tracking page — the URL a notification hands the receiver. */
+    public function trackingUrl(): string
+    {
+        return url('/track/'.$this->tracking_token);
     }
 
     /** 32 chars of base62 — a link for one shipment's own parties, not a password. */

@@ -107,6 +107,16 @@
                             </button>
                         @endif
                         @if ($policy->isActive())
+                            @if ($policy->covers_to)
+                                <button type="button" wire:click="startRenewing"
+                                        class="tap focusable rounded-full bg-fill-brand px-5 py-2 text-[14.5px] font-semibold text-white">
+                                    Renew
+                                </button>
+                            @endif
+                            <button type="button" wire:click="startEndorsing"
+                                    class="tap focusable rounded-full border border-border px-5 py-2 text-[14.5px] font-semibold text-ink-2">
+                                Endorse
+                            </button>
                             <button type="button" wire:click="invoicePremium"
                                     class="tap focusable rounded-full border border-border px-5 py-2 text-[14.5px] font-semibold text-ink-2">
                                 Invoice the premium
@@ -127,9 +137,68 @@
                     @endcan
                 </div>
 
+                @if ($renewing)
+                    <div class="mt-4 rounded-xl border border-border p-4">
+                        @error('renewing') <p class="mb-2 text-[13.5px] font-semibold text-rose-600">{{ $message }}</p> @enderror
+                        <p class="mb-3 text-[13.5px] text-muted">
+                            The new term starts {{ $policy->covers_to?->copy()->addDay()->toFormattedDateString() }} —
+                            the day after the current cover ends. The old term goes into the history below.
+                        </p>
+                        <div class="grid gap-3 sm:grid-cols-2">
+                            <div>
+                                <label class="{{ $labelClass }}">Covers to</label>
+                                <input type="date" wire:model="renewCoversTo" class="{{ $inputClass }}">
+                            </div>
+                            <div>
+                                <label class="{{ $labelClass }}">New premium</label>
+                                <input type="number" step="0.01" wire:model="renewPremium" placeholder="{{ $ccy }}" class="{{ $inputClass }}">
+                            </div>
+                        </div>
+                        <div class="mt-3 flex gap-2">
+                            <button type="button" wire:click="renew" class="tap focusable rounded-full bg-fill-brand px-5 py-2 text-[14.5px] font-semibold text-white">Renew the cover</button>
+                            <button type="button" wire:click="$set('renewing', false)" class="tap focusable rounded-full border border-border px-5 py-2 text-[14.5px] font-semibold text-ink-2">Not yet</button>
+                        </div>
+                    </div>
+                @endif
+
+                @if ($endorsing)
+                    <div class="mt-4 rounded-xl border border-border p-4">
+                        @error('endorsing') <p class="mb-2 text-[13.5px] font-semibold text-rose-600">{{ $message }}</p> @enderror
+                        <div class="grid gap-3 sm:grid-cols-2">
+                            <div class="sm:col-span-2">
+                                <label class="{{ $labelClass }}">What changed</label>
+                                <input type="text" wire:model="endorsementDescription" placeholder="Vehicle swapped, sum insured raised…" class="{{ $inputClass }}">
+                                @error('endorsementDescription') <p class="mt-1 text-[13px] text-rose-600">{{ $message }}</p> @enderror
+                            </div>
+                            <div>
+                                <label class="{{ $labelClass }}">Effective</label>
+                                <input type="date" wire:model="endorsementEffectiveOn" class="{{ $inputClass }}">
+                            </div>
+                            <div>
+                                <label class="{{ $labelClass }}">Premium after the change</label>
+                                <input type="number" step="0.01" wire:model="endorsementPremium" placeholder="{{ $ccy }}" class="{{ $inputClass }}">
+                            </div>
+                        </div>
+                        <p class="mt-2 text-[13px] text-muted">
+                            If the premium moves, the difference is drafted as a debit or credit note in Sales.
+                        </p>
+                        <div class="mt-3 flex gap-2">
+                            <button type="button" wire:click="endorse" class="tap focusable rounded-full bg-fill-brand px-5 py-2 text-[14.5px] font-semibold text-white">Record the endorsement</button>
+                            <button type="button" wire:click="$set('endorsing', false)" class="tap focusable rounded-full border border-border px-5 py-2 text-[14.5px] font-semibold text-ink-2">Cancel</button>
+                        </div>
+                    </div>
+                @endif
+
                 @if ($cancelling)
                     <div class="mt-4 rounded-xl border border-border p-4">
                         @error('cancelling') <p class="mb-2 text-[13.5px] font-semibold text-rose-600">{{ $message }}</p> @enderror
+                        @php $return = app(\App\Services\Insurance\Policies::class)->returnPremium($policy, \Illuminate\Support\Carbon::parse($cancelledOn ?: now())); @endphp
+                        @if ($return > 0)
+                            <p class="mb-3 text-[13.5px] text-muted">
+                                Unexpired premium on that date: <strong>{{ $money($return) }}</strong>.
+                                If the premium was invoiced, a credit note for it is drafted in Sales.
+                            </p>
+                        @endif
                         <div class="grid gap-3 sm:grid-cols-2">
                             <div>
                                 <label class="{{ $labelClass }}">Cancelled on</label>
@@ -147,6 +216,47 @@
                     </div>
                 @endif
             </x-ui.panel>
+
+            {{-- ─────────────────────────────── how the cover got here ── --}}
+            @if ($renewals->isNotEmpty() || $endorsements->isNotEmpty())
+                <x-ui.panel title="Renewals and endorsements">
+                    @foreach ($renewals as $renewal)
+                        <div wire:key="renewal-{{ $renewal->id }}" class="{{ $loop->first ? '' : 'mt-2 border-t border-border pt-2' }}">
+                            <p class="text-[14px] font-semibold text-ink">
+                                Renewed {{ $renewal->renewed_on->toFormattedDateString() }} — {{ $renewal->methodLabel() }}
+                            </p>
+                            <p class="mt-0.5 text-[13px] text-muted">
+                                Cover to {{ $renewal->previous_covers_to?->toFormattedDateString() ?? '—' }}
+                                → {{ $renewal->new_covers_to->toFormattedDateString() }}.
+                                @if ($renewal->premiumChange() !== null && abs($renewal->premiumChange()) > 0.005)
+                                    Premium {{ $money($renewal->previous_premium) }} → {{ $money($renewal->new_premium) }}.
+                                @endif
+                            </p>
+                        </div>
+                    @endforeach
+
+                    @foreach ($endorsements as $endorsement)
+                        <div wire:key="endorse-{{ $endorsement->id }}"
+                             class="{{ $loop->first && $renewals->isEmpty() ? '' : 'mt-2 border-t border-border pt-2' }}">
+                            <p class="text-[14px] font-semibold text-ink">
+                                Endorsed, effective {{ $endorsement->effective_on->toFormattedDateString() }}
+                            </p>
+                            <p class="mt-0.5 text-[13px] text-ink-2">{{ $endorsement->description }}</p>
+                            @if ($endorsement->movesMoney())
+                                <p class="mt-0.5 text-[13px] text-muted">
+                                    {{ (float) $endorsement->premium_delta > 0 ? 'Additional premium' : 'Return premium' }}
+                                    {{ $money(abs((float) $endorsement->premium_delta)) }}
+                                    @if ($endorsement->adjustmentDocument)
+                                        — <a href="{{ route('documents.show', $endorsement->adjustmentDocument) }}" wire:navigate class="hover:underline">
+                                            {{ $endorsement->adjustmentDocument->number ?? 'draft '.$endorsement->adjustmentDocument->type->label() }}
+                                        </a>
+                                    @endif
+                                </p>
+                            @endif
+                        </div>
+                    @endforeach
+                </x-ui.panel>
+            @endif
 
             {{-- ─────────────────────────────────────────────────── claims ── --}}
             <x-ui.panel title="Claims">
@@ -231,6 +341,13 @@
                                 @endcan
                             @endif
                         </div>
+
+                        {{-- The evidence: photos, the assessor's report, the
+                             repudiation letter — managed documents, viewed and
+                             attached through the shared library. --}}
+                        <div class="mt-3">
+                            <x-documents.library-panel :record="$claim" title="Evidence" :limit="4" />
+                        </div>
                     </div>
                 @empty
                     <p class="py-6 text-center text-[13.5px] text-muted">No claims under this policy.</p>
@@ -258,6 +375,20 @@
                 @empty
                     <p class="py-4 text-center text-[13.5px] text-muted">No premium invoiced yet.</p>
                 @endforelse
+
+                @can('insurance.manage')
+                    @if ($policy->isActive() && $invoices->isEmpty() && $policy->premium !== null)
+                        <div class="mt-3 flex items-center gap-2 border-t border-border pt-3">
+                            <input type="number" min="2" max="12" wire:model="instalmentCount" placeholder="N"
+                                   class="h-9 w-16 rounded-full border border-border bg-surface px-3 text-[13px] text-ink">
+                            <button type="button" wire:click="invoiceInstalments"
+                                    class="tap focusable rounded-full border border-border px-3.5 py-1.5 text-[13px] font-semibold text-ink-2">
+                                Bill in instalments
+                            </button>
+                        </div>
+                        @error('instalmentCount') <p class="mt-1 text-[13px] text-rose-600">{{ $message }}</p> @enderror
+                    @endif
+                @endcan
             </x-ui.panel>
 
             <x-ui.panel title="Commission">
@@ -291,19 +422,9 @@
                 @endforelse
             </x-ui.panel>
 
-            <x-ui.panel title="Papers">
-                <p class="-mt-2 mb-3 text-[13.5px] text-muted">
-                    The schedule and the wording live in Documents and are linked here.
-                </p>
-                @forelse ($papers as $paper)
-                    <div wire:key="paper-{{ $paper->id }}"
-                         class="{{ $loop->first ? '' : 'mt-2 border-t border-border pt-2' }}">
-                        <span class="text-[14px] text-ink">{{ $paper->title ?? $paper->reference }}</span>
-                    </div>
-                @empty
-                    <p class="py-4 text-center text-[13.5px] text-muted">No papers linked yet.</p>
-                @endforelse
-            </x-ui.panel>
+            {{-- The schedule and the wording — managed documents through the
+                 shared library, same panel as contracts. --}}
+            <x-documents.library-panel :record="$policy" title="Papers" />
         </div>
     </div>
 </div>

@@ -28,6 +28,9 @@
     @error('letting') <p class="mt-3 text-[14px] font-semibold text-rose-600">{{ $message }}</p> @enderror
     @error('ending') <p class="mt-3 text-[14px] font-semibold text-rose-600">{{ $message }}</p> @enderror
     @error('maintenance') <p class="mt-3 text-[14px] font-semibold text-rose-600">{{ $message }}</p> @enderror
+    @error('review') <p class="mt-3 text-[14px] font-semibold text-rose-600">{{ $message }}</p> @enderror
+    @error('propertyExpense') <p class="mt-3 text-[14px] font-semibold text-rose-600">{{ $message }}</p> @enderror
+    @error('payout') <p class="mt-3 text-[14px] font-semibold text-rose-600">{{ $message }}</p> @enderror
 
     {{-- ─────────────────────────────────────────────────────── adding a unit ── --}}
     @if ($addingUnit)
@@ -99,6 +102,12 @@
                                 <button type="button" wire:click="startMaintenance('{{ $tenancy->id }}')"
                                         class="tap focusable rounded-full border border-border px-4 py-2 text-[13.5px] font-semibold text-ink-2">
                                     Report a fault
+                                </button>
+                            @endcan
+                            @can('estate.manage')
+                                <button type="button" wire:click="startRentReview('{{ $tenancy->id }}')"
+                                        class="tap focusable rounded-full border border-border px-4 py-2 text-[13.5px] font-semibold text-ink-2">
+                                    Review the rent
                                 </button>
                             @endcan
                             @can('estate.end-tenancy')
@@ -209,6 +218,44 @@
                     </div>
                 @endif
 
+                {{-- ── a rent review ── --}}
+                @if ($tenancy && $reviewTenancyId === $tenancy->id)
+                    <div class="mt-4 border-t border-border pt-4">
+                        <p class="text-[14.5px] font-semibold text-ink">
+                            Review the rent (now {{ $money($tenancy->rent) }}/month)
+                        </p>
+                        <div class="mt-3 grid gap-4 lg:grid-cols-3">
+                            <div>
+                                <label class="{{ $labelClass }}">New rent / month</label>
+                                <input type="number" wire:model="newRent" class="{{ $inputClass }}">
+                                @error('newRent') <p class="mt-1 text-[13px] text-rose-600">{{ $message }}</p> @enderror
+                            </div>
+                            <div>
+                                <label class="{{ $labelClass }}">Effective from</label>
+                                <input type="date" wire:model="rentEffectiveOn" class="{{ $inputClass }}">
+                                <p class="mt-1 text-[12.5px] text-muted">Never backdated — issued invoices stand as they are.</p>
+                            </div>
+                            <div>
+                                <label class="{{ $labelClass }}">Why?</label>
+                                <input type="text" wire:model="rentReason" placeholder="Annual review, renovation…" class="{{ $inputClass }}">
+                            </div>
+                        </div>
+                        <div class="mt-4 flex gap-2">
+                            <button type="button" wire:click="reviewRent" class="tap focusable rounded-full bg-fill-brand px-5 py-2 text-[14.5px] font-semibold text-white">Change the rent</button>
+                            <button type="button" wire:click="$set('reviewTenancyId', null)" class="tap focusable rounded-full border border-border px-5 py-2 text-[14.5px] font-semibold text-ink-2">Cancel</button>
+                        </div>
+                        @if ($tenancy->rentChanges->isNotEmpty())
+                            <div class="mt-3 text-[13px] text-muted">
+                                @foreach ($tenancy->rentChanges as $change)
+                                    <p>{{ $change->effective_on->toFormattedDateString() }}:
+                                        {{ $money($change->rent_before) }} → {{ $money($change->rent_after) }}
+                                        {{ $change->reason ? '— '.$change->reason : '' }}</p>
+                                @endforeach
+                            </div>
+                        @endif
+                    </div>
+                @endif
+
                 {{-- ── a fault ── --}}
                 @if ($tenancy && $maintenanceTenancyId === $tenancy->id)
                     <div class="mt-4 border-t border-border pt-4">
@@ -248,7 +295,11 @@
                         <x-ui.status-badge :label="$tstate['label']" :tone="$tstate['tone']" />
                     </p>
                     <p class="mt-0.5 text-[13px] text-muted">
-                        {{ $ticket->reference }} · {{ $ticket->contact?->displayName() ?? $ticket->visitor_name ?? '—' }}
+                        {{ $ticket->reference }}
+                        @if ($ticket->property_unit_id && $unitLabels->has($ticket->property_unit_id))
+                            · {{ $unitLabels[$ticket->property_unit_id] }}
+                        @endif
+                        · {{ $ticket->contact?->displayName() ?? $ticket->visitor_name ?? '—' }}
                         · opened {{ $ticket->opened_at?->toFormattedDateString() }}
                     </p>
                 </div>
@@ -270,4 +321,131 @@
             @endforelse
         </x-ui.panel>
     </div>
+
+    {{-- ─────────────────────────────────────────────── the landlord's money ── --}}
+    @if ($statement !== null)
+        <div class="mt-6 rounded-2xl border border-border bg-surface p-5">
+            <div class="flex flex-wrap items-center justify-between gap-3">
+                <div>
+                    <h2 class="text-[17px] font-bold text-ink">Landlord statement — {{ $property->landlord->displayName() }}</h2>
+                    <p class="mt-0.5 text-[13.5px] text-muted">
+                        Rent collected, minus
+                        {{ $property->commission_percent !== null ? rtrim(rtrim(number_format((float) $property->commission_percent, 2), '0'), '.').'% commission' : 'no commission' }},
+                        minus what was spent on the building and paid out already.
+                    </p>
+                </div>
+                <div class="flex shrink-0 flex-wrap gap-2">
+                    @can('estate.manage')
+                        <button type="button" wire:click="startRecordingExpense"
+                                class="tap focusable rounded-full border border-border px-4 py-2 text-[13.5px] font-semibold text-ink-2">
+                            Record a property expense
+                        </button>
+                    @endcan
+                    @can('estate.end-tenancy')
+                        <button type="button" wire:click="startPayingOut"
+                                class="tap focusable rounded-full bg-fill-brand px-4 py-2 text-[13.5px] font-semibold text-white">
+                            Pay the landlord
+                        </button>
+                    @endcan
+                </div>
+            </div>
+
+            <div class="mt-4 flex flex-wrap items-end gap-3">
+                <div>
+                    <label class="{{ $labelClass }}">From</label>
+                    <input type="date" wire:model.live="statementFrom" class="{{ $inputClass }}">
+                </div>
+                <div>
+                    <label class="{{ $labelClass }}">To</label>
+                    <input type="date" wire:model.live="statementTo" class="{{ $inputClass }}">
+                </div>
+            </div>
+
+            @if ($recordingExpense)
+                <div class="mt-4 border-t border-border pt-4">
+                    <div class="grid gap-4 lg:grid-cols-3">
+                        <div>
+                            <label class="{{ $labelClass }}">What was spent on?</label>
+                            <input type="text" wire:model="expenseDescription" placeholder="Plumbing repair, guard, water bill…" class="{{ $inputClass }}">
+                            @error('expenseDescription') <p class="mt-1 text-[13px] text-rose-600">{{ $message }}</p> @enderror
+                        </div>
+                        <div>
+                            <label class="{{ $labelClass }}">Amount</label>
+                            <input type="number" wire:model="expenseAmount" class="{{ $inputClass }}">
+                            @error('expenseAmount') <p class="mt-1 text-[13px] text-rose-600">{{ $message }}</p> @enderror
+                        </div>
+                        <div>
+                            <label class="{{ $labelClass }}">Paid from</label>
+                            <select wire:model="expensePaidFrom" class="{{ $inputClass }}">
+                                <option value="cash">Cash</option>
+                                <option value="bank_transfer">Bank</option>
+                                <option value="mobile_money">Mobile money</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="mt-4 flex gap-2">
+                        <button type="button" wire:click="recordExpense" class="tap focusable rounded-full bg-fill-brand px-5 py-2 text-[14.5px] font-semibold text-white">Record it</button>
+                        <button type="button" wire:click="$set('recordingExpense', false)" class="tap focusable rounded-full border border-border px-5 py-2 text-[14.5px] font-semibold text-ink-2">Cancel</button>
+                    </div>
+                </div>
+            @endif
+
+            @if ($payingOut)
+                <div class="mt-4 border-t border-border pt-4">
+                    <p class="text-[14.5px] font-semibold text-ink">
+                        Owed for this period: {{ $money($statement['closing_balance']) }}
+                    </p>
+                    <div class="mt-3 grid gap-4 lg:grid-cols-2">
+                        <div>
+                            <label class="{{ $labelClass }}">Amount (leave empty to pay out everything owed)</label>
+                            <input type="number" wire:model="payoutAmount" class="{{ $inputClass }}">
+                            @error('payoutAmount') <p class="mt-1 text-[13px] text-rose-600">{{ $message }}</p> @enderror
+                        </div>
+                    </div>
+                    <p class="mt-2 text-[12.5px] text-muted">
+                        Recorded as an ordinary payable to the landlord — settle it from the expenses screen like any other bill.
+                    </p>
+                    <div class="mt-4 flex gap-2">
+                        <button type="button" wire:click="payOut" class="tap focusable rounded-full bg-fill-brand px-5 py-2 text-[14.5px] font-semibold text-white">Pay them out</button>
+                        <button type="button" wire:click="$set('payingOut', false)" class="tap focusable rounded-full border border-border px-5 py-2 text-[14.5px] font-semibold text-ink-2">Cancel</button>
+                    </div>
+                </div>
+            @endif
+
+            <div class="mt-4 overflow-x-auto">
+                <table class="w-full min-w-[560px] text-left text-[13.5px]">
+                    <thead>
+                        <tr class="border-b border-border text-[12.5px] uppercase tracking-wide text-muted">
+                            <th class="py-2 pr-3">Date</th>
+                            <th class="py-2 pr-3">What</th>
+                            <th class="py-2 pr-3 text-right">To landlord</th>
+                            <th class="py-2 pr-3 text-right">Deducted</th>
+                            <th class="py-2 text-right">Balance</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr class="border-b border-border/60 text-muted">
+                            <td class="py-2 pr-3" colspan="4">Opening balance</td>
+                            <td class="py-2 text-right font-semibold">{{ $money($statement['opening_balance']) }}</td>
+                        </tr>
+                        @forelse ($statement['lines'] as $line)
+                            <tr class="border-b border-border/60">
+                                <td class="py-2 pr-3 whitespace-nowrap">{{ \Illuminate\Support\Carbon::parse($line['date'])->toFormattedDateString() }}</td>
+                                <td class="py-2 pr-3">{{ $line['description'] }}{{ $line['reference'] ? ' · '.$line['reference'] : '' }}</td>
+                                <td class="py-2 pr-3 text-right">{{ $line['credit'] > 0 ? $money($line['credit']) : '' }}</td>
+                                <td class="py-2 pr-3 text-right">{{ $line['debit'] > 0 ? $money($line['debit']) : '' }}</td>
+                                <td class="py-2 text-right">{{ $money($line['balance']) }}</td>
+                            </tr>
+                        @empty
+                            <tr><td class="py-4 text-center text-muted" colspan="5">Nothing moved in this period.</td></tr>
+                        @endforelse
+                        <tr>
+                            <td class="py-2 pr-3 font-bold text-ink" colspan="4">Owed to the landlord</td>
+                            <td class="py-2 text-right font-bold text-ink">{{ $money($statement['closing_balance']) }}</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    @endif
 </div>

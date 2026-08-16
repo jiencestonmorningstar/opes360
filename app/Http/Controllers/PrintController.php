@@ -12,6 +12,8 @@ use App\Models\PartnerClient;
 use App\Models\Payment;
 use App\Models\Payslip;
 use App\Models\Receipt;
+use App\Models\Shipment;
+use App\Models\TripManifest;
 use App\Models\VerificationToken;
 use App\Models\VipMembership;
 use App\Services\DocumentComposer;
@@ -417,6 +419,82 @@ class PrintController extends Controller
                 : null,
             'autoprint' => $request->boolean('print'),
         ]);
+    }
+
+    /**
+     * The waybill — the consignment note that travels with the cargo.
+     *
+     * The paper the driver hands over: sender, receiver, cargo, declared
+     * value, and the tracking QR, which points at the shipment's own public
+     * tracking page — the same link the office quotes, so the paper and the
+     * website can never tell different stories. Deliberately NO freight
+     * amount: the waybill travels with the goods through third hands, and
+     * the money lives on the invoice, which is where money lives.
+     *
+     * Watermarked by the Watermarks doctrine: a cancelled shipment's waybill
+     * that printed clean would be live cargo paperwork again.
+     */
+    public function waybill(Request $request, Shipment $shipment, QrCodes $qr, Pdf $pdf)
+    {
+        $shipment->load(['sender', 'receiver', 'events']);
+
+        $data = [
+            'shipment' => $shipment,
+            'company' => app(CurrentCompany::class)->get(),
+            'watermark' => match ($shipment->status) {
+                'cancelled' => 'CANCELLED',
+                'returned' => 'RETURNED',
+                default => null,
+            },
+            'qrSvg' => $qr->svg($shipment->trackingUrl(), 120),
+            'autoprint' => $request->boolean('print'),
+        ];
+
+        if ($this->wantsPdf($request)) {
+            return $pdf->download(
+                'print.waybill',
+                array_merge($data, ['autoprint' => false]),
+                Pdf::filename('Waybill', $shipment->reference),
+            );
+        }
+
+        return view('print.waybill', $data);
+    }
+
+    /**
+     * The driver's loading sheet: what is aboard, weights, and the stops in
+     * order. An internal working paper — it names every consignment on the
+     * van, so unlike the waybill it must never leave the company's hands,
+     * and it prints no tracking links and no money.
+     */
+    public function manifest(Request $request, TripManifest $manifest, Pdf $pdf)
+    {
+        $manifest->load(['vehicle.vehicle', 'driver', 'shipments.sender', 'shipments.receiver']);
+
+        $shipments = $manifest->shipments
+            ->reject(fn (Shipment $s) => $s->status === 'cancelled')
+            ->values();
+
+        $data = [
+            'manifest' => $manifest,
+            'shipments' => $shipments,
+            'totalWeight' => $shipments->sum(fn (Shipment $s) => (float) ($s->weight_kg ?? 0)),
+            // The stops, in the order the destinations first appear.
+            'stops' => $shipments->pluck('to_location')->unique()->values(),
+            'company' => app(CurrentCompany::class)->get(),
+            'watermark' => $manifest->isOpen() ? 'DRAFT' : null,
+            'autoprint' => $request->boolean('print'),
+        ];
+
+        if ($this->wantsPdf($request)) {
+            return $pdf->download(
+                'print.manifest',
+                array_merge($data, ['autoprint' => false]),
+                Pdf::filename('Manifest', $manifest->reference),
+            );
+        }
+
+        return view('print.manifest', $data);
     }
 
     /**

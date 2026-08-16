@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Orders;
 use App\Models\DeliveryNote;
 use App\Services\QrCodes;
 use App\Support\CurrentCompany;
+use App\Support\Pdf;
 use Illuminate\Http\Request;
 use Illuminate\Routing\Controller;
 use Illuminate\Support\Facades\Gate;
@@ -26,7 +27,7 @@ class DeliveryNotePrintController extends Controller
 
         $note->load(['order.contact', 'lines', 'verificationToken']);
 
-        return view('print.delivery-note', [
+        $data = [
             'note' => $note,
             'company' => app(CurrentCompany::class)->get(),
             'watermark' => $note->statusMark(),
@@ -34,6 +35,18 @@ class DeliveryNotePrintController extends Controller
                 ? $qr->svg($note->verificationToken->publicUrl(), 132)
                 : null,
             'autoprint' => $request->boolean('print'),
-        ]);
+        ];
+
+        // ?format=pdf answers with a real file from the same view data —
+        // the PrintController convention, one source of truth on paper.
+        if ($request->query('format') === 'pdf') {
+            return app(Pdf::class)->download(
+                'print.delivery-note',
+                array_merge($data, ['autoprint' => false]),
+                Pdf::filename($note->number, 'Delivery Note'),
+            );
+        }
+
+        return view('print.delivery-note', $data);
     }
 }

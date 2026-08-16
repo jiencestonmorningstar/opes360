@@ -13,6 +13,7 @@ use App\Models\CompanyUserPermission;
 use App\Models\Contact;
 use App\Models\Contract;
 use App\Models\Deal;
+use App\Models\DeliveryNote;
 use App\Models\Department;
 use App\Models\Device;
 use App\Models\Document;
@@ -24,6 +25,8 @@ use App\Models\ExpenseClaimReimbursement;
 use App\Models\ExpensePayment;
 use App\Models\FiscalPeriod;
 use App\Models\FixedAsset;
+use App\Models\InsuranceClaim;
+use App\Models\InsurancePolicy;
 use App\Models\Item;
 use App\Models\JournalEntry;
 use App\Models\Lead;
@@ -37,6 +40,7 @@ use App\Models\Payslip;
 use App\Models\PerformanceReview;
 use App\Models\Position;
 use App\Models\Project;
+use App\Models\Property;
 use App\Models\PurchaseRequisition;
 use App\Models\Receipt;
 use App\Models\Refund;
@@ -44,7 +48,11 @@ use App\Models\Rfq;
 use App\Models\RfqSupplier;
 use App\Models\Role;
 use App\Models\SalaryComponent;
+use App\Models\SalesOrder;
+use App\Models\Shipment;
 use App\Models\TaxRate;
+use App\Models\Tenancy;
+use App\Models\TripManifest;
 use App\Models\User;
 use App\Models\WebhookEndpoint;
 use App\Models\Workflow;
@@ -196,6 +204,13 @@ class AppServiceProvider extends ServiceProvider
             // A person's record: somebody's livelihood or reputation.
             Employee::class, EmploymentContract::class, SalaryComponent::class,
             LeaveRequest::class, PerformanceReview::class, Position::class, Department::class,
+
+            // The verticals' commitments: cover promised, stock promised to a
+            // customer, cargo entrusted, somebody's home and their deposit.
+            InsurancePolicy::class, InsuranceClaim::class,
+            SalesOrder::class, DeliveryNote::class,
+            Shipment::class, TripManifest::class,
+            Property::class, Tenancy::class,
 
             // Commitments made, and custody of things.
             FixedAsset::class, AssetTransfer::class,

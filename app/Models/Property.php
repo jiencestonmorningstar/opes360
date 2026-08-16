@@ -34,6 +34,17 @@ class Property extends Model
 
     protected $guarded = ['id'];
 
+    protected function casts(): array
+    {
+        return ['commission_percent' => 'decimal:2'];
+    }
+
+    /** Expenses pinned to this building — repairs, and landlord payouts. */
+    public function expenses(): HasMany
+    {
+        return $this->hasMany(Expense::class)->orderBy('issue_date');
+    }
+
     /**
      * Not `landlord()` alone by accident of taste: the precedent set by
      * `Contract::counterparty()` is that a relation must never share a name

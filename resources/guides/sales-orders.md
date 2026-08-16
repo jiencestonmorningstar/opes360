@@ -7,6 +7,16 @@ mentioned, invoices for goods that never travelled. This module closes that
 distance: **draft → confirmed → delivered → invoiced**, with every step
 honest about what actually exists.
 
+## Starting from a quotation
+
+Most orders begin as a price the customer said yes to. On an issued
+quotation, **convert it into an order**: the order carries the quotation's
+items and its prices — the figures the customer accepted, not today's
+catalogue — and links back to the quotation, so the paper trail runs
+quotation → order → delivery note → invoice without a copy anywhere. One
+order per quotation; only lines that name a catalogue item cross over,
+because an order line is a promise of stock.
+
 ## Drafting promises nothing
 
 An order starts as a draft: a customer, lines, quantities, prices (keyed, or
@@ -29,6 +39,16 @@ The fulfilment board reads each open order the same way: **promised /
 shippable today / short**, and tells you whether the shortage is already
 covered by a reorder on the replenishment screen.
 
+### The credit limit is checked here
+
+If the customer has a **credit limit** on their card, confirming checks their
+**overdue** balance — invoices past their due date, from the same aging
+report the accountant reads — against it. Inside the limit (or with no limit
+set), nothing changes. Over it, the confirm is refused with both figures, and
+going ahead anyway requires **writing down why**; the reason and the person
+are stored on the order, where an auditor will find them. An invoice still
+inside its terms never blocks anything.
+
 ## Delivering moves the stock
 
 **Deliver** is the moment goods physically leave, and it is the moment stock
@@ -39,6 +59,11 @@ open.
 
 Only what is reserved can go out. Delivering past the hold would ship stock
 promised to somebody else — the exact failure reservations exist to prevent.
+
+If your business runs **multiple stock locations**, the draft can name which
+one ships the order; the delivery note and its stock movements are then
+written against that shelf. With locations off, everything moves through the
+default shelf, exactly like a counter sale.
 
 Every delivery note prints with a **QR code** that opens a verification page
 on your own domain, so the person receiving the goods — or anyone holding the
@@ -54,12 +79,25 @@ a draft, is reviewed and issued there like every other invoice, and is chased
 by the same dunning. Deliver in two trips and you can invoice each, or both
 at once; nothing is ever billed twice.
 
+The printed page and the **PDF** (the download button next to Print) come
+from the same template, so what the driver carries and what you email are the
+same paper.
+
+## When goods come back
+
+**Record a return** against the delivery note the goods left on — that is
+what makes "no more than was delivered" checkable. The stock returns to the
+shelf through the ordinary ledger, at the shelf it left from. Money follows
+the goods: anything already invoiced is credited with an **ordinary credit
+note** against that invoice, at the invoice's own tax rate; anything returned
+before it was invoiced simply never gets billed. Every return says why.
+
 ## Cancelling gives the stock back — until goods have gone
 
 Cancelling a confirmed order releases every reservation. Once anything has
 been delivered, cancelling is refused: goods on a truck are not unwound by a
 status change. The undo is a credit note and a recorded return, on paper,
-like everything else.
+like everything else — the **Record return** button on the delivery note.
 
 ## Who can do what
 
@@ -68,7 +106,7 @@ like everything else.
 | `orders.view` | See the orders, the board and the delivery notes |
 | `orders.manage` | Draft orders, invoice deliveries, cancel |
 | `orders.confirm` | Confirm an order — commit real stock to a customer |
-| `orders.deliver` | Deliver — the moment goods leave and movements are written |
+| `orders.deliver` | Deliver — the moment goods leave and movements are written — and record returns, which is the same trust in the other direction |
 
 `confirm` and `deliver` are split out because they are the two acts that
 touch the shelf: confirming drops availability for everyone else, and

@@ -9,6 +9,7 @@ use App\Models\PropertyUnit;
 use App\Models\RecurringInvoice;
 use App\Models\ServiceTicket;
 use App\Models\Tenancy;
+use App\Models\TenancyRentChange;
 use App\Models\User;
 use App\Services\Accounting\Ledger;
 use App\Services\Contracts\ContractLifecycle;
@@ -340,6 +341,94 @@ class Tenancies
                 'unit_id' => $tenancy->property_unit_id,
                 'retained' => $retained,
                 'moved_out_on' => $movedOut->toDateString(),
+            ]);
+
+            return $tenancy->refresh();
+        });
+    }
+
+    /**
+     * A rent review: the figure changes from a date, and the old figure keeps
+     * existing.
+     *
+     * History first (a tenancy_rent_changes row), then the tenancy's own
+     * column, then the schedule's line — rewritten in place, because the
+     * schedule IS the existing recurring mechanism and the nightly generator
+     * reads its lines at generation time. Never retroactive: invoices already
+     * generated are documents, and a review cannot reach back and restate
+     * them. An effective date in the past is refused for exactly that reason,
+     * and one beyond the next billing run is refused because rewriting the
+     * line today would bill the new figure a period early — record the change
+     * when its period is next to bill.
+     *
+     * @param  array{rent: float, effective_on?: ?string, reason?: ?string}  $data
+     */
+    public function reviewRent(Tenancy $tenancy, array $data, ?User $actor = null): Tenancy
+    {
+        if (! $tenancy->isActive()) {
+            throw new RuntimeException('This tenancy has ended — there is no rent left to review.');
+        }
+
+        $newRent = round((float) $data['rent'], 2);
+
+        if ($newRent <= 0) {
+            throw new RuntimeException('A rent review needs a rent. Zero is not a letting.');
+        }
+
+        $before = round((float) $tenancy->rent, 2);
+
+        if (abs($newRent - $before) < 0.005) {
+            throw new RuntimeException('That is the rent already — nothing to change.');
+        }
+
+        $effective = isset($data['effective_on']) && $data['effective_on'] !== null
+            ? Carbon::parse($data['effective_on'])->startOfDay()
+            : Carbon::today();
+
+        if ($effective->lt(Carbon::today())) {
+            throw new RuntimeException(
+                'A rent change cannot be backdated — invoices already issued stand as they are.'
+            );
+        }
+
+        $tenancy->loadMissing('rentSchedule');
+        $schedule = $tenancy->rentSchedule;
+
+        if ($schedule !== null && $schedule->next_run_on !== null
+            && $effective->gt($schedule->next_run_on->copy()->endOfDay())) {
+            throw new RuntimeException(
+                'The next rent bills on '.$schedule->next_run_on->toDateString().
+                '; a change effective '.$effective->toDateString().
+                ' would be applied a period early. Record it once that period is next to bill.'
+            );
+        }
+
+        return DB::transaction(function () use ($tenancy, $schedule, $data, $before, $newRent, $effective, $actor) {
+            TenancyRentChange::create([
+                'company_id' => $tenancy->company_id,
+                'tenancy_id' => $tenancy->id,
+                'rent_before' => $before,
+                'rent_after' => $newRent,
+                'effective_on' => $effective->toDateString(),
+                'reason' => $data['reason'] ?? null,
+                'created_by' => $actor?->id,
+            ]);
+
+            $tenancy->forceFill(['rent' => $newRent])->save();
+
+            if ($schedule !== null && $schedule->isActive()) {
+                $lines = collect($schedule->lines ?? [])
+                    ->map(fn (array $line) => ['unit_price' => $newRent] + $line)
+                    ->all();
+
+                $schedule->forceFill(['lines' => $lines])->save();
+            }
+
+            $tenancy->emitDomainEvent('estate.tenancy.rent-changed', [
+                'tenancy_id' => $tenancy->id,
+                'rent_before' => $before,
+                'rent_after' => $newRent,
+                'effective_on' => $effective->toDateString(),
             ]);
 
             return $tenancy->refresh();

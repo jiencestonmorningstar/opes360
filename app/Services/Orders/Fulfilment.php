@@ -13,12 +13,15 @@ use App\Models\DocumentLine;
 use App\Models\Item;
 use App\Models\SalesOrder;
 use App\Models\SalesOrderLine;
+use App\Models\StockLocation;
 use App\Models\StockMovement;
 use App\Models\StockReservation;
 use App\Models\User;
 use App\Models\VerificationToken;
 use App\Services\Stock\StockReservations;
+use App\Support\Aging;
 use App\Support\CurrentCompany;
+use App\Support\Modules;
 use App\Support\Vat;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
@@ -56,6 +59,7 @@ class Fulfilment
      * consumed beyond the order's own reference.
      *
      * @param  array{contact_id: string, promised_date?: ?string, notes?: ?string,
+     *               stock_location_id?: ?string, source_document_id?: ?string,
      *               lines: array<int, array{item_id: string, quantity: float|string, unit_price?: float|string|null}>}  $data
      */
     public function create(array $data, ?User $actor = null): SalesOrder
@@ -77,7 +81,26 @@ class Fulfilment
             throw new RuntimeException('That customer does not belong to this business.');
         }
 
-        return DB::transaction(function () use ($company, $contact, $data, $lines, $actor) {
+        /*
+         * Which shelf will ship this order. Only meaningful when the
+         * stock_locations module is on — the same convention StockLedger
+         * follows ("one location or none") — and always the company's own.
+         * deliver() already stamps this onto the note and its movements.
+         */
+        $location = null;
+
+        if (! empty($data['stock_location_id']) && Modules::enabled($company, 'stock_locations')) {
+            $location = StockLocation::query()
+                ->withoutGlobalScopes()
+                ->where('company_id', $company->id)
+                ->find($data['stock_location_id']);
+
+            if ($location === null) {
+                throw new RuntimeException('That stock location does not belong to this business.');
+            }
+        }
+
+        return DB::transaction(function () use ($company, $contact, $data, $lines, $actor, $location) {
             $order = SalesOrder::create([
                 'company_id' => $company->id,
                 'contact_id' => $contact->id,
@@ -86,6 +109,8 @@ class Fulfilment
                 'status' => SalesOrder::STATUS_DRAFT,
                 'currency' => $company->currency ?: 'XAF',
                 'promised_date' => $data['promised_date'] ?? null,
+                'stock_location_id' => $location?->id,
+                'source_document_id' => $data['source_document_id'] ?? null,
                 'notes' => $data['notes'] ?? null,
                 'created_by' => $actor?->id,
             ]);
@@ -130,15 +155,40 @@ class Fulfilment
      * The remainder that could not be reserved becomes the line's backorder —
      * a figure a person reads, never a quiet reduction of the order.
      *
+     * Credit control happens here, because this is the commitment moment:
+     * when the customer's OVERDUE balance (the existing Aging read model,
+     * total minus the not-yet-due bucket) exceeds their credit limit, the
+     * confirm is refused — unless a written override reason is given, which
+     * is then stored on the order with who wrote it. A zero or null limit
+     * means the business has chosen not to check this customer.
+     *
      * @return array<int, array{item: string, short: float}> the named shortages
      */
-    public function confirm(SalesOrder $order, ?User $actor = null): array
+    public function confirm(SalesOrder $order, ?User $actor = null, ?string $creditOverride = null): array
     {
         if (! $order->isDraft()) {
             throw new RuntimeException("{$order->number} has already been confirmed.");
         }
 
-        return DB::transaction(function () use ($order, $actor) {
+        $creditOverride = trim((string) $creditOverride) ?: null;
+
+        $order->loadMissing('contact');
+        $limit = (float) ($order->contact?->credit_limit ?? 0);
+
+        if ($limit > 0 && $creditOverride === null) {
+            $overdue = $this->overdueBalance($order->contact);
+
+            if ($overdue - $limit > 0.005) {
+                throw new RuntimeException(sprintf(
+                    '%s has %s overdue against a credit limit of %s. Confirming anyway needs a written reason.',
+                    $order->contact->displayName(),
+                    number_format($overdue, 0, '.', ' '),
+                    number_format($limit, 0, '.', ' '),
+                ));
+            }
+        }
+
+        return DB::transaction(function () use ($order, $actor, $creditOverride) {
             $shortages = [];
 
             foreach ($order->lines()->with('item')->get() as $line) {
@@ -183,10 +233,93 @@ class Fulfilment
                 'status' => SalesOrder::STATUS_CONFIRMED,
                 'confirmed_by' => $actor?->id,
                 'confirmed_at' => now(),
+                // Written only when an over-limit confirm was pushed through:
+                // the reason and the person, on the order, for the auditor.
+                'credit_override_reason' => $creditOverride,
+                'credit_override_by' => $creditOverride !== null ? $actor?->id : null,
             ])->save();
+
+            $order->emitDomainEvent('order.confirmed', [
+                'number' => $order->number,
+                'backordered' => round(array_sum(array_column($shortages, 'short')), 3),
+            ]);
 
             return $shortages;
         });
+    }
+
+    /**
+     * Turn an accepted quotation into a draft order carrying its lines and
+     * prices, linked back through source_document_id.
+     *
+     * Only item-bearing lines cross over: an order line promises a catalogue
+     * item, and a free-text quotation line has nothing to reserve. The price
+     * carried is the quotation's, not today's catalogue price — the customer
+     * accepted a figure, and the order keeps it. One order per quotation,
+     * the same doctrine as DocumentConverter's one-invoice-per-quotation.
+     */
+    public function fromQuotation(Document $quotation, ?User $actor = null): SalesOrder
+    {
+        if ($quotation->type !== DocumentType::Quotation) {
+            throw new RuntimeException('Only a quotation can become an order.');
+        }
+
+        if (in_array($quotation->status, [DocumentStatus::Draft, DocumentStatus::Void], true)) {
+            throw new RuntimeException('A draft or voided quotation has not been accepted by anybody.');
+        }
+
+        if ($quotation->contact_id === null) {
+            throw new RuntimeException('This quotation names no customer to order for.');
+        }
+
+        if (SalesOrder::query()->where('source_document_id', $quotation->id)->exists()) {
+            throw new RuntimeException("An order has already been raised from {$quotation->number}.");
+        }
+
+        $quotation->loadMissing('lines');
+
+        $lines = $quotation->lines
+            ->filter(fn ($line) => $line->item_id !== null)
+            ->values()
+            ->map(fn ($line) => [
+                'item_id' => $line->item_id,
+                'quantity' => (float) $line->quantity,
+                'unit_price' => (float) $line->unit_price,
+            ])
+            ->all();
+
+        if ($lines === []) {
+            throw new RuntimeException(
+                "Nothing on {$quotation->number} names a catalogue item — there is nothing an order could reserve."
+            );
+        }
+
+        return DB::transaction(function () use ($quotation, $actor, $lines) {
+            $order = $this->create([
+                'contact_id' => $quotation->contact_id,
+                'source_document_id' => $quotation->id,
+                'notes' => "From quotation {$quotation->number}",
+                'lines' => $lines,
+            ], $actor);
+
+            // The quotation has done its job — the same closing of the loop
+            // DocumentConverter performs when one becomes an invoice.
+            $quotation->forceFill(['status' => DocumentStatus::Accepted])->save();
+
+            return $order;
+        });
+    }
+
+    /**
+     * The customer's overdue exposure — the Aging read model's answer, total
+     * minus the not-yet-due bucket. An invoice inside its terms is not a
+     * reason to hold goods.
+     */
+    protected function overdueBalance(Contact $contact): float
+    {
+        $party = (new Aging)->forParty($contact);
+
+        return round($party['total'] - ($party['buckets']['current'] ?? 0.0), 2);
     }
 
     /**
@@ -312,6 +445,11 @@ class Fulfilment
                     : SalesOrder::STATUS_PICKING,
             ])->save();
 
+            $order->emitDomainEvent('order.delivered', [
+                'number' => $order->number,
+                'delivery_note' => $deliveryNote->number,
+            ]);
+
             return $deliveryNote->load('lines');
         });
     }
@@ -394,6 +532,11 @@ class Fulfilment
             if ($order->lines->every(fn (SalesOrderLine $l) => (float) $l->quantity_invoiced + 0.0005 >= (float) $l->quantity_ordered)) {
                 $order->forceFill(['status' => SalesOrder::STATUS_INVOICED])->save();
             }
+
+            $order->emitDomainEvent('order.invoiced', [
+                'number' => $order->number,
+                'total' => (float) $invoice->total,
+            ]);
 
             return $invoice->refresh();
         });
