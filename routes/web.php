@@ -361,13 +361,14 @@ Route::middleware('auth')->group(function () {
     Route::get('/settings/workflows/{workflow}', WorkflowAdminEdit::class)
         ->middleware('can:workflows.view')->name('workflows.edit');
 
-    Route::get('/manufacturing', ManufacturingIndex::class)
-        ->middleware('can:manufacturing.view')->name('manufacturing');
     /*
      * On products.view rather than a procurement gate: the storekeeper who
      * needs to see what is running out is not always the person allowed to
      * ask for money. The accept button carries the stricter gate itself.
      */
+    Route::get('/manufacturing', ManufacturingIndex::class)
+        ->middleware('can:manufacturing.view')->name('manufacturing');
+
     Route::get('/stock/replenishment', StockReplenishment::class)
         ->middleware('can:products.view')->name('stock.replenishment');
 

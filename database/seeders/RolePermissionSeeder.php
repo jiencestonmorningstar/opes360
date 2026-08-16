@@ -91,6 +91,8 @@ class RolePermissionSeeder extends Seeder
             // manager under pressure must not be able to relax the target
             // they are being measured against.
             'Service' => ['view', 'create', 'update', 'assign', 'schedule', 'complete', 'bill'],
+            // Runs the workshop: recipes, orders, and completing a run.
+            'Manufacturing' => ['view', 'manage', 'complete'],
             // Runs projects day to day: creates them, sets the budget, adds
             // the team, and logs their own time on them.
             'Projects' => ['view', 'manage', 'log-time'],

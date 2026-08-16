@@ -17,6 +17,7 @@ use App\Services\Stock\BatchLedger;
 use App\Services\Stock\StockLedger;
 use App\Services\Stock\StockValuation;
 use App\Support\CurrentCompany;
+use App\Support\Modules;
 use Database\Seeders\RolePermissionSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Gate;
@@ -67,6 +68,12 @@ class ProductionTest extends TestCase
 
         $this->joinCompany($this->company, $this->owner, Role::OWNER);
         $this->owner->forceFill(['current_company_id' => $this->company->id])->save();
+
+        // Manufacturing ships off; off means every gate denies, so the
+        // module under test is switched on for the business under test.
+        $this->company->forceFill(['modules' => ['manufacturing' => true]])->save();
+        Modules::flush();
+
         app(CurrentCompany::class)->set($this->company);
 
         // The manufacturing gates are registered by the integrator alongside

@@ -51,6 +51,7 @@ use App\Models\Workflow;
 use App\Models\WorkflowDecision;
 use App\Models\WorkflowStep;
 use App\Observers\AuditObserver;
+use App\Search\GlobalSearch;
 use App\Services\Documents\DocumentFieldRegistry;
 use App\Support\Csp;
 use App\Support\CurrentCompany;
@@ -98,6 +99,10 @@ class AppServiceProvider extends ServiceProvider
          * that signature. It does not mean adding a line here.
          * `DomainEventListenersAreNotDoubleRegisteredTest` pins this.
          */
+
+        // Search entries follow their records; without this only the reindex
+        // command populates the index and every edit goes quietly stale.
+        GlobalSearch::observe();
 
         $this->registerDocumentFieldProviders();
 

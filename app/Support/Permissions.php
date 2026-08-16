@@ -151,6 +151,10 @@ class Permissions
          * No `approve`: being asked by the workflow is the permission.
          */
         'Service' => ['view', 'create', 'update', 'assign', 'schedule', 'complete', 'bill', 'manage-sla'],
+        // Making things. `complete` splits out because completing an order
+        // moves real stock and freezes its cost — the same trust as
+        // `products.adjust-stock`, and not implied by writing a recipe.
+        'Manufacturing' => ['view', 'manage', 'complete'],
         /*
          * Who may read the trail, and who may read the report on who can do
          * what. Both are Owner and Administrator only.

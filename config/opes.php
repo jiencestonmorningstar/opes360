@@ -85,6 +85,8 @@ return [
         ['key' => 'assets', 'label' => 'Assets', 'icon' => 'briefcase', 'route' => 'assets', 'ability' => 'assets.view'],
         ['key' => 'banking', 'label' => 'Banking', 'icon' => 'credit-card', 'route' => 'banking', 'ability' => 'banking.view'],
         ['key' => 'stock', 'label' => 'Stock value', 'icon' => 'cube', 'route' => 'products.stock', 'ability' => 'products.view'],
+        ['key' => 'manufacturing', 'label' => 'Manufacturing', 'icon' => 'cube', 'route' => 'manufacturing', 'ability' => 'manufacturing.view'],
+        ['key' => 'replenishment', 'label' => 'Running low', 'icon' => 'cube', 'route' => 'stock.replenishment', 'ability' => 'products.view'],
         ['key' => 'locations', 'label' => 'Stock locations', 'icon' => 'cube', 'route' => 'products.locations', 'ability' => 'products.manage-locations'],
         ['key' => 'expenses', 'label' => 'Expenses', 'icon' => 'banknotes', 'route' => 'expenses', 'ability' => 'expenses.view'],
         ['key' => 'contracts', 'label' => 'Contracts', 'icon' => 'document-check', 'route' => 'contracts.index', 'ability' => 'contracts.view'],
