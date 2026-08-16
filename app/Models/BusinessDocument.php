@@ -75,6 +75,12 @@ class BusinessDocument extends Model
         return $this->belongsTo(User::class, 'owner_id');
     }
 
+    /** Which part of the business the document is filed under, not who wrote it. */
+    public function department(): BelongsTo
+    {
+        return $this->belongsTo(Department::class);
+    }
+
     /**
      * Documents that will lapse soon.
      *
@@ -128,7 +134,7 @@ class BusinessDocument extends Model
                 'status', 'updated_at', 'deleted_at', 'verification_token_id',
                 'voided_at', 'voided_by', 'void_reason',
                 'kind', 'description', 'security', 'language', 'tags',
-                'owner_id', 'expires_on', 'folder_id',
+                'owner_id', 'expires_on', 'folder_id', 'department_id',
             ];
             $illegal = array_diff(array_keys($document->getDirty()), $mutable);
 

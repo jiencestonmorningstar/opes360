@@ -57,6 +57,18 @@ class Employee extends Model
         return $this->belongsTo(User::class);
     }
 
+    /**
+     * The org unit, since departments became an entity.
+     *
+     * The older free-text `department` column is still here and still holds
+     * whatever the business typed. This is the one to read; that one is the
+     * record of what they wrote before there was a list to choose from.
+     */
+    public function department(): BelongsTo
+    {
+        return $this->belongsTo(Department::class);
+    }
+
     public function contracts(): HasMany
     {
         return $this->hasMany(EmploymentContract::class);

@@ -52,6 +52,9 @@ class RolePermissionSeeder extends Seeder
             // stationery. Withdrawing the balance is not a counter job, so
             // 'withdraw' stays with the Owner and Administrator.
             'Partners' => ['view', 'manage', 'issue'],
+            // Keeps the org chart, which is the same job as keeping the staff
+            // file it labels.
+            'Departments' => ['view', 'manage'],
             'Users' => ['view'],
             'Devices' => ['view'],
             'Settings' => ['view'],
@@ -83,6 +86,9 @@ class RolePermissionSeeder extends Seeder
             'Reports' => ['view', 'export'],
             // The books are the accountant's job before anyone else's.
             'Accounting' => ['view', 'export', 'manage'],
+            // Reads the org chart — cost allocation and payroll reporting both
+            // run on it — without being able to redraw it.
+            'Departments' => ['view'],
             'Settings' => ['view'],
         ]],
         'sales-officer' => ['name' => 'Sales Officer', 'level' => 5, 'grants' => [
@@ -137,6 +143,7 @@ class RolePermissionSeeder extends Seeder
             'Events' => ['view'],
             'Loyalty' => ['view'],
             'Reports' => ['view'],
+            'Departments' => ['view'],
         ]],
     ];
 

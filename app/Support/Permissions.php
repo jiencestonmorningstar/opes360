@@ -95,6 +95,13 @@ class Permissions
          * without being able to add a destination.
          */
         'Webhooks' => ['view', 'manage'],
+        /*
+         * The org chart. Core rather than a module, and separate from
+         * Employees because a department outlives the staff file: Documents
+         * files by department and approval routing reads it, so a business
+         * that switches HR off must not lose its filing along with it.
+         */
+        'Departments' => ['view', 'manage'],
         'Users' => ['view', 'invite', 'update-role', 'remove'],
         'Devices' => ['view', 'revoke'],
         'Settings' => ['view', 'update'],
