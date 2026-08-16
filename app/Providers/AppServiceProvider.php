@@ -3,6 +3,7 @@
 namespace App\Providers;
 
 use App\Events\DomainEvent;
+use App\Listeners\PostApprovedExpenseClaims;
 use App\Listeners\RunAutomationRules;
 use App\Listeners\TranslateDocumentWorkflowEvents;
 use App\Models\Artisan;
@@ -56,6 +57,13 @@ class AppServiceProvider extends ServiceProvider
          */
         Event::listen(DomainEvent::class, RunAutomationRules::class);
         Event::listen(DomainEvent::class, TranslateDocumentWorkflowEvents::class);
+        /*
+         * Without this an approved claim is correct but invisible in the
+         * books until it is reimbursed — the charge and the staff debt would
+         * not exist, so an approved-but-unpaid claim would not show as the
+         * liability it is.
+         */
+        Event::listen(DomainEvent::class, PostApprovedExpenseClaims::class);
 
         $this->registerDocumentFieldProviders();
 

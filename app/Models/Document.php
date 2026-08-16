@@ -130,6 +130,27 @@ class Document extends Model
         return $query->ofType(DocumentType::Invoice);
     }
 
+    /**
+     * Everything that represents money owed TO the business.
+     *
+     * Invoices and debit notes both do; a credit note is money owed the other
+     * way and has an open balance by construction, so counting it here would
+     * have the business chasing a debt it had itself written off.
+     *
+     * Exists as one scope rather than a `whereIn` repeated in the aging
+     * report, the dunning run, the collections queue and the statement —
+     * four copies that would eventually disagree about what a receivable is,
+     * and the disagreement would show up as a customer chased for the wrong
+     * amount.
+     */
+    public function scopeReceivables(Builder $query): Builder
+    {
+        return $query->whereIn('type', [
+            DocumentType::Invoice->value,
+            DocumentType::DebitNote->value,
+        ]);
+    }
+
     /** Issued and still owed money — drives the Outstanding stat card. */
     public function scopeOutstanding(Builder $query): Builder
     {

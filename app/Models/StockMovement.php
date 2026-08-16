@@ -42,4 +42,13 @@ class StockMovement extends Model
     {
         return $this->belongsTo(StockLocation::class, 'stock_location_id');
     }
+
+    /**
+     * Which lot, or which individual unit. Null for a product that tracks
+     * neither — most of them — and for everything recorded before it could.
+     */
+    public function batch(): BelongsTo
+    {
+        return $this->belongsTo(StockBatch::class, 'stock_batch_id');
+    }
 }

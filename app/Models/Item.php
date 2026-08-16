@@ -20,7 +20,33 @@ class Item extends Model
     use SoftDeletes;
     use Syncable;
 
+    /**
+     * How closely this product is traced. Opt-in, and 'none' — the default and
+     * what every existing product carries — is the whole of the behaviour that
+     * existed before: no lot to type, no serial to scan, no expiry to answer.
+     */
+    public const TRACKING_NONE = 'none';
+
+    public const TRACKING_BATCH = 'batch';
+
+    public const TRACKING_SERIAL = 'serial';
+
+    public const TRACKING_MODES = [
+        self::TRACKING_NONE => 'No tracking',
+        self::TRACKING_BATCH => 'Batch / lot number',
+        self::TRACKING_SERIAL => 'Serial number',
+    ];
+
     protected $guarded = ['id'];
+
+    /**
+     * Model::create() does not read column defaults back off the database, so
+     * a product created without saying would report a null tracking mode to
+     * the code that just made it. Stated here as well as in the schema.
+     */
+    protected $attributes = [
+        'tracking_mode' => self::TRACKING_NONE,
+    ];
 
     protected function casts(): array
     {
@@ -47,6 +73,37 @@ class Item extends Model
     public function movements(): HasMany
     {
         return $this->hasMany(StockMovement::class);
+    }
+
+    public function batches(): HasMany
+    {
+        return $this->hasMany(StockBatch::class);
+    }
+
+    public function reservations(): HasMany
+    {
+        return $this->hasMany(StockReservation::class);
+    }
+
+    public function tracksBatches(): bool
+    {
+        return $this->tracking_mode === self::TRACKING_BATCH;
+    }
+
+    public function tracksSerials(): bool
+    {
+        return $this->tracking_mode === self::TRACKING_SERIAL;
+    }
+
+    /** Traced by lot or by unit — either way, arrivals need naming. */
+    public function isTraceable(): bool
+    {
+        return $this->tracksBatches() || $this->tracksSerials();
+    }
+
+    public function scopeTraceable(Builder $query): Builder
+    {
+        return $query->whereIn('tracking_mode', [self::TRACKING_BATCH, self::TRACKING_SERIAL]);
     }
 
     public function scopeProducts(Builder $query): Builder

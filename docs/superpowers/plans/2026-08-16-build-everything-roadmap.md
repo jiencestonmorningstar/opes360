@@ -80,13 +80,13 @@ Everything in Part 1 of the gap analysis not blocked on absent infrastructure.
 | # | Item | Gap-analysis line |
 |---|---|---|
 | 3.1 | ~~Fiscal periods, period closing, cost centres, cash-flow statement~~ **Done** — closing enforced at `Ledger::post()`, the single path everything writes through; opt-in so existing businesses are unaffected; cash flow by the direct method, unclassified rather than guessed | #1 |
-| 3.2 | Account transfers, cash forecasting | #2 |
-| 3.3 | Debit notes, customer statements, collections workspace | #3 |
+| 3.2 | ~~Account transfers, cash forecasting~~ **Done** — transfers post through `Ledger::post()` and deliberately NOT through `recordQuietly()`: a transfer *is* the bookkeeping, so a silent failure would be money that left one account and arrived nowhere. Forecast reuses `Aging` rather than re-querying | #2 |
+| 3.3 | ~~Debit notes, customer statements, collections workspace~~ **Done** (agent) — added `Document::scopeReceivables()` so aging, dunning, collections and statements share one definition of a receivable rather than four | #3 |
 | 3.4 | AP payment scheduling, supplier statements, supplier reconciliation | #4 |
 | 3.5 | Purchase requisitions, RFQ, supplier quotations, procurement approvals | #5 |
-| 3.6 | Batch/lot tracking, serial numbers, expiry dates, stock reservations | #6 |
+| 3.6 | ~~Batch/lot, serials, expiry, reservations~~ **Done** (agent) — opt-in per product (`tracking_mode`), so a shop selling t-shirts sees no change. A serial is modelled as a batch of one, giving one FEFO/recall path rather than two | #6 |
 | 3.7 | Leads, deal activities, sales forecasting | #7 |
-| 3.8 | Employee expense claims, reimbursement, cost-centre allocation | #8 |
+| 3.8 | ~~Employee expense claims, reimbursement, cost-centre allocation~~ **Done** (agent) — reuses the workflow engine rather than a second approval path; staff debt posts to 422, not payables, so employees never appear in the supplier ageing report | #8 |
 | 3.9 | Positions, attendance, performance, recruitment | #9 |
 | 3.10 | Asset transfers, maintenance, asset locations | #12 |
 

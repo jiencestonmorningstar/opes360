@@ -63,7 +63,7 @@ class Aging
     public function receivable(): array
     {
         $rows = Document::query()
-            ->invoices()
+            ->receivables()
             ->outstanding()
             ->with('contact')
             ->get()

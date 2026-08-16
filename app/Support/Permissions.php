@@ -23,7 +23,18 @@ class Permissions
         // Money going out. Separate from Payments, which is money coming in:
         // a cashier who may take a customer's money has no business recording
         // what the company spends.
-        'Expenses' => ['view', 'create', 'update', 'pay', 'void'],
+        /*
+         * `claim-*` are staff expense claims: money an employee paid
+         * personally and is owed back. Separate from the `pay` above, which
+         * settles what the business owes a supplier — a clerk who may enter
+         * their own taxi fare has no business paying the electricity bill.
+         *
+         * There is deliberately no `claim-approve`. Approving is the workflow
+         * engine's business, and docs/workflows.md is explicit that being
+         * asked IS the permission: a second ability here would let the engine
+         * assign an approver the gate then refuses.
+         */
+        'Expenses' => ['view', 'create', 'update', 'pay', 'void', 'claim-view', 'claim-create', 'claim-reimburse'],
         /*
          * People and pay. Three groups rather than one, because they are three
          * different jobs: a manager keeps the staff file, an accountant runs
@@ -43,7 +54,14 @@ class Permissions
         // `manage-locations` sits in this group because it is about stock, but
         // belongs to its own module: a business can sell things from one shelf
         // without ever needing a warehouse. See config/modules.php.
-        'Products' => ['view', 'create', 'update', 'delete', 'adjust-stock', 'manage-locations'],
+        /*
+         * `track-*` are lots, serial numbers and expiry — opt-in per product,
+         * so a business selling t-shirts never meets them. Separate from
+         * `adjust-stock` because recording which lot arrived is a different
+         * job from correcting a count, and a pharmacy typically wants the
+         * first devolved further than the second.
+         */
+        'Products' => ['view', 'create', 'update', 'delete', 'adjust-stock', 'manage-locations', 'track-view', 'track-manage', 'reserve'],
         // What the business owns and what it banks with. Both are the
         // accountant's ground rather than the shopkeeper's, which is why they
         // are separate groups instead of actions on Accounting.

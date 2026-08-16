@@ -86,7 +86,7 @@ class Dunning
         $skipped = 0;
 
         $documents = Document::query()
-            ->invoices()
+            ->receivables()
             ->outstanding()
             ->with('contact')
             ->get();

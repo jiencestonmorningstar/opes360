@@ -25,7 +25,7 @@ class RolePermissionSeeder extends Seeder
             'Sales' => ['view', 'create', 'update', 'issue', 'approve'],
             'Receipts' => ['view', 'create'],
             'Payments' => ['view', 'record'],
-            'Expenses' => ['view', 'create', 'update', 'pay'],
+            'Expenses' => ['view', 'create', 'update', 'pay', 'claim-view', 'claim-create'],
             // Keeps the staff file and decides leave — the day-to-day of
             // managing people. Approving a month's payroll and posting it to
             // the books is not that job, so 'approve' and 'pay' stay above.
@@ -34,7 +34,7 @@ class RolePermissionSeeder extends Seeder
             'Leave' => ['view', 'request', 'approve'],
             'Customers' => ['view', 'create', 'update'],
             'Deals' => ['view', 'create', 'update', 'delete'],
-            'Products' => ['view', 'create', 'update', 'adjust-stock', 'manage-locations'],
+            'Products' => ['view', 'create', 'update', 'adjust-stock', 'manage-locations', 'track-view', 'track-manage', 'reserve'],
             'Assets' => ['view'],
             'Banking' => ['view'],
             // Runs projects day to day: creates them, sets the budget, adds
@@ -71,7 +71,7 @@ class RolePermissionSeeder extends Seeder
             'Receipts' => ['view', 'create'],
             'Payments' => ['view', 'record', 'refund'],
             // The spending side is the accountant's before it is anyone's.
-            'Expenses' => ['view', 'create', 'update', 'pay', 'void'],
+            'Expenses' => ['view', 'create', 'update', 'pay', 'void', 'claim-view', 'claim-create', 'claim-reimburse'],
             // Running the payroll is bookkeeping. Approving it commits the
             // business to a month's wages and the declarations that follow,
             // which is the owner's signature, not the accountant's.
@@ -110,7 +110,10 @@ class RolePermissionSeeder extends Seeder
             // Chasing deals is this role's actual job, so it gets the full set
             // here even though it cannot issue the invoice one turns into.
             'Deals' => ['view', 'create', 'update', 'delete'],
-            'Products' => ['view'],
+            'Products' => ['view', 'track-view'],
+            // Anybody who spends their own money on the business's behalf needs
+            // to be able to claim it back; approving it is the workflow's job.
+            'Expenses' => ['claim-view', 'claim-create'],
             // Chasing a client's project is close enough to the deal it grew
             // out of that a sales officer needs to see it, and to log time
             // spent on it, without being able to move its budget.
