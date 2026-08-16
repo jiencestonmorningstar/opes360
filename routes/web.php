@@ -13,6 +13,7 @@ use App\Http\Controllers\PrintController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\SyncController;
 use App\Http\Controllers\TicketController;
+use App\Http\Controllers\DocumentShareController;
 use App\Http\Controllers\SignatureController;
 use App\Http\Controllers\VerificationController;
 use App\Livewire\Accounting\Declarations as AccountingDeclarations;
@@ -374,6 +375,15 @@ Route::middleware('throttle:60,1')->group(function () {
     Route::get('/sign/{token}', [SignatureController::class, 'show'])->name('signatures.show');
     Route::post('/sign/{token}', [SignatureController::class, 'sign'])->name('signatures.sign');
     Route::post('/sign/{token}/decline', [SignatureController::class, 'decline'])->name('signatures.decline');
+});
+
+/*
+ * External document sharing links — §21. Same public-tenancy-crossing shape
+ * as verification and signing above.
+ */
+Route::middleware('throttle:60,1')->group(function () {
+    Route::get('/share/{token}', [DocumentShareController::class, 'show'])->name('shares.show');
+    Route::post('/share/{token}/unlock', [DocumentShareController::class, 'unlock'])->name('shares.unlock');
 });
 
 /*

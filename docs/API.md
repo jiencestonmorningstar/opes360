@@ -1190,6 +1190,25 @@ from the document's own version history, its comments, and the audit log
 already kept on it; there is no separate table for this, so nothing here can
 disagree with the records it is describing.
 
+### External sharing
+
+`GET /api/v1/library/{document}/shares` — every link created for the
+document, live or not, with a view count. Never returns the password.
+
+`POST /api/v1/library/{document}/shares` — `expires_at` (must be in the
+future), `password` (min 4 characters), `allow_download` (default true).
+Requires `papers.share`.
+
+`POST /api/v1/library/shares/{share}/revoke` — turns a link off immediately.
+The row stays; only its liveness changes.
+
+The link itself — `/share/{share_token}` — is public and unauthenticated,
+resolved cross-tenant the same way `/v/{token}` and `/sign/{token}` already
+are. A password-protected link asks for the password first and does not log
+an access until it is entered correctly. `allow_download` hides the
+print/save button; it is a courtesy setting, not an enforced restriction —
+anyone who can see a page in a browser can still screenshot it.
+
 ### Signatures
 
 `GET /api/v1/library/{document}/signatures` — status (`not_requested`,

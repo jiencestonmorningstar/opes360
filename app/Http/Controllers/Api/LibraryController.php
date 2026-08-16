@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Api;
 use App\Http\Resources\BusinessDocumentResource;
 use App\Models\BusinessDocument;
 use App\Models\BusinessDocumentComment;
+use App\Models\BusinessDocumentShare;
 use App\Models\BusinessDocumentSignature;
 use App\Models\BusinessDocumentVersion;
 use App\Models\Contact;
@@ -14,6 +15,7 @@ use App\Models\Project;
 use App\Services\Documents\DocumentActivity;
 use App\Services\Documents\DocumentComments;
 use App\Services\Documents\DocumentLinker;
+use App\Services\Documents\DocumentSharing;
 use App\Services\Documents\DocumentSignatureRequests;
 use App\Services\Documents\DocumentVersioner;
 use App\Services\Documents\VersionComparator;
@@ -52,6 +54,7 @@ class LibraryController extends ApiController
         private readonly DocumentComments $comments,
         private readonly DocumentActivity $activity,
         private readonly DocumentSignatureRequests $signatureRequests,
+        private readonly DocumentSharing $sharing,
     ) {}
 
     public function index(Request $request): AnonymousResourceCollection
@@ -250,6 +253,60 @@ class LibraryController extends ApiController
             'name' => $s->signer_name,
             'order' => $s->order,
         ])], 201);
+    }
+
+    public function shares(BusinessDocument $document): JsonResponse
+    {
+        $this->authorize('view', $document);
+
+        return response()->json(['data' => $document->shares->map(fn (BusinessDocumentShare $s) => $this->sharePayload($s))]);
+    }
+
+    public function createShare(Request $request, BusinessDocument $document): JsonResponse
+    {
+        $this->authorize('share', $document);
+
+        $data = $request->validate([
+            'expires_at' => ['nullable', 'date', 'after:now'],
+            'password' => ['nullable', 'string', 'min:4', 'max:100'],
+            'allow_download' => ['sometimes', 'boolean'],
+        ]);
+
+        $share = $this->sharing->create(
+            $document,
+            $request->user(),
+            isset($data['expires_at']) ? \Illuminate\Support\Carbon::parse($data['expires_at']) : null,
+            $data['password'] ?? null,
+            $data['allow_download'] ?? true,
+        );
+
+        return response()->json(['data' => $this->sharePayload($share) + [
+            'url' => route('shares.show', $share->share_token),
+        ]], 201);
+    }
+
+    public function revokeShare(BusinessDocumentShare $share): JsonResponse
+    {
+        $this->authorize('share', $share->document);
+
+        $this->sharing->revoke($share);
+
+        return response()->json(['data' => $this->sharePayload($share->fresh())]);
+    }
+
+    /** @return array<string, mixed> */
+    protected function sharePayload(BusinessDocumentShare $share): array
+    {
+        return [
+            'id' => $share->id,
+            'expires_at' => $share->expires_at?->toIso8601String(),
+            'password_protected' => $share->isPasswordProtected(),
+            'allow_download' => $share->allow_download,
+            'revoked_at' => $share->revoked_at?->toIso8601String(),
+            'is_live' => $share->isLive(),
+            'views' => $share->accesses()->count(),
+            'created_at' => $share->created_at?->toIso8601String(),
+        ];
     }
 
     public function comments(BusinessDocument $document): JsonResponse

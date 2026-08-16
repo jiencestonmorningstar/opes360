@@ -216,6 +216,11 @@ class BusinessDocument extends Model
         return $this->hasMany(BusinessDocumentSignature::class)->orderBy('order');
     }
 
+    public function shares(): HasMany
+    {
+        return $this->hasMany(BusinessDocumentShare::class);
+    }
+
     public function verificationToken(): BelongsTo
     {
         return $this->belongsTo(VerificationToken::class);

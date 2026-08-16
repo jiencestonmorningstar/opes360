@@ -44,6 +44,7 @@ half delivered. The table follows the master spec's own section numbers.
 | 47 | Library API — list/show/create/file/delete, attach/detach relations, versions, comments | `LibraryController` |
 | 15 | Comments — replies, explicit-id mentions with notification, resolve/reopen, deletion by permission | `BusinessDocumentComment`, `DocumentComments` |
 | 30, 35 | Audit trail and activity timeline — no new table; merges the existing audit log, versions and comments into one ordered feed | `DocumentActivity` |
+| 21 | External sharing — expiring, password-protected, revocable links with an access log, view-only as a UX courtesy rather than an enforced restriction | `DocumentSharing`, `/share/{token}` |
 
 Reused rather than rebuilt, exactly as the brief requires: the `media` table and
 upload path, `users`/`roles`/`permissions`, `contacts`, the `documents` ERP
@@ -87,7 +88,6 @@ roadmap:**
 | 7 | Dynamic ERP field registry — modules registering their own authorised fields |
 | 8 | Templates as data (create/edit/version/publish/permission). Templates are a hard-coded PHP catalogue today |
 | 17–18 | Workflow stages and the approval engine |
-| 21 | External sharing — secure links, expiry, password, revocation, access log |
 | 25 | Configurable document numbering per type |
 | 30 | Documents-specific audit trail (the suite has `activity_log`; Documents does not write a full document audit yet) |
 | 31–32 | Retention policies, legal hold, controlled disposal, full lifecycle states |

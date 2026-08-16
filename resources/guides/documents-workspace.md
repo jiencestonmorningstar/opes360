@@ -75,6 +75,29 @@ checked, but are not ready to commit to it being final. A locked draft can
 still be unlocked, or issued outright; locking is not a step on the way to
 issuing, it is a separate hold you can put on and take off.
 
+## Sharing outside the business
+
+Create a link that opens a document for anyone who has it, with no account
+needed. Three things you can set when creating one:
+
+- **Expiry** — the link stops working after a date you choose. Leave it
+  blank for a link that lasts indefinitely.
+- **Password** — require a password before the document shows. Send it
+  separately from the link itself.
+- **View-only** — hide the print/download option. This is a courtesy, not a
+  lock: anyone who can see a page in a browser can still take a screenshot of
+  it, so treat it as discouraging casual copies rather than preventing them.
+
+Every view is logged, so you can see when a link was actually opened.
+
+**Revoke** turns a link off immediately. It still exists in your history —
+you can see it was created and when — it simply stops opening.
+
+**Things that surprise people:** a document can have more than one share
+link at once, each with its own settings — a permanent internal link and a
+one-week client link for the same document, side by side. Revoking one never
+touches the others.
+
 ## Signing
 
 Send a document out for signature to one or more people — a client, a

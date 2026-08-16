@@ -185,6 +185,8 @@ Route::prefix('v1')->group(function (): void {
                 ->name('api.v1.library.activity');
             Route::get('library/{document}/signatures', [LibraryController::class, 'signatureStatus'])
                 ->name('api.v1.library.signatures.index');
+            Route::get('library/{document}/shares', [LibraryController::class, 'shares'])
+                ->name('api.v1.library.shares.index');
 
             Route::prefix('accounting')->name('api.v1.accounting.')->group(function (): void {
                 Route::get('accounts', [AccountingController::class, 'accounts'])->name('accounts');
@@ -229,6 +231,11 @@ Route::prefix('v1')->group(function (): void {
 
             Route::post('library/{document}/signatures', [LibraryController::class, 'requestSignatures'])
                 ->name('api.v1.library.signatures.store');
+
+            Route::post('library/{document}/shares', [LibraryController::class, 'createShare'])
+                ->name('api.v1.library.shares.store');
+            Route::post('library/shares/{share}/revoke', [LibraryController::class, 'revokeShare'])
+                ->name('api.v1.library.shares.revoke');
 
             // Editing a tier changes what future sales get, never what a
             // member was already sold. Cancelling stops a benefit rather than
