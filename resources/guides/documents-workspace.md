@@ -75,6 +75,14 @@ checked, but are not ready to commit to it being final. A locked draft can
 still be unlocked, or issued outright; locking is not a step on the way to
 issuing, it is a separate hold you can put on and take off.
 
+## Activity
+
+Every document has a timeline: created, filed, revised, issued, commented on
+— one chronological list rather than four separate places to look. Nothing
+here is a separate record kept specially for the timeline; it is built from
+the document's own version history, its comments, and the audit log the
+product already keeps, put in order.
+
 ## Comments
 
 Leave a remark on a document, or reply to one already there. Mentioning a

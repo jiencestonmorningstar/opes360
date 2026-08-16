@@ -43,6 +43,7 @@ half delivered. The table follows the master spec's own section numbers.
 | 3 | Workspace — search, kind/security/folder/tag filters, five overview counters | `Livewire\Papers\Index` |
 | 47 | Library API — list/show/create/file/delete, attach/detach relations, versions, comments | `LibraryController` |
 | 15 | Comments — replies, explicit-id mentions with notification, resolve/reopen, deletion by permission | `BusinessDocumentComment`, `DocumentComments` |
+| 30, 35 | Audit trail and activity timeline — no new table; merges the existing audit log, versions and comments into one ordered feed | `DocumentActivity` |
 
 Reused rather than rebuilt, exactly as the brief requires: the `media` table and
 upload path, `users`/`roles`/`permissions`, `contacts`, the `documents` ERP
@@ -91,7 +92,7 @@ roadmap:**
 | 25 | Configurable document numbering per type |
 | 30 | Documents-specific audit trail (the suite has `activity_log`; Documents does not write a full document audit yet) |
 | 31–32 | Retention policies, legal hold, controlled disposal, full lifecycle states |
-| 33–35 | Alerts, the My Actions centre, the per-document activity timeline |
+| 33 | Alerts — expiry and workflow-stalled notifications specifically for documents (the My Actions centre and its `workflow.stalled` event already exist; a scheduled expiry check does not) |
 | 36–40 | Related-content panel, dossiers, packages, bundles, checklists |
 | 44 | Multilingual templates (the `language` column exists; nothing consumes it) |
 | 46 | Documents administration screens |

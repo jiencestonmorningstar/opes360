@@ -57,7 +57,7 @@ Everything in Part 1 of the gap analysis not blocked on absent infrastructure.
 | 2.3 | ~~Versions, locking and finalisation~~ **Done** — `docs/superpowers/plans/2026-08-16-documents-versions.md`. Finalisation was not rebuilt: issuance already does it. No API yet, noted in `docs/API.md` §23 |
 | 2.4 | ~~Version comparison~~ **Done** — word-level diff (`VersionComparator`), with an API. Own commit, since the earlier plan carved comparison out separately from creation |
 | 2.5 | ~~Comments, replies, mentions, resolution~~ **Done** — mentions are explicit user ids, never `@name` parsed out of text, and notify through the existing notification layer |
-| 2.6 | Document audit trail and activity timeline (§30, §35) |
+| 2.6 | ~~Document audit trail and activity timeline~~ **Done** — no new table; merges the existing `activity_log`, versions and comments. `BusinessDocument` added to the audited-model list |
 | 2.7 | Workflow binding — Documents consumes the Phase 1.2 engine (§17–18) |
 | 2.8 | E-signature — fields, ordering, sequential/parallel, reminders, status (§19, ERP #23) |
 | 2.9 | External sharing — secure links, expiry, password, revocation, access log (§21) |

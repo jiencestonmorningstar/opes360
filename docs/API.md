@@ -1182,6 +1182,14 @@ requires a draft, catches this before the service beneath it ever runs.
 Restoring does not delete anything: it adds a new version on top, so the
 history still shows exactly what happened and in what order.
 
+### Activity
+
+`GET /api/v1/library/{document}/activity` — one chronological timeline:
+created, filed, revised, issued, commented, replied — newest first. Built
+from the document's own version history, its comments, and the audit log
+already kept on it; there is no separate table for this, so nothing here can
+disagree with the records it is describing.
+
 ### Comments
 
 `GET /api/v1/library/{document}/comments` — top-level comments, each with its

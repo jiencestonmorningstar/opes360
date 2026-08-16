@@ -5,6 +5,7 @@ namespace App\Providers;
 use App\Events\DomainEvent;
 use App\Listeners\RunAutomationRules;
 use App\Models\Artisan;
+use App\Models\BusinessDocument;
 use App\Models\Company;
 use App\Models\Contact;
 use App\Models\Document;
@@ -110,7 +111,8 @@ class AppServiceProvider extends ServiceProvider
          * that signal in churn, and both are already immutable or append-only.
          */
         foreach ([Company::class, User::class, Contact::class, Item::class,
-            Document::class, Payment::class, Receipt::class, Artisan::class] as $model) {
+            Document::class, Payment::class, Receipt::class, Artisan::class,
+            BusinessDocument::class] as $model) {
             $model::observe(AuditObserver::class);
         }
     }

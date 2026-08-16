@@ -181,6 +181,8 @@ Route::prefix('v1')->group(function (): void {
                 ->name('api.v1.library.versions.compare');
             Route::get('library/{document}/comments', [LibraryController::class, 'comments'])
                 ->name('api.v1.library.comments.index');
+            Route::get('library/{document}/activity', [LibraryController::class, 'activity'])
+                ->name('api.v1.library.activity');
 
             Route::prefix('accounting')->name('api.v1.accounting.')->group(function (): void {
                 Route::get('accounts', [AccountingController::class, 'accounts'])->name('accounts');

@@ -10,6 +10,7 @@ use App\Models\Contact;
 use App\Models\Document;
 use App\Models\Employee;
 use App\Models\Project;
+use App\Services\Documents\DocumentActivity;
 use App\Services\Documents\DocumentComments;
 use App\Services\Documents\DocumentLinker;
 use App\Services\Documents\DocumentVersioner;
@@ -47,6 +48,7 @@ class LibraryController extends ApiController
         private readonly DocumentVersioner $versioner,
         private readonly VersionComparator $comparator,
         private readonly DocumentComments $comments,
+        private readonly DocumentActivity $activity,
     ) {}
 
     public function index(Request $request): AnonymousResourceCollection
@@ -191,6 +193,20 @@ class LibraryController extends ApiController
         }
 
         return response()->json(['data' => BusinessDocumentResource::make($restored)]);
+    }
+
+    public function activity(BusinessDocument $document): JsonResponse
+    {
+        $this->authorize('view', $document);
+
+        $timeline = $this->activity->timeline($document)->map(fn ($entry) => [
+            'type' => $entry['type'],
+            'summary' => $entry['summary'],
+            'actor' => $entry['actor'],
+            'at' => $entry['at']?->toIso8601String(),
+        ]);
+
+        return response()->json(['data' => $timeline]);
     }
 
     public function comments(BusinessDocument $document): JsonResponse
