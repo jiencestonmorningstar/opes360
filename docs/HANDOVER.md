@@ -2,7 +2,7 @@
 
 **Date:** 2026-08-16 (launch gate)
 **Branch:** `claude/documents-phase-1` (off `main`; not yet pushed — see §1 before pushing)
-**Suite:** 2,844 tests, 12,932 assertions, all passing
+**Suite:** 2,932 tests, 13,291 assertions, all passing (post-hardening gate, 2026-08-17)
 **Migrations:** all applied to both MySQL (tests/schema) and the SQLite dev DB; `opes360-install.sql` regenerated (380 KB)
 
 **Since the section below was written, the platform was completed:** the full
