@@ -1190,6 +1190,32 @@ from the document's own version history, its comments, and the audit log
 already kept on it; there is no separate table for this, so nothing here can
 disagree with the records it is describing.
 
+### Templates
+
+A business's own templates, alongside the built-in catalogue — which has no
+endpoint of its own; it is code, reachable through the Papers gallery.
+
+`GET /api/v1/document-templates` — every custom template, published or not.
+`GET /api/v1/document-templates/{template}` — one, with its body.
+`GET /api/v1/document-templates/{template}/versions` — its history.
+
+`POST /api/v1/document-templates` — `key` (lowercase/digits/underscore,
+refused with 422 if it collides with a built-in template's key), `name`,
+`body`, and optionally `summary`, `icon`, `accent`, `binding`, `fields`.
+Starts unpublished. Requires `papers.manage`.
+
+`PUT /api/v1/document-templates/{template}` — same fields, `key` excluded
+(never changes once set). Editing wording or fields writes a new version;
+renaming or re-summarising does not.
+
+`POST .../publish` and `.../unpublish` — puts a template in the gallery
+alongside the built-in ones, or takes it out. Neither writes a version;
+publishing is not content.
+
+`DELETE /api/v1/document-templates/{template}` — removes the template.
+Documents already composed from it are untouched; a document's text is
+copied in at compose time, never read from the template afterwards.
+
 ### Numbering
 
 `GET /api/v1/library/numbering-schemes` — every configured scheme.

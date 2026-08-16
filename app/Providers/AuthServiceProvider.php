@@ -5,6 +5,7 @@ namespace App\Providers;
 use App\Models\Artisan;
 use App\Models\BusinessDocument;
 use App\Models\BusinessDocumentComment;
+use App\Models\BusinessDocumentTemplate;
 use App\Models\Contact;
 use App\Models\Deal;
 use App\Models\Department;
@@ -21,6 +22,7 @@ use App\Models\Project;
 use App\Models\Workflow;
 use App\Policies\ArtisanPolicy;
 use App\Policies\BusinessDocumentCommentPolicy;
+use App\Policies\BusinessDocumentTemplatePolicy;
 use App\Policies\BusinessDocumentPolicy;
 use App\Policies\ContactPolicy;
 use App\Policies\DealPolicy;
@@ -58,6 +60,7 @@ class AuthServiceProvider extends ServiceProvider
         Artisan::class => ArtisanPolicy::class,
         BusinessDocument::class => BusinessDocumentPolicy::class,
         BusinessDocumentComment::class => BusinessDocumentCommentPolicy::class,
+        BusinessDocumentTemplate::class => BusinessDocumentTemplatePolicy::class,
         Form::class => FormPolicy::class,
         Event::class => EventPolicy::class,
         Ticket::class => TicketPolicy::class,

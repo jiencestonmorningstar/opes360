@@ -6,6 +6,7 @@ use App\Models\BusinessDocument;
 use App\Models\Company;
 use App\Models\User;
 use App\Models\VerificationToken;
+use App\Services\Documents\CustomDocumentTemplates;
 use App\Support\DocumentTemplates;
 use Carbon\CarbonImmutable;
 use Illuminate\Support\Facades\DB;
@@ -21,7 +22,23 @@ use Throwable;
  */
 class DocumentComposer
 {
-    public function __construct(protected DocumentNumbers $numbers) {}
+    public function __construct(
+        protected DocumentNumbers $numbers,
+        protected CustomDocumentTemplates $customTemplates,
+    ) {}
+
+    /**
+     * Resolves a template by key from either catalogue.
+     *
+     * A business's own published template is checked first — a business
+     * cannot be prevented from choosing the same key as a built-in template,
+     * since App\Support\DocumentTemplates::exists() already refuses that at
+     * creation, so there is never a real collision to arbitrate here.
+     */
+    protected function resolveTemplate(string $templateKey): ?array
+    {
+        return $this->customTemplates->find($templateKey) ?? DocumentTemplates::find($templateKey);
+    }
 
     /**
      * Fills a template's placeholders.
@@ -40,7 +57,7 @@ class DocumentComposer
      */
     public function merge(string $templateKey, array $fields, Company $company): string
     {
-        $template = DocumentTemplates::find($templateKey);
+        $template = $this->resolveTemplate($templateKey);
 
         if ($template === null) {
             throw new RuntimeException("Unknown template [{$templateKey}].");

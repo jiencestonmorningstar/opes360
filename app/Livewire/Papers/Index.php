@@ -4,6 +4,7 @@ namespace App\Livewire\Papers;
 
 use App\Models\BusinessDocument;
 use App\Models\BusinessDocumentFolder;
+use App\Services\Documents\CustomDocumentTemplates;
 use App\Support\DocumentKinds;
 use App\Support\DocumentTemplates;
 use Illuminate\Contracts\View\View;
@@ -109,7 +110,10 @@ class Index extends Component
         }
 
         return view('livewire.papers.index', [
-            'templates' => DocumentTemplates::all(),
+            // The built-in catalogue first, then a business's own published
+            // templates — merged rather than replaced, so a business's
+            // additions never hide what shipped with the product.
+            'templates' => DocumentTemplates::all() + app(CustomDocumentTemplates::class)->allPublishedAsArray(),
             'papers' => $query->paginate(12),
             'counts' => [
                 'all' => (clone $base)->count(),

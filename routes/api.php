@@ -5,6 +5,7 @@ use App\Http\Controllers\Api\ApprovalController;
 use App\Http\Controllers\Api\ContactController;
 use App\Http\Controllers\Api\DealController;
 use App\Http\Controllers\Api\DocumentController;
+use App\Http\Controllers\Api\DocumentTemplateController;
 use App\Http\Controllers\Api\EmployeeController;
 use App\Http\Controllers\Api\EventController;
 use App\Http\Controllers\Api\ExpenseController;
@@ -174,6 +175,12 @@ Route::prefix('v1')->group(function (): void {
             Route::get('approvals/{approval}', [ApprovalController::class, 'show'])->name('api.v1.approvals.show');
 
             Route::get('library', [LibraryController::class, 'index'])->name('api.v1.library.index');
+
+            Route::prefix('document-templates')->name('api.v1.document-templates.')->group(function (): void {
+                Route::get('/', [DocumentTemplateController::class, 'index'])->name('index');
+                Route::get('{template}', [DocumentTemplateController::class, 'show'])->name('show');
+                Route::get('{template}/versions', [DocumentTemplateController::class, 'versions'])->name('versions');
+            });
             // Ahead of library/{document}: a single-segment wildcard would
             // otherwise swallow "numbering-schemes" as if it were a document
             // id, and the real endpoint below would never be reached.
@@ -216,6 +223,14 @@ Route::prefix('v1')->group(function (): void {
                 ->name('api.v1.approvals.decide');
 
             Route::post('library', [LibraryController::class, 'store'])->name('api.v1.library.store');
+
+            Route::prefix('document-templates')->name('api.v1.document-templates.')->group(function (): void {
+                Route::post('/', [DocumentTemplateController::class, 'store'])->name('store');
+                Route::match(['put', 'patch'], '{template}', [DocumentTemplateController::class, 'update'])->name('update');
+                Route::post('{template}/publish', [DocumentTemplateController::class, 'publish'])->name('publish');
+                Route::post('{template}/unpublish', [DocumentTemplateController::class, 'unpublish'])->name('unpublish');
+                Route::delete('{template}', [DocumentTemplateController::class, 'destroy'])->name('destroy');
+            });
             Route::match(['put', 'patch'], 'library/{document}', [LibraryController::class, 'update'])
                 ->name('api.v1.library.update');
             Route::delete('library/{document}', [LibraryController::class, 'destroy'])

@@ -68,6 +68,13 @@ class Guides
             'audience' => 'admin',
         ],
 
+        'custom-templates' => [
+            'title' => 'Your own templates',
+            'group' => 'Documents',
+            'summary' => 'Write, publish and version a template of your own alongside the built-in ones.',
+            'audience' => 'admin',
+        ],
+
         'projects' => [
             'title' => 'Projects',
             'group' => 'Working together',
