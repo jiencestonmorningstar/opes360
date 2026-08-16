@@ -115,11 +115,17 @@ class Requisitions
             throw new RuntimeException('A requisition cannot be submitted without a submitter.');
         }
 
-        $instance = $this->engine->start($requisition, $workflow, $actor);
-
+        /*
+         * Marked submitted BEFORE the engine starts, not after. A requisition
+         * under the approval threshold has its every step skipped, so the
+         * engine finishes it — and fires the listener that writes "approved" —
+         * inside start(); writing "submitted" afterwards would overwrite the
+         * verdict, and the requisition would sit looking undecided while the
+         * engine considered it done. Found by demo data, of all things.
+         */
         $requisition->forceFill(['status' => 'submitted', 'submitted_at' => now()])->save();
 
-        return $instance;
+        return $this->engine->start($requisition, $workflow, $actor);
     }
 
     /**

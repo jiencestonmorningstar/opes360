@@ -9,6 +9,7 @@ use App\Models\BusinessDocument;
 use App\Models\ComplianceObligation;
 use App\Models\Contact;
 use App\Models\Contract;
+use App\Models\CrmActivity;
 use App\Models\Deal;
 use App\Models\Document;
 use App\Models\Employee;
@@ -18,6 +19,9 @@ use App\Models\FixedAsset;
 use App\Models\Form;
 use App\Models\FuelLog;
 use App\Models\Item;
+use App\Models\JobApplication;
+use App\Models\JobOffer;
+use App\Models\Lead;
 use App\Models\PartnerClient;
 use App\Models\Payment;
 use App\Models\PaymentRun;
@@ -37,6 +41,7 @@ use App\Models\Stocktake;
 use App\Models\SupplierQuotation;
 use App\Models\SupplierStatement;
 use App\Models\Ticket;
+use App\Models\Vacancy;
 use App\Models\VehicleDetail;
 use App\Models\VehicleTrip;
 use App\Models\VipMembership;
@@ -115,7 +120,9 @@ return [
         // for a won deal to leave a customer behind.
         'requires' => ['customers'],
         'groups' => ['deals'],
-        'models' => [Deal::class],
+        // Leads and activities are the front half of the same pipeline, so
+        // they switch off with it rather than surviving as orphans.
+        'models' => [Deal::class, Lead::class, CrmActivity::class],
     ],
 
     'products' => [
@@ -245,6 +252,20 @@ return [
         'default' => true,
         'groups' => ['compliance', 'risks'],
         'models' => [ComplianceObligation::class, Risk::class],
+    ],
+
+    'recruitment' => [
+        'label' => 'Recruitment',
+        'description' => 'Vacancies, applications, interviews and offers — from advert to employee.',
+        'icon' => 'users',
+        // Off by default: most businesses on this product hire once a year by
+        // word of mouth, not through a pipeline. Switching it off also takes
+        // the public application pages down — an advert for a business that
+        // has turned hiring off must 404, not collect CVs into a void.
+        'default' => false,
+        'requires' => ['hr'],
+        'groups' => ['recruitment'],
+        'models' => [Vacancy::class, JobApplication::class, JobOffer::class],
     ],
 
     'payables' => [

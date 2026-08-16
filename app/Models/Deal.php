@@ -8,6 +8,7 @@ use Illuminate\Database\Eloquent\Concerns\HasUlids;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\MorphMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
 /**
@@ -38,12 +39,28 @@ class Deal extends Model
 
     public const CLOSED_STAGES = ['won', 'lost'];
 
+    /**
+     * How likely a deal at each stage is to close, in percent, for the
+     * weighted forecast. Defaults a business can override per deal via the
+     * `probability` column; kept on the stage rather than in a settings table
+     * because five numbers do not need a screen, and because the forecast must
+     * mean the same thing on every install to be comparable.
+     */
+    public const STAGE_PROBABILITIES = [
+        'lead' => 10,
+        'qualified' => 30,
+        'proposal' => 60,
+        'won' => 100,
+        'lost' => 0,
+    ];
+
     protected $guarded = ['id'];
 
     protected function casts(): array
     {
         return [
             'value' => 'decimal:2',
+            'probability' => 'integer',
             'expected_close_on' => 'date',
             'closed_at' => 'datetime',
         ];
@@ -62,6 +79,21 @@ class Deal extends Model
     public function document(): BelongsTo
     {
         return $this->belongsTo(Document::class);
+    }
+
+    /** Calls, meetings, notes and tasks — the planned side, not the audit trail. */
+    public function activities(): MorphMany
+    {
+        return $this->morphMany(CrmActivity::class, 'subject')->latest();
+    }
+
+    /**
+     * The chance this closes, in percent: the per-deal override where somebody
+     * set one, the stage default everywhere else.
+     */
+    public function winProbability(): int
+    {
+        return $this->probability ?? self::STAGE_PROBABILITIES[$this->stage] ?? 0;
     }
 
     public function isOpen(): bool

@@ -204,6 +204,28 @@ class ProcurementRequisitionTest extends TestCase
         $this->assertTrue($requisition->fresh()->isAwaitingApproval());
     }
 
+    /**
+     * A workflow whose every step is skipped finishes approved INSIDE
+     * start() — the listener writes "approved" before submit() returns. The
+     * submitted stamp therefore goes on before the engine starts; written
+     * after, it overwrote the verdict, and a requisition the engine
+     * considered decided sat looking as though nobody had answered.
+     */
+    public function test_a_requisition_under_every_threshold_ends_up_marked_approved(): void
+    {
+        // One step that only applies above a figure this order stays under.
+        $workflow = $this->workflow([[
+            'conditions' => [['field' => 'estimated_total', 'operator' => '>', 'value' => 100_000_000]],
+        ]]);
+
+        $requisition = $this->requisition();
+        $instance = $this->requisitions()->submit($requisition, $workflow, $this->owner);
+
+        $this->assertSame('approved', $instance->status, 'Every step skipped: the engine is done.');
+        $this->assertSame('approved', $requisition->fresh()->status, 'And the record must say so.');
+        $this->assertNotNull($requisition->fresh()->submitted_at, 'It was still genuinely submitted.');
+    }
+
     public function test_the_service_has_no_approval_method_of_its_own(): void
     {
         $methods = collect((new ReflectionClass(Requisitions::class))->getMethods())

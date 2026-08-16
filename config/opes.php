@@ -63,6 +63,7 @@ return [
         ['key' => 'customers', 'label' => 'Customers', 'icon' => 'user', 'route' => 'customers', 'primary' => true, 'ability' => 'customers.view'],
         ['key' => 'business', 'label' => 'Business', 'icon' => 'briefcase', 'route' => 'business', 'primary' => true, 'ability' => 'business.view'],
         ['key' => 'deals', 'label' => 'Pipeline', 'icon' => 'trending-up', 'route' => 'deals', 'ability' => 'deals.view'],
+        ['key' => 'leads', 'label' => 'Leads', 'icon' => 'trending-up', 'route' => 'leads', 'ability' => 'deals.view'],
         ['key' => 'products', 'label' => 'Products', 'icon' => 'cube', 'route' => 'products', 'ability' => 'products.view'],
         ['key' => 'papers', 'label' => 'Documents', 'icon' => 'document', 'route' => 'papers', 'ability' => 'papers.view'],
         ['key' => 'projects', 'label' => 'Projects', 'icon' => 'briefcase', 'route' => 'projects', 'ability' => 'projects.view'],
@@ -78,6 +79,7 @@ return [
         ['key' => 'partners', 'label' => 'Clients', 'icon' => 'printer', 'route' => 'partners.clients', 'ability' => 'partners.view'],
         ['key' => 'partner-earnings', 'label' => 'Earnings', 'icon' => 'banknotes', 'route' => 'partners.earnings', 'ability' => 'partners.view'],
         ['key' => 'reports', 'label' => 'Reports', 'icon' => 'chart-bar', 'route' => 'reports', 'ability' => 'reports.view'],
+        ['key' => 'executive', 'label' => 'Executive view', 'icon' => 'chart-bar', 'route' => 'reports.executive', 'ability' => 'reports.view'],
         ['key' => 'accounting', 'label' => 'Accounting', 'icon' => 'wallet', 'route' => 'accounting', 'ability' => 'accounting.view'],
         ['key' => 'payments', 'label' => 'Payments', 'icon' => 'credit-card', 'route' => 'payments', 'ability' => 'payments.view'],
         ['key' => 'assets', 'label' => 'Assets', 'icon' => 'briefcase', 'route' => 'assets', 'ability' => 'assets.view'],
@@ -97,6 +99,7 @@ return [
         ['key' => 'payroll', 'label' => 'Payroll', 'icon' => 'wallet', 'route' => 'payroll', 'ability' => 'payroll.view'],
         ['key' => 'positions', 'label' => 'Positions', 'icon' => 'users', 'route' => 'business.positions', 'ability' => 'positions.view'],
         ['key' => 'attendance', 'label' => 'Attendance', 'icon' => 'calendar', 'route' => 'hr.attendance', 'ability' => 'attendance.view'],
+        ['key' => 'recruitment', 'label' => 'Recruitment', 'icon' => 'users', 'route' => 'recruitment', 'ability' => 'recruitment.view'],
         // Ungated, like My actions: everybody has their own review to sign,
         // whatever else they may or may not see.
         ['key' => 'reviews', 'label' => 'Reviews', 'icon' => 'clipboard', 'route' => 'hr.reviews'],
@@ -109,6 +112,7 @@ return [
         // holds the permission it describes explains nothing to anybody.
         ['key' => 'actions', 'label' => 'My actions', 'icon' => 'check-circle', 'route' => 'actions'],
         ['key' => 'guides', 'label' => 'Guides', 'icon' => 'academic-cap', 'route' => 'guides'],
+        ['key' => 'workflows', 'label' => 'Approval rules', 'icon' => 'check-circle', 'route' => 'workflows', 'ability' => 'workflows.view'],
         ['key' => 'settings', 'label' => 'Settings', 'icon' => 'cog', 'route' => 'settings'],
         ['key' => 'help', 'label' => 'Help & Support', 'icon' => 'help', 'route' => 'help'],
     ],

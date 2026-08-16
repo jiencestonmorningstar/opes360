@@ -220,8 +220,16 @@
                                 {{ $ticket->reference }}
                             </a>
                             <span class="block text-[13px] text-muted">{{ $ticket->subject }}</span>
+                            @if ($ticket->channel === 'walk_in')
+                                {{-- The customer is standing in the building; their self-rated
+                                     urgency was capped at High on the way in, so raising to
+                                     Urgent is a call only this desk makes. --}}
+                                <span class="mt-1 inline-block rounded-full border border-border px-2 py-0.5 text-[11.5px] font-semibold uppercase tracking-wide text-ink-2">
+                                    Walked in
+                                </span>
+                            @endif
                         </td>
-                        <td class="px-4 py-3 text-ink-2">{{ $ticket->contact?->name ?? '—' }}</td>
+                        <td class="px-4 py-3 text-ink-2">{{ $ticket->contact?->name ?? $ticket->visitor_name ?? '—' }}</td>
                         <td class="px-4 py-3 text-ink-2">{{ $ticket->priorityLabel() }}</td>
                         <td class="px-4 py-3 text-ink-2">{{ $ticket->state()['label'] }}</td>
                         <td class="px-4 py-3 {{ $toneClass[$sla['tone']] }}">{{ $sla['label'] }}</td>

@@ -6,6 +6,7 @@ use App\Models\Company;
 use App\Models\ComplianceFiling;
 use App\Models\Contract;
 use App\Models\ExpenseClaim;
+use App\Models\JobOffer;
 use App\Models\PurchaseRequisition;
 use App\Models\ServiceJob;
 use App\Models\Workflow;
@@ -110,6 +111,12 @@ class DefaultWorkflows
             // Work carried out at a customer's site, before it is billed.
             ServiceJob::class => [
                 'name' => 'Service visits',
+                'step' => 'Owner approves',
+            ],
+            // An offer letter commits a salary every month from now on. No
+            // threshold: there is no such thing as a wage too small to sign.
+            JobOffer::class => [
+                'name' => 'Job offers',
                 'step' => 'Owner approves',
             ],
         ];

@@ -45,6 +45,9 @@ class TicketDesk
                 Arr::only($attributes, [
                     'contact_id', 'subject', 'description', 'channel', 'category',
                     'department_id', 'fixed_asset_id', 'project_id', 'assignee_id',
+                    // Who walked in, when the phone number matched no contact —
+                    // see the walk-in triage page. Null on every other channel.
+                    'visitor_name', 'visitor_phone',
                 ]),
                 [
                     'reference' => $attributes['reference'] ?? $this->numbers->nextTicket(),

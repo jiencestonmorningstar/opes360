@@ -49,6 +49,15 @@ class Permissions
         // Employees for the same reason: a job outlives whoever holds it.
         'Positions' => ['view', 'manage'],
         /*
+         * Hiring. `interview` stands alone so a panel member can score the
+         * candidates in front of them without sight of the whole pipeline —
+         * most interviewers should not know what the other applicants asked
+         * for. `offer` is separate from `manage` because an offer is the
+         * money-shaped act: moving somebody between stages costs nothing,
+         * an offer letter commits a salary.
+         */
+        'Recruitment' => ['view', 'manage', 'interview', 'offer'],
+        /*
          * `record` is deliberately not implied by `view`. Seeing that a team
          * turned up is a supervisor's business; writing what hours somebody
          * worked is the input to a wage, and the two are not the same trust.

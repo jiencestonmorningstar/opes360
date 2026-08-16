@@ -26,6 +26,7 @@ use App\Models\FiscalPeriod;
 use App\Models\FixedAsset;
 use App\Models\Item;
 use App\Models\JournalEntry;
+use App\Models\Lead;
 use App\Models\LeaveRequest;
 use App\Models\LedgerAccount;
 use App\Models\Payment;
@@ -195,7 +196,7 @@ class AppServiceProvider extends ServiceProvider
             FixedAsset::class, AssetTransfer::class,
             PurchaseRequisition::class, Rfq::class, RfqSupplier::class,
             Contract::class,
-            Deal::class, Project::class,
+            Deal::class, Lead::class, Project::class,
             BusinessDocumentShare::class, Device::class,
         ] as $model) {
             $model::observe(AuditObserver::class);

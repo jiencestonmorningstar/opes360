@@ -296,9 +296,12 @@ class Dashboard extends Component
          * TTC, because "what did we spend" is the amount that left the
          * account, not the part of it that was not tax.
          */
+        // Instants, not date strings: the column is a datetime, and a string
+        // upper bound of "…-31" reads as midnight — dropping every bill
+        // entered on the last day of the month, which is invoice day.
         $expenses = (float) Expense::query()
             ->where('status', '!=', 'void')
-            ->whereBetween('issue_date', [$now->startOfMonth()->toDateString(), $now->endOfMonth()->toDateString()])
+            ->whereBetween('issue_date', [$now->copy()->startOfMonth(), $now->copy()->endOfMonth()])
             ->sum('total');
 
         return [

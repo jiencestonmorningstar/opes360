@@ -15,6 +15,8 @@ use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\SignatureController;
 use App\Http\Controllers\SyncController;
 use App\Http\Controllers\TicketController;
+use App\Http\Controllers\TriagePublicController;
+use App\Http\Controllers\VacancyPublicController;
 use App\Http\Controllers\VerificationController;
 use App\Livewire\Accounting\Declarations as AccountingDeclarations;
 use App\Livewire\Accounting\Index as AccountingIndex;
@@ -57,6 +59,7 @@ use App\Livewire\Hr\Attendance as HrAttendance;
 use App\Livewire\Hr\Reviews as HrReviews;
 use App\Livewire\Imports\Index as ImportsIndex;
 use App\Livewire\Invitations\Accept as InvitationAccept;
+use App\Livewire\Leads\Index as LeadsIndex;
 use App\Livewire\Onboarding\Register;
 use App\Livewire\Papers\Compose as PapersCompose;
 use App\Livewire\Papers\Index as PapersIndex;
@@ -75,8 +78,11 @@ use App\Livewire\Procurement\Sourcing as ProcurementSourcing;
 use App\Livewire\Products\Form as ProductForm;
 use App\Livewire\Products\Index as ProductsIndex;
 use App\Livewire\Projects\Index as ProjectsIndex;
+use App\Livewire\Recruitment\Index as RecruitmentIndex;
+use App\Livewire\Recruitment\Show as RecruitmentShow;
 use App\Livewire\Reports\Aging as ReportsAging;
 use App\Livewire\Reports\Collections as ReportsCollections;
+use App\Livewire\Reports\Executive as ReportsExecutive;
 use App\Livewire\Reports\Index as ReportsIndex;
 use App\Livewire\Reports\Statement as ReportsStatement;
 use App\Livewire\Risks\Index as RisksIndex;
@@ -98,7 +104,9 @@ use App\Livewire\Team\Index as TeamIndex;
 use App\Livewire\Team\Show as TeamShow;
 use App\Livewire\Vip\Members as VipMembers;
 use App\Livewire\Vip\Tiers as VipTiers;
+use App\Livewire\Workflow\Edit as WorkflowAdminEdit;
 use App\Livewire\Workflow\Inbox as WorkflowInbox;
+use App\Livewire\Workflow\Index as WorkflowAdminIndex;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Route;
@@ -332,6 +340,24 @@ Route::middleware('auth')->group(function () {
     Route::get('/payables/reconcile', PayablesReconcile::class)
         ->middleware('can:payables.reconcile')->name('payables.reconcile');
 
+    /*
+     * The approval rules themselves. `workflows.view` on the list so a
+     * manager can read what the rules are; rewriting one is gated inside
+     * the components on `workflows.manage`, which Permissions.php equates
+     * with being able to authorise the spend.
+     */
+    // The front half of the pipeline: enquiries that are not yet deals.
+    Route::get('/leads', LeadsIndex::class)
+        ->middleware('can:deals.view')->name('leads');
+
+    Route::get('/reports/executive', ReportsExecutive::class)
+        ->middleware('can:reports.view')->name('reports.executive');
+
+    Route::get('/settings/workflows', WorkflowAdminIndex::class)
+        ->middleware('can:workflows.view')->name('workflows');
+    Route::get('/settings/workflows/{workflow}', WorkflowAdminEdit::class)
+        ->middleware('can:workflows.view')->name('workflows.edit');
+
     Route::get('/procurement/requisitions', ProcurementRequisitions::class)
         ->middleware('can:procurement.requisition-view')->name('procurement.requisitions');
     Route::get('/procurement/sourcing', ProcurementSourcing::class)
@@ -353,6 +379,11 @@ Route::middleware('auth')->group(function () {
      * anybody else's.
      */
     Route::get('/hr/reviews', HrReviews::class)->name('hr.reviews');
+
+    Route::get('/hr/recruitment', RecruitmentIndex::class)
+        ->middleware('can:recruitment.view')->name('recruitment');
+    Route::get('/hr/recruitment/{application}', RecruitmentShow::class)
+        ->middleware('can:recruitment.view')->name('recruitment.show');
 
     Route::get('/compliance', ComplianceIndex::class)
         ->middleware('can:compliance.view')->name('compliance');
@@ -468,6 +499,32 @@ Route::middleware('throttle:60,1')->group(function () {
     Route::get('/v/{token}', [VerificationController::class, 'show'])->name('verification.show');
     Route::get('/v/{token}/qr.svg', [VerificationController::class, 'qr'])->name('verification.qr');
 });
+
+/*
+ * A public job advert — the applicant holds the vacancy's share token, not a
+ * login. Same cross-tenant shape as verification above. The POST is throttled
+ * harder than the page: reading an advert is browsing, applying with a file
+ * upload is not.
+ */
+Route::middleware('throttle:60,1')->group(function () {
+    Route::get('/jobs/{token}', [VacancyPublicController::class, 'show'])->name('vacancy.public');
+    Route::get('/jobs/{token}/thanks', [VacancyPublicController::class, 'thanks'])->name('vacancy.public.thanks');
+});
+Route::post('/jobs/{token}', [VacancyPublicController::class, 'submit'])
+    ->middleware('throttle:10,1')->name('vacancy.public.submit');
+
+/*
+ * Walk-in triage — the company's own printed QR, scanned at the door. A
+ * customer describes their problem standing in the doorway and gets a queue
+ * number; the ticket lands in the ordinary service desk with the SLA running.
+ * The POST is throttled harder than the page for the same reason as jobs.
+ */
+Route::middleware('throttle:60,1')->group(function () {
+    Route::get('/triage/{token}', [TriagePublicController::class, 'show'])->name('triage.show');
+    Route::get('/triage/{token}/done', [TriagePublicController::class, 'done'])->name('triage.done');
+});
+Route::post('/triage/{token}', [TriagePublicController::class, 'submit'])
+    ->middleware('throttle:6,1')->name('triage.submit');
 
 /*
  * The public signing link — a signer holds this token, not a login. Same

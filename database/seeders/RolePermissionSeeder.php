@@ -71,6 +71,10 @@ class RolePermissionSeeder extends Seeder
             'Positions' => ['view', 'manage'],
             'Attendance' => ['view', 'record'],
             'Reviews' => ['view', 'manage'],
+            // Runs the hiring day to day and sits on panels. Not `offer`:
+            // an offer letter commits a salary, and committing the business
+            // to a wage bill stays with the owner.
+            'Recruitment' => ['view', 'manage', 'interview'],
             // Writes and renews agreements. Not `terminate`: ending a contract
             // early usually costs the business something, and that is a
             // decision the owner should be the one making.

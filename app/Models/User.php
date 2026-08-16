@@ -22,6 +22,7 @@ class User extends Authenticatable implements TwoFactorAuthenticatable
 
     /** @use HasFactory<UserFactory> */
     use HasFactory;
+
     use HasTwoFactorAuthentication;
     use Notifiable;
     use SoftDeletes;

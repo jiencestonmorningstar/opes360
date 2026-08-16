@@ -23,7 +23,14 @@ use Illuminate\Database\Eloquent\Model;
  */
 class WorkflowConditions
 {
-    protected const OPERATORS = ['>', '>=', '<', '<=', '=', '!='];
+    /**
+     * The whole vocabulary, and public so the screen that writes a condition
+     * offers exactly what this class can evaluate. A second list kept in the
+     * admin form would drift, and the drift would be invisible: an operator
+     * this does not recognise fails closed, so the step is simply skipped and
+     * the approval nobody expected to lose is never missed.
+     */
+    public const OPERATORS = ['>', '>=', '<', '<=', '=', '!='];
 
     public function passes(WorkflowStep $step, ?Model $subject): bool
     {
