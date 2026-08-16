@@ -55,6 +55,9 @@ class RolePermissionSeeder extends Seeder
             // Keeps the org chart, which is the same job as keeping the staff
             // file it labels.
             'Departments' => ['view', 'manage'],
+            // Sees what the approval rules are without being able to rewrite
+            // them — rewriting one is the same as authorising the spend.
+            'Workflows' => ['view'],
             'Users' => ['view'],
             'Devices' => ['view'],
             'Settings' => ['view'],
@@ -89,6 +92,7 @@ class RolePermissionSeeder extends Seeder
             // Reads the org chart — cost allocation and payroll reporting both
             // run on it — without being able to redraw it.
             'Departments' => ['view'],
+            'Workflows' => ['view'],
             'Settings' => ['view'],
         ]],
         'sales-officer' => ['name' => 'Sales Officer', 'level' => 5, 'grants' => [
@@ -144,6 +148,7 @@ class RolePermissionSeeder extends Seeder
             'Loyalty' => ['view'],
             'Reports' => ['view'],
             'Departments' => ['view'],
+            'Workflows' => ['view'],
         ]],
     ];
 

@@ -136,18 +136,25 @@ that payload.
 
 ## 5. What is next
 
-**Read `docs/GAP-ANALYSIS.md` first.** It measures the product against the
-master brief (`docs/superpowers/specs/2026-08-16-documents-master-spec.md`,
-received 2026-08-16) and is more current than this section. Three findings
-change the order of work:
+**Read `docs/GAP-ANALYSIS.md` and
+`docs/superpowers/plans/2026-08-16-build-everything-roadmap.md` first.** They
+measure the product against the master brief
+(`docs/superpowers/specs/2026-08-16-documents-master-spec.md`, received
+2026-08-16) and sequence everything still to build. Both are more current than
+this section.
 
-- There is **no workflow/automation engine**, and the brief forbids a
-  Documents-only approval engine. Documents §17–19 either wait for the platform
-  engine or ship something that will have to be undone.
-- **Projects do not exist at all** — a Tier-1 ERP gap that also blocks project
-  folders, relationships, dossiers and field binding in Documents.
-- **Departments are a free-text string** on `employees`, not an entity. Small
-  to promote, and it unblocks a disproportionate amount of the brief.
+Of the three findings that reordered the work on 2026-08-16, two are now done:
+
+- ~~No workflow/automation engine.~~ **Built.** One engine for the product —
+  see `docs/workflows.md`. Documents §17–19 can now consume it instead of
+  growing a fourth approval mechanism. What is still missing is the *trigger*
+  half of trigger→condition→action, and the admin screen for defining a
+  workflow (they are data today).
+- ~~Departments are a free-text string.~~ **Built** as an entity, nested and
+  archivable, with the old column backfilled and kept.
+- **Projects still do not exist at all** — a Tier-1 ERP gap that also blocks
+  project folders, relationships, dossiers and field binding in Documents.
+  Next on the roadmap.
 
 ### Documents (plan: `docs/superpowers/plans/2026-08-15-documents-core.md`)
 
@@ -202,6 +209,8 @@ than realtime; print-to-PDF kept. All recorded in the plan.
 | Path | What |
 |---|---|
 | `docs/GAP-ANALYSIS.md` | **Built / part-built / not built**, Documents and the whole ERP |
+| `docs/superpowers/plans/2026-08-16-build-everything-roadmap.md` | The sequenced plan for everything still missing |
+| `docs/workflows.md` | The approval engine: approver modes, quorum, conditions, delegation |
 | `docs/superpowers/specs/2026-08-16-documents-master-spec.md` | The authoritative Documents brief + ERP checklist |
 | `docs/API.md` | The whole API, 21 sections |
 | `docs/branding.md` | Token contract, the three roles, adding a token |

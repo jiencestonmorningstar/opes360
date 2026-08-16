@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\Api\AccountingController;
+use App\Http\Controllers\Api\ApprovalController;
 use App\Http\Controllers\Api\ContactController;
 use App\Http\Controllers\Api\DealController;
 use App\Http\Controllers\Api\DocumentController;
@@ -164,6 +165,13 @@ Route::prefix('v1')->group(function (): void {
             Route::get('webhooks/deliveries', [WebhookController::class, 'deliveries'])->name('api.v1.webhooks.deliveries');
             Route::get('webhooks/{webhook}', [WebhookController::class, 'show'])->name('api.v1.webhooks.show');
 
+            Route::prefix('approvals')->name('api.v1.approvals.')->group(function (): void {
+                // `mine` before `{approval}`, or the word "mine" is read as an id.
+                Route::get('mine', [ApprovalController::class, 'mine'])->name('mine');
+            });
+            Route::get('approvals', [ApprovalController::class, 'index'])->name('api.v1.approvals.index');
+            Route::get('approvals/{approval}', [ApprovalController::class, 'show'])->name('api.v1.approvals.show');
+
             Route::prefix('accounting')->name('api.v1.accounting.')->group(function (): void {
                 Route::get('accounts', [AccountingController::class, 'accounts'])->name('accounts');
                 Route::get('trial-balance', [AccountingController::class, 'trialBalance'])->name('trial-balance');
@@ -175,6 +183,15 @@ Route::prefix('v1')->group(function (): void {
 
         // ── Ordinary writes ──────────────────────────────────────────────
         Route::middleware('ability:write')->group(function (): void {
+            /*
+             * Acting on an approval carries no permission check of its own.
+             * Being asked IS the permission, and the engine refuses a decision
+             * from anybody without a pending assignment — a second gate here
+             * would lock out an approver the engine itself had just chosen.
+             */
+            Route::post('approvals/{approval}/decisions', [ApprovalController::class, 'decide'])
+                ->name('api.v1.approvals.decide');
+
             // Editing a tier changes what future sales get, never what a
             // member was already sold. Cancelling stops a benefit rather than
             // moving money, so it belongs here and not under `money`.

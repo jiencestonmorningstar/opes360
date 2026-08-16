@@ -21,6 +21,7 @@ use App\Livewire\Banking\Index as BankingIndex;
 use App\Livewire\Business\Artisans as BusinessArtisans;
 use App\Livewire\Business\Companies as BusinessCompanies;
 use App\Livewire\Business\Departments as BusinessDepartments;
+use App\Livewire\Workflow\Inbox as WorkflowInbox;
 use App\Livewire\Business\Edit as BusinessEdit;
 use App\Livewire\Business\Branding as BusinessBranding;
 use App\Livewire\Business\Logo as BusinessLogo;
@@ -222,6 +223,10 @@ Route::middleware('auth')->group(function () {
     Route::get('/business/logo/download', [PrintController::class, 'logo'])->middleware('can:business.manage-branding')->name('logo.download');
     Route::get('/business/stationery', Stationery::class)->middleware('can:business.manage-stationery')->name('stationery');
     Route::get('/business/departments', BusinessDepartments::class)->middleware('can:departments.view')->name('departments');
+    // No permission gate: being assigned IS the permission. A gate here would
+    // mean somebody the engine had just asked to approve an invoice could not
+    // open the page telling them so.
+    Route::get('/actions', WorkflowInbox::class)->name('actions');
     Route::get('/businesses', BusinessCompanies::class)->name('businesses');
     Route::get('/artisans', BusinessArtisans::class)->middleware('can:business.view')->name('artisans');
     Route::get('/stationery/print', [PrintController::class, 'stationery'])->middleware('can:business.manage-stationery')->name('stationery.print');

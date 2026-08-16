@@ -113,8 +113,30 @@ class DepartmentTest extends DepartmentTestCase
         $department = $this->department();
         $employee = $this->employee(['department_id' => $department->id]);
 
-        $this->assertTrue($employee->department->is($department));
+        $this->assertTrue($employee->departmentRecord->is($department));
         $this->assertTrue($department->employees->first()->is($employee));
+    }
+
+    /**
+     * Why the relation is not called `department`.
+     *
+     * Employees still carry a free-text `department` column — the API exposes
+     * it, payroll writes it onto payslips, the team screens edit it — and
+     * Eloquent resolves an attribute before it looks for a relation. Naming
+     * the relation `department` would silently return the typed string
+     * forever, with nothing erroring. This test exists so that nobody
+     * "tidies" the name back.
+     */
+    public function test_the_free_text_column_and_the_relation_are_different_things(): void
+    {
+        $department = $this->department(['name' => 'Finance']);
+        $employee = $this->employee([
+            'department' => 'whatever somebody typed',
+            'department_id' => $department->id,
+        ]);
+
+        $this->assertSame('whatever somebody typed', $employee->department);
+        $this->assertSame('Finance', $employee->departmentRecord->name);
     }
 
     /**

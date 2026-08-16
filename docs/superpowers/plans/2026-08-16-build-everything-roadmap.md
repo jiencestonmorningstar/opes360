@@ -152,10 +152,11 @@ From `docs/HANDOVER.md`, and non-negotiable:
 
 ## Progress
 
-- [x] 0.1 Documents permissions
-- [ ] 1.1 Departments
-- [ ] 1.2 Workflow & approval engine
-- [ ] 1.3 Domain event bus
+- [x] 0.1 Documents permissions — `papers.share`/`papers.manage`, restricted enforced in the policy
+- [x] 1.1 Departments — entity, nested, backfilled from the free-text column
+- [x] 1.2 Workflow & approval engine — `docs/workflows.md`. Automation triggers
+      and the admin screen are carved out into 1.3 and 4.6 respectively
+- [ ] 1.3 Domain event bus — and with it the trigger half of trigger→condition→action
 - [ ] 1.4 Projects
 - [ ] 2.1–2.22 Documents to completion
 - [ ] 3.1–3.10 Tier-1 ERP holes

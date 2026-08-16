@@ -1096,7 +1096,41 @@ Typography is not brandable either, and glass is applied only to menus and bars
 — never to a card showing a figure, because a total's legibility must not depend
 on what happens to be behind it.
 
-## 21. What is not here yet
+## 21. Approvals
+
+Workflows are defined in the product, not over the API — whoever can edit one
+can write themselves a path with no approver in it, and that is not something
+a token should be able to do. What the API exposes is the running state and
+the outcome.
+
+`GET /api/v1/approvals` — instances for the current company. Filter by
+`status` (`running`, `approved`, `rejected`, `changes_requested`, `stalled`,
+`cancelled`), by `subject_type`, or by `subject_id`.
+
+`GET /api/v1/approvals/{instance}` — one instance, with its decisions in
+order. Each decision carries the step name **as it was when the decision was
+made**, so renaming a workflow afterwards does not rewrite history.
+
+`GET /api/v1/approvals/mine` — what is waiting on the token's user. The same
+list `/actions` shows.
+
+`POST /api/v1/approvals/{instance}/decisions` — act on an assignment.
+
+```json
+{ "action": "approved", "comment": "Within budget." }
+```
+
+`action` is one of `approved`, `rejected`, `changes_requested`. The engine
+refuses a decision from anybody without a pending assignment on that instance:
+being asked is the permission, and there is no separate ability to grant.
+
+Not here, and deliberately: defining or editing a workflow, and delegating.
+Delegation names a colleague, which is a person-to-person act rather than an
+integration's.
+
+See `docs/workflows.md`.
+
+## 22. What is not here yet
 
 Every module now has an API. What remains absent is absent by choice, and each
 section above says why in its own place:

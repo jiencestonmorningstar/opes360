@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Models\Concerns\Approvable;
 use App\Models\Concerns\BelongsToCompany;
 use App\Support\Accounting\ChartOfAccounts;
 use Illuminate\Database\Eloquent\Concerns\HasUlids;
@@ -20,6 +21,7 @@ use Illuminate\Database\Eloquent\SoftDeletes;
  */
 class Expense extends Model
 {
+    use Approvable;
     use BelongsToCompany;
     use HasFactory;
     use HasUlids;
@@ -33,6 +35,12 @@ class Expense extends Model
     ];
 
     protected $guarded = ['id'];
+
+    /** Expenses record who entered them as `recorded_by`, not `created_by`. */
+    protected function workflowCreatorColumn(): string
+    {
+        return 'recorded_by';
+    }
 
     protected function casts(): array
     {

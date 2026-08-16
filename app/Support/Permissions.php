@@ -96,6 +96,16 @@ class Permissions
          */
         'Webhooks' => ['view', 'manage'],
         /*
+         * Who may define an approval path — not who may approve. Being asked
+         * to approve is itself the permission; requiring a second one would
+         * mean an approver the engine had just assigned could not act.
+         *
+         * `manage` stops at the Owner and the Administrator because whoever
+         * can edit a workflow can write themselves a path with no approver in
+         * it, which is the same thing as being able to spend the money.
+         */
+        'Workflows' => ['view', 'manage'],
+        /*
          * The org chart. Core rather than a module, and separate from
          * Employees because a department outlives the staff file: Documents
          * files by department and approval routing reads it, so a business

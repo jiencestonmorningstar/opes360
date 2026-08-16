@@ -127,7 +127,7 @@ visible, not silent):
 | 6 | Inventory / warehouse | **B** | Multi-location, movements, transfers, adjustments, stocktakes, reorder levels, valuation. **Missing: batch/lot tracking, serial numbers, expiry dates, stock reservations.** |
 | 7 | Sales & CRM | **B** | Full sales paperwork, deal pipeline with stages and closure rules, customer history, recurring invoices. **Missing: leads as a distinct entity, activity logging against a deal, sales forecasting.** |
 | 8 | Expenses | **B** | Expenses, categories, payments, void. **Missing: employee expense claims, reimbursement, cost-centre allocation.** |
-| 9 | HR | **B** | Employees, employment contracts, leave requests. **Missing: departments and positions as entities (both are free-text strings), attendance, performance, recruitment.** |
+| 9 | HR | **B** | Employees, employment contracts, leave requests. **Departments became an entity 2026-08-16** (nested, managed, archivable; the old free-text column is backfilled and kept). **Missing: positions as an entity, attendance, performance, recruitment.** |
 | 10 | Payroll | **A** | Runs, salary components, allowances, deductions, payslips, approval, posting to the books. |
 | 11 | Projects | **C** | **Nothing.** No project, task, milestone, timesheet or budget entity anywhere. This is the largest Tier-1 hole and it blocks Documents §9/§10 as well. |
 | 12 | Fixed assets | **B** | Register, acquisition, depreciation, disposal. **Missing: transfers, maintenance, asset locations.** |
@@ -143,7 +143,7 @@ visible, not silent):
 | 17 | Contracts management | **C** | Nothing. Should be built **on** Documents, per the brief. |
 | 18 | Compliance & risk | **C** | Nothing. |
 | 19 | BI & analytics | **B** | Reports and aging exist; no executive dashboard, KPI set, profitability or forecasting. |
-| 20 | Workflow & automation engine | **C** | **Nothing — and this is the structural gap.** There is no trigger→condition→action engine. Approvals today are per-module (`DocumentApproval` is sales-specific). Building the Documents workflow separately would create exactly the duplication the brief forbids. |
+| 20 | Workflow & approval engine | **A** | **Built 2026-08-16.** Workflows, ordered steps, instances, assignments and immutable decisions. Sequential, parallel and numeric quorum; role/department/user/owner/manager/creator approver modes resolved at assignment time; amount-based and field conditions as data; delegation with provenance; reject vs. changes-requested kept distinct; a step with no possible approver stalls rather than passing. `/actions` is the cross-module inbox. See `docs/workflows.md`. **Still missing: trigger→action automation** (the condition and action halves exist; nothing yet fires a workflow off an event) **and the workflow admin screen** — workflows are defined in data today. `document_approvals` remains as the sales-specific mechanism, untouched on purpose. |
 | 21 | Notifications | **B** | 20 notification classes, mail and in-app. **Missing: SMS, WhatsApp, user-configurable rules, escalations.** |
 | 22 | Enterprise Documents | **B** | Part 1 above. |
 | 23 | E-signature | **C** | Nothing. Belongs inside Documents. |

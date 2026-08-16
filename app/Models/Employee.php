@@ -60,13 +60,21 @@ class Employee extends Model
     /**
      * The org unit, since departments became an entity.
      *
-     * The older free-text `department` column is still here and still holds
-     * whatever the business typed. This is the one to read; that one is the
-     * record of what they wrote before there was a list to choose from.
+     * Named `departmentRecord` rather than `department` on purpose, and it is
+     * not a style choice. This model still carries a free-text `department`
+     * column — the API exposes it, payroll writes it onto payslips and the
+     * team screens edit it — and Eloquent resolves `$employee->department` to
+     * an existing attribute before it ever looks for a relation. A relation
+     * called `department` would therefore be silently shadowed: it would
+     * return the typed string, never the Department, and nothing would error.
+     *
+     * Renaming the column instead would break the public API contract. When
+     * the team screens move to picking from the list and the string column is
+     * finally dropped, this can take its natural name.
      */
-    public function department(): BelongsTo
+    public function departmentRecord(): BelongsTo
     {
-        return $this->belongsTo(Department::class);
+        return $this->belongsTo(Department::class, 'department_id');
     }
 
     public function contracts(): HasMany
