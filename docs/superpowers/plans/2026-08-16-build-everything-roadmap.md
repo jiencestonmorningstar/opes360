@@ -79,7 +79,7 @@ Everything in Part 1 of the gap analysis not blocked on absent infrastructure.
 
 | # | Item | Gap-analysis line |
 |---|---|---|
-| 3.1 | Fiscal periods, period closing, cost centres, cash-flow statement | #1 |
+| 3.1 | ~~Fiscal periods, period closing, cost centres, cash-flow statement~~ **Done** — closing enforced at `Ledger::post()`, the single path everything writes through; opt-in so existing businesses are unaffected; cash flow by the direct method, unclassified rather than guessed | #1 |
 | 3.2 | Account transfers, cash forecasting | #2 |
 | 3.3 | Debit notes, customer statements, collections workspace | #3 |
 | 3.4 | AP payment scheduling, supplier statements, supplier reconciliation | #4 |
@@ -105,26 +105,33 @@ Everything in Part 1 of the gap analysis not blocked on absent infrastructure.
 | 4.9 | Supply chain — demand planning, replenishment, supplier performance (#14) |
 | 4.10 | Manufacturing — BOM, work orders, MRP, production costing (#13) |
 
-## Phase 5 — blocked on a decision, not on effort
+## Phase 5 — infrastructure-dependent
 
-These cannot be built without choosing and paying for infrastructure. Each is
-a question for the product owner, not a task:
+**Decided 2026-08-16 by the product owner.** Two answers settled almost all
+of this:
 
-| Item | The decision needed |
+1. **A VPS is available**, not only Namecheap shared hosting. Daemons,
+   binaries and long-running processes are all permitted. (`docs/DEPLOY-NAMECHEAP.md`
+   remains accurate for the shared-hosting path, which cannot run any of them —
+   anything built here must degrade gracefully there or be documented as
+   VPS-only.)
+2. **No budget for paid cloud APIs.** Anything requiring a vendor account and
+   a monthly bill is out of scope.
+
+| Item | Status after the decision |
 |---|---|
-| Rich document editor (§6) | Which editor — TipTap/ProseMirror, CKEditor, or a Livewire-native one |
-| Server-side PDF (§24) | Which engine — Browsershot/Chromium, Gotenberg, or stay with `window.print()` |
-| DOCX import/export (§23–24) | Whether at all. Weakest value-per-effort item in the brief |
-| Preview tier (§22) | Conversion service for office formats |
-| Content search index (§26) | Meilisearch, Typesense, or MySQL full-text |
-| OCR (§27) | Tesseract self-hosted, or a cloud OCR API |
-| AI assistant and AI search (§41–42) | Provider and budget; permission-filtered retrieval design |
-| Translation (§43) | Provider |
-| Realtime co-editing (§14, §16) | Websocket tier, plus OT/CRDT. **Recommended against**; locking (2.3) covers most of the value |
-| Malware scanning (§61) | ClamAV or a cloud scanner |
+| Content search index (§26) | **Unblocked** — Meilisearch or Typesense now possible; MySQL full-text remains the zero-dependency fallback for shared hosting |
+| Server-side PDF (§24) | **Unblocked** — Browsershot/Chromium viable on the VPS. Also unblocks combined-PDF bundles (§39), the one feature so far shipped as a deliberate half |
+| Preview tier (§22) | **Unblocked** — a conversion service can run on the VPS |
+| Rich document editor (§6) | **Unblocked** — TipTap is client-side; it never needed a server decision |
+| DOCX import/export (§23–24) | **Unblocked** technically (PhpWord is pure PHP), but still the weakest value-per-effort item in the brief. **Recommend skipping** |
+| OCR (§27) | **Unblocked** — Tesseract is self-hosted and free, so the "no paid APIs" answer does not exclude it |
+| Malware scanning (§61) | **Unblocked** — ClamAV is self-hosted and free, same reasoning |
+| AI assistant and AI search (§41–42) | **Out of scope** — needs a paid provider |
+| Translation (§43) | **Out of scope** — needs a paid provider |
+| Realtime co-editing (§14, §16) | **Recommended against, and that is unchanged by the VPS.** The objection was never hosting: it is months of OT/CRDT work for something most tenants will never have two people doing simultaneously, on an offline-first PWA. Locking (2.3) already covers the real case |
 
-Phase 5 is deliberately last and deliberately unstarted. Everything above it is
-buildable today with no new dependency.
+Nothing in Phases 2–4 depends on any of this. Phase 5 stays last.
 
 ---
 

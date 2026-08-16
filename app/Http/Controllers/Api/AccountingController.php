@@ -69,6 +69,15 @@ class AccountingController extends ApiController
         return response()->json(['data' => $this->books->balanceSheet($this->company(), $from, $to)]);
     }
 
+    public function cashFlow(Request $request): JsonResponse
+    {
+        $this->authorize('accounting.view');
+
+        [$from, $to] = $this->period($request);
+
+        return response()->json(['data' => $this->books->cashFlow($this->company(), $from, $to)]);
+    }
+
     public function journal(Request $request): JsonResponse
     {
         $this->authorize('accounting.view');

@@ -68,6 +68,13 @@ class Guides
             'audience' => 'admin',
         ],
 
+        'closing-the-books' => [
+            'title' => 'Closing the books',
+            'group' => 'Your business',
+            'summary' => 'Financial years, closing a month, cost centres, and where the cash went.',
+            'audience' => 'admin',
+        ],
+
         'dossiers-and-packages' => [
             'title' => 'Dossiers, packages and checklists',
             'group' => 'Documents',

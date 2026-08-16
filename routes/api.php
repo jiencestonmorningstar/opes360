@@ -207,6 +207,7 @@ Route::prefix('v1')->group(function (): void {
                 Route::get('trial-balance', [AccountingController::class, 'trialBalance'])->name('trial-balance');
                 Route::get('income-statement', [AccountingController::class, 'incomeStatement'])->name('income-statement');
                 Route::get('balance-sheet', [AccountingController::class, 'balanceSheet'])->name('balance-sheet');
+                Route::get('cash-flow', [AccountingController::class, 'cashFlow'])->name('cash-flow');
                 Route::get('journal', [AccountingController::class, 'journal'])->name('journal');
             });
         });

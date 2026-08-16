@@ -214,6 +214,84 @@ class Books
     }
 
     /**
+     * Where the cash actually went — ERP checklist #1's last missing piece.
+     *
+     * Direct method, not indirect: it reads the movements on the cash and
+     * bank accounts themselves and classifies them by the journal that moved
+     * them, rather than reconstructing cash flow backwards from profit and
+     * working-capital changes. That is the version a small business owner
+     * can check against their own bank statement, which is the only version
+     * that gets checked at all.
+     *
+     * Classification follows the journals a SYSCOHADA business already
+     * keeps: sales and purchases are operating, everything in "opérations
+     * diverses" is unclassified rather than guessed at. Guessing whether an
+     * OD entry was investing or financing would produce a statement that
+     * looks authoritative and is not.
+     *
+     * @return array{opening: float, closing: float, net: float, operating: float, unclassified: float, movements: Collection<int, array<string, mixed>>}
+     */
+    public function cashFlow(Company $company, ?string $from = null, ?string $to = null): array
+    {
+        $cashAccountIds = LedgerAccount::query()
+            ->withoutGlobalScopes()
+            ->where('company_id', $company->id)
+            ->whereIn('number', [
+                ChartOfAccounts::ROLES['cash'][0],
+                ChartOfAccounts::ROLES['bank'][0],
+            ])
+            ->pluck('id');
+
+        if ($cashAccountIds->isEmpty()) {
+            return [
+                'opening' => 0.0, 'closing' => 0.0, 'net' => 0.0,
+                'operating' => 0.0, 'unclassified' => 0.0,
+                'movements' => collect(),
+            ];
+        }
+
+        // Everything before the window is the opening balance; a cash-flow
+        // statement that started from zero every month would be arithmetic
+        // rather than a statement.
+        $opening = $from === null ? 0.0 : (float) JournalLine::query()
+            ->whereIn('ledger_account_id', $cashAccountIds)
+            ->whereHas('entry', fn ($q) => $q->whereDate('entry_date', '<', $from))
+            ->selectRaw('COALESCE(SUM(debit) - SUM(credit), 0) as net')
+            ->value('net');
+
+        $lines = JournalLine::query()
+            ->whereIn('ledger_account_id', $cashAccountIds)
+            ->with('entry')
+            ->whereHas('entry', function ($q) use ($from, $to) {
+                $from !== null && $q->whereDate('entry_date', '>=', $from);
+                $to !== null && $q->whereDate('entry_date', '<=', $to);
+            })
+            ->get();
+
+        $movements = $lines->map(fn (JournalLine $line) => [
+            'date' => $line->entry->entry_date,
+            'journal' => $line->entry->journal,
+            'narration' => $line->entry->narration,
+            'amount' => round((float) $line->debit - (float) $line->credit, 2),
+            'activity' => match ($line->entry->journal) {
+                'VE', 'AC' => 'operating',
+                default => 'unclassified',
+            },
+        ])->sortBy('date')->values();
+
+        $net = round($movements->sum('amount'), 2);
+
+        return [
+            'opening' => round($opening, 2),
+            'closing' => round($opening + $net, 2),
+            'net' => $net,
+            'operating' => round($movements->where('activity', 'operating')->sum('amount'), 2),
+            'unclassified' => round($movements->where('activity', 'unclassified')->sum('amount'), 2),
+            'movements' => $movements,
+        ];
+    }
+
+    /**
      * The journal listing — entries in date order, optionally one journal.
      *
      * @return Collection<int, JournalEntry>

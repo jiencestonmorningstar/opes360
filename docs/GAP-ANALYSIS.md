@@ -123,7 +123,7 @@ visible, not silent):
 
 | # | Domain | Verdict | What is actually there / missing |
 |---|---|---|---|
-| 1 | Accounting & GL | **B** | Chart of accounts, journal entries, GL, trial balance, income statement, balance sheet, tax declarations, multi-currency, multi-company all exist (`Services/Accounting/Books.php`). **Missing: cash-flow statement, fiscal periods, period closing, cost centres.** |
+| 1 | Accounting & GL | **A** | Chart of accounts, journal entries, GL, trial balance, income statement, balance sheet, tax declarations, multi-currency, multi-company (`Services/Accounting/Books.php`). **Completed 2026-08-16:** fiscal years and periods, period closing enforced at `Ledger::post()` (the single posting path, so the rule cannot be bypassed), reopening as a deliberate reversible act, cost centres on journal lines, and a direct-method cash-flow statement that classifies by journal and reports "other operations" as unclassified rather than guessing. All opt-in: a business that defines no periods is unrestricted. |
 | 2 | Banking & treasury | **B** | Bank and cash accounts, statement import, reconciliation, payment matching. **Missing: transfers between accounts, cash forecasting.** |
 | 3 | Accounts receivable | **B** | Balances, 30-day aging with drill-down and CSV, allocation, credit notes, dunning at 7/30/60 days. **Missing: debit notes, customer statements, a collections workspace.** |
 | 4 | Accounts payable | **B** | Supplier bills via expenses, AP aging, allocation. **Missing: payment scheduling, supplier statements, supplier reconciliation.** |

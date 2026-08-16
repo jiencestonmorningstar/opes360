@@ -432,9 +432,22 @@ keep having an answer. That is why there is no delete route.
 ## 12. The books
 
 `GET /api/v1/accounting/accounts` · `trial-balance` · `income-statement` ·
-`balance-sheet` · `journal`
+`balance-sheet` · `cash-flow` · `journal`
 
 All take `from` and `to`; `journal` also takes `journal` (the journal code).
+
+`cash-flow` is the **direct** method: it reads the movements on the cash and
+bank accounts themselves rather than reconstructing them backwards from
+profit, so a figure can be checked line by line against a bank statement.
+Movements are classified by the journal that made them — sales and purchases
+are `operating`; anything posted through "opérations diverses" is returned as
+`unclassified` rather than sorted into investing or financing by assumption.
+
+**Fiscal periods gate what can be posted.** If a business has closed the
+period a date falls into, every endpoint that posts to the books refuses that
+date — the check lives in `Ledger::post()`, the single path every module
+writes through. A business that has defined no periods is unrestricted; the
+feature is opt-in and changes nothing until used.
 
 **Read only, and not as a limitation to be lifted.** Every entry in this ledger
 is the consequence of a business event — an invoice issued, a payment taken, an

@@ -63,6 +63,21 @@ class Ledger
             throw new RuntimeException('Refusing to post an entry with no value.');
         }
 
+        /*
+         * A closed period refuses new postings. Checked here because post()
+         * is the single path every module reaches the books through, so this
+         * is the one place the rule can live and be certain to hold.
+         *
+         * A business that has defined no fiscal periods is unrestricted:
+         * the feature is opt-in, and every business that existed before it
+         * shipped must keep working untouched.
+         */
+        if (! app(FiscalPeriods::class)->isPostingAllowed($company, new \DateTimeImmutable($entryDate))) {
+            throw new RuntimeException(
+                "Refusing to post to {$entryDate}: that accounting period is closed. Reopen it, or date the entry in an open period."
+            );
+        }
+
         return DB::transaction(function () use ($company, $journal, $entryDate, $resolved, $source, $narration, $reference, $actor) {
             if ($source !== null && $existing = $this->entryFor($company, $source)) {
                 // Already recorded. Returning the original rather than throwing
