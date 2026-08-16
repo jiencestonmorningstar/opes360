@@ -2,6 +2,7 @@
 
 namespace App\Livewire\Audit;
 
+use App\Support\AuditRetention;
 use App\Support\CurrentCompany;
 use App\Support\SegregationOfDuties;
 use Illuminate\Contracts\View\View;
@@ -20,11 +21,43 @@ use Livewire\Component;
 class Governance extends Component
 {
     #[Url]
-    public string $tab = 'conflicts'; // conflicts|matrix
+    public string $tab = 'conflicts'; // conflicts|matrix|retention
+
+    /** How many months of trail this business keeps. See AuditRetention for the floors. */
+    public ?int $retentionMonths = null;
 
     public function mount(): void
     {
         Gate::authorize('audit.govern');
+
+        $this->retentionMonths = app(CurrentCompany::class)->get()?->audit_retention_months
+            ?? AuditRetention::DEFAULT_MONTHS;
+    }
+
+    /**
+     * The floor is validated here and enforced again in AuditRetention: a
+     * number smuggled past this form still cannot shorten what the pruner
+     * actually keeps. The company update itself lands in the trail through
+     * the ordinary observer, so choosing a shorter retention is on record.
+     */
+    public function saveRetention(): void
+    {
+        Gate::authorize('audit.govern');
+
+        $this->validate(
+            ['retentionMonths' => ['required', 'integer', 'min:'.AuditRetention::FLOOR_ACCESS_MONTHS, 'max:600']],
+            ['retentionMonths.min' => 'The trail is kept for at least '.AuditRetention::FLOOR_ACCESS_MONTHS.' months.'],
+        );
+
+        $company = app(CurrentCompany::class)->get();
+
+        if ($company === null) {
+            return;
+        }
+
+        $company->forceFill(['audit_retention_months' => $this->retentionMonths])->save();
+
+        $this->dispatch('saved');
     }
 
     public function render(): View

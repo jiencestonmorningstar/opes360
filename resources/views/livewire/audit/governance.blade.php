@@ -21,9 +21,40 @@
             @endif
         </button>
         <button type="button" wire:click="$set('tab', 'matrix')" class="tap focusable {{ $tabClass($tab === 'matrix') }}">Who holds what</button>
+        <button type="button" wire:click="$set('tab', 'retention')" class="tap focusable {{ $tabClass($tab === 'retention') }}">Retention</button>
     </div>
 
-    @if ($tab === 'conflicts')
+    @if ($tab === 'retention')
+
+        <div class="card mt-5 max-w-2xl p-5">
+            <h2 class="text-[16px] font-bold tracking-[-0.02em] text-ink">How long the trail is kept</h2>
+            <p class="mt-1 text-[13.5px] leading-relaxed text-muted">
+                Entries older than this are removed by a nightly sweep, and each sweep leaves its own entry in the
+                trail saying what it removed. Some entries stay longer whatever is chosen here: records of who read a
+                confidential document are kept at least {{ \App\Support\AuditRetention::FLOOR_ACCESS_MONTHS }} months,
+                ordinary changes at least {{ \App\Support\AuditRetention::FLOOR_GENERAL_MONTHS }} months, and anything
+                touching money, exports or permissions at least
+                {{ \App\Support\AuditRetention::FLOOR_FINANCIAL_MONTHS / 12 }} years. Documents under legal hold keep
+                their entire history for as long as the hold stands.
+            </p>
+
+            <form wire:submit="saveRetention" class="mt-4 flex items-end gap-3">
+                <div>
+                    <label for="retention-months" class="block text-[12.5px] font-semibold text-ink-2">Months kept</label>
+                    <input id="retention-months" type="number" wire:model="retentionMonths"
+                        min="{{ \App\Support\AuditRetention::FLOOR_ACCESS_MONTHS }}" max="600"
+                        class="focusable mt-1 w-28 rounded-lg border border-border bg-transparent px-3 py-2 text-[14px] text-ink" />
+                </div>
+                <button type="submit" class="tap focusable rounded-full bg-fill-brand px-4 py-2 text-[13.5px] font-semibold text-white">Save</button>
+                <span wire:loading.remove x-data x-show="false" x-on:saved.window="$el.style.display=''; setTimeout(() => $el.style.display='none', 2000)"
+                    class="text-[13px] font-semibold text-positive">Saved</span>
+            </form>
+            @error('retentionMonths')
+                <p class="mt-2 text-[13px] text-negative">{{ $message }}</p>
+            @enderror
+        </div>
+
+    @elseif ($tab === 'conflicts')
 
         @if ($findings->isEmpty())
             <div class="card mt-5 p-8 text-center">

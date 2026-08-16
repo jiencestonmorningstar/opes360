@@ -24,6 +24,9 @@
 
         <div class="flex-1 lg:hidden"></div>
 
+        {{-- Global search (Ctrl+K) --}}
+        @livewire('search.palette')
+
         {{-- Notifications --}}
         @livewire('notifications.bell')
 

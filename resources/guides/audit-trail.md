@@ -95,12 +95,25 @@ purpose. Switching a module off denies its abilities, so a switchable audit
 would let a business turn off its own trail — and the person with both the
 motive and the ability to do it is the same person.
 
-## Known limitation
+## How long the trail is kept
 
-There is no retention policy on the log yet, and it now grows considerably
-faster than before. On a busy business this will need pruning, and pruning an
-audit log is itself a decision that needs a rule — how long, and who may run it.
-It is not solved.
+The log is trimmed nightly under a retention policy you set on the
+Governance screen (in months; the default is 24). Three tiers, because not
+every row is worth the same:
+
+- **Access rows** — that somebody read a payslip — go earliest, at your
+  setting with a 12-month floor.
+- **Ordinary changes** keep a 24-month floor.
+- **Money** — anything touching accounting, payments or payroll, plus every
+  export and every permission change — keeps a **ten-year floor** whatever
+  the setting says, in line with OHADA-tradition bookkeeping expectations.
+
+Three things the pruning cannot do: undercut a floor (the pruner enforces it
+again even if a smaller number is smuggled into the database), touch
+anything under **legal hold**, or trim silently — every run that removes
+rows writes one summary row saying what it removed and under which policy,
+and that row itself is never pruned early. The trail records its own
+trimming.
 
 ## Related
 

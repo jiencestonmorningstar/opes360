@@ -54,6 +54,7 @@ class Item extends Model
             'price' => 'decimal:2',
             'cost' => 'decimal:2',
             'reorder_level' => 'decimal:3',
+            'max_level' => 'decimal:3',
             'track_stock' => 'boolean',
             'is_active' => 'boolean',
             'synced_at' => 'datetime',
@@ -83,6 +84,42 @@ class Item extends Model
     public function reservations(): HasMany
     {
         return $this->hasMany(StockReservation::class);
+    }
+
+    /**
+     * Who this can be bought from, and how long each of them takes.
+     *
+     * Named `supplierLinks` rather than `suppliers` deliberately: the rows are
+     * ItemSupplier pivots carrying lead time and price, not bare contacts, and
+     * a relation whose name promises contacts would be read wrongly the first
+     * time somebody plucked `name` off it.
+     */
+    public function supplierLinks(): HasMany
+    {
+        return $this->hasMany(ItemSupplier::class);
+    }
+
+    /**
+     * The link to buy from when nobody says otherwise: the one marked
+     * preferred, else the quickest.
+     */
+    public function preferredSupplierLink(): ?ItemSupplier
+    {
+        return $this->supplierLinks
+            ->sortBy([['is_preferred', 'desc'], ['lead_days', 'asc']])
+            ->first();
+    }
+
+    /** Recipes that make this product out of other products. */
+    public function billsOfMaterials(): HasMany
+    {
+        return $this->hasMany(BillOfMaterial::class);
+    }
+
+    /** Orders to make this product. */
+    public function productionOrders(): HasMany
+    {
+        return $this->hasMany(ProductionOrder::class);
     }
 
     public function tracksBatches(): bool

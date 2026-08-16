@@ -88,6 +88,19 @@ Schedule::command('service:sla-sweep')
     ->withoutOverlapping();
 
 /*
+ * Trim the audit log under each business's retention policy.
+ *
+ * Small hours, because the deletes are chunked but plentiful on a busy
+ * business. The pruner writes one summary audit row per run that removed
+ * anything — the trail records its own trimming — and financial rows keep
+ * a ten-year floor whatever the setting says.
+ */
+Schedule::command('opes:prune-audit')
+    ->daily()
+    ->at('03:45')
+    ->withoutOverlapping();
+
+/*
  * Lapse VIP memberships whose term has ended.
  *
  * Just after midnight so a membership that ran to yesterday is expired before
