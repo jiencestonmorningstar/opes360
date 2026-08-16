@@ -37,6 +37,16 @@ class DomainEvents
             'document.archived',
             'document.expired',
             'document.shared',
+
+            /*
+             * §2.15 reminders, raised by `opes:remind-actions` rather than by
+             * anything a user did. They are still events, not states: the
+             * command fires each one at most once per subject per day, so a
+             * rule listening here hears "this is still waiting" as one daily
+             * nudge instead of a stuck alarm.
+             */
+            'document.expiring',
+            'document.signature.overdue',
         ],
 
         // The approval engine. What a rule listens to in order to advance
@@ -49,6 +59,11 @@ class DomainEvents
             'workflow.changes_requested',
             'workflow.stalled',
             'workflow.cancelled',
+
+            // §2.15: raised by the daily `opes:remind-actions` sweep for a
+            // pending assignment past its step's due date. Once per
+            // assignment per day — see RemindOutstandingActions.
+            'workflow.assignment.overdue',
         ],
 
         'expense' => [

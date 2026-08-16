@@ -203,7 +203,9 @@ class BulkActionsTest extends DocumentsTestCase
 
         $zip = new ZipArchive;
         $zip->open($path);
-        $this->assertSame(1, $zip->numFiles);
+        // Two entries, not one: since the PDF engine landed, a composed paper
+        // joins the archive as a rendered PDF instead of being skipped.
+        $this->assertSame(2, $zip->numFiles);
         $zip->close();
 
         @unlink($path);

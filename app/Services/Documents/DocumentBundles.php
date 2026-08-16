@@ -4,6 +4,11 @@ namespace App\Services\Documents;
 
 use App\Models\BusinessDocument;
 use App\Models\BusinessDocumentPackage;
+use App\Services\DocumentComposer;
+use App\Support\CurrentCompany;
+use App\Support\DocumentTemplates;
+use App\Support\Pdf;
+use App\Support\Watermarks;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 use RuntimeException;
@@ -12,12 +17,10 @@ use ZipArchive;
 /**
  * §39 — a package downloaded as one file.
  *
- * ZIP only. The brief also asks for a combined PDF, which needs a
- * server-side PDF engine this product does not have: PDF is
- * `window.print()` today, and choosing an engine (Browsershot, Gotenberg, or
- * neither) is an infrastructure decision rather than something to settle
- * silently inside a bundle exporter. Noted in docs/GAP-ANALYSIS.md rather
- * than half-built.
+ * ZIP of every document. Uploaded files go in as-is; documents composed from
+ * a template (which live as text, not as a stored file) are rendered to PDF
+ * through App\Support\Pdf — Phase 5's engine — so a package no longer
+ * silently drops its composed half.
  *
  * Nothing here modifies a source document — §39 says so explicitly, and a
  * ZIP is read-only by construction, which is part of why it is the half
@@ -34,10 +37,10 @@ class DocumentBundles
      * queue job, or a test.
      *
      * Documents with no uploaded file (ones composed from a template, which
-     * live as text rather than as a stored file) are skipped rather than
-     * failing the bundle: a package legitimately mixes both, and refusing
-     * the whole download because one entry has no file attached would be
-     * useless behaviour.
+     * live as text rather than as a stored file) are rendered to PDF on the
+     * way in; only a document with neither a file nor a body is skipped —
+     * refusing the whole download because one entry has nothing to give
+     * would be useless behaviour.
      */
     public function zipPackage(BusinessDocumentPackage $package): string
     {
@@ -67,6 +70,17 @@ class DocumentBundles
             $media = $this->filer->fileOf($document);
 
             if ($media === null) {
+                // Composed from a template: no stored file, but Phase 5's PDF
+                // engine can produce one from the same print view the browser
+                // uses — watermarks included, so a draft in a bundle still
+                // says DRAFT.
+                if (trim((string) $document->body) !== '') {
+                    $zip->addFromString(
+                        $this->uniqueName($document, Pdf::filename($document->reference, $document->title), $used),
+                        $this->composedPdf($document),
+                    );
+                }
+
                 continue;
             }
 
@@ -98,6 +112,31 @@ class DocumentBundles
         $zip->close();
 
         return $path;
+    }
+
+    /**
+     * A composed document rendered to PDF, through the same view and marks
+     * the print route uses. The bundle is an export, so the confidential
+     * footer names the exporting user when one is signed in.
+     */
+    protected function composedPdf(BusinessDocument $document): string
+    {
+        return app(Pdf::class)->render('print.paper', [
+            'watermark' => Watermarks::statusMark($document),
+            'confidentialFooter' => Watermarks::confidentialFooter(
+                $document,
+                app(CurrentCompany::class)->get(),
+                auth()->user()?->name ?? 'Bundle export',
+            ),
+            'paper' => $document,
+            'company' => app(CurrentCompany::class)->get(),
+            'bodyHtml' => app(DocumentComposer::class)->toHtml($document->body),
+            'notice' => ($document->template()['binding'] ?? false)
+                ? DocumentTemplates::reviewNotice()
+                : null,
+            'qrSvg' => null,
+            'autoprint' => false,
+        ]);
     }
 
     /**

@@ -9,6 +9,7 @@ use App\Models\InterviewFeedback;
 use App\Models\JobApplication;
 use App\Models\User;
 use App\Models\Vacancy;
+use App\Support\UploadGate;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
@@ -33,20 +34,13 @@ class RecruitmentPipeline
      * What a CV may be. A subset of DocumentFiler::ALLOWED — same discipline
      * (extension AND sniffed mime must agree), narrowed to the shapes a CV
      * actually takes. No spreadsheets: an .xlsx "CV" on a public endpoint is
-     * an attack surface, not a résumé.
+     * an attack surface, not a résumé. The list itself lives on UploadGate,
+     * the one gate every upload passes; this constant remains the public name
+     * the controller's validation rule reads.
      *
      * @var array<string, array<int, string>>
      */
-    public const CV_ALLOWED = [
-        'pdf' => ['application/pdf'],
-        'doc' => ['application/msword'],
-        'docx' => ['application/vnd.openxmlformats-officedocument.wordprocessingml.document'],
-        'odt' => ['application/vnd.oasis.opendocument.text'],
-        'txt' => ['text/plain'],
-        'png' => ['image/png'],
-        'jpg' => ['image/jpeg'],
-        'jpeg' => ['image/jpeg'],
-    ];
+    public const CV_ALLOWED = UploadGate::PURPOSES['cv']['allowed'];
 
     /**
      * Take an application in — the one write the public page performs.
@@ -291,33 +285,17 @@ class RecruitmentPipeline
     /**
      * Store the CV on the private documents disk.
      *
-     * Same guarantees as DocumentFiler::assertAcceptable, restated rather
-     * than called because the allow-list is narrower here and the sniffed
-     * mime (never the client's claim) is what must agree with the extension.
+     * The discipline itself — extension against sniffed mime (never the
+     * client's claim), the size cap, and the ClamAV pass when a daemon is
+     * configured — lives in UploadGate under the narrower `cv` purpose. A
+     * refusal surfaces as the gate's polite message, which deliberately
+     * never tells a public visitor what stands behind the check.
      *
      * @return array{cv_disk: string, cv_path: string, cv_name: string, cv_mime: ?string, cv_size: int|false}
      */
     protected function storeCv(Vacancy $vacancy, UploadedFile $cv): array
     {
-        if (! $cv->isValid()) {
-            throw new RuntimeException('That file did not upload correctly. Try again.');
-        }
-
-        if ($cv->getSize() > self::CV_MAX_BYTES) {
-            throw new RuntimeException('A CV must be smaller than '.(self::CV_MAX_BYTES / 1024 / 1024).' MB.');
-        }
-
-        $extension = strtolower((string) $cv->getClientOriginalExtension());
-
-        if (! array_key_exists($extension, self::CV_ALLOWED)) {
-            throw new RuntimeException("A CV cannot be a .{$extension} file.");
-        }
-
-        $mime = strtolower((string) $cv->getMimeType());
-
-        if (! in_array($mime, self::CV_ALLOWED[$extension], true)) {
-            throw new RuntimeException("That file's contents do not match its name.");
-        }
+        app(UploadGate::class)->accept($cv, 'cv');
 
         $path = $cv->store('c/'.$vacancy->company_id.'/recruitment', self::CV_DISK);
 

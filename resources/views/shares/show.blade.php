@@ -76,11 +76,16 @@
             </div>
 
             @if ($share->allow_download)
-                <div class="mt-6 border-t border-border pt-5 print:hidden">
+                <div class="mt-6 flex flex-wrap items-center gap-3 border-t border-border pt-5 print:hidden">
+                    <a href="{{ route('shares.show', ['token' => $share->share_token, 'format' => 'pdf']) }}"
+                       class="focusable flex h-11 items-center gap-2 rounded-full bg-fill-brand px-5 text-[13.5px] font-semibold text-white hover:opacity-90">
+                        <x-icon name="download" class="size-[16px]" />
+                        Download PDF
+                    </a>
                     <button type="button" onclick="window.print()"
                             class="focusable flex h-11 items-center gap-2 rounded-full border border-border bg-surface px-5 text-[13.5px] font-semibold text-ink-2 hover:bg-surface-2">
                         <x-icon name="printer" class="size-[16px]" />
-                        Print or save as PDF
+                        Print
                     </button>
                 </div>
             @endif

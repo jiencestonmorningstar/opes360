@@ -136,6 +136,55 @@ class ReplenishmentScreenTest extends TestCase
         $this->assertSame(0, PurchaseRequisition::count());
     }
 
+    public function test_supply_details_can_be_edited_inline(): void
+    {
+        $item = $this->shortItem();
+
+        $newSupplier = Contact::create([
+            'company_id' => $this->company->id,
+            'type' => 'supplier',
+            'name' => 'Camrail Supplies',
+        ]);
+
+        Livewire::actingAs($this->owner)
+            ->test(ReplenishmentScreen::class)
+            ->call('startEdit', $item->id)
+            ->set('editSupplierId', $newSupplier->id)
+            ->set('editLeadDays', '3')
+            ->set('editLastPrice', '12000')
+            ->set('editMaxLevel', '50')
+            ->call('saveEdit')
+            ->assertHasNoErrors();
+
+        $item->refresh()->load('supplierLinks');
+
+        $this->assertSame('50.000', (string) $item->max_level);
+
+        $link = $item->preferredSupplierLink();
+        $this->assertSame($newSupplier->id, $link->supplier_id);
+        $this->assertSame(3, $link->lead_days);
+        $this->assertSame('12000.00', (string) $link->last_price);
+
+        // The old preferred link was demoted, not deleted.
+        $this->assertSame(1, ItemSupplier::query()
+            ->where('item_id', $item->id)->where('is_preferred', true)->count());
+        $this->assertSame(2, ItemSupplier::query()->where('item_id', $item->id)->count());
+    }
+
+    public function test_editing_supply_details_requires_products_update(): void
+    {
+        $item = $this->shortItem();
+
+        $cashier = User::factory()->create();
+        $this->joinCompany($this->company, $cashier, Role::CASHIER);
+        $cashier->forceFill(['current_company_id' => $this->company->id])->save();
+
+        Livewire::actingAs($cashier)
+            ->test(ReplenishmentScreen::class)
+            ->call('startEdit', $item->id)
+            ->assertForbidden();
+    }
+
     public function test_seeing_the_list_does_not_carry_the_power_to_order(): void
     {
         // A cashier can see products, so they can see the list — but turning

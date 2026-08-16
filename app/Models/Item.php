@@ -122,6 +122,12 @@ class Item extends Model
         return $this->hasMany(ProductionOrder::class);
     }
 
+    /** Customer order lines promising this item. */
+    public function salesOrderLines(): HasMany
+    {
+        return $this->hasMany(SalesOrderLine::class);
+    }
+
     public function tracksBatches(): bool
     {
         return $this->tracking_mode === self::TRACKING_BATCH;

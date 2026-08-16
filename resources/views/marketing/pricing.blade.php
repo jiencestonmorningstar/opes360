@@ -62,7 +62,7 @@
         ['module' => 'SYSCOHADA accounting', 'basic' => true, 'growth' => true, 'business' => true],
         ['module' => 'Offline mode (PWA)', 'basic' => true, 'growth' => true, 'business' => true],
         ['module' => 'QR verification', 'basic' => true, 'growth' => true, 'business' => true],
-        ['module' => 'Business documents & letters (26 templates)', 'basic' => false, 'growth' => true, 'business' => true],
+        ['module' => 'Business documents & letters (full template library)', 'basic' => false, 'growth' => true, 'business' => true],
         ['module' => 'Statement of account', 'basic' => false, 'growth' => true, 'business' => true],
         ['module' => 'Fixed assets & depreciation', 'basic' => false, 'growth' => true, 'business' => true],
         ['module' => 'Bank reconciliation', 'basic' => false, 'growth' => true, 'business' => true],

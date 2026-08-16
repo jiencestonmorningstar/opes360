@@ -40,12 +40,20 @@
                 <x-ui.panel title="Their application">
                     <p class="whitespace-pre-line text-[14.5px] leading-relaxed text-ink-2">{{ $application->cover_note }}</p>
                     @if ($application->hasCv())
-                        <p class="mt-3 text-[13px] text-muted">CV on file: <span class="font-semibold text-ink-2">{{ $application->cv_name }}</span></p>
+                        <p class="mt-3 text-[13px] text-muted">
+                            CV on file: <span class="font-semibold text-ink-2">{{ $application->cv_name }}</span>
+                            <button type="button" wire:click="downloadCv"
+                                    class="focusable ml-2 font-semibold text-brand hover:underline">Download</button>
+                        </p>
                     @endif
                 </x-ui.panel>
             @elseif ($application->hasCv())
                 <x-ui.panel title="Their application">
-                    <p class="text-[13px] text-muted">CV on file: <span class="font-semibold text-ink-2">{{ $application->cv_name }}</span></p>
+                    <p class="text-[13px] text-muted">
+                        CV on file: <span class="font-semibold text-ink-2">{{ $application->cv_name }}</span>
+                        <button type="button" wire:click="downloadCv"
+                                class="focusable ml-2 font-semibold text-brand hover:underline">Download</button>
+                    </p>
                 </x-ui.panel>
             @endif
 

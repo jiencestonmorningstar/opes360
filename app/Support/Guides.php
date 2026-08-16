@@ -103,6 +103,20 @@ class Guides
             'audience' => 'everyone',
         ],
 
+        'manufacturing' => [
+            'title' => 'Making things',
+            'group' => 'Your business',
+            'summary' => 'Recipes for what you make, and the one step that takes components off the shelf and puts finished goods on it.',
+            'audience' => 'everyone',
+        ],
+
+        'replenishment' => [
+            'title' => 'Reordering before you run out',
+            'group' => 'Money',
+            'summary' => 'Reorder levels, supplier lead times, and turning what is running low into draft requisitions.',
+            'audience' => 'everyone',
+        ],
+
         'paying-suppliers' => [
             'title' => 'Deciding which bills to pay',
             'group' => 'Money',

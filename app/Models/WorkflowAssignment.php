@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use App\Models\Concerns\BelongsToCompany;
+use App\Models\Concerns\EmitsDomainEvents;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Concerns\HasUlids;
 use Illuminate\Database\Eloquent\Model;
@@ -18,6 +19,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 class WorkflowAssignment extends Model
 {
     use BelongsToCompany;
+    use EmitsDomainEvents;
     use HasUlids;
 
     protected $guarded = ['id'];

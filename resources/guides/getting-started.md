@@ -23,6 +23,10 @@ Use the search box. It looks inside the full text of every guide, not just the
 titles, so searching for a phrase you remember seeing usually works better than
 guessing what a feature is called.
 
+From anywhere in the product, press **Ctrl+K** (Cmd+K on a Mac) to open the
+search palette. It finds screens and records as well as these guides, so it is
+usually the fastest way from "where is that?" to being there.
+
 ## What a guide contains
 
 Each one is written the same way:

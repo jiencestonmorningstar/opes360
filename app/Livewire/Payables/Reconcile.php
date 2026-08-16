@@ -9,6 +9,7 @@ use App\Models\SupplierStatementLine;
 use App\Services\Payables\SupplierReconciler;
 use App\Support\CurrentCompany;
 use App\Support\SupplierAccount;
+use App\Support\UploadGate;
 use Illuminate\Contracts\View\View;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Gate;
@@ -131,6 +132,10 @@ class Reconcile extends Component
         }
 
         try {
+            // The one gate every upload passes: tabular files only, sniffed
+            // bytes agreeing with the name, scanned when clamd is there.
+            app(UploadGate::class)->accept($this->statementFile, 'import');
+
             $reconciler = app(SupplierReconciler::class);
             $rows = $reconciler->parseCsv(file_get_contents($this->statementFile->getRealPath()));
 

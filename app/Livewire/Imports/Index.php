@@ -3,6 +3,7 @@
 namespace App\Livewire\Imports;
 
 use App\Services\RecordImporter;
+use App\Support\UploadGate;
 use Illuminate\Contracts\View\View;
 use Illuminate\Foundation\Auth\Access\AuthorizesRequests;
 use Illuminate\Support\Facades\Gate;
@@ -70,6 +71,10 @@ class Index extends Component
         ]);
 
         try {
+            // The one gate every upload passes: tabular files only, sniffed
+            // bytes agreeing with the name, scanned when clamd is there.
+            app(UploadGate::class)->accept($this->file, 'import');
+
             $result = app(RecordImporter::class)->preview(
                 $this->type,
                 file_get_contents($this->file->getRealPath())

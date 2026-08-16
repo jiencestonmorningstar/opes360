@@ -8,6 +8,9 @@ use App\Models\Scopes\CompanyScope;
 use App\Services\DocumentComposer;
 use App\Services\Documents\DocumentSharing;
 use App\Support\CurrentCompany;
+use App\Support\DocumentTemplates;
+use App\Support\Pdf;
+use App\Support\Watermarks;
 use Illuminate\Http\Request;
 use Illuminate\Routing\Controller;
 
@@ -50,6 +53,38 @@ class DocumentShareController extends Controller
             }
 
             app(DocumentSharing::class)->recordAccess($share, $request->ip(), $request->userAgent());
+
+            /*
+             * Phase 5 — "Download PDF" on the external copy. Everything is
+             * resolved inside CurrentCompany::as($company), so the rendered
+             * sheet can only ever carry this share's own tenant: the token
+             * names the company, never the visitor's session. The marks are
+             * the same as the on-screen copy — COPY for an issued document
+             * (never presented as the original), and the confidential footer
+             * naming the share link itself.
+             */
+            if ($request->query('format') === 'pdf') {
+                abort_unless((bool) $share->allow_download, 403);
+
+                $document = $share->document;
+
+                return app(Pdf::class)->download('print.paper', [
+                    'watermark' => Watermarks::statusMark($document, isCopy: true),
+                    'confidentialFooter' => Watermarks::confidentialFooter(
+                        $document,
+                        $company,
+                        Watermarks::shareIdentity($share),
+                    ),
+                    'paper' => $document,
+                    'company' => $company,
+                    'bodyHtml' => $composer->toHtml($document->body),
+                    'notice' => ($document->template()['binding'] ?? false)
+                        ? DocumentTemplates::reviewNotice()
+                        : null,
+                    'qrSvg' => null,
+                    'autoprint' => false,
+                ], Pdf::filename($document->reference, $document->title));
+            }
 
             return response()->view('shares.show', [
                 'verdict' => 'found',

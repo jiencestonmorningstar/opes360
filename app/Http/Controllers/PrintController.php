@@ -21,6 +21,7 @@ use App\Services\QrCodes;
 use App\Support\Audit;
 use App\Support\CurrentCompany;
 use App\Support\DocumentTemplates;
+use App\Support\Pdf;
 use App\Support\Watermarks;
 use BaconQrCode\Common\ErrorCorrectionLevel;
 use Carbon\CarbonImmutable;
@@ -34,21 +35,41 @@ use Illuminate\Support\Facades\Gate;
  * The same templates render in the user's own browser and go to PDF or paper
  * through the native print dialog, which is what keeps printing available
  * offline. Server-side Chromium rendering reuses these templates in Phase 3.
+ *
+ * Phase 5: the same endpoints answer ?format=pdf with a real file, rendered
+ * from the same view data through App\Support\Pdf — one source of truth for
+ * what a document says, two ways of putting it on paper.
  */
 class PrintController extends Controller
 {
-    public function document(Request $request, Document $document, QrCodes $qr)
+    /** Whether this request wants a downloadable PDF instead of the print page. */
+    protected function wantsPdf(Request $request): bool
+    {
+        return $request->query('format') === 'pdf';
+    }
+
+    public function document(Request $request, Document $document, QrCodes $qr, Pdf $pdf)
     {
         $document->load(['contact', 'lines', 'verificationToken']);
 
-        return view('print.document', [
+        $data = [
             'document' => $document,
             'company' => app(CurrentCompany::class)->get(),
             'qrSvg' => $document->verificationToken
                 ? $qr->svg($document->verificationToken->publicUrl(), 132)
                 : null,
             'autoprint' => $request->boolean('print'),
-        ]);
+        ];
+
+        if ($this->wantsPdf($request)) {
+            return $pdf->download(
+                'print.document',
+                array_merge($data, ['autoprint' => false]),
+                Pdf::filename($document->number ?? 'draft', $document->type->label()),
+            );
+        }
+
+        return view('print.document', $data);
     }
 
     /**
@@ -114,7 +135,7 @@ class PrintController extends Controller
             ['token' => VerificationToken::newToken(), 'company_id' => $company->id],
         );
 
-        return view('print.statement', [
+        $data = [
             'contact' => $contact,
             'company' => $company,
             'from' => $from,
@@ -125,7 +146,17 @@ class PrintController extends Controller
             'closing' => $running,
             'qrSvg' => $qr->svg($token->publicUrl(), 110),
             'autoprint' => $request->boolean('print'),
-        ]);
+        ];
+
+        if ($this->wantsPdf($request)) {
+            return app(Pdf::class)->download(
+                'print.statement',
+                array_merge($data, ['autoprint' => false]),
+                Pdf::filename('Statement', $contact->displayName(), $from->format('Y-m-d'), $to->format('Y-m-d')),
+            );
+        }
+
+        return view('print.statement', $data);
     }
 
     /**
@@ -150,12 +181,15 @@ class PrintController extends Controller
          */
         if ($paper->isConfidential()) {
             Audit::record($paper, 'exported', [
-                'export' => 'print',
+                // A PDF download is exactly as much a copy in the world as a
+                // print, so the same export-tier row fires for both — only
+                // the named channel differs.
+                'export' => $this->wantsPdf($request) ? 'pdf' : 'print',
                 'security' => $paper->security,
             ]);
         }
 
-        return view('print.paper', [
+        $data = [
             'watermark' => Watermarks::statusMark($paper),
             'confidentialFooter' => Watermarks::confidentialFooter(
                 $paper,
@@ -172,7 +206,17 @@ class PrintController extends Controller
                 ? $qr->svg($paper->verificationToken->publicUrl(), 120)
                 : null,
             'autoprint' => $request->boolean('print'),
-        ]);
+        ];
+
+        if ($this->wantsPdf($request)) {
+            return app(Pdf::class)->download(
+                'print.paper',
+                array_merge($data, ['autoprint' => false]),
+                Pdf::filename($paper->reference, $paper->title),
+            );
+        }
+
+        return view('print.paper', $data);
     }
 
     /** A customer's physical loyalty card — issued lazily if it doesn't exist yet. */
@@ -387,10 +431,20 @@ class PrintController extends Controller
     {
         $payslip->load(['lines' => fn ($q) => $q->orderBy('sort_order'), 'run', 'employee']);
 
-        return view('print.payslip', [
+        $data = [
             'payslip' => $payslip,
             'company' => app(CurrentCompany::class)->get(),
             'autoprint' => $request->boolean('print'),
-        ]);
+        ];
+
+        if ($this->wantsPdf($request)) {
+            return app(Pdf::class)->download(
+                'print.payslip',
+                array_merge($data, ['autoprint' => false]),
+                Pdf::filename('Bulletin', $payslip->employeeName(), $payslip->run?->period?->format('Y-m')),
+            );
+        }
+
+        return view('print.payslip', $data);
     }
 }

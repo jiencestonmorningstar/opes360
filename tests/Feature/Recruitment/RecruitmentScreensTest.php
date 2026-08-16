@@ -5,9 +5,11 @@ namespace Tests\Feature\Recruitment;
 use App\Livewire\Recruitment\Index;
 use App\Livewire\Recruitment\Show;
 use App\Models\Employee;
+use App\Models\JobApplication;
 use App\Models\Role;
 use App\Models\User;
 use App\Models\Vacancy;
+use Illuminate\Support\Facades\Storage;
 use Livewire\Livewire;
 
 /**
@@ -60,6 +62,49 @@ class RecruitmentScreensTest extends RecruitmentTestCase
         $this->actingAs($stranger);
 
         Livewire::test(Index::class)->assertForbidden();
+    }
+
+    /** An application whose CV sits on the (faked) private documents disk. */
+    protected function applicationWithCv(): JobApplication
+    {
+        Storage::fake('documents');
+        Storage::disk('documents')->put('recruitment/cv-test.pdf', '%PDF-1.4 fake');
+
+        $application = $this->application();
+        $application->forceFill([
+            'cv_disk' => 'documents',
+            'cv_path' => 'recruitment/cv-test.pdf',
+            'cv_name' => 'my-cv.pdf',
+        ])->save();
+
+        return $application;
+    }
+
+    public function test_the_cv_downloads_under_the_candidates_name(): void
+    {
+        $application = $this->applicationWithCv();
+
+        $this->actingAs($this->owner);
+
+        Livewire::test(Show::class, ['application' => $application])
+            ->call('downloadCv')
+            ->assertFileDownloaded('Jean Mballa.pdf');
+    }
+
+    public function test_an_outsider_cannot_fetch_the_cv(): void
+    {
+        $application = $this->applicationWithCv();
+
+        // Somebody in the company but without recruitment.view: the CV is a
+        // person's papers, not a thing every login may pull.
+        $stranger = User::factory()->create();
+        $this->joinCompany($this->company, $stranger, Role::READ_ONLY);
+        $stranger->forceFill(['current_company_id' => $this->company->id])->save();
+
+        $this->actingAs($stranger);
+
+        Livewire::test(Show::class, ['application' => $application])
+            ->assertForbidden();
     }
 
     public function test_the_application_page_can_run_the_whole_offer_and_hire(): void

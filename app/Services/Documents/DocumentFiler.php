@@ -8,6 +8,7 @@ use App\Models\Media;
 use App\Models\User;
 use App\Support\CurrentCompany;
 use App\Support\DocumentKinds;
+use App\Support\UploadGate;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
@@ -40,23 +41,13 @@ class DocumentFiler
      * a list somebody always finds a gap in; this refuses everything it does
      * not recognise, which is the only version that stays correct.
      *
+     * The list itself lives on UploadGate, which is the one gate every upload
+     * in the product now passes; this constant remains the public name other
+     * code refers to.
+     *
      * @var array<string, array<int, string>> extension => acceptable mime types
      */
-    public const ALLOWED = [
-        'pdf' => ['application/pdf'],
-        'png' => ['image/png'],
-        'jpg' => ['image/jpeg'],
-        'jpeg' => ['image/jpeg'],
-        'webp' => ['image/webp'],
-        'gif' => ['image/gif'],
-        'txt' => ['text/plain'],
-        'csv' => ['text/csv', 'text/plain', 'application/csv'],
-        'doc' => ['application/msword'],
-        'docx' => ['application/vnd.openxmlformats-officedocument.wordprocessingml.document'],
-        'xls' => ['application/vnd.ms-excel'],
-        'xlsx' => ['application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'],
-        'odt' => ['application/vnd.oasis.opendocument.text'],
-    ];
+    public const ALLOWED = UploadGate::PURPOSES['document']['allowed'];
 
     /**
      * Store an uploaded file as a document.
@@ -154,40 +145,14 @@ class DocumentFiler
     }
 
     /**
-     * Both the extension and the reported mime type must be recognised, and
-     * they must agree. Either alone is trivially spoofed by renaming a file.
+     * Both the extension and the sniffed mime type must be recognised, and
+     * they must agree — either alone is trivially spoofed by renaming a file.
+     * All of that discipline now lives in UploadGate (with the ClamAV pass
+     * when a daemon is configured); this method is the delegation.
      */
     protected function assertAcceptable(UploadedFile $file): void
     {
-        if (! $file->isValid()) {
-            throw new RuntimeException('That file did not upload correctly. Try again.');
-        }
-
-        if ($file->getSize() > self::MAX_BYTES) {
-            throw new RuntimeException('That file is larger than '.(self::MAX_BYTES / 1024 / 1024).' MB.');
-        }
-
-        $extension = strtolower((string) $file->getClientOriginalExtension());
-
-        if (! array_key_exists($extension, self::ALLOWED)) {
-            throw new RuntimeException("Files of type .{$extension} cannot be uploaded.");
-        }
-
-        /*
-         * getMimeType(), not getClientMimeType().
-         *
-         * The client type is guessed from the filename, so checking it against
-         * the extension is circular — it agrees by construction and catches
-         * nothing. It is also supplied by whoever is uploading, which makes it
-         * the last thing to trust. getMimeType() inspects the file's actual
-         * bytes, which is what "the contents do not match the name" needs to
-         * mean if renaming a script to .pdf is going to be refused.
-         */
-        $mime = strtolower((string) $file->getMimeType());
-
-        if (! in_array($mime, self::ALLOWED[$extension], true)) {
-            throw new RuntimeException('That file\'s contents do not match its name.');
-        }
+        app(UploadGate::class)->accept($file, 'document');
     }
 
     protected function titleFrom(UploadedFile $file): string

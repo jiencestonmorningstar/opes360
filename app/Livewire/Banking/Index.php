@@ -8,6 +8,7 @@ use App\Models\JournalLine;
 use App\Models\LedgerAccount;
 use App\Services\Banking\Reconciler;
 use App\Support\CurrentCompany;
+use App\Support\UploadGate;
 use Illuminate\Contracts\View\View;
 use Illuminate\Support\Facades\Gate;
 use Livewire\Attributes\Url;
@@ -211,6 +212,10 @@ class Index extends Component
         }
 
         try {
+            // The one gate every upload passes: tabular files only, sniffed
+            // bytes agreeing with the name, scanned when clamd is there.
+            app(UploadGate::class)->accept($this->statementFile, 'import');
+
             $reconciler = app(Reconciler::class);
             $rows = $reconciler->parseCsv(file_get_contents($this->statementFile->getRealPath()));
             $result = $reconciler->import($account, $rows, auth()->user());

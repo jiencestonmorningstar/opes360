@@ -99,8 +99,63 @@
                     <div class="shrink-0 text-right">
                         <p class="tnum text-[15px] font-bold text-ink">{{ $qty($row['suggested_quantity']) }}</p>
                         <p class="text-[12px] text-faint">to order</p>
+                        @can('products.update')
+                            <button type="button" wire:click="startEdit('{{ $row['item']->id }}')"
+                                    class="focusable mt-1 text-[12.5px] font-semibold text-brand hover:underline">
+                                Edit supply
+                            </button>
+                        @endcan
                     </div>
                 </label>
+
+                @can('products.update')
+                    @if ($editingId === $row['item']->id)
+                        <div class="mt-3 rounded-xl bg-surface-2 p-4">
+                            <div class="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+                                <label class="block">
+                                    <span class="text-[12.5px] font-semibold text-muted">Supplier</span>
+                                    <select wire:model="editSupplierId"
+                                            class="focusable mt-1 h-10 w-full rounded-lg border-border bg-surface text-[13.5px] text-ink">
+                                        <option value="">— none —</option>
+                                        @foreach ($suppliers as $supplier)
+                                            <option value="{{ $supplier->id }}">{{ $supplier->name }}</option>
+                                        @endforeach
+                                    </select>
+                                </label>
+                                <label class="block">
+                                    <span class="text-[12.5px] font-semibold text-muted">Days to deliver</span>
+                                    <input type="number" min="0" wire:model="editLeadDays"
+                                           class="focusable mt-1 h-10 w-full rounded-lg border-border bg-surface text-[13.5px] text-ink">
+                                </label>
+                                <label class="block">
+                                    <span class="text-[12.5px] font-semibold text-muted">Last price</span>
+                                    <input type="number" min="0" step="0.01" wire:model="editLastPrice"
+                                           class="focusable mt-1 h-10 w-full rounded-lg border-border bg-surface text-[13.5px] text-ink">
+                                </label>
+                                <label class="block">
+                                    <span class="text-[12.5px] font-semibold text-muted">Maximum level</span>
+                                    <input type="number" min="0" step="any" wire:model="editMaxLevel"
+                                           class="focusable mt-1 h-10 w-full rounded-lg border-border bg-surface text-[13.5px] text-ink">
+                                </label>
+                            </div>
+                            @foreach (['editSupplierId', 'editLeadDays', 'editLastPrice', 'editMaxLevel'] as $field)
+                                @error($field)
+                                    <p class="mt-2 text-[12.5px] font-semibold text-negative">{{ $message }}</p>
+                                @enderror
+                            @endforeach
+                            <div class="mt-3 flex gap-2">
+                                <button type="button" wire:click="saveEdit"
+                                        class="focusable flex h-9 items-center rounded-full bg-fill-brand px-4 text-[13px] font-semibold text-white hover:opacity-90">
+                                    Save
+                                </button>
+                                <button type="button" wire:click="cancelEdit"
+                                        class="focusable flex h-9 items-center rounded-full border border-border bg-surface px-4 text-[13px] font-semibold text-ink-2 hover:bg-surface-2">
+                                    Cancel
+                                </button>
+                            </div>
+                        </div>
+                    @endif
+                @endcan
             </div>
         @empty
             <div class="px-4 py-10 text-center">

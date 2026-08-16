@@ -227,6 +227,13 @@
                 </div>
             @endif
         </div>
+
+        {{-- §2.20: the employee's filed papers — signed offer, ID copies,
+             certificates. The HR record stays the HR record; the documents
+             about it live in the Library, shown here in place. --}}
+        <div class="mt-4">
+            <x-documents.library-panel :record="$employee" />
+        </div>
     @endif
 
     {{-- ───────────────────────────────────────────────────── Contracts ── --}}

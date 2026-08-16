@@ -3,10 +3,12 @@
 namespace App\Http\Controllers\Api;
 
 use App\Services\RecordImporter;
+use App\Support\UploadGate;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Validation\Rule;
+use Illuminate\Validation\ValidationException;
 use RuntimeException;
 
 /**
@@ -71,6 +73,14 @@ class ImportController extends ApiController
         // The import writes the records the create endpoints write, so it asks
         // for the same permission rather than inventing an import one.
         Gate::authorize($data['type'] === 'products' ? 'products.create' : 'customers.create');
+
+        try {
+            // The one gate every upload passes: tabular files only, sniffed
+            // bytes agreeing with the name, scanned when clamd is there.
+            app(UploadGate::class)->accept($request->file('file'), 'import');
+        } catch (RuntimeException $e) {
+            throw ValidationException::withMessages(['file' => $e->getMessage()]);
+        }
 
         return $data['type'];
     }

@@ -96,13 +96,14 @@ class LandingPageTest extends TestCase
     {
         $response = $this->get(route('marketing.features'))->assertOk();
 
-        foreach (['Selling', 'Proving', 'Keeping the books', 'Reaching people'] as $group) {
+        // The rebuilt page groups the way a business thinks, not the way the
+        // code is organised — these names are the page's own headings.
+        foreach (['Selling', 'The money', 'The people', 'The things', 'The obligations', 'Working together'] as $group) {
             $response->assertSee($group, false);
         }
 
-        $response->assertSee('Sales &amp; invoicing', false)
-            ->assertSee('QR verification', false)
-            ->assertSee('SYSCOHADA accounting', false);
+        $response->assertSee('QR verification', false)
+            ->assertSee('SYSCOHADA', false);
     }
 
     public function test_the_pricing_page_shows_all_tiers_and_figures(): void

@@ -54,6 +54,12 @@
                     Signed {{ $signature->signed_at->format('j M Y, g:ia') }}.
                 </p>
             </div>
+            {{-- Phase 5: a signer keeps a copy of what they executed. --}}
+            <a href="{{ route('signatures.show', ['token' => $signature->signing_token, 'format' => 'pdf']) }}"
+               class="focusable mt-4 flex h-12 w-full items-center justify-center gap-2 rounded-full border border-border bg-surface text-[14px] font-semibold text-ink-2 hover:bg-surface-2">
+                <x-icon name="download" class="size-[16px]" />
+                Download PDF
+            </a>
         @elseif ($isDeclined)
             <div class="card mt-4 p-5">
                 <p class="text-[14px] font-semibold text-ink">Declined</p>

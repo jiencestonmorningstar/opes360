@@ -8,9 +8,11 @@ use App\Models\CompanyReview;
 use App\Models\VerificationToken;
 use App\Services\LogoProcessor;
 use App\Support\CurrentCompany;
+use App\Support\UploadGate;
 use Illuminate\Contracts\View\View;
 use Illuminate\Foundation\Auth\Access\AuthorizesRequests;
 use Illuminate\Validation\Rule;
+use Illuminate\Validation\ValidationException;
 use Livewire\Component;
 use Livewire\WithFileUploads;
 
@@ -160,6 +162,14 @@ class Edit extends Component
         $company = app(CurrentCompany::class)->get();
 
         if ($this->logoUpload) {
+            try {
+                // The one gate every upload passes: images only, sniffed
+                // bytes agreeing with the name, scanned when clamd is there.
+                app(UploadGate::class)->accept($this->logoUpload, 'image');
+            } catch (\RuntimeException $e) {
+                throw ValidationException::withMessages(['logoUpload' => $e->getMessage()]);
+            }
+
             /*
              * Cleaned on the way in rather than every template coping with
              * whatever arrived. A white box behind a logo prints as a grey

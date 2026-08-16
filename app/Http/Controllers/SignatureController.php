@@ -5,8 +5,12 @@ namespace App\Http\Controllers;
 use App\Models\BusinessDocumentSignature;
 use App\Models\Company;
 use App\Models\Scopes\CompanyScope;
+use App\Services\DocumentComposer;
 use App\Services\Documents\DocumentSignatureRequests;
 use App\Support\CurrentCompany;
+use App\Support\DocumentTemplates;
+use App\Support\Pdf;
+use App\Support\Watermarks;
 use Illuminate\Http\Request;
 use Illuminate\Routing\Controller;
 use RuntimeException;
@@ -21,7 +25,7 @@ use RuntimeException;
  */
 class SignatureController extends Controller
 {
-    public function show(string $token)
+    public function show(Request $request, string $token)
     {
         $signature = $this->findSignature($token);
 
@@ -31,7 +35,37 @@ class SignatureController extends Controller
 
         $company = Company::find($signature->company_id);
 
-        return app(CurrentCompany::class)->as($company, function () use ($signature, $company) {
+        return app(CurrentCompany::class)->as($company, function () use ($request, $signature, $company) {
+            /*
+             * Phase 5 — a signer who has signed takes a copy away. Only after
+             * signing: the download is the record of what was executed, and a
+             * pending signer already sees the full text on the page. Rendered
+             * inside CurrentCompany::as($company), so the token's own tenant
+             * is the only one this PDF can name.
+             */
+            if ($request->query('format') === 'pdf') {
+                abort_unless($signature->isSigned(), 403);
+
+                $document = $signature->document;
+
+                return app(Pdf::class)->download('print.paper', [
+                    'watermark' => Watermarks::statusMark($document, isCopy: true),
+                    'confidentialFooter' => Watermarks::confidentialFooter(
+                        $document,
+                        $company,
+                        $signature->signer_name,
+                    ),
+                    'paper' => $document,
+                    'company' => $company,
+                    'bodyHtml' => app(DocumentComposer::class)->toHtml($document->body),
+                    'notice' => ($document->template()['binding'] ?? false)
+                        ? DocumentTemplates::reviewNotice()
+                        : null,
+                    'qrSvg' => null,
+                    'autoprint' => false,
+                ], Pdf::filename($document->reference, $document->title));
+            }
+
             return response()->view('signatures.show', [
                 'verdict' => 'found',
                 'signature' => $signature,

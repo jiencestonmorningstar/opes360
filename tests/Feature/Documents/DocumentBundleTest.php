@@ -6,6 +6,7 @@ use App\Models\BusinessDocumentPackage;
 use App\Services\Documents\DocumentBundles;
 use App\Services\Documents\DocumentDossiers;
 use App\Services\Documents\DocumentFiler;
+use App\Support\Pdf;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Storage;
 use ZipArchive;
@@ -33,17 +34,24 @@ class DocumentBundleTest extends DocumentsTestCase
 
     /**
      * A package legitimately mixes uploaded files with documents composed
-     * from a template, which have no stored file. Refusing the whole
-     * download because of one would be useless behaviour.
+     * from a template, which have no stored file. Phase 5's PDF engine
+     * renders the composed half into the archive instead of dropping it.
      */
-    public function test_a_composed_document_with_no_file_is_skipped_rather_than_failing(): void
+    public function test_a_composed_document_with_no_file_joins_the_bundle_as_a_pdf(): void
     {
         $package = $this->packageWith(['only.pdf']);
-        app(DocumentDossiers::class)->addToPackage($package->fresh(), $this->document(['title' => 'Composed, no file']));
+        $composed = $this->document(['title' => 'Composed, no file']);
+        app(DocumentDossiers::class)->addToPackage($package->fresh(), $composed);
 
         $path = app(DocumentBundles::class)->zipPackage($package->fresh());
 
-        $this->assertSame(1, $this->entryCount($path));
+        $this->assertSame(2, $this->entryCount($path));
+
+        $zip = new ZipArchive;
+        $zip->open($path);
+        $entry = Pdf::filename($composed->reference, $composed->title);
+        $this->assertStringStartsWith('%PDF', (string) $zip->getFromName($entry));
+        $zip->close();
 
         @unlink($path);
     }

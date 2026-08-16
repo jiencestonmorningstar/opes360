@@ -8,8 +8,10 @@ use App\Services\Recruitment\JobOffers;
 use App\Services\Recruitment\RecruitmentPipeline;
 use Illuminate\Contracts\View\View;
 use Illuminate\Support\Facades\Gate;
+use Illuminate\Support\Facades\Storage;
 use Livewire\Component;
 use RuntimeException;
+use Symfony\Component\HttpFoundation\StreamedResponse;
 
 /**
  * One application: the person, their timeline, their interviews, their offer.
@@ -52,6 +54,32 @@ class Show extends Component
         Gate::authorize('recruitment.view');
 
         $this->application = $application;
+    }
+
+    /**
+     * The CV, streamed from the private documents disk.
+     *
+     * A CV never gets a public URL — the disk is private precisely because an
+     * application is somebody's personal papers. Anyone who may read the
+     * application may read the CV, so the gate is `recruitment.view`, checked
+     * here as well as in mount() because Livewire actions arrive on their own
+     * requests. The file goes out under the candidate's name (keeping the
+     * upload's extension) so a folder of downloads reads as people, not
+     * as `document(7).pdf`.
+     */
+    public function downloadCv(): StreamedResponse
+    {
+        Gate::authorize('recruitment.view');
+
+        abort_unless($this->application->hasCv(), 404);
+
+        $extension = pathinfo((string) $this->application->cv_name, PATHINFO_EXTENSION)
+            ?: pathinfo((string) $this->application->cv_path, PATHINFO_EXTENSION);
+
+        $name = $this->application->candidate->name().($extension !== '' ? '.'.$extension : '');
+
+        return Storage::disk($this->application->cv_disk ?? 'documents')
+            ->download($this->application->cv_path, $name);
     }
 
     public function moveStage(string $to): void

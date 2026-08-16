@@ -135,6 +135,16 @@ class FixedAsset extends Model
         return $this->hasMany(VehicleTrip::class, 'fixed_asset_id')->latest('trip_date');
     }
 
+    /**
+     * The dispatch manifests this vehicle has carried. Empty for every asset
+     * that is not a vehicle; the logistics module reads a truck straight off
+     * the register rather than keeping a vehicle list of its own.
+     */
+    public function manifests(): HasMany
+    {
+        return $this->hasMany(TripManifest::class, 'fixed_asset_id')->latest('departs_on');
+    }
+
     public function fuelLogs(): HasMany
     {
         return $this->hasMany(FuelLog::class, 'fixed_asset_id')->latest('filled_on');

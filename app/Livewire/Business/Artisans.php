@@ -5,10 +5,12 @@ namespace App\Livewire\Business;
 use App\Models\Artisan;
 use App\Models\VerificationToken;
 use App\Support\CurrentCompany;
+use App\Support\UploadGate;
 use Illuminate\Contracts\View\View;
 use Illuminate\Foundation\Auth\Access\AuthorizesRequests;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
+use Illuminate\Validation\ValidationException;
 use Livewire\Component;
 use Livewire\WithFileUploads;
 
@@ -93,6 +95,16 @@ class Artisans extends Component
         ], [
             'form.full_name.required' => 'The artisan needs a name.',
         ]);
+
+        if ($this->photo) {
+            try {
+                // The one gate every upload passes: images only, sniffed
+                // bytes agreeing with the name, scanned when clamd is there.
+                app(UploadGate::class)->accept($this->photo, 'image');
+            } catch (\RuntimeException $e) {
+                throw ValidationException::withMessages(['photo' => $e->getMessage()]);
+            }
+        }
 
         $company = app(CurrentCompany::class)->get();
 

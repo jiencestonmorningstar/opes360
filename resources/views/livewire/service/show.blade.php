@@ -369,4 +369,10 @@
             </li>
         @endforeach
     </ul>
+
+    {{-- §2.20: the same Library panel every other record screen carries —
+         the job sheet the customer signed, the site photos, the warranty. --}}
+    <div class="mt-6">
+        <x-documents.library-panel :record="$ticket" />
+    </div>
 </div>

@@ -10,6 +10,7 @@ use Illuminate\Database\Eloquent\Concerns\HasUlids;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Database\Eloquent\Relations\MorphMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Support\Carbon;
@@ -111,6 +112,20 @@ class Contract extends Model
     public function renewals(): HasMany
     {
         return $this->hasMany(ContractRenewal::class)->orderByDesc('renewed_on');
+    }
+
+    /**
+     * The tenancy this contract is the lease for, when it is one.
+     *
+     * Named for what it links to, not `lease()` — this model already has a
+     * `type` column whose 'lease' value says what the contract *is*, and a
+     * relation must not read like a restatement of an attribute (see the
+     * shadowing note on `counterparty()`; there is no `tenancy` column and
+     * there must never be one).
+     */
+    public function tenancy(): HasOne
+    {
+        return $this->hasOne(Tenancy::class);
     }
 
     /**

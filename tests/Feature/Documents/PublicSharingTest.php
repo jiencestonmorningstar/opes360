@@ -87,19 +87,19 @@ class PublicSharingTest extends DocumentsTestCase
         $this->get('/share/'.$share->share_token)->assertOk()->assertSee('Confidential terms');
     }
 
-    public function test_a_downloadable_share_shows_the_print_button(): void
+    public function test_a_downloadable_share_shows_the_download_and_print_buttons(): void
     {
         $paper = $this->document();
         $share = app(DocumentSharing::class)->create($paper, $this->owner, null, null, true);
 
-        $this->get('/share/'.$share->share_token)->assertSee('Print or save as PDF');
+        $this->get('/share/'.$share->share_token)->assertSee('Download PDF');
     }
 
-    public function test_a_view_only_share_hides_the_print_button(): void
+    public function test_a_view_only_share_hides_the_download_and_print_buttons(): void
     {
         $paper = $this->document();
         $share = app(DocumentSharing::class)->create($paper, $this->owner, null, null, false);
 
-        $this->get('/share/'.$share->share_token)->assertDontSee('Print or save as PDF');
+        $this->get('/share/'.$share->share_token)->assertDontSee('Download PDF');
     }
 }
