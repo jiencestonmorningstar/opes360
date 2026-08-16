@@ -237,7 +237,10 @@ class DocumentComposer
         }
 
         return DB::transaction(function () use ($document, $user) {
-            $document->reference ??= $this->numbers->nextBusinessDocument();
+            // Respects whatever the business has configured for this kind —
+            // its own prefix, the shared DOC series, or no number at all.
+            // See DocumentNumbers::nextForBusinessDocumentKind().
+            $document->reference ??= $this->numbers->nextForBusinessDocumentKind($document->kind);
             $document->status = 'issued';
             $document->issued_at = now();
             $document->issued_by = $user->id;

@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Api;
 use App\Http\Resources\BusinessDocumentResource;
 use App\Models\BusinessDocument;
 use App\Models\BusinessDocumentComment;
+use App\Models\BusinessDocumentNumberingScheme;
 use App\Models\BusinessDocumentShare;
 use App\Models\BusinessDocumentSignature;
 use App\Models\BusinessDocumentVersion;
@@ -358,6 +359,56 @@ class LibraryController extends ApiController
         }
 
         return response()->json(null, 204);
+    }
+
+    public function numberingSchemes(): JsonResponse
+    {
+        $this->authorize('papers.view');
+
+        return response()->json(['data' => BusinessDocumentNumberingScheme::query()->get()->map(fn ($s) => $this->schemePayload($s))]);
+    }
+
+    public function createNumberingScheme(Request $request): JsonResponse
+    {
+        $this->authorize('papers.manage');
+
+        $data = $request->validate([
+            'kind' => ['nullable', 'string', Rule::in(DocumentKinds::keys())],
+            'prefix' => ['required', 'string', 'max:20', 'regex:/^[A-Z0-9-]+$/'],
+            'requires_number' => ['sometimes', 'boolean'],
+        ]);
+
+        $scheme = BusinessDocumentNumberingScheme::updateOrCreate(
+            ['kind' => $data['kind'] ?? null],
+            [
+                'prefix' => $data['prefix'],
+                'requires_number' => $data['requires_number'] ?? true,
+                'created_by' => $request->user()->id,
+            ],
+        );
+
+        return response()->json(['data' => $this->schemePayload($scheme)], 201);
+    }
+
+    public function destroyNumberingScheme(BusinessDocumentNumberingScheme $scheme): JsonResponse
+    {
+        $this->authorize('papers.manage');
+
+        $scheme->delete();
+
+        return response()->json(null, 204);
+    }
+
+    /** @return array<string, mixed> */
+    protected function schemePayload(BusinessDocumentNumberingScheme $scheme): array
+    {
+        return [
+            'id' => $scheme->id,
+            'kind' => $scheme->kind,
+            'kind_label' => $scheme->kind !== null ? DocumentKinds::label($scheme->kind) : 'Any kind (catch-all)',
+            'prefix' => $scheme->prefix,
+            'requires_number' => $scheme->requires_number,
+        ];
     }
 
     public function comments(BusinessDocument $document): JsonResponse

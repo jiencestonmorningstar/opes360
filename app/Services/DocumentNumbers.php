@@ -3,8 +3,10 @@
 namespace App\Services;
 
 use App\Enums\DocumentType;
+use App\Models\BusinessDocumentNumberingScheme;
 use App\Models\Device;
 use App\Models\NumberLease;
+use App\Support\CurrentCompany;
 use Carbon\CarbonImmutable;
 use Illuminate\Support\Facades\DB;
 use RuntimeException;
@@ -41,6 +43,44 @@ class DocumentNumbers
     public function nextBusinessDocument(?CarbonImmutable $date = null): string
     {
         return $this->allocate('business_document', 'DOC', $date);
+    }
+
+    /**
+     * A business document's number, respecting whatever the business has
+     * configured for its kind — §25: not every kind needs a number, and
+     * where one is wanted the prefix is the business's choice.
+     *
+     * A company that has never configured numbering gets exactly today's
+     * behaviour: every kind numbered DOC-2026-000001 on the one shared
+     * series. Configuring anything only changes the kinds actually
+     * configured; every other kind keeps using that same shared series
+     * rather than silently falling back to "no number" the moment one kind
+     * gets its own scheme.
+     *
+     * @return string|null null means this kind is configured to carry no number at all.
+     */
+    public function nextForBusinessDocumentKind(?string $kind, ?CarbonImmutable $date = null): ?string
+    {
+        $companyId = app(CurrentCompany::class)->id();
+
+        if ($companyId === null) {
+            return $this->nextBusinessDocument($date);
+        }
+
+        $scheme = BusinessDocumentNumberingScheme::query()
+            ->where('kind', $kind)
+            ->first()
+            ?? BusinessDocumentNumberingScheme::query()->whereNull('kind')->first();
+
+        if ($scheme === null) {
+            return $this->nextBusinessDocument($date);
+        }
+
+        if (! $scheme->requires_number) {
+            return null;
+        }
+
+        return $this->allocate('business_document_kind_'.($scheme->kind ?? 'default'), $scheme->prefix, $date);
     }
 
     /**

@@ -174,6 +174,11 @@ Route::prefix('v1')->group(function (): void {
             Route::get('approvals/{approval}', [ApprovalController::class, 'show'])->name('api.v1.approvals.show');
 
             Route::get('library', [LibraryController::class, 'index'])->name('api.v1.library.index');
+            // Ahead of library/{document}: a single-segment wildcard would
+            // otherwise swallow "numbering-schemes" as if it were a document
+            // id, and the real endpoint below would never be reached.
+            Route::get('library/numbering-schemes', [LibraryController::class, 'numberingSchemes'])
+                ->name('api.v1.library.numbering-schemes.index');
             Route::get('library/{document}', [LibraryController::class, 'show'])->name('api.v1.library.show');
             Route::get('library/{document}/versions', [LibraryController::class, 'versions'])
                 ->name('api.v1.library.versions.index');
@@ -238,6 +243,11 @@ Route::prefix('v1')->group(function (): void {
                 ->name('api.v1.library.shares.store');
             Route::post('library/shares/{share}/revoke', [LibraryController::class, 'revokeShare'])
                 ->name('api.v1.library.shares.revoke');
+
+            Route::post('library/numbering-schemes', [LibraryController::class, 'createNumberingScheme'])
+                ->name('api.v1.library.numbering-schemes.store');
+            Route::delete('library/numbering-schemes/{scheme}', [LibraryController::class, 'destroyNumberingScheme'])
+                ->name('api.v1.library.numbering-schemes.destroy');
 
             Route::post('library/{document}/legal-hold', [LibraryController::class, 'placeLegalHold'])
                 ->name('api.v1.library.legal-hold.place');

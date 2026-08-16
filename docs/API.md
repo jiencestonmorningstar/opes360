@@ -1190,6 +1190,25 @@ from the document's own version history, its comments, and the audit log
 already kept on it; there is no separate table for this, so nothing here can
 disagree with the records it is describing.
 
+### Numbering
+
+`GET /api/v1/library/numbering-schemes` — every configured scheme.
+
+`POST /api/v1/library/numbering-schemes` — `kind` (null for the catch-all),
+`prefix` (uppercase/digits/hyphens only), `requires_number` (default true —
+set false for a kind that should carry no number at all). Saving a second
+scheme for a kind already configured replaces it rather than duplicating it.
+Requires `papers.manage`.
+
+`DELETE /api/v1/library/numbering-schemes/{scheme}` — removes it; the kind
+falls back to whatever the catch-all says, or the shared `DOC-2026-000001`
+series if nothing else applies.
+
+A company that never calls this endpoint sees no change at all — every kind
+keeps numbering on the existing shared series. This has no effect on
+invoices, quotations, proformas, or receipts; each of those keeps its own
+existing numbering untouched.
+
 ### Retention and legal hold
 
 `GET /api/v1/library/{document}/retention` — the applicable retention date

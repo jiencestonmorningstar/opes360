@@ -75,6 +75,21 @@ checked, but are not ready to commit to it being final. A locked draft can
 still be unlocked, or issued outright; locking is not a step on the way to
 issuing, it is a separate hold you can put on and take off.
 
+## Numbering
+
+Every issued document gets `DOC-2026-000001` by default — one shared series
+for everything. You can give a kind its own series instead: contracts as
+`CONTRACT-2026-000001`, HR letters as `HR-2026-000001`, whatever prefix suits
+your business. Configuring one kind never touches any other — anything you
+have not set up keeps using the shared series exactly as before.
+
+Not every document needs a number at all. A kind can be set to carry none —
+useful for internal notes and memos that are never referred to by a serial.
+
+This has no effect on invoices, quotations, proformas or receipts — those
+keep the numbering they have always had. This is only for the documents this
+module generates.
+
 ## How long a document is kept
 
 A business can set how long each kind of document must be kept — a contract
