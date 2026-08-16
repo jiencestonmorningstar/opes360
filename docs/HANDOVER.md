@@ -1,9 +1,39 @@
 # Opes360 — handover
 
-**Date:** 2026-08-15
-**Branch merged to:** `main` (fast-forward, no conflicts)
-**Suite:** 1588 tests, 9195 assertions, all passing
-**Migrations:** all applied; `opes360-install.sql` regenerated and current
+**Date:** 2026-08-16
+**Branch:** `claude/documents-phase-1` (off `main`; not yet pushed — see §1 before pushing)
+**Suite:** 2,652 tests, 12,144 assertions, all passing
+**Migrations:** all applied to both MySQL (tests/schema) and the SQLite dev DB; `opes360-install.sql` regenerated
+
+## 0. Where things stand (2026-08-16 session)
+
+Every Tier-1 ERP domain is at **A**, and Tier-2 is at A except
+manufacturing and supply chain (agents building at time of writing).
+Landed this session: fiscal periods & closing · account transfers & cash
+forecast · receivables completion · payables scheduling & supplier
+reconciliation · procurement (requisitions/RFQ/quotations) · inventory
+traceability · expense claims · HR positions/attendance/reviews ·
+recruitment (public adverts → hire) · asset locations/transfers/
+maintenance · fleet on top of assets · contracts on Documents ·
+compliance & risk · service desk with SLA clock · walk-in QR triage ·
+notification rules · audit to 45 models with governance reporting · CRM
+leads & forecasting · executive dashboard · workflow admin screens with
+copy-on-write versioning · `DefaultWorkflows` seeding (+ per-currency
+requisition threshold, `opes:seed-workflows` backfill) · `DemoModulesSeeder`.
+
+Read `docs/GAP-ANALYSIS.md` for the per-domain detail and
+`docs/handoff/*.md` for each phase's decisions. Two rules explain most of
+the architecture: platform services (documents, workflow, notifications,
+audit, search) are extended and never duplicated; and being asked by the
+workflow engine IS the permission to approve — there is no approve ability
+anywhere.
+
+Known-open at time of writing: audit retention (agent in flight), global
+search (agent in flight), Phase 5 VPS infrastructure (search daemon, PDF
+engine, OCR, ClamAV), Documents 2.16/2.17/2.19–2.22 remnants, and the
+`local toolchain` note: PHP lives at `C:\laragon\bin\php\php-8.3.30-…` and
+`mysqldump` must come from `mysql-8.4.3-winx64` — the `mariadb-xampp`
+client next to it cannot authenticate and breaks `opes:export-schema`.
 
 ---
 
