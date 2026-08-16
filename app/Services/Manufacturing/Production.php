@@ -4,6 +4,7 @@ namespace App\Services\Manufacturing;
 
 use App\Models\BillOfMaterial;
 use App\Models\Company;
+use App\Models\Item;
 use App\Models\ProductionOrder;
 use App\Models\ProductionOrderLine;
 use App\Models\StockLocation;
@@ -246,7 +247,7 @@ class Production
      * Can we make $units now? One row per component: what the recipe demands,
      * what the shelf holds, and the gap.
      *
-     * @return array<int, array{item: \App\Models\Item, required: float, on_hand: float, short: float}>
+     * @return array<int, array{item: Item, required: float, on_hand: float, short: float}>
      */
     public function availability(
         Company $company,

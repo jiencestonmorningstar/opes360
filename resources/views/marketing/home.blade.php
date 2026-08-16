@@ -56,7 +56,7 @@
     $industries = [
         ['icon' => 'sales', 'label' => 'Retail'],
         ['icon' => 'home', 'label' => 'Distribution'],
-        ['icon' => 'user-plus', 'label' => 'Manufacturing'],
+        ['icon' => 'printer', 'label' => 'Secretariats'],
         ['icon' => 'briefcase', 'label' => 'Construction'],
         ['icon' => 'heart', 'label' => 'Healthcare'],
         ['icon' => 'academic-cap', 'label' => 'Education'],
@@ -66,11 +66,14 @@
         ['icon' => 'briefcase', 'label' => 'Professional Services'],
     ];
 
+    // Grounded in the product rather than invented adoption figures: the
+    // module count comes from config/modules.php, the retention floor from
+    // the audit pruner, offline invoicing from the number-lease ledger.
     $stats = [
-        ['icon' => 'users', 'figure' => '500+', 'label' => 'Businesses Trust '.config('opes.brand.name')],
-        ['icon' => 'smile', 'figure' => '10K+', 'label' => 'Users Worldwide'],
-        ['icon' => 'document', 'figure' => '1M+', 'label' => 'Transactions Processed'],
-        ['icon' => 'shield', 'figure' => '100%', 'label' => 'Paperwork Eliminated'],
+        ['icon' => 'cube', 'figure' => (string) count(config('modules')), 'label' => 'Modules, Switchable Per Business'],
+        ['icon' => 'shield', 'figure' => '10 yrs', 'label' => 'Money Audit Trail Retained'],
+        ['icon' => 'document', 'figure' => '100%', 'label' => 'Invoicing Works Offline'],
+        ['icon' => 'smile', 'figure' => 'FCFA', 'label' => 'Priced Locally, Paid by Mobile Money'],
     ];
 
     $nav = [

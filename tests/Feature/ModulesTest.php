@@ -92,7 +92,7 @@ class ModulesTest extends TestCase
          * audit would let a business turn off its own trail — and the person
          * with both the motive and `settings.update` is the same person.
          */
-        $offByDefault = ['vip', 'payables', 'procurement', 'service', 'recruitment'];
+        $offByDefault = ['vip', 'payables', 'procurement', 'service', 'recruitment', 'manufacturing'];
 
         foreach (array_keys(Modules::catalogue()) as $key) {
             if (in_array($key, $offByDefault, true)) {
@@ -226,7 +226,7 @@ class ModulesTest extends TestCase
         // a position and a hire produces an employee, so hiring without the
         // staff file would write records into a module that is switched off.
         $this->assertSame(['recruitment', 'payroll'], Modules::dependents('hr'));
-        $this->assertSame(['stock_locations'], Modules::dependents('products'));
+        $this->assertSame(['stock_locations', 'manufacturing'], Modules::dependents('products'));
         $this->assertSame([], Modules::dependents('payroll'));
     }
 

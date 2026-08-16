@@ -4,7 +4,6 @@ namespace App\Support;
 
 use App\Models\Company;
 use App\Models\Item;
-use App\Models\ItemSupplier;
 use App\Models\StockMovement;
 use App\Models\StockReservation;
 use Illuminate\Support\Collection;
@@ -173,7 +172,7 @@ class Replenishment
      * movement dated this morning is inside it regardless of the hour.
      *
      * @param  array<int, string>  $itemIds
-     * @return array<string, float>  positive units consumed
+     * @return array<string, float> positive units consumed
      */
     protected function usageByItem(array $itemIds): array
     {

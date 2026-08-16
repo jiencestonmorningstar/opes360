@@ -86,7 +86,7 @@ class GlobalSearchTest extends TestCase
     public function test_a_cashier_does_not_find_employees_contracts_or_papers(): void
     {
         Employee::create(['first_name' => 'Salaire', 'last_name' => 'Personne']);
-        Contract::create(['title' => 'Salaire framework agreement']);
+        Contract::create(['title' => 'Salaire framework agreement', 'starts_on' => now()->toDateString()]);
         BusinessDocument::create([
             'template' => 'memo', 'title' => 'Salaire memo', 'body' => 'Pay details', 'status' => 'issued',
         ]);
@@ -196,7 +196,7 @@ class GlobalSearchTest extends TestCase
     public function test_reindex_rebuilds_a_truncated_index(): void
     {
         Contact::create(['name' => 'Rebuild Me', 'balance' => 0]);
-        Contract::create(['title' => 'Rebuild agreement']);
+        Contract::create(['title' => 'Rebuild agreement', 'starts_on' => now()->toDateString()]);
 
         SearchEntry::query()->withoutGlobalScopes()->delete();
         $this->assertSame(0, SearchEntry::query()->count());

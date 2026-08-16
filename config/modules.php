@@ -254,6 +254,17 @@ return [
         'models' => [ComplianceObligation::class, Risk::class],
     ],
 
+    'manufacturing' => [
+        'label' => 'Manufacturing',
+        'description' => 'Recipes for what you make, and production orders that consume the parts and receive the product.',
+        'icon' => 'cube',
+        // Off by default: most businesses here resell rather than make.
+        'default' => false,
+        'requires' => ['products'],
+        'groups' => ['manufacturing'],
+        'models' => [BillOfMaterial::class, ProductionOrder::class],
+    ],
+
     'recruitment' => [
         'label' => 'Recruitment',
         'description' => 'Vacancies, applications, interviews and offers — from advert to employee.',

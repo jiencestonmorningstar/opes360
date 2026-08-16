@@ -41,8 +41,6 @@ use Illuminate\Support\Str;
  */
 class GlobalSearch
 {
-    protected static bool $observing = false;
-
     public const GROUP_LABELS = [
         Contact::class => 'Customers',
         Document::class => 'Sales documents',
@@ -80,10 +78,14 @@ class GlobalSearch
                     return null;
                 }
 
+                // Explicit query, not a lazy load: the observer often holds a
+                // model whose relations were never loaded.
+                $contactName = $d->contact()->value('name');
+
                 return [
                     'title' => (string) $d->number,
-                    'subtitle' => trim($d->type->label().' · '.($d->contact?->name ?? ''), ' ·'),
-                    'body' => $d->contact?->name,
+                    'subtitle' => trim($d->type->label().' · '.($contactName ?? ''), ' ·'),
+                    'body' => $contactName,
                     'route_name' => 'documents.show',
                     'route_params' => ['document' => $d->getKey()],
                     'ability' => 'sales.view',
@@ -183,18 +185,14 @@ class GlobalSearch
     }
 
     /**
-     * Attach the index-maintaining observer to every source model. Idempotent;
-     * meant to be called once from a service provider's boot() (see the
-     * integration handoff) and from tests.
+     * Attach the index-maintaining observer to every source model. Call once
+     * per boot — from a service provider in production (see the integration
+     * handoff) and from each test's setUp, where the dispatcher is fresh.
+     * No static guard: the event dispatcher is rebuilt per test, so a guard
+     * that survives it would leave later tests silently unobserved.
      */
     public static function observe(): void
     {
-        if (self::$observing) {
-            return;
-        }
-
-        self::$observing = true;
-
         foreach (array_keys(self::sources()) as $class) {
             $class::observe(SearchIndexObserver::class);
         }
@@ -253,6 +251,7 @@ class GlobalSearch
         // Tenancy is the CompanyScope's doing: SearchEntry is BelongsToCompany,
         // so this query is already fenced to the current company.
         $candidates = SearchEntry::query()
+            ->with('searchable')
             ->where(function ($q) use ($like) {
                 $q->where('title', 'like', $like)
                     ->orWhere('subtitle', 'like', $like)

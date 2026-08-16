@@ -15,6 +15,7 @@ use App\Models\User;
 use App\Models\Workflow;
 use App\Models\WorkflowInstance;
 use App\Services\Procurement\Replenisher;
+use App\Services\Procurement\Requisitions;
 use App\Services\Stock\StockReservations;
 use App\Support\CurrentCompany;
 use App\Support\Replenishment;
@@ -300,7 +301,7 @@ class ReplenishmentTest extends TestCase
 
         $requisition = app(Replenisher::class)->accept([$item->id], $this->owner)->sole();
 
-        $instance = app(\App\Services\Procurement\Requisitions::class)
+        $instance = app(Requisitions::class)
             ->submit($requisition, $workflow->fresh(), $this->owner);
 
         $this->assertInstanceOf(WorkflowInstance::class, $instance);

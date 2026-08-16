@@ -60,6 +60,7 @@ use App\Livewire\Hr\Reviews as HrReviews;
 use App\Livewire\Imports\Index as ImportsIndex;
 use App\Livewire\Invitations\Accept as InvitationAccept;
 use App\Livewire\Leads\Index as LeadsIndex;
+use App\Livewire\Manufacturing\Index as ManufacturingIndex;
 use App\Livewire\Onboarding\Register;
 use App\Livewire\Papers\Compose as PapersCompose;
 use App\Livewire\Papers\Index as PapersIndex;
@@ -99,6 +100,7 @@ use App\Livewire\Settings\NotificationSettings;
 use App\Livewire\Settings\Webhooks as SettingsWebhooks;
 use App\Livewire\Stock\Count as StockCount;
 use App\Livewire\Stock\Locations as StockLocations;
+use App\Livewire\Stock\Replenishment as StockReplenishment;
 use App\Livewire\Stock\Valuation as StockValuation;
 use App\Livewire\Team\Index as TeamIndex;
 use App\Livewire\Team\Show as TeamShow;
@@ -175,6 +177,7 @@ Route::middleware('throttle:60,1')->group(function () {
  * are read by anyone, signed in or not, and the whole point is zero friction.
  */
 Route::get('/about', [MarketingController::class, 'about'])->name('marketing.about');
+Route::get('/faq', [MarketingController::class, 'faq'])->name('marketing.faq');
 Route::get('/features', [MarketingController::class, 'features'])->name('marketing.features');
 Route::get('/pricing', [MarketingController::class, 'pricing'])->name('marketing.pricing');
 Route::get('/partners', [MarketingController::class, 'partners'])->name('marketing.partners');
@@ -357,6 +360,16 @@ Route::middleware('auth')->group(function () {
         ->middleware('can:workflows.view')->name('workflows');
     Route::get('/settings/workflows/{workflow}', WorkflowAdminEdit::class)
         ->middleware('can:workflows.view')->name('workflows.edit');
+
+    Route::get('/manufacturing', ManufacturingIndex::class)
+        ->middleware('can:manufacturing.view')->name('manufacturing');
+    /*
+     * On products.view rather than a procurement gate: the storekeeper who
+     * needs to see what is running out is not always the person allowed to
+     * ask for money. The accept button carries the stricter gate itself.
+     */
+    Route::get('/stock/replenishment', StockReplenishment::class)
+        ->middleware('can:products.view')->name('stock.replenishment');
 
     Route::get('/procurement/requisitions', ProcurementRequisitions::class)
         ->middleware('can:procurement.requisition-view')->name('procurement.requisitions');
