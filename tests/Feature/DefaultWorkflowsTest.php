@@ -9,6 +9,7 @@ use App\Models\User;
 use App\Models\Workflow;
 use App\Support\CurrentCompany;
 use App\Support\DefaultWorkflows;
+use App\Support\WorkflowConditions;
 use Database\Seeders\RolePermissionSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Str;
@@ -99,6 +100,68 @@ class DefaultWorkflowsTest extends TestCase
             'A second path appeared beside the one the business wrote.'
         );
         $this->assertSame('Our own way of doing it', $workflow->fresh()->name);
+    }
+
+    /**
+     * A box of pens does not need the owner.
+     *
+     * The step carries an amount condition, and a step whose condition fails
+     * is skipped — so a small requisition passes straight through with the
+     * submission still on the record. Without this the owner approves every
+     * trivial purchase until they switch the workflow off, and then nothing
+     * is approved by anybody.
+     */
+    public function test_a_small_requisition_goes_through_without_asking_anyone(): void
+    {
+        DefaultWorkflows::seed($this->company);
+
+        $step = Workflow::defaultFor(PurchaseRequisition::class)->steps()->first();
+        $threshold = DefaultWorkflows::thresholdFor($this->company);
+
+        $this->assertSame('estimated_total', $step->conditions[0]['field']);
+        $this->assertSame('>', $step->conditions[0]['operator']);
+        $this->assertSame($threshold, $step->conditions[0]['value']);
+
+        $conditions = app(WorkflowConditions::class);
+        $small = new PurchaseRequisition(['estimated_total' => $threshold - 1]);
+        $large = new PurchaseRequisition(['estimated_total' => $threshold + 1]);
+
+        $this->assertFalse($conditions->passes($step, $small), 'A small one should not stop.');
+        $this->assertTrue($conditions->passes($step, $large), 'A large one must be looked at.');
+    }
+
+    /**
+     * 500 000 XAF is a van; 500 000 USD is a building. One figure cannot
+     * serve both, so the seeded threshold is read from what the business
+     * actually trades in.
+     */
+    public function test_the_threshold_is_in_the_businesss_own_money(): void
+    {
+        $this->assertGreaterThan(
+            DefaultWorkflows::thresholdFor(new Company(['currency' => 'USD'])),
+            DefaultWorkflows::thresholdFor(new Company(['currency' => 'XAF'])),
+        );
+
+        $this->assertGreaterThan(
+            0,
+            DefaultWorkflows::thresholdFor(new Company(['currency' => 'ZZZ'])),
+            'A currency we have never seen must still get asked about something.'
+        );
+    }
+
+    /**
+     * The businesses that already exist are exactly the ones with work
+     * waiting, and seeding on create does nothing for them.
+     */
+    public function test_the_backfill_command_gives_an_existing_business_its_paths(): void
+    {
+        $this->assertSame(0, Workflow::count(), 'This business predates the seeding.');
+
+        $this->artisan('opes:seed-workflows')->assertSuccessful();
+
+        foreach (DefaultWorkflows::subjects() as $subject) {
+            $this->assertNotNull(Workflow::defaultFor($subject), "Still nothing for {$subject}.");
+        }
     }
 
     /** Signing up gives you the paths, without anybody having to know to ask. */

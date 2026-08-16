@@ -36,9 +36,39 @@ use Illuminate\Support\Facades\DB;
 class DefaultWorkflows
 {
     /**
+     * What "substantial" means, per currency.
+     *
+     * One figure cannot serve both: 500 000 XAF is a van, 500 000 USD is a
+     * building. These are round numbers in the middle of what a small
+     * business would want a second pair of eyes on — roughly a month of a
+     * modest wage bill — and every one of them is a guess that the business
+     * should correct on the workflow screen the first week it uses this.
+     *
+     * The guess is worth making anyway. A seeded threshold that is somewhat
+     * wrong gets noticed and adjusted; no threshold at all means the owner
+     * approves every box of pens until they turn the workflow off entirely,
+     * and then nothing is approved by anybody.
+     */
+    protected const THRESHOLDS = [
+        'XAF' => 500000,
+        'XOF' => 500000,
+        'NGN' => 500000,
+        'GHS' => 10000,
+        'KES' => 100000,
+        'ZAR' => 15000,
+        'USD' => 1000,
+        'EUR' => 1000,
+        'GBP' => 1000,
+    ];
+
+    /** What a currency we have never seen gets. Deliberately low: being asked
+     *  once too often is a nuisance, and not being asked is the failure. */
+    protected const FALLBACK_THRESHOLD = 1000;
+
+    /**
      * What each subject gets, and why anybody is asked at all.
      *
-     * @return array<class-string, array{name: string, step: string}>
+     * @return array<class-string, array{name: string, step: string, threshold_on?: string}>
      */
     protected static function catalogue(): array
     {
@@ -50,18 +80,20 @@ class DefaultWorkflows
                 'step' => 'Owner approves',
             ],
             /*
-             * Asking to buy something. No amount threshold is seeded, though
-             * this is the obvious place for one: "small things go through,
-             * big things get looked at" is what most businesses already do
-             * informally. Guessing the figure is the problem — a threshold
-             * set at somebody else's idea of "big" either waves through what
-             * should have been questioned or asks the owner about stationery.
-             * The engine supports it as a step condition when the business
-             * says what its number is.
+             * Asking to buy something — the one seeded path with a threshold
+             * on it, because "small things go through, big things get looked
+             * at" is what every business already does informally and a
+             * requisition for a box of pens should not need the owner.
+             *
+             * The step is skipped when the estimate is under the figure, and
+             * a workflow whose every step is skipped finishes approved — see
+             * WorkflowEngine::advance(). So below the line the requisition
+             * simply goes through, with the submission still on the record.
              */
             PurchaseRequisition::class => [
                 'name' => 'Purchase requisitions',
-                'step' => 'Owner approves',
+                'step' => 'Owner approves anything substantial',
+                'threshold_on' => 'estimated_total',
             ],
             // Signing the business up to something. Always worth a signature,
             // whatever it is worth.
@@ -126,6 +158,13 @@ class DefaultWorkflows
                      */
                     'approver_mode' => 'owner',
                     'quorum' => 'any',
+                    'conditions' => isset($spec['threshold_on'])
+                        ? [[
+                            'field' => $spec['threshold_on'],
+                            'operator' => '>',
+                            'value' => static::thresholdFor($company),
+                        ]]
+                        : null,
                 ]);
             }
         });
@@ -135,5 +174,11 @@ class DefaultWorkflows
     public static function subjects(): array
     {
         return array_keys(static::catalogue());
+    }
+
+    /** What counts as substantial in this business's own money. */
+    public static function thresholdFor(Company $company): int
+    {
+        return static::THRESHOLDS[$company->currency] ?? static::FALLBACK_THRESHOLD;
     }
 }

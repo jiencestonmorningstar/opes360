@@ -59,6 +59,34 @@ A step can be set to apply only in certain cases. The commonest is by amount:
 Steps whose condition does not match are skipped entirely — they do not wait,
 and they do not appear in anyone's list.
 
+**If every step is skipped, the thing is approved.** That is the point: it is
+how "small purchases go straight through" is expressed. The submission is still
+on the record and still shows who raised it; nobody was simply asked to
+rubber-stamp it.
+
+## What your business starts with
+
+A new business is given five approval paths, so that submitting something
+actually works on the first day rather than refusing with "no approval path is
+defined". They cover staff expense claims, purchase requisitions, contracts,
+statutory filings and service visits.
+
+Each one asks **the owner**. Not the person who owns it today by name — the
+role, resolved at the moment the step is reached — so the path survives the
+business changing hands.
+
+Purchase requisitions are the only one with a threshold on them, because a
+requisition for a box of pens should not need the owner. The seeded figure is
+**500,000 XAF**, or the equivalent in whatever currency your business trades in.
+
+**That figure is a guess, and it is meant to be changed.** It is roughly a
+month of a modest wage bill — high enough that ordinary purchasing is not
+interrupted, low enough that nothing significant slips past. Your number is
+almost certainly different. Change it on the workflow screen in the first week.
+
+Everything seeded is an ordinary workflow: edit it, add steps to it, turn it
+off, or replace it entirely. Nothing will reinstate it underneath you.
+
 ## Things that surprise people
 
 **If nobody can fill a step, the approval stops and says so.** If a step is set
