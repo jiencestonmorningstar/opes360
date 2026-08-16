@@ -100,6 +100,12 @@
 </head>
 <body>
 
+{{-- §2.17 — status and confidentiality marks, layered over the same sheet. --}}
+@include('print.partials.watermark', [
+    'watermark' => $watermark ?? null,
+    'confidentialFooter' => $confidentialFooter ?? null,
+])
+
 <div class="sheet design-{{ $design }}" style="--brand: {{ $brand }}">
     @if ($design === 'sidebar')
         {{-- The bar carries the name, so the head keeps only motto and meta. --}}

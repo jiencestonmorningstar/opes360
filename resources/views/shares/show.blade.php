@@ -46,6 +46,24 @@
             </form>
         </div>
     @else
+        @php
+            /*
+             * §2.17 on the external copy. The status mark comes from the
+             * document itself; an issued one is marked COPY because whatever a
+             * share link prints is a copy, never the original. The footer
+             * names the share link — not any user, and only this share's own
+             * company, so a token-based page can never carry another tenant's
+             * name.
+             */
+            $watermark = \App\Support\Watermarks::statusMark($document, isCopy: true);
+            $confidentialFooter = \App\Support\Watermarks::confidentialFooter(
+                $document,
+                $company,
+                \App\Support\Watermarks::shareIdentity($share),
+            );
+        @endphp
+        @include('print.partials.watermark')
+
         <div class="card p-7">
             <p class="text-[11.5px] font-medium uppercase tracking-wide text-faint">{{ $company->name }}</p>
             <h1 class="mt-1 text-[20px] font-bold tracking-[-0.02em] text-ink">{{ $document->title }}</h1>

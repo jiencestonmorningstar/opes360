@@ -52,6 +52,7 @@ class Company extends Model
             'dunning' => 'array',
             'payroll_settings' => 'array',
             'modules' => 'array',
+            'prints_confidential_footer' => 'boolean',
             'latitude' => 'decimal:7',
             'longitude' => 'decimal:7',
             // Encrypted at rest; tax_id_index carries lookups.

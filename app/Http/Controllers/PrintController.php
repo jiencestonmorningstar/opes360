@@ -18,8 +18,10 @@ use App\Services\DocumentComposer;
 use App\Services\LogoComposer;
 use App\Services\LoyaltyLedger;
 use App\Services\QrCodes;
+use App\Support\Audit;
 use App\Support\CurrentCompany;
 use App\Support\DocumentTemplates;
+use App\Support\Watermarks;
 use BaconQrCode\Common\ErrorCorrectionLevel;
 use Carbon\CarbonImmutable;
 use Illuminate\Http\Request;
@@ -137,7 +139,29 @@ class PrintController extends Controller
     {
         $paper->load('verificationToken');
 
+        $company = app(CurrentCompany::class)->get();
+
+        /*
+         * §2.17: opening the print view of a confidential or restricted paper
+         * is data leaving the system — the next click is the print dialog and
+         * a copy loose in the world. Export-tier on purpose (Audit::record,
+         * like Audit::exported — never the windowed accessed()): two prints
+         * are two copies, and collapsing them would hide the one that matters.
+         */
+        if ($paper->isConfidential()) {
+            Audit::record($paper, 'exported', [
+                'export' => 'print',
+                'security' => $paper->security,
+            ]);
+        }
+
         return view('print.paper', [
+            'watermark' => Watermarks::statusMark($paper),
+            'confidentialFooter' => Watermarks::confidentialFooter(
+                $paper,
+                $company,
+                $request->user()?->name ?? 'Unknown viewer',
+            ),
             'paper' => $paper,
             'company' => app(CurrentCompany::class)->get(),
             'bodyHtml' => $composer->toHtml($paper->body),

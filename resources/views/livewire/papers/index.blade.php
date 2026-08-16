@@ -107,12 +107,92 @@
         @endif
     </div>
 
+    {{-- The last batch's outcome, verbatim: done and refused, by name. --}}
+    @if ($bulkSummary !== '')
+        <div class="mt-4 rounded-xl border border-border bg-surface-2 px-4 py-3 text-[13.5px] text-ink" role="status">
+            {{ $bulkSummary }}
+        </div>
+    @endif
+
+    {{-- Bulk operations (§64–68): appears once something is checked. --}}
+    <div class="mt-4 flex flex-wrap items-center gap-2">
+        <button type="button" wire:click="selectPage"
+                class="focusable flex h-9 items-center rounded-full border border-border bg-surface px-3.5 text-[13px] font-semibold text-ink-2 hover:bg-surface-2">
+            Select page
+        </button>
+
+        @if ($selected !== [])
+            <span class="tnum text-[13px] font-semibold text-muted">{{ count($selected) }} selected</span>
+
+            <button type="button" wire:click="clearSelection"
+                    class="focusable flex h-9 items-center rounded-full px-3 text-[13px] font-semibold text-muted hover:bg-surface-2">
+                Clear
+            </button>
+
+            @can('papers.create')
+                <select wire:model="bulkFolderId" class="focusable h-9 rounded-full border border-border bg-surface px-3 text-[13px] text-ink-2">
+                    <option value="">Root (no folder)</option>
+                    @foreach ($folders as $folder)
+                        <option value="{{ $folder->id }}">{{ $folder->name }}</option>
+                        @foreach ($folder->children as $child)
+                            <option value="{{ $child->id }}">— {{ $child->name }}</option>
+                        @endforeach
+                    @endforeach
+                </select>
+                <button type="button" wire:click="bulkMove"
+                        class="focusable flex h-9 items-center rounded-full border border-border bg-surface px-3.5 text-[13px] font-semibold text-ink-2 hover:bg-surface-2">
+                    Move
+                </button>
+
+                <input type="text" wire:model="bulkTag" placeholder="Tag…" maxlength="60"
+                       class="focusable h-9 w-28 rounded-full border border-border bg-surface px-3 text-[13px] text-ink placeholder:text-faint">
+                <button type="button" wire:click="bulkTagAdd"
+                        class="focusable flex h-9 items-center rounded-full border border-border bg-surface px-3.5 text-[13px] font-semibold text-ink-2 hover:bg-surface-2">
+                    Add tag
+                </button>
+                <button type="button" wire:click="bulkTagRemove"
+                        class="focusable flex h-9 items-center rounded-full px-3 text-[13px] font-semibold text-muted hover:bg-surface-2">
+                    Remove tag
+                </button>
+
+                <select wire:model="bulkSecurity" class="focusable h-9 rounded-full border border-border bg-surface px-3 text-[13px] text-ink-2">
+                    <option value="">Classify as…</option>
+                    @foreach (\App\Support\DocumentKinds::securityLevels() as $key => $level)
+                        <option value="{{ $key }}">{{ $level['label'] }}</option>
+                    @endforeach
+                </select>
+                <button type="button" wire:click="bulkClassify"
+                        class="focusable flex h-9 items-center rounded-full border border-border bg-surface px-3.5 text-[13px] font-semibold text-ink-2 hover:bg-surface-2">
+                    Set
+                </button>
+            @endcan
+
+            @can('papers.void')
+                <button type="button" wire:click="bulkArchive"
+                        wire:confirm="Archive the selected documents? Issued ones are voided; their references stop verifying."
+                        class="focusable flex h-9 items-center rounded-full border border-border bg-surface px-3.5 text-[13px] font-semibold text-negative hover:bg-surface-2">
+                    Archive
+                </button>
+            @endcan
+
+            <button type="button" wire:click="bulkDownload"
+                    class="focusable flex h-9 items-center rounded-full border border-border bg-surface px-3.5 text-[13px] font-semibold text-ink-2 hover:bg-surface-2">
+                Download ZIP
+            </button>
+        @endif
+    </div>
+
     {{-- List --}}
     <div class="mt-4 space-y-2.5">
         @forelse ($papers as $paper)
             @php $state = $paper->state(); @endphp
+            <div wire:key="row-{{ $paper->id }}" class="flex items-center gap-3">
+                <input type="checkbox" wire:model="selected" value="{{ $paper->id }}"
+                       aria-label="Select {{ $paper->title }}"
+                       class="focusable size-4 shrink-0 rounded border-border text-brand focus:ring-brand/30">
+
             <a href="{{ route('papers.show', $paper) }}" wire:key="p-{{ $paper->id }}"
-               class="card focusable flex items-center gap-3.5 p-4 transition-colors hover:border-brand/40">
+               class="card focusable flex min-w-0 flex-1 items-center gap-3.5 p-4 transition-colors hover:border-brand/40">
                 <span class="flex size-[42px] shrink-0 items-center justify-center rounded-xl {{ Accent::tint($paper->accent()) }}">
                     <x-icon :name="$paper->template()['icon'] ?? 'document'"
                             class="size-[21px] {{ Accent::text($paper->accent()) }}" stroke-width="1.9" />
@@ -130,6 +210,7 @@
                     <span class="mt-1 block text-[12px] text-faint">{{ $paper->created_at->format('j M Y') }}</span>
                 </span>
             </a>
+            </div>
         @empty
             <div class="card px-5 py-12 text-center">
                 <p class="text-[15px] font-semibold text-ink">

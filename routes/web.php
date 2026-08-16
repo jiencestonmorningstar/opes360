@@ -62,6 +62,7 @@ use App\Livewire\Invitations\Accept as InvitationAccept;
 use App\Livewire\Leads\Index as LeadsIndex;
 use App\Livewire\Manufacturing\Index as ManufacturingIndex;
 use App\Livewire\Onboarding\Register;
+use App\Livewire\Papers\Analytics as PapersAnalytics;
 use App\Livewire\Papers\Compose as PapersCompose;
 use App\Livewire\Papers\Index as PapersIndex;
 use App\Livewire\Papers\Show as PapersShow;
@@ -433,6 +434,10 @@ Route::middleware('auth')->group(function () {
      */
     Route::get('/library', PapersIndex::class)->middleware('can:papers.view')->name('papers');
     Route::get('/library/new/{template}', PapersCompose::class)->middleware('can:papers.create')->name('papers.create');
+    // Above the wildcard, or `analytics` is read as a paper — the same
+    // ordering trap that once swallowed numbering-schemes.
+    Route::get('/library/analytics', PapersAnalytics::class)
+        ->middleware('can:papers.manage')->name('papers.analytics');
     Route::get('/library/{paper}', PapersShow::class)->middleware('can:view,paper')->name('papers.show');
     Route::get('/library/{paper}/edit', PapersCompose::class)->middleware('can:update,paper')->name('papers.edit');
     Route::get('/library/{paper}/print', [PrintController::class, 'paper'])->middleware('can:view,paper')->name('papers.print');

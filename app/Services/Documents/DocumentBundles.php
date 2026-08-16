@@ -41,6 +41,18 @@ class DocumentBundles
      */
     public function zipPackage(BusinessDocumentPackage $package): string
     {
+        return $this->zipDocuments($package->documents);
+    }
+
+    /**
+     * The same packager for an arbitrary set of documents — §64–68's bulk
+     * download runs through here so a package download and a workspace
+     * selection produce byte-for-byte the same kind of archive.
+     *
+     * @param  iterable<int, BusinessDocument>  $documents
+     */
+    public function zipDocuments(iterable $documents): string
+    {
         $path = storage_path('app/'.Str::uuid().'.zip');
 
         $zip = new ZipArchive;
@@ -51,7 +63,7 @@ class DocumentBundles
 
         $used = [];
 
-        foreach ($package->documents as $document) {
+        foreach ($documents as $document) {
             $media = $this->filer->fileOf($document);
 
             if ($media === null) {
