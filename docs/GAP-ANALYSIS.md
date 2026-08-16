@@ -45,6 +45,7 @@ half delivered. The table follows the master spec's own section numbers.
 | 15 | Comments — replies, explicit-id mentions with notification, resolve/reopen, deletion by permission | `BusinessDocumentComment`, `DocumentComments` |
 | 30, 35 | Audit trail and activity timeline — no new table; merges the existing audit log, versions and comments into one ordered feed | `DocumentActivity` |
 | 21 | External sharing — expiring, password-protected, revocable links with an access log, view-only as a UX courtesy rather than an enforced restriction | `DocumentSharing`, `/share/{token}` |
+| 31–32 | Retention, legal hold, controlled disposal — retention periods are business-set data per document kind, never hard-coded; a legal hold overrides any schedule and blocks disposal outright; disposal is permanent, permission-gated, and refuses without an override parameter. Lifecycle exposed as a computed label layered on the existing draft/issued/void status rather than a second stored state machine that could disagree with it | `DocumentRetention`, `business_document_retention_policies` |
 
 Reused rather than rebuilt, exactly as the brief requires: the `media` table and
 upload path, `users`/`roles`/`permissions`, `contacts`, the `documents` ERP
@@ -90,7 +91,6 @@ roadmap:**
 | 17–18 | Workflow stages and the approval engine |
 | 25 | Configurable document numbering per type |
 | 30 | Documents-specific audit trail (the suite has `activity_log`; Documents does not write a full document audit yet) |
-| 31–32 | Retention policies, legal hold, controlled disposal, full lifecycle states |
 | 33 | Alerts — expiry and workflow-stalled notifications specifically for documents (the My Actions centre and its `workflow.stalled` event already exist; a scheduled expiry check does not) |
 | 36–40 | Related-content panel, dossiers, packages, bundles, checklists |
 | 44 | Multilingual templates (the `language` column exists; nothing consumes it) |

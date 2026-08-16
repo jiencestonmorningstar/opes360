@@ -15,6 +15,7 @@ use App\Models\Project;
 use App\Services\Documents\DocumentActivity;
 use App\Services\Documents\DocumentComments;
 use App\Services\Documents\DocumentLinker;
+use App\Services\Documents\DocumentRetention;
 use App\Services\Documents\DocumentSharing;
 use App\Services\Documents\DocumentSignatureRequests;
 use App\Services\Documents\DocumentVersioner;
@@ -55,6 +56,7 @@ class LibraryController extends ApiController
         private readonly DocumentActivity $activity,
         private readonly DocumentSignatureRequests $signatureRequests,
         private readonly DocumentSharing $sharing,
+        private readonly DocumentRetention $retention,
     ) {}
 
     public function index(Request $request): AnonymousResourceCollection
@@ -307,6 +309,55 @@ class LibraryController extends ApiController
             'views' => $share->accesses()->count(),
             'created_at' => $share->created_at?->toIso8601String(),
         ];
+    }
+
+    public function retention(BusinessDocument $document): JsonResponse
+    {
+        $this->authorize('view', $document);
+
+        return response()->json(['data' => [
+            'legal_hold' => $document->isUnderLegalHold(),
+            'legal_hold_reason' => $document->legal_hold_reason,
+            'retain_until' => $this->retention->retainUntil($document)?->toDateString(),
+            'is_disposable' => $this->retention->isDisposable($document),
+            'lifecycle' => $document->lifecycleLabel(),
+        ]]);
+    }
+
+    public function placeLegalHold(Request $request, BusinessDocument $document): JsonResponse
+    {
+        $this->authorize('manage', $document);
+
+        $data = $request->validate(['reason' => ['required', 'string', 'max:2000']]);
+
+        $held = $this->retention->placeLegalHold($document, $data['reason'], $request->user());
+
+        return response()->json(['data' => [
+            'legal_hold' => true,
+            'legal_hold_reason' => $held->legal_hold_reason,
+        ]]);
+    }
+
+    public function liftLegalHold(BusinessDocument $document): JsonResponse
+    {
+        $this->authorize('manage', $document);
+
+        $this->retention->liftLegalHold($document);
+
+        return response()->json(['data' => ['legal_hold' => false]]);
+    }
+
+    public function dispose(BusinessDocument $document): JsonResponse
+    {
+        $this->authorize('manage', $document);
+
+        try {
+            $this->retention->dispose($document);
+        } catch (\RuntimeException $e) {
+            return response()->json(['message' => $e->getMessage()], 422);
+        }
+
+        return response()->json(null, 204);
     }
 
     public function comments(BusinessDocument $document): JsonResponse

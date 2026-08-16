@@ -179,6 +179,7 @@ class BusinessDocument extends Model
                 'kind', 'description', 'security', 'language', 'tags',
                 'owner_id', 'expires_on', 'folder_id', 'department_id', 'is_locked',
                 'signature_mode',
+                'legal_hold', 'legal_hold_reason', 'legal_hold_set_by', 'legal_hold_set_at',
             ];
             $illegal = array_diff(array_keys($document->getDirty()), $mutable);
 
@@ -294,5 +295,44 @@ class BusinessDocument extends Model
             'void' => ['label' => 'Void', 'tone' => 'muted'],
             default => ['label' => 'Draft', 'tone' => 'neutral'],
         };
+    }
+
+    public function isUnderLegalHold(): bool
+    {
+        return (bool) $this->legal_hold;
+    }
+
+    /**
+     * The fuller lifecycle §31–32 describes — Draft, Locked, Signing,
+     * Expiring, On legal hold, Issued, Void — layered on top of state()
+     * rather than replacing it. `status` stays draft/issued/void everywhere
+     * else in the product; this exists for a reader who wants to know more
+     * than that one word says, without every other piece of code that reads
+     * `status` having to learn a wider vocabulary.
+     */
+    public function lifecycleLabel(): string
+    {
+        if ($this->isUnderLegalHold()) {
+            return 'On legal hold';
+        }
+
+        if ($this->status === 'void') {
+            return 'Void';
+        }
+
+        if ($this->status === 'issued') {
+            if ($this->expires_on !== null && $this->expires_on->isPast()) {
+                return 'Expired';
+            }
+
+            return 'Issued';
+        }
+
+        // Draft, from here down.
+        if ($this->is_locked) {
+            return 'Locked';
+        }
+
+        return 'Draft';
     }
 }

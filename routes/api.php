@@ -187,6 +187,8 @@ Route::prefix('v1')->group(function (): void {
                 ->name('api.v1.library.signatures.index');
             Route::get('library/{document}/shares', [LibraryController::class, 'shares'])
                 ->name('api.v1.library.shares.index');
+            Route::get('library/{document}/retention', [LibraryController::class, 'retention'])
+                ->name('api.v1.library.retention');
 
             Route::prefix('accounting')->name('api.v1.accounting.')->group(function (): void {
                 Route::get('accounts', [AccountingController::class, 'accounts'])->name('accounts');
@@ -236,6 +238,13 @@ Route::prefix('v1')->group(function (): void {
                 ->name('api.v1.library.shares.store');
             Route::post('library/shares/{share}/revoke', [LibraryController::class, 'revokeShare'])
                 ->name('api.v1.library.shares.revoke');
+
+            Route::post('library/{document}/legal-hold', [LibraryController::class, 'placeLegalHold'])
+                ->name('api.v1.library.legal-hold.place');
+            Route::delete('library/{document}/legal-hold', [LibraryController::class, 'liftLegalHold'])
+                ->name('api.v1.library.legal-hold.lift');
+            Route::delete('library/{document}/dispose', [LibraryController::class, 'dispose'])
+                ->name('api.v1.library.dispose');
 
             // Editing a tier changes what future sales get, never what a
             // member was already sold. Cancelling stops a benefit rather than

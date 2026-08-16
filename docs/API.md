@@ -1190,6 +1190,28 @@ from the document's own version history, its comments, and the audit log
 already kept on it; there is no separate table for this, so nothing here can
 disagree with the records it is describing.
 
+### Retention and legal hold
+
+`GET /api/v1/library/{document}/retention` — the applicable retention date
+(from the business's own policy for that kind, or its catch-all; `null` if
+neither exists), whether a legal hold is active, and whether the document is
+disposable right now.
+
+`POST /api/v1/library/{document}/legal-hold` (`reason`) and
+`DELETE .../legal-hold` — place or lift a hold. Requires `papers.manage`,
+which is the confidentiality-and-administration ability, not `papers.share`
+or `update` — a hold is a governance act, not a filing or content one.
+
+`DELETE /api/v1/library/{document}/dispose` — permanent removal, not the
+ordinary soft delete `DELETE /api/v1/library/{document}` performs. Refused
+with 422 if a legal hold is active or the retention period has not passed.
+There is no override parameter: a parameter that bypasses a hold is a hold
+that does not actually hold.
+
+Retention policies themselves (`business_document_retention_policies`) have
+no API yet — set today through the service layer only, noted honestly rather
+than left for someone to discover missing.
+
 ### External sharing
 
 `GET /api/v1/library/{document}/shares` — every link created for the

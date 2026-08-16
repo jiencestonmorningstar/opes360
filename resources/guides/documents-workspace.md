@@ -75,6 +75,22 @@ checked, but are not ready to commit to it being final. A locked draft can
 still be unlocked, or issued outright; locking is not a step on the way to
 issuing, it is a separate hold you can put on and take off.
 
+## How long a document is kept
+
+A business can set how long each kind of document must be kept — a contract
+for ten years, a memo for five, whatever the law and your own policy require.
+There is no built-in default: nobody outside your business gets to decide
+that for you.
+
+**Legal hold** overrides the schedule entirely. Place one on a document —
+with a reason — and it cannot be disposed of no matter what the retention
+period says, until the hold is lifted. This is for the moment a document
+becomes relevant to a dispute or an investigation and must not go anywhere.
+
+Nothing is ever disposed of automatically. Disposal is something an
+administrator does deliberately, and only once the retention period has
+actually passed and nothing is holding it.
+
 ## Sharing outside the business
 
 Create a link that opens a document for anyone who has it, with no account
