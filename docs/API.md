@@ -1190,6 +1190,25 @@ from the document's own version history, its comments, and the audit log
 already kept on it; there is no separate table for this, so nothing here can
 disagree with the records it is describing.
 
+### Signatures
+
+`GET /api/v1/library/{document}/signatures` — status (`not_requested`,
+`pending`, `partially_signed`, `fully_signed`, `declined`) and every signer.
+
+`POST /api/v1/library/{document}/signatures` — `signers` (name + email each)
+and an optional `mode` (`sequential` or `parallel`, default `parallel`).
+Requires `papers.share`, the same ability sending a document anywhere outside
+the business already requires. Refused with 422 if a round is already in
+progress.
+
+Signing itself is **not** a token-API action — the signer is not a user of
+the business, and has no token. They act at `/sign/{signing_token}`, an
+unauthenticated public page reached by an emailed link, mirroring how
+`/v/{token}` already works for public verification: no session, no current
+company, the token itself naming both. On full completion the document gets a
+`VerificationToken` the same way `DocumentIssuer` already mints one on issue —
+the existing QR verification infrastructure, not a second one.
+
 ### Comments
 
 `GET /api/v1/library/{document}/comments` — top-level comments, each with its

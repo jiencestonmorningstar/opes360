@@ -183,6 +183,8 @@ Route::prefix('v1')->group(function (): void {
                 ->name('api.v1.library.comments.index');
             Route::get('library/{document}/activity', [LibraryController::class, 'activity'])
                 ->name('api.v1.library.activity');
+            Route::get('library/{document}/signatures', [LibraryController::class, 'signatureStatus'])
+                ->name('api.v1.library.signatures.index');
 
             Route::prefix('accounting')->name('api.v1.accounting.')->group(function (): void {
                 Route::get('accounts', [AccountingController::class, 'accounts'])->name('accounts');
@@ -224,6 +226,9 @@ Route::prefix('v1')->group(function (): void {
                 ->name('api.v1.library.comments.reopen');
             Route::delete('library/comments/{comment}', [LibraryController::class, 'destroyComment'])
                 ->name('api.v1.library.comments.destroy');
+
+            Route::post('library/{document}/signatures', [LibraryController::class, 'requestSignatures'])
+                ->name('api.v1.library.signatures.store');
 
             // Editing a tier changes what future sales get, never what a
             // member was already sold. Cancelling stops a benefit rather than

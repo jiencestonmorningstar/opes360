@@ -59,7 +59,7 @@ Everything in Part 1 of the gap analysis not blocked on absent infrastructure.
 | 2.5 | ~~Comments, replies, mentions, resolution~~ **Done** — mentions are explicit user ids, never `@name` parsed out of text, and notify through the existing notification layer |
 | 2.6 | ~~Document audit trail and activity timeline~~ **Done** — no new table; merges the existing `activity_log`, versions and comments. `BusinessDocument` added to the audited-model list |
 | 2.7 | ~~Workflow binding~~ **Done** — `Approvable` + `EmitsDomainEvents` on `BusinessDocument`; `TranslateDocumentWorkflowEvents` restates the engine's generic events as `document.*`. Caught and fixed a real bug: the engine was emitting through the `WorkflowInstance` wrapper rather than the actual subject, so no subject-specific listener could ever match. See `docs/workflows.md` |
-| 2.8 | E-signature — fields, ordering, sequential/parallel, reminders, status (§19, ERP #23) |
+| 2.8 | ~~E-signature~~ **Done** — sequential/parallel, decline, public signing link resolved cross-tenant like `/v/{token}`, completion mints a `VerificationToken` via the existing issuer pattern rather than a second verification system. **Missing: reminders (needs a scheduler — none exists for Documents yet) and an admin screen; a caught bug** — `create()` doesn't backfill DB column defaults into the in-memory model, so `status` read as null immediately after creating a signature despite the row correctly saying 'pending'; fixed by setting it explicitly rather than trusting the migration default |
 | 2.9 | External sharing — secure links, expiry, password, revocation, access log (§21) |
 | 2.10 | Retention, legal hold, lifecycle states, controlled disposal (§31–32) |
 | 2.11 | Per-type document numbering (§25) |

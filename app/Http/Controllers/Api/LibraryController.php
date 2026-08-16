@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Api;
 use App\Http\Resources\BusinessDocumentResource;
 use App\Models\BusinessDocument;
 use App\Models\BusinessDocumentComment;
+use App\Models\BusinessDocumentSignature;
 use App\Models\BusinessDocumentVersion;
 use App\Models\Contact;
 use App\Models\Document;
@@ -13,6 +14,7 @@ use App\Models\Project;
 use App\Services\Documents\DocumentActivity;
 use App\Services\Documents\DocumentComments;
 use App\Services\Documents\DocumentLinker;
+use App\Services\Documents\DocumentSignatureRequests;
 use App\Services\Documents\DocumentVersioner;
 use App\Services\Documents\VersionComparator;
 use App\Support\DocumentKinds;
@@ -49,6 +51,7 @@ class LibraryController extends ApiController
         private readonly VersionComparator $comparator,
         private readonly DocumentComments $comments,
         private readonly DocumentActivity $activity,
+        private readonly DocumentSignatureRequests $signatureRequests,
     ) {}
 
     public function index(Request $request): AnonymousResourceCollection
@@ -207,6 +210,46 @@ class LibraryController extends ApiController
         ]);
 
         return response()->json(['data' => $timeline]);
+    }
+
+    public function signatureStatus(BusinessDocument $document): JsonResponse
+    {
+        $this->authorize('view', $document);
+
+        return response()->json(['data' => $this->signatureRequests->status($document) + [
+            'signers' => $document->signatures->map(fn (BusinessDocumentSignature $s) => [
+                'id' => $s->id,
+                'name' => $s->signer_name,
+                'email' => $s->signer_email,
+                'order' => $s->order,
+                'status' => $s->status,
+                'signed_at' => $s->signed_at?->toIso8601String(),
+            ]),
+        ]]);
+    }
+
+    public function requestSignatures(Request $request, BusinessDocument $document): JsonResponse
+    {
+        $this->authorize('share', $document);
+
+        $data = $request->validate([
+            'signers' => ['required', 'array', 'min:1'],
+            'signers.*.name' => ['required', 'string', 'max:200'],
+            'signers.*.email' => ['required', 'email', 'max:200'],
+            'mode' => ['sometimes', 'string', Rule::in(DocumentSignatureRequests::MODES)],
+        ]);
+
+        try {
+            $signatures = $this->signatureRequests->request($document, $data['signers'], $data['mode'] ?? 'parallel');
+        } catch (\RuntimeException $e) {
+            return response()->json(['message' => $e->getMessage()], 422);
+        }
+
+        return response()->json(['data' => $signatures->map(fn (BusinessDocumentSignature $s) => [
+            'id' => $s->id,
+            'name' => $s->signer_name,
+            'order' => $s->order,
+        ])], 201);
     }
 
     public function comments(BusinessDocument $document): JsonResponse

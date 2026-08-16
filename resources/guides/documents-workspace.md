@@ -75,6 +75,33 @@ checked, but are not ready to commit to it being final. A locked draft can
 still be unlocked, or issued outright; locking is not a step on the way to
 issuing, it is a separate hold you can put on and take off.
 
+## Signing
+
+Send a document out for signature to one or more people — a client, a
+witness, a new employee. Each signer gets their own link by email; nobody
+needs an account with you to sign.
+
+**Parallel** — anybody can sign at any time, in any order. **Sequential** —
+the second signer's link does not work until the first has signed. Choose
+whichever matches how the paper version would have been passed round.
+
+A signer types their name and submits to sign — the same way most lightweight
+e-signature tools work. What makes it binding is not the typed name itself,
+but the combination that only they hold: the emailed link, and the time and
+IP address recorded the moment they use it. A signer can decline instead, with
+a reason, if something needs to change first.
+
+Once everybody has signed, the document gets the same tamper-evident
+verification your other issued documents already have — the same QR
+verification the rest of the product uses, not a second one built specially
+for signatures.
+
+**Things that surprise people:** a document can be sent for signature whether
+it is a draft or already issued — signing a contract after it has been
+formally issued is the ordinary case, not an edge case. Once a signature round
+is under way, a second one cannot be started on the same document until the
+first is finished, declined, or the document is voided.
+
 ## Approval
 
 A document can be sent for approval the same way any other approvable record

@@ -13,6 +13,7 @@ use App\Http\Controllers\PrintController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\SyncController;
 use App\Http\Controllers\TicketController;
+use App\Http\Controllers\SignatureController;
 use App\Http\Controllers\VerificationController;
 use App\Livewire\Accounting\Declarations as AccountingDeclarations;
 use App\Livewire\Accounting\Index as AccountingIndex;
@@ -362,6 +363,17 @@ Route::post('/business/{company}/reviews', [ProfileController::class, 'submitRev
 Route::middleware('throttle:60,1')->group(function () {
     Route::get('/v/{token}', [VerificationController::class, 'show'])->name('verification.show');
     Route::get('/v/{token}/qr.svg', [VerificationController::class, 'qr'])->name('verification.qr');
+});
+
+/*
+ * The public signing link — a signer holds this token, not a login. Same
+ * public-tenancy-crossing shape as verification above, and the same
+ * throttle: this URL is unguessable but the endpoint itself is enumerable.
+ */
+Route::middleware('throttle:60,1')->group(function () {
+    Route::get('/sign/{token}', [SignatureController::class, 'show'])->name('signatures.show');
+    Route::post('/sign/{token}', [SignatureController::class, 'sign'])->name('signatures.sign');
+    Route::post('/sign/{token}/decline', [SignatureController::class, 'decline'])->name('signatures.decline');
 });
 
 /*

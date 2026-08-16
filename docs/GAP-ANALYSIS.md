@@ -87,7 +87,6 @@ roadmap:**
 | 7 | Dynamic ERP field registry — modules registering their own authorised fields |
 | 8 | Templates as data (create/edit/version/publish/permission). Templates are a hard-coded PHP catalogue today |
 | 17–18 | Workflow stages and the approval engine |
-| 19 | Signature requests, fields, ordering, status |
 | 21 | External sharing — secure links, expiry, password, revocation, access log |
 | 25 | Configurable document numbering per type |
 | 30 | Documents-specific audit trail (the suite has `activity_log`; Documents does not write a full document audit yet) |
@@ -150,7 +149,7 @@ visible, not silent):
 | 20 | Workflow & approval engine | **A** | **Built 2026-08-16.** Workflows, ordered steps, instances, assignments and immutable decisions. Sequential, parallel and numeric quorum; role/department/user/owner/manager/creator approver modes resolved at assignment time; amount-based and field conditions as data; delegation with provenance; reject vs. changes-requested kept distinct; a step with no possible approver stalls rather than passing. `/actions` is the cross-module inbox. Trigger→action automation shipped separately (`AutomationRule`, ERP #20 automation half, below) and Documents now consumes the engine (`Approvable` + `TranslateDocumentWorkflowEvents`, restating generic events as `document.*`). See `docs/workflows.md`. **Still missing: the workflow admin screen** — workflows are defined in data today. `document_approvals` remains as the sales-specific mechanism, untouched on purpose. |
 | 21 | Notifications | **B** | 20 notification classes, mail and in-app. **Missing: SMS, WhatsApp, user-configurable rules, escalations.** |
 | 22 | Enterprise Documents | **B** | Part 1 above. |
-| 23 | E-signature | **C** | Nothing. Belongs inside Documents. |
+| 23 | E-signature | **B** | **Built 2026-08-16, inside Documents as the brief specified.** Sequential and parallel rounds, per-signer status, decline with reason, a public unauthenticated signing link resolved cross-tenant the same way `/v/{token}` verification already is. On completion, mints a `VerificationToken` the same way `DocumentIssuer` does on issue — no second verification system. **Missing: signature fields placed on the document itself (a signature block at a specific position in the text), reminders (needs a scheduled job — none exists yet for Documents), and an admin screen** — requesting a round is API/service-only today. |
 | 24 | Audit & governance | **B** | `activity_log`, webhook delivery log, platform-admin activity, device register. **Missing: login audit, permission-change audit, export audit, a governance view over any of it.** |
 | 25 | Administration | **B** | Companies, users, roles, permissions, numbering, currencies, taxes, module switches, branding. **Missing: branches, departments, fiscal periods, approval rules, workflow configuration.** |
 

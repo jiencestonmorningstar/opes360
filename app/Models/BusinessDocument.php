@@ -178,6 +178,7 @@ class BusinessDocument extends Model
                 'voided_at', 'voided_by', 'void_reason',
                 'kind', 'description', 'security', 'language', 'tags',
                 'owner_id', 'expires_on', 'folder_id', 'department_id', 'is_locked',
+                'signature_mode',
             ];
             $illegal = array_diff(array_keys($document->getDirty()), $mutable);
 
@@ -208,6 +209,11 @@ class BusinessDocument extends Model
     public function comments(): HasMany
     {
         return $this->hasMany(BusinessDocumentComment::class);
+    }
+
+    public function signatures(): HasMany
+    {
+        return $this->hasMany(BusinessDocumentSignature::class)->orderBy('order');
     }
 
     public function verificationToken(): BelongsTo
