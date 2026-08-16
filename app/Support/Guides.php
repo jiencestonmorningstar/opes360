@@ -68,6 +68,13 @@ class Guides
             'audience' => 'admin',
         ],
 
+        'dossiers-and-packages' => [
+            'title' => 'Dossiers, packages and checklists',
+            'group' => 'Documents',
+            'summary' => 'Three ways of seeing documents together that are not folders.',
+            'audience' => 'everyone',
+        ],
+
         'custom-templates' => [
             'title' => 'Your own templates',
             'group' => 'Documents',

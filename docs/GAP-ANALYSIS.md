@@ -45,6 +45,7 @@ half delivered. The table follows the master spec's own section numbers.
 | 15 | Comments — replies, explicit-id mentions with notification, resolve/reopen, deletion by permission | `BusinessDocumentComment`, `DocumentComments` |
 | 30, 35 | Audit trail and activity timeline — no new table; merges the existing audit log, versions and comments into one ordered feed | `DocumentActivity` |
 | 21 | External sharing — expiring, password-protected, revocable links with an access log, view-only as a UX courtesy rather than an enforced restriction | `DocumentSharing`, `/share/{token}` |
+| 36–38, 40 | Dossiers, packages, ZIP bundles, checklists — a dossier is a query over existing relations rather than a stored row, and a checklist's completeness is computed from what is actually linked rather than a tick that could drift. Packages hold references: removing from one, or deleting one, never touches a document | `DocumentDossiers`, `DocumentBundles` |
 | 7 | Dynamic ERP field registry — `company.*`/`today` moved out of hard-coded `DocumentComposer` code into the registry's default provider (identical output, verified by the regression gate); `customer`/`employee`/`project` providers added as real working examples, contributing nothing gracefully when no record is in context. Any module registers its own the same way, in a `boot()`, without Documents knowing it exists. Caught and fixed a real bug while building this: the Papers gallery has offered a business's own published templates since the previous commit, but the Compose screen resolved templates through the built-in catalogue only, so opening one 404'd | `DocumentFieldRegistry` |
 | 8 | Templates as data — a business can create, edit, version and publish its own templates, merged into the gallery alongside the built-in PHP catalogue rather than replacing it. `DocumentComposer` checks a business's published templates before falling through to the built-in ones, so every existing built-in template keeps composing exactly as before | `CustomDocumentTemplates`, `business_document_templates` |
 | 25 | Configurable numbering per kind — reuses the existing offline-safe lease ledger (`DocumentNumbers`/`NumberLease`) rather than building a second numbering mechanism; a company that never configures anything keeps today's shared `DOC-2026-000001` series unchanged, kind by kind | `BusinessDocumentNumberingScheme`, `DocumentNumbers::nextForBusinessDocumentKind()` |
@@ -92,7 +93,7 @@ roadmap:**
 | 17–18 | Workflow stages and the approval engine |
 | 30 | Documents-specific audit trail (the suite has `activity_log`; Documents does not write a full document audit yet) |
 | 33 | Alerts — expiry and workflow-stalled notifications specifically for documents (the My Actions centre and its `workflow.stalled` event already exist; a scheduled expiry check does not) |
-| 36–40 | Related-content panel, dossiers, packages, bundles, checklists |
+| 39 | **Combined-PDF bundles only.** ZIP bundles are built; merging a package into one PDF needs the server-side PDF engine that is still an open infrastructure decision (Phase 5) |
 | 44 | Multilingual templates (the `language` column exists; nothing consumes it) |
 | 46 | Documents administration screens |
 | 50–51 | Offline document handling and the mobile document interface |

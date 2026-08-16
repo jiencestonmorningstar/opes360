@@ -65,7 +65,7 @@ Everything in Part 1 of the gap analysis not blocked on absent infrastructure.
 | 2.11 | ~~Per-type document numbering~~ **Done** — reuses the existing offline-safe `DocumentNumbers`/`NumberLease` ledger rather than a second numbering mechanism. A company that configures nothing sees zero behaviour change |
 | 2.12 | ~~Templates as data~~ **Done** — merged into the gallery alongside the built-in PHP catalogue rather than replacing it; `DocumentComposer` checks custom templates first, falls through to the built-in ones unchanged |
 | 2.13 | ~~Dynamic ERP field registry~~ **Done** — `company`/`today` fields moved out of hard-coded code into the registry's own default provider; `customer`/`employee`/`project` providers added, reading from optional compose-time context. Also fixed a real bug found in passing: the Compose screen 404'd on a custom template the gallery itself offered |
-| 2.14 | Related content, dossiers, packages, bundles, checklists (§36–40) |
+| 2.14 | ~~Related content, dossiers, packages, checklists, ZIP bundles~~ **Done** — dossiers and checklists are computed from existing relations, never stored state that could drift. **Combined-PDF bundles remain blocked** on the Phase 5 PDF-engine decision; ZIP ships |
 | 2.15 | My Actions centre and document alerts (§33–34) |
 | 2.16 | Bulk operations (§68) |
 | 2.17 | Watermarks and print control (§72–73) |
