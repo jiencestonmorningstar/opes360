@@ -19,7 +19,10 @@ class BusinessDocumentPolicy extends CompanyScopedPolicy
     }
 
     /**
-     * A draft can be revised; an issued document is frozen.
+     * A draft can be revised; an issued document is frozen; a locked draft
+     * behaves like an issued one for editing purposes without going through
+     * issuance — a business freezing a draft mid-review is not yet ready to
+     * commit to it being final.
      *
      * Typed as Model, not BusinessDocument, because narrowing a parameter type
      * against the parent is a fatal error in PHP — and one that only fires the
@@ -30,6 +33,7 @@ class BusinessDocumentPolicy extends CompanyScopedPolicy
     {
         return $paper instanceof BusinessDocument
             && $paper->isDraft()
+            && ! $paper->is_locked
             && parent::update($user, $paper)
             && $this->readable($user, $paper);
     }

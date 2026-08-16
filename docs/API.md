@@ -1166,9 +1166,10 @@ tampering, not to be handed to whoever is checking.
 
 ## 23. What is not here yet
 
-Every module through Library has an API. **Projects does not yet** — it
-shipped 2026-08-16 with a screen and no API, and that is a gap to close, not a
-choice; note it here rather than let the claim below overstate what exists.
+Every module through Library has an API. **Projects and document versions do
+not yet** — both shipped 2026-08-16 with a screen (or, for versions, a working
+model) and no API, and that is a gap to close, not a choice; noted here rather
+than let the claim below overstate what exists.
 
 Everything else absent below is absent by choice, and each section above says
 why in its own place:

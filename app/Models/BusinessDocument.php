@@ -3,12 +3,14 @@
 namespace App\Models;
 
 use App\Models\Concerns\BelongsToCompany;
+use App\Services\Documents\DocumentVersioner;
 use App\Support\DocumentKinds;
 use App\Support\DocumentTemplates;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Concerns\HasUlids;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use RuntimeException;
 
@@ -158,7 +160,7 @@ class BusinessDocument extends Model
                 'status', 'updated_at', 'deleted_at', 'verification_token_id',
                 'voided_at', 'voided_by', 'void_reason',
                 'kind', 'description', 'security', 'language', 'tags',
-                'owner_id', 'expires_on', 'folder_id', 'department_id',
+                'owner_id', 'expires_on', 'folder_id', 'department_id', 'is_locked',
             ];
             $illegal = array_diff(array_keys($document->getDirty()), $mutable);
 
@@ -170,6 +172,20 @@ class BusinessDocument extends Model
                 ));
             }
         });
+
+        /*
+         * A version on creation and on every content change. Filing a
+         * document — moving it, tagging it, locking it — is not content, and
+         * must not flood the history with a version identical to the one
+         * before it. See DocumentVersioner for exactly which columns count.
+         */
+        static::created(fn (BusinessDocument $document) => app(DocumentVersioner::class)->snapshotInitial($document));
+        static::updated(fn (BusinessDocument $document) => app(DocumentVersioner::class)->snapshotIfChanged($document));
+    }
+
+    public function versions(): HasMany
+    {
+        return $this->hasMany(BusinessDocumentVersion::class);
     }
 
     public function verificationToken(): BelongsTo

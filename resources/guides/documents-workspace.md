@@ -54,7 +54,30 @@ is frozen: revise a draft, or void it and issue a replacement. This is why you
 can move a signed contract into a different folder six months later, but you
 cannot go back and change what it says.
 
+## Versions
+
+Every time a draft's actual content changes — its title, its wording, who it
+is addressed to — the previous version is kept. Filing actions (moving it,
+tagging it, locking it) do not create a new version, because they have not
+changed what the document says.
+
+You can restore an earlier version of a draft. Restoring does not erase what
+came after it — it becomes the new current version, on top of the ones
+already there, so the history always shows exactly what happened and in what
+order. Only a draft can be restored; once a document is issued, its content is
+frozen the same way it always has been.
+
+## Locking a draft
+
+**Lock** freezes a draft against further edits without issuing it — useful
+mid-review, when you want nobody to touch the wording while it is being
+checked, but are not ready to commit to it being final. A locked draft can
+still be unlocked, or issued outright; locking is not a step on the way to
+issuing, it is a separate hold you can put on and take off.
+
 ## For developers
 
 Everything on this screen is also reachable over the API — see §22 of
-`docs/API.md` for `GET /api/v1/library` and the filing endpoints.
+`docs/API.md` for `GET /api/v1/library` and the filing endpoints. Versions do
+not have an API yet; see `docs/API.md` §23 for what is intentionally absent
+versus what simply has not shipped.
