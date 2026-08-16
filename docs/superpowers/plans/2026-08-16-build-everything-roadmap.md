@@ -164,7 +164,10 @@ From `docs/HANDOVER.md`, and non-negotiable:
       test that fails if a guide and its catalogue entry disagree in either
       direction. **Every feature built from here on adds its guide in the same
       commit.**
-- [ ] 1.4 Projects
+- [x] 1.4 Projects — entity, workspace screen, guide. **No API yet** — noted
+      in `docs/API.md` §22 rather than silently left out. Documents §9/§10
+      project folders still wait on Documents phase 2, not on Projects — the
+      entity they needed now exists
 - [ ] 2.1–2.22 Documents to completion
 - [ ] 3.1–3.10 Tier-1 ERP holes
 - [ ] 4.1–4.10 Tier-2 modules

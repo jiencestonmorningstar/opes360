@@ -22,6 +22,7 @@ use App\Livewire\Business\Artisans as BusinessArtisans;
 use App\Livewire\Business\Companies as BusinessCompanies;
 use App\Livewire\Business\Departments as BusinessDepartments;
 use App\Livewire\Guides\Index as GuidesIndex;
+use App\Livewire\Projects\Index as ProjectsIndex;
 use App\Livewire\Workflow\Inbox as WorkflowInbox;
 use App\Livewire\Business\Edit as BusinessEdit;
 use App\Livewire\Business\Branding as BusinessBranding;
@@ -235,6 +236,8 @@ Route::middleware('auth')->group(function () {
      */
     Route::get('/guides', GuidesIndex::class)->name('guides');
     Route::get('/guides/{slug}', GuidesIndex::class)->name('guides.show');
+
+    Route::get('/projects', ProjectsIndex::class)->middleware('can:projects.view')->name('projects');
     Route::get('/businesses', BusinessCompanies::class)->name('businesses');
     Route::get('/artisans', BusinessArtisans::class)->middleware('can:business.view')->name('artisans');
     Route::get('/stationery/print', [PrintController::class, 'stationery'])->middleware('can:business.manage-stationery')->name('stationery.print');

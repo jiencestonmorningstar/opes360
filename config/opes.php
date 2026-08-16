@@ -65,6 +65,7 @@ return [
         ['key' => 'deals', 'label' => 'Pipeline', 'icon' => 'trending-up', 'route' => 'deals', 'ability' => 'deals.view'],
         ['key' => 'products', 'label' => 'Products', 'icon' => 'cube', 'route' => 'products', 'ability' => 'products.view'],
         ['key' => 'papers', 'label' => 'Documents', 'icon' => 'document', 'route' => 'papers', 'ability' => 'papers.view'],
+        ['key' => 'projects', 'label' => 'Projects', 'icon' => 'briefcase', 'route' => 'projects', 'ability' => 'projects.view'],
         ['key' => 'forms', 'label' => 'Forms', 'icon' => 'clipboard', 'route' => 'forms', 'ability' => 'forms.view'],
         ['key' => 'events', 'label' => 'Events', 'icon' => 'ticket', 'route' => 'events', 'ability' => 'events.view'],
         // Only rendered for a business that switched the module on: the

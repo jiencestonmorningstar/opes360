@@ -68,6 +68,13 @@ class Guides
             'audience' => 'admin',
         ],
 
+        'projects' => [
+            'title' => 'Projects',
+            'group' => 'Working together',
+            'summary' => 'Chargeable and internal work: tasks, time, and cost against a budget.',
+            'audience' => 'everyone',
+        ],
+
         'document-security' => [
             'title' => 'Who can see a document',
             'group' => 'Documents',

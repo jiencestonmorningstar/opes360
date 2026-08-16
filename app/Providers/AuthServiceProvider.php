@@ -16,6 +16,7 @@ use App\Models\Receipt;
 use App\Models\Ticket;
 use App\Models\User;
 use App\Models\VipMembership;
+use App\Models\Project;
 use App\Models\Workflow;
 use App\Policies\ArtisanPolicy;
 use App\Policies\BusinessDocumentPolicy;
@@ -30,6 +31,7 @@ use App\Policies\PaymentPolicy;
 use App\Policies\ReceiptPolicy;
 use App\Policies\TicketPolicy;
 use App\Policies\VipMembershipPolicy;
+use App\Policies\ProjectPolicy;
 use App\Policies\WorkflowPolicy;
 use App\Support\CurrentCompany;
 use App\Support\Modules;
@@ -57,6 +59,7 @@ class AuthServiceProvider extends ServiceProvider
         Event::class => EventPolicy::class,
         Ticket::class => TicketPolicy::class,
         VipMembership::class => VipMembershipPolicy::class,
+        Project::class => ProjectPolicy::class,
         Workflow::class => WorkflowPolicy::class,
     ];
 

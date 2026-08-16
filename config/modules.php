@@ -14,6 +14,7 @@ use App\Models\Item;
 use App\Models\PartnerClient;
 use App\Models\Payment;
 use App\Models\PayrollRun;
+use App\Models\Project;
 use App\Models\Payslip;
 use App\Models\Receipt;
 use App\Models\StockLocation;
@@ -108,6 +109,18 @@ return [
         'groups' => ['products'],
         'except' => ['products.manage-locations'],
         'models' => [Item::class, Stocktake::class],
+    ],
+
+    'projects' => [
+        'label' => 'Projects',
+        'description' => 'Chargeable and internal work: tasks, milestones, time and cost against a budget.',
+        'icon' => 'briefcase',
+        // On by default like everything else — a business that does project
+        // work should find this without having to know to look for it. See
+        // the file header: the settings screen is where a business prunes.
+        'default' => true,
+        'groups' => ['projects'],
+        'models' => [Project::class],
     ],
 
     'stock_locations' => [

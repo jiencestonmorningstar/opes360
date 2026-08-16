@@ -64,6 +64,13 @@ class Permissions
          * has decided to keep close — which is why it stops at the Owner and
          * the Administrator in the seeder.
          */
+        /*
+         * Chargeable and internal work. `manage` covers creating a project and
+         * changing its budget or client — the commercial terms. `log-time` is
+         * separate because anybody doing the work logs hours against it
+         * without being able to touch what it is worth.
+         */
+        'Projects' => ['view', 'manage', 'log-time'],
         'Papers' => ['view', 'create', 'issue', 'void', 'share', 'manage'],
         'Forms' => ['view', 'create', 'update', 'delete', 'responses'],
         'Events' => ['view', 'create', 'update', 'void', 'check-in'],

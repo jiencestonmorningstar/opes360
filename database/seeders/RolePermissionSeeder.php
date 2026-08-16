@@ -37,6 +37,9 @@ class RolePermissionSeeder extends Seeder
             'Products' => ['view', 'create', 'update', 'adjust-stock', 'manage-locations'],
             'Assets' => ['view'],
             'Banking' => ['view'],
+            // Runs projects day to day: creates them, sets the budget, adds
+            // the team, and logs their own time on them.
+            'Projects' => ['view', 'manage', 'log-time'],
             // Sends documents out on the company's behalf, which is the job.
             // Not 'manage': that is sight of every restricted document in the
             // business, and a manager who needs one can be given it by hand.
@@ -82,6 +85,9 @@ class RolePermissionSeeder extends Seeder
             // accountant's work before they are anybody's.
             'Assets' => ['view', 'create', 'update', 'depreciate', 'dispose'],
             'Banking' => ['view', 'manage', 'import', 'reconcile'],
+            // Costing a project against the books is the accountant's before
+            // it is anyone's.
+            'Projects' => ['view'],
             'Papers' => ['view', 'create'],
             'Forms' => ['view', 'responses'],
             'Events' => ['view'],
@@ -105,6 +111,10 @@ class RolePermissionSeeder extends Seeder
             // here even though it cannot issue the invoice one turns into.
             'Deals' => ['view', 'create', 'update', 'delete'],
             'Products' => ['view'],
+            // Chasing a client's project is close enough to the deal it grew
+            // out of that a sales officer needs to see it, and to log time
+            // spent on it, without being able to move its budget.
+            'Projects' => ['view', 'log-time'],
             'Papers' => ['view', 'create'],
             'Forms' => ['view', 'create', 'update', 'responses'],
             'Events' => ['view', 'create', 'update', 'check-in'],
@@ -149,6 +159,7 @@ class RolePermissionSeeder extends Seeder
             'Reports' => ['view'],
             'Departments' => ['view'],
             'Workflows' => ['view'],
+            'Projects' => ['view'],
         ]],
     ];
 

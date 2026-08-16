@@ -71,6 +71,11 @@ class Expense extends Model
         ];
     }
 
+    public function project(): BelongsTo
+    {
+        return $this->belongsTo(Project::class);
+    }
+
     public function supplier(): BelongsTo
     {
         return $this->belongsTo(Contact::class, 'supplier_id');

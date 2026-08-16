@@ -129,7 +129,7 @@ visible, not silent):
 | 8 | Expenses | **B** | Expenses, categories, payments, void. **Missing: employee expense claims, reimbursement, cost-centre allocation.** |
 | 9 | HR | **B** | Employees, employment contracts, leave requests. **Departments became an entity 2026-08-16** (nested, managed, archivable; the old free-text column is backfilled and kept). **Missing: positions as an entity, attendance, performance, recruitment.** |
 | 10 | Payroll | **A** | Runs, salary components, allowances, deductions, payslips, approval, posting to the books. |
-| 11 | Projects | **C** | **Nothing.** No project, task, milestone, timesheet or budget entity anywhere. This is the largest Tier-1 hole and it blocks Documents §9/§10 as well. |
+| 11 | Projects | **B** | **Built 2026-08-16**: projects, milestones, tasks, time entries with locking, cost-to-date (labour at its logged rate plus expenses), billable/internal distinction, `/projects` workspace. Expenses and the ERP `documents` table both link to a project. **Missing: timesheet approval as its own screen (the workflow engine can be wired to it but isn't yet), resource allocation across projects, and the Documents §9/§10 project folders/dossiers this was meant to unblock** — those still wait on Documents phase 2. |
 | 12 | Fixed assets | **B** | Register, acquisition, depreciation, disposal. **Missing: transfers, maintenance, asset locations.** |
 
 ### Tier 2

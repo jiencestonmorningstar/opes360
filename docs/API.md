@@ -1132,8 +1132,12 @@ See `docs/workflows.md`.
 
 ## 22. What is not here yet
 
-Every module now has an API. What remains absent is absent by choice, and each
-section above says why in its own place:
+Every module through Approvals has an API. **Projects does not yet** — it
+shipped 2026-08-16 with a screen and no API, and that is a gap to close, not a
+choice; note it here rather than let the claim below overstate what exists.
+
+Everything else absent below is absent by choice, and each section above says
+why in its own place:
 
 - Creating and editing events, and building forms — write-once things that
   nothing else produces.

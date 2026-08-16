@@ -152,9 +152,12 @@ Of the three findings that reordered the work on 2026-08-16, two are now done:
   workflow (they are data today).
 - ~~Departments are a free-text string.~~ **Built** as an entity, nested and
   archivable, with the old column backfilled and kept.
-- **Projects still do not exist at all** — a Tier-1 ERP gap that also blocks
-  project folders, relationships, dossiers and field binding in Documents.
-  Next on the roadmap.
+- ~~Projects do not exist.~~ **Built.** Projects, milestones, tasks, time
+  entries (locked once billed, rate frozen at the moment it was logged),
+  cost-to-date, billable/internal split, `/projects` workspace, guide. **No
+  API yet** — noted honestly in `docs/API.md` rather than left silent. The
+  Documents §9/§10 project folders it was meant to unblock still wait on
+  Documents phase 2, which hasn't started.
 
 ### Documents (plan: `docs/superpowers/plans/2026-08-15-documents-core.md`)
 
@@ -211,6 +214,8 @@ than realtime; print-to-PDF kept. All recorded in the plan.
 | `docs/GAP-ANALYSIS.md` | **Built / part-built / not built**, Documents and the whole ERP |
 | `docs/superpowers/plans/2026-08-16-build-everything-roadmap.md` | The sequenced plan for everything still missing |
 | `docs/workflows.md` | The approval engine: approver modes, quorum, conditions, delegation |
+| `docs/automation.md` | The event bus and automation rules |
+| `/guides` (in-product) | The user-facing documentation hub — one guide per feature, enforced by test |
 | `docs/superpowers/specs/2026-08-16-documents-master-spec.md` | The authoritative Documents brief + ERP checklist |
 | `docs/API.md` | The whole API, 21 sections |
 | `docs/branding.md` | Token contract, the three roles, adding a token |
