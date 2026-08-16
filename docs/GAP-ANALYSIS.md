@@ -41,7 +41,8 @@ half delivered. The table follows the master spec's own section numbers.
 | 12–13 | Versions and comparison — one snapshot per content change, filing never versions, restore adds a version rather than rewriting one, word-level diff between any two versions | `DocumentVersioner`, `VersionComparator`, `business_document_versions` |
 | 71 | Finalisation — not rebuilt; issuance already does this (freeze, hash, record who/when) | `BusinessDocument::booted()`, `canonicalPayload()` |
 | 3 | Workspace — search, kind/security/folder/tag filters, five overview counters | `Livewire\Papers\Index` |
-| 47 | Library API — list/show/create/file/delete, attach/detach relations | `LibraryController` |
+| 47 | Library API — list/show/create/file/delete, attach/detach relations, versions, comments | `LibraryController` |
+| 15 | Comments — replies, explicit-id mentions with notification, resolve/reopen, deletion by permission | `BusinessDocumentComment`, `DocumentComments` |
 
 Reused rather than rebuilt, exactly as the brief requires: the `media` table and
 upload path, `users`/`roles`/`permissions`, `contacts`, the `documents` ERP
@@ -84,7 +85,6 @@ roadmap:**
 | 5 | Creation routes beyond blank/template/upload — duplicate, from existing, from ERP record, from workflow, from automation |
 | 7 | Dynamic ERP field registry — modules registering their own authorised fields |
 | 8 | Templates as data (create/edit/version/publish/permission). Templates are a hard-coded PHP catalogue today |
-| 15 | Comments, replies, mentions, resolution |
 | 17–18 | Workflow stages and the approval engine |
 | 19 | Signature requests, fields, ordering, status |
 | 21 | External sharing — secure links, expiry, password, revocation, access log |

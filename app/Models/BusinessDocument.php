@@ -188,6 +188,11 @@ class BusinessDocument extends Model
         return $this->hasMany(BusinessDocumentVersion::class);
     }
 
+    public function comments(): HasMany
+    {
+        return $this->hasMany(BusinessDocumentComment::class);
+    }
+
     public function verificationToken(): BelongsTo
     {
         return $this->belongsTo(VerificationToken::class);

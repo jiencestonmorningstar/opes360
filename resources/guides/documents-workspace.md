@@ -75,6 +75,22 @@ checked, but are not ready to commit to it being final. A locked draft can
 still be unlocked, or issued outright; locking is not a step on the way to
 issuing, it is a separate hold you can put on and take off.
 
+## Comments
+
+Leave a remark on a document, or reply to one already there. Mentioning a
+colleague sends them an email and a notification — mentions are chosen from a
+list of people, not typed as `@name`, so the notice always reaches the right
+person even if two colleagues share a name.
+
+A thread can be **resolved** once it no longer needs attention, and
+**reopened** if it turns out it does. Resolving is available to whoever wrote
+the comment, to the document's owner, and to a document administrator — not to
+anyone passing by, since resolving a thread is a small act of judgement about
+what still needs attention.
+
+Deleting a comment is narrower still: only its author, or a document
+administrator.
+
 ## Comparing versions
 
 Two versions can be compared side by side, word by word — not just "this

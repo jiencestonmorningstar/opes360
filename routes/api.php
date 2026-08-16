@@ -179,6 +179,8 @@ Route::prefix('v1')->group(function (): void {
                 ->name('api.v1.library.versions.index');
             Route::get('library/{document}/versions/compare', [LibraryController::class, 'compareVersions'])
                 ->name('api.v1.library.versions.compare');
+            Route::get('library/{document}/comments', [LibraryController::class, 'comments'])
+                ->name('api.v1.library.comments.index');
 
             Route::prefix('accounting')->name('api.v1.accounting.')->group(function (): void {
                 Route::get('accounts', [AccountingController::class, 'accounts'])->name('accounts');
@@ -211,6 +213,15 @@ Route::prefix('v1')->group(function (): void {
                 ->name('api.v1.library.relations.detach');
             Route::post('library/{document}/versions/{version}/restore', [LibraryController::class, 'restoreVersion'])
                 ->name('api.v1.library.versions.restore');
+
+            Route::post('library/{document}/comments', [LibraryController::class, 'postComment'])
+                ->name('api.v1.library.comments.store');
+            Route::post('library/comments/{comment}/resolve', [LibraryController::class, 'resolveComment'])
+                ->name('api.v1.library.comments.resolve');
+            Route::post('library/comments/{comment}/reopen', [LibraryController::class, 'reopenComment'])
+                ->name('api.v1.library.comments.reopen');
+            Route::delete('library/comments/{comment}', [LibraryController::class, 'destroyComment'])
+                ->name('api.v1.library.comments.destroy');
 
             // Editing a tier changes what future sales get, never what a
             // member was already sold. Cancelling stops a benefit rather than

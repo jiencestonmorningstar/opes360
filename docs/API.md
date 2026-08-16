@@ -1182,6 +1182,22 @@ requires a draft, catches this before the service beneath it ever runs.
 Restoring does not delete anything: it adds a new version on top, so the
 history still shows exactly what happened and in what order.
 
+### Comments
+
+`GET /api/v1/library/{document}/comments` — top-level comments, each with its
+replies nested underneath.
+
+`POST /api/v1/library/{document}/comments` — `body`, optional `parent_id` for
+a reply, optional `mentioned_user_ids`. Mentions are ids, not `@name` parsed
+out of the text — a parser guesses who was meant and is wrong the day two
+colleagues share a name.
+
+`POST /api/v1/library/comments/{comment}/resolve` and `/reopen` — the
+comment's author, the document's owner, or a document administrator.
+
+`DELETE /api/v1/library/comments/{comment}` — the comment's author, or a
+document administrator.
+
 ## 23. What is not here yet
 
 Every module through Library, including its versions, has an API. **Projects

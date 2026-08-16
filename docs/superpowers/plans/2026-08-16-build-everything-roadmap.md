@@ -56,7 +56,7 @@ Everything in Part 1 of the gap analysis not blocked on absent infrastructure.
 | 2.2 | ~~Library API~~ **Done** — `docs/API.md` §22. Introduced a `file` ability separate from `update`, since `update` correctly requires a draft and filing must work on an issued document |
 | 2.3 | ~~Versions, locking and finalisation~~ **Done** — `docs/superpowers/plans/2026-08-16-documents-versions.md`. Finalisation was not rebuilt: issuance already does it. No API yet, noted in `docs/API.md` §23 |
 | 2.4 | ~~Version comparison~~ **Done** — word-level diff (`VersionComparator`), with an API. Own commit, since the earlier plan carved comparison out separately from creation |
-| 2.5 | Comments, replies, mentions, resolution (§15) |
+| 2.5 | ~~Comments, replies, mentions, resolution~~ **Done** — mentions are explicit user ids, never `@name` parsed out of text, and notify through the existing notification layer |
 | 2.6 | Document audit trail and activity timeline (§30, §35) |
 | 2.7 | Workflow binding — Documents consumes the Phase 1.2 engine (§17–18) |
 | 2.8 | E-signature — fields, ordering, sequential/parallel, reminders, status (§19, ERP #23) |

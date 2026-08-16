@@ -4,11 +4,13 @@ namespace App\Http\Controllers\Api;
 
 use App\Http\Resources\BusinessDocumentResource;
 use App\Models\BusinessDocument;
+use App\Models\BusinessDocumentComment;
 use App\Models\BusinessDocumentVersion;
 use App\Models\Contact;
 use App\Models\Document;
 use App\Models\Employee;
 use App\Models\Project;
+use App\Services\Documents\DocumentComments;
 use App\Services\Documents\DocumentLinker;
 use App\Services\Documents\DocumentVersioner;
 use App\Services\Documents\VersionComparator;
@@ -44,6 +46,7 @@ class LibraryController extends ApiController
         private readonly DocumentLinker $linker,
         private readonly DocumentVersioner $versioner,
         private readonly VersionComparator $comparator,
+        private readonly DocumentComments $comments,
     ) {}
 
     public function index(Request $request): AnonymousResourceCollection
@@ -188,6 +191,84 @@ class LibraryController extends ApiController
         }
 
         return response()->json(['data' => BusinessDocumentResource::make($restored)]);
+    }
+
+    public function comments(BusinessDocument $document): JsonResponse
+    {
+        $this->authorize('view', $document);
+
+        $comments = $document->comments()->topLevel()->with('replies.author', 'author')->get();
+
+        return response()->json(['data' => $comments->map(fn ($c) => $this->commentPayload($c))]);
+    }
+
+    public function postComment(Request $request, BusinessDocument $document): JsonResponse
+    {
+        $this->authorize('view', $document);
+        $this->authorize('create', BusinessDocumentComment::class);
+
+        $data = $request->validate([
+            'body' => ['required', 'string', 'max:5000'],
+            'parent_id' => ['nullable', 'string', 'exists:business_document_comments,id'],
+            'mentioned_user_ids' => ['nullable', 'array'],
+            'mentioned_user_ids.*' => ['integer', 'exists:users,id'],
+        ]);
+
+        $parent = isset($data['parent_id']) ? BusinessDocumentComment::findOrFail($data['parent_id']) : null;
+
+        try {
+            $comment = $this->comments->post(
+                $document,
+                $request->user(),
+                $data['body'],
+                $parent,
+                $data['mentioned_user_ids'] ?? [],
+            );
+        } catch (\RuntimeException $e) {
+            return response()->json(['message' => $e->getMessage()], 422);
+        }
+
+        return response()->json(['data' => $this->commentPayload($comment)], 201);
+    }
+
+    public function resolveComment(BusinessDocumentComment $comment): JsonResponse
+    {
+        $this->authorize('resolve', $comment);
+
+        return response()->json(['data' => $this->commentPayload($this->comments->resolve($comment, request()->user()))]);
+    }
+
+    public function reopenComment(BusinessDocumentComment $comment): JsonResponse
+    {
+        $this->authorize('resolve', $comment);
+
+        return response()->json(['data' => $this->commentPayload($this->comments->reopen($comment))]);
+    }
+
+    public function destroyComment(BusinessDocumentComment $comment): JsonResponse
+    {
+        $this->authorize('delete', $comment);
+
+        $comment->delete();
+
+        return response()->json(null, 204);
+    }
+
+    /** @return array<string, mixed> */
+    protected function commentPayload(BusinessDocumentComment $comment): array
+    {
+        return [
+            'id' => $comment->id,
+            'body' => $comment->body,
+            'author' => $comment->author->name,
+            'author_id' => $comment->user_id,
+            'mentioned_user_ids' => $comment->mentioned_user_ids ?? [],
+            'resolved_at' => $comment->resolved_at?->toIso8601String(),
+            'created_at' => $comment->created_at?->toIso8601String(),
+            'replies' => $comment->relationLoaded('replies')
+                ? $comment->replies->map(fn ($r) => $this->commentPayload($r))->values()
+                : [],
+        ];
     }
 
     /**
