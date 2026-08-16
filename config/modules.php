@@ -1,8 +1,14 @@
 <?php
 
+use App\Models\AssetLocation;
+use App\Models\AssetMaintenance;
+use App\Models\AssetTransfer;
+use App\Models\AttendanceRecord;
 use App\Models\BankAccount;
 use App\Models\BusinessDocument;
+use App\Models\ComplianceObligation;
 use App\Models\Contact;
+use App\Models\Contract;
 use App\Models\Deal;
 use App\Models\Document;
 use App\Models\Employee;
@@ -10,16 +16,29 @@ use App\Models\Event;
 use App\Models\Expense;
 use App\Models\FixedAsset;
 use App\Models\Form;
+use App\Models\FuelLog;
 use App\Models\Item;
 use App\Models\PartnerClient;
 use App\Models\Payment;
+use App\Models\PaymentRun;
 use App\Models\PayrollRun;
-use App\Models\Project;
 use App\Models\Payslip;
+use App\Models\PerformanceReview;
+use App\Models\Project;
+use App\Models\PurchaseRequisition;
 use App\Models\Receipt;
+use App\Models\Rfq;
+use App\Models\Risk;
+use App\Models\ServiceJob;
+use App\Models\ServiceSlaPolicy;
+use App\Models\ServiceTicket;
 use App\Models\StockLocation;
 use App\Models\Stocktake;
+use App\Models\SupplierQuotation;
+use App\Models\SupplierStatement;
 use App\Models\Ticket;
+use App\Models\VehicleDetail;
+use App\Models\VehicleTrip;
 use App\Models\VipMembership;
 use App\Models\VipTier;
 
@@ -159,7 +178,13 @@ return [
         'icon' => 'briefcase',
         'default' => true,
         'groups' => ['assets'],
-        'models' => [FixedAsset::class],
+        // Fleet lives here rather than in a module of its own. A switchable
+        // `fleet` could be turned off while the vans stayed on the register,
+        // orphaning their milometers and their roadworthiness dates.
+        'models' => [
+            FixedAsset::class, AssetLocation::class, AssetTransfer::class, AssetMaintenance::class,
+            VehicleDetail::class, VehicleTrip::class, FuelLog::class,
+        ],
     ],
 
     'banking' => [
@@ -179,8 +204,72 @@ return [
         'description' => 'Staff records, contracts, allowances and leave.',
         'icon' => 'users',
         'default' => true,
-        'groups' => ['employees', 'leave'],
-        'models' => [Employee::class],
+        // Positions are deliberately absent from these groups, for the same
+        // reason departments are: a job title outlives a business switching
+        // its HR screens off, and payroll and the org chart both read it.
+        'groups' => ['employees', 'leave', 'attendance', 'reviews'],
+        'models' => [Employee::class, AttendanceRecord::class, PerformanceReview::class],
+    ],
+
+    'contracts' => [
+        'label' => 'Contracts',
+        'description' => 'Agreements with customers and suppliers, what each side owes, and the notice date before one renews itself.',
+        'icon' => 'document-check',
+        'default' => true,
+        // The other party is a Contact, so customers must be on. Documents
+        // deliberately are not required: a contract with no scanned copy
+        // attached is still an agreement with a notice deadline, and that
+        // deadline is the thing worth being told about.
+        'requires' => ['customers'],
+        'groups' => ['contracts'],
+        'models' => [Contract::class],
+    ],
+
+    'service' => [
+        'label' => 'Service desk',
+        'description' => 'Customer tickets, the visits that resolve them, and what you have promised about response times.',
+        'icon' => 'wrench-screwdriver',
+        'default' => false,
+        // A ticket is raised by a customer, so the customer list must exist.
+        'requires' => ['customers'],
+        'groups' => ['service'],
+        'models' => [ServiceTicket::class, ServiceJob::class, ServiceSlaPolicy::class],
+    ],
+
+    'compliance' => [
+        'label' => 'Compliance & risk',
+        'description' => 'Statutory deadlines, the evidence they were met, and the register of what could go wrong.',
+        'icon' => 'shield-check',
+        // On by default. A business that does not know it needs this is
+        // precisely the business that needs it.
+        'default' => true,
+        'groups' => ['compliance', 'risks'],
+        'models' => [ComplianceObligation::class, Risk::class],
+    ],
+
+    'payables' => [
+        'label' => 'Payment scheduling',
+        'description' => 'Decide which bills to pay this week, and reconcile a supplier’s statement against the books.',
+        'icon' => 'calendar-days',
+        'default' => false,
+        // Scheduling means scheduling *bills*. Without expenses there is
+        // nothing to schedule, and a supplier statement has nothing to
+        // disagree with.
+        'requires' => ['expenses'],
+        'groups' => ['payables'],
+        'models' => [PaymentRun::class, SupplierStatement::class],
+    ],
+
+    'procurement' => [
+        'label' => 'Requisitions & sourcing',
+        'description' => 'Ask before buying: requisitions, quotation requests, and comparing what suppliers offer.',
+        'icon' => 'clipboard-document-check',
+        'default' => false,
+        // The end of this process is a purchase order, which lives with
+        // expenses. Sourcing with nowhere for the order to land is a dead end.
+        'requires' => ['expenses'],
+        'groups' => ['procurement'],
+        'models' => [PurchaseRequisition::class, Rfq::class, SupplierQuotation::class],
     ],
 
     'payroll' => [

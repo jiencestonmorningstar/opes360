@@ -6,7 +6,8 @@ use App\Events\DomainEvent;
 use App\Models\AutomationRule;
 use App\Models\User;
 use App\Models\Workflow;
-use App\Notifications\AutomationNotification;
+use App\Services\Notifications\NotificationDispatcher;
+use App\Services\Notifications\NotificationMessage;
 use App\Services\WebhookDispatcher;
 use App\Services\Workflow\WorkflowEngine;
 use App\Support\WorkflowApprovers;
@@ -110,18 +111,42 @@ class ActionRunner
         $subject->forceFill([$field => $config['value'] ?? null])->save();
     }
 
-    /** @param  array<string, mixed>  $config */
+    /**
+     * Tell somebody.
+     *
+     * Routed through the notification dispatcher rather than calling notify()
+     * here, so an automation obeys the same mutes, quiet hours, digests and
+     * deduplication as a notification rule — and lands in the same delivery
+     * log. Without that, somebody who switched a category off would still be
+     * interrupted by an automation saying the same thing, and the notification
+     * settings screen would be quietly lying about what it controls.
+     *
+     * @param  array<string, mixed>  $config
+     */
     protected function notify(DomainEvent $event, string $action, array $config): void
     {
         $recipients = $action === 'notify_user'
             ? User::query()->whereKey($config['user_id'] ?? null)->get()
             : app(WorkflowApprovers::class)->holdingRole($config['role'] ?? null, $event->companyId);
 
-        foreach ($recipients as $recipient) {
-            $recipient->notify(new AutomationNotification(
-                $config['message'] ?? $event->name,
-                $event->name,
-            ));
+        if ($recipients->isEmpty()) {
+            return;
         }
+
+        app(NotificationDispatcher::class)->send(
+            new NotificationMessage(
+                companyId: $event->companyId,
+                event: $event->name,
+                // Its own category, so "stop my own rules shouting at me" is a
+                // switch a person can throw without losing the product's alerts.
+                category: 'automation',
+                severity: 'normal',
+                title: (string) ($config['message'] ?? $event->name),
+                subjectType: $event->subject->getMorphClass(),
+                subjectId: $event->subject->getKey(),
+                channels: ['in_app', 'email'],
+            ),
+            $recipients,
+        );
     }
 }

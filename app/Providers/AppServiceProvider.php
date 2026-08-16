@@ -2,19 +2,53 @@
 
 namespace App\Providers;
 
-use App\Events\DomainEvent;
-use App\Listeners\PostApprovedExpenseClaims;
-use App\Listeners\RunAutomationRules;
-use App\Listeners\TranslateDocumentWorkflowEvents;
+use App\Models\AccountTransfer;
 use App\Models\Artisan;
+use App\Models\AssetTransfer;
+use App\Models\BankAccount;
 use App\Models\BusinessDocument;
+use App\Models\BusinessDocumentShare;
 use App\Models\Company;
+use App\Models\CompanyUserPermission;
 use App\Models\Contact;
+use App\Models\Contract;
+use App\Models\Deal;
+use App\Models\Department;
+use App\Models\Device;
 use App\Models\Document;
+use App\Models\Employee;
+use App\Models\EmploymentContract;
+use App\Models\Expense;
+use App\Models\ExpenseClaim;
+use App\Models\ExpenseClaimReimbursement;
+use App\Models\ExpensePayment;
+use App\Models\FiscalPeriod;
+use App\Models\FixedAsset;
 use App\Models\Item;
+use App\Models\JournalEntry;
+use App\Models\LeaveRequest;
+use App\Models\LedgerAccount;
 use App\Models\Payment;
+use App\Models\PaymentRun;
+use App\Models\PaymentRunItem;
+use App\Models\PayrollRun;
+use App\Models\Payslip;
+use App\Models\PerformanceReview;
+use App\Models\Position;
+use App\Models\Project;
+use App\Models\PurchaseRequisition;
 use App\Models\Receipt;
+use App\Models\Refund;
+use App\Models\Rfq;
+use App\Models\RfqSupplier;
+use App\Models\Role;
+use App\Models\SalaryComponent;
+use App\Models\TaxRate;
 use App\Models\User;
+use App\Models\WebhookEndpoint;
+use App\Models\Workflow;
+use App\Models\WorkflowDecision;
+use App\Models\WorkflowStep;
 use App\Observers\AuditObserver;
 use App\Services\Documents\DocumentFieldRegistry;
 use App\Support\Csp;
@@ -25,7 +59,6 @@ use Illuminate\Pagination\Paginator;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Blade;
 use Illuminate\Support\Facades\Date;
-use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\Facades\Vite;
 use Illuminate\Support\ServiceProvider;
@@ -48,22 +81,22 @@ class AppServiceProvider extends ServiceProvider
     public function boot(): void
     {
         /*
-         * Automation listens to every domain event.
+         * Every listener of DomainEvent is registered by Laravel's event
+         * DISCOVERY, which finds them from the `handle(DomainEvent $event)`
+         * signature in app/Listeners. There are deliberately no
+         * `Event::listen(DomainEvent::class, ...)` calls here.
          *
-         * Registered here rather than in an EventServiceProvider map because
-         * there is one event class carrying a name, not one class per event —
-         * so there is exactly one binding to make, and putting it anywhere
-         * else would only hide it.
+         * There were, and they were a real bug rather than harmless
+         * belt-and-braces: discovery had already registered each one, so
+         * every listener ran TWICE on every domain event. Automation rules
+         * fired twice, which for a rule that sends a notification means two
+         * notifications, and for a rule that writes a record means two
+         * records. Nothing errored, which is why it survived.
+         *
+         * Adding a listener means putting the class in app/Listeners with
+         * that signature. It does not mean adding a line here.
+         * `DomainEventListenersAreNotDoubleRegisteredTest` pins this.
          */
-        Event::listen(DomainEvent::class, RunAutomationRules::class);
-        Event::listen(DomainEvent::class, TranslateDocumentWorkflowEvents::class);
-        /*
-         * Without this an approved claim is correct but invisible in the
-         * books until it is reimbursed — the charge and the staff debt would
-         * not exist, so an approved-but-unpaid claim would not show as the
-         * liability it is.
-         */
-        Event::listen(DomainEvent::class, PostApprovedExpenseClaims::class);
 
         $this->registerDocumentFieldProviders();
 
@@ -127,9 +160,44 @@ class AppServiceProvider extends ServiceProvider
          * answerable. Logging line items or stock movements as well would bury
          * that signal in churn, and both are already immutable or append-only.
          */
-        foreach ([Company::class, User::class, Contact::class, Item::class,
+        foreach ([
+            Company::class, User::class, Contact::class, Item::class,
             Document::class, Payment::class, Receipt::class, Artisan::class,
-            BusinessDocument::class] as $model) {
+            BusinessDocument::class,
+
+            // Money that moves, and the decisions that release it.
+            Payslip::class, PayrollRun::class,
+            PaymentRun::class, PaymentRunItem::class,
+            Expense::class, ExpensePayment::class,
+            ExpenseClaim::class, ExpenseClaimReimbursement::class,
+            Refund::class,
+            BankAccount::class, AccountTransfer::class,
+
+            // The books, where a restatement leaves no trace of its own.
+            // JournalLine is left out: an entry is balanced and immutable
+            // once posted, so the header carries the story and the lines
+            // would treble the rows for nothing.
+            JournalEntry::class, LedgerAccount::class, TaxRate::class, FiscalPeriod::class,
+
+            // Permissions and the controls over them. CompanyUserPermission
+            // was the blind spot that mattered most — a granted ability left
+            // no trace at all. WorkflowStep belongs here because editing an
+            // approval rule is the same act as authorising the spend.
+            Role::class, CompanyUserPermission::class,
+            Workflow::class, WorkflowStep::class, WorkflowDecision::class,
+            WebhookEndpoint::class,
+
+            // A person's record: somebody's livelihood or reputation.
+            Employee::class, EmploymentContract::class, SalaryComponent::class,
+            LeaveRequest::class, PerformanceReview::class, Position::class, Department::class,
+
+            // Commitments made, and custody of things.
+            FixedAsset::class, AssetTransfer::class,
+            PurchaseRequisition::class, Rfq::class, RfqSupplier::class,
+            Contract::class,
+            Deal::class, Project::class,
+            BusinessDocumentShare::class, Device::class,
+        ] as $model) {
             $model::observe(AuditObserver::class);
         }
     }
@@ -171,7 +239,7 @@ class AppServiceProvider extends ServiceProvider
         $registry->register('customer', function (Company $company, array $context): array {
             $customer = $context['customer'] ?? null;
 
-            if (! $customer instanceof \App\Models\Contact) {
+            if (! $customer instanceof Contact) {
                 return [];
             }
 
@@ -184,7 +252,7 @@ class AppServiceProvider extends ServiceProvider
         $registry->register('employee', function (Company $company, array $context): array {
             $employee = $context['employee'] ?? null;
 
-            if (! $employee instanceof \App\Models\Employee) {
+            if (! $employee instanceof Employee) {
                 return [];
             }
 
@@ -198,7 +266,7 @@ class AppServiceProvider extends ServiceProvider
         $registry->register('project', function (Company $company, array $context): array {
             $project = $context['project'] ?? null;
 
-            if (! $project instanceof \App\Models\Project) {
+            if (! $project instanceof Project) {
                 return [];
             }
 

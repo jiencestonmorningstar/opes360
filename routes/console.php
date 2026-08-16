@@ -64,6 +64,30 @@ Schedule::command('opes:alert-low-stock')
     ->withoutOverlapping();
 
 /*
+ * Release what quiet hours held, and send the digests that are due.
+ *
+ * Hourly because quiet hours end on the hour somewhere: a message held at
+ * 22:00 must go out when the recipient's morning starts, and a run that
+ * happened once a day would either release it in the middle of the night or
+ * sit on it until the following evening. The command is a no-op when nothing
+ * is waiting, which is most hours.
+ */
+Schedule::command('notifications:digest')
+    ->hourly()
+    ->withoutOverlapping();
+
+/*
+ * Move SLA clocks: mark what has breached, and warn on what is about to.
+ *
+ * Every fifteen minutes. An hourly sweep on a four-hour response target means
+ * a quarter of the warning window can pass before anybody is told, which turns
+ * an early warning into a notification that it is already too late.
+ */
+Schedule::command('service:sla-sweep')
+    ->everyFifteenMinutes()
+    ->withoutOverlapping();
+
+/*
  * Lapse VIP memberships whose term has ended.
  *
  * Just after midnight so a membership that ran to yesterday is expired before

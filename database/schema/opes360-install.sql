@@ -61,14 +61,16 @@ CREATE TABLE `activity_log` (
   `event` varchar(255) COLLATE utf8mb4_unicode_ci NOT NULL,
   `subject_type` varchar(255) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
   `subject_id` varchar(255) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `subject_label` varchar(255) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
   `properties` json DEFAULT NULL,
   `ip` varchar(45) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
   `user_agent` varchar(255) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
   `created_at` timestamp NULL DEFAULT NULL,
   PRIMARY KEY (`id`),
-  KEY `activity_log_user_id_foreign` (`user_id`),
   KEY `activity_log_company_id_created_at_index` (`company_id`,`created_at`),
   KEY `activity_log_subject_type_subject_id_index` (`subject_type`,`subject_id`),
+  KEY `activity_log_actor_idx` (`user_id`,`created_at`),
+  KEY `activity_log_event_idx` (`company_id`,`event`,`created_at`),
   CONSTRAINT `activity_log_company_id_foreign` FOREIGN KEY (`company_id`) REFERENCES `companies` (`id`) ON DELETE SET NULL,
   CONSTRAINT `activity_log_user_id_foreign` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE SET NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
@@ -148,6 +150,137 @@ CREATE TABLE `artisans` (
 
 /*!40000 ALTER TABLE `artisans` DISABLE KEYS */;
 /*!40000 ALTER TABLE `artisans` ENABLE KEYS */;
+DROP TABLE IF EXISTS `asset_locations`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!50503 SET character_set_client = utf8mb4 */;
+CREATE TABLE `asset_locations` (
+  `id` char(26) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `company_id` char(26) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `name` varchar(255) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `code` varchar(255) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `address` text COLLATE utf8mb4_unicode_ci,
+  `department_id` char(26) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `is_active` tinyint(1) NOT NULL DEFAULT '1',
+  `created_at` timestamp NULL DEFAULT NULL,
+  `updated_at` timestamp NULL DEFAULT NULL,
+  `deleted_at` timestamp NULL DEFAULT NULL,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `asset_locations_company_id_name_unique` (`company_id`,`name`),
+  KEY `asset_locations_department_id_foreign` (`department_id`),
+  CONSTRAINT `asset_locations_company_id_foreign` FOREIGN KEY (`company_id`) REFERENCES `companies` (`id`) ON DELETE CASCADE,
+  CONSTRAINT `asset_locations_department_id_foreign` FOREIGN KEY (`department_id`) REFERENCES `departments` (`id`) ON DELETE SET NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+/*!40101 SET character_set_client = @saved_cs_client */;
+
+/*!40000 ALTER TABLE `asset_locations` DISABLE KEYS */;
+/*!40000 ALTER TABLE `asset_locations` ENABLE KEYS */;
+DROP TABLE IF EXISTS `asset_maintenance`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!50503 SET character_set_client = utf8mb4 */;
+CREATE TABLE `asset_maintenance` (
+  `id` char(26) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `company_id` char(26) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `fixed_asset_id` char(26) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `kind` varchar(255) COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT 'service',
+  `title` varchar(255) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `notes` text COLLATE utf8mb4_unicode_ci,
+  `due_on` date DEFAULT NULL,
+  `due_at_odometer` int unsigned DEFAULT NULL,
+  `completed_on` date DEFAULT NULL,
+  `completed_at_odometer` int unsigned DEFAULT NULL,
+  `interval_months` smallint unsigned DEFAULT NULL,
+  `interval_km` int unsigned DEFAULT NULL,
+  `cost` decimal(14,2) DEFAULT NULL,
+  `expense_id` char(26) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `supplier_id` char(26) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `created_by` bigint unsigned DEFAULT NULL,
+  `created_at` timestamp NULL DEFAULT NULL,
+  `updated_at` timestamp NULL DEFAULT NULL,
+  PRIMARY KEY (`id`),
+  KEY `asset_maintenance_fixed_asset_id_foreign` (`fixed_asset_id`),
+  KEY `asset_maintenance_expense_id_foreign` (`expense_id`),
+  KEY `asset_maintenance_supplier_id_foreign` (`supplier_id`),
+  KEY `asset_maintenance_created_by_foreign` (`created_by`),
+  KEY `asset_maintenance_company_due_idx` (`company_id`,`due_on`),
+  KEY `asset_maintenance_company_asset_idx` (`company_id`,`fixed_asset_id`),
+  KEY `asset_maint_company_odo_idx` (`company_id`,`due_at_odometer`),
+  CONSTRAINT `asset_maintenance_company_id_foreign` FOREIGN KEY (`company_id`) REFERENCES `companies` (`id`) ON DELETE CASCADE,
+  CONSTRAINT `asset_maintenance_created_by_foreign` FOREIGN KEY (`created_by`) REFERENCES `users` (`id`) ON DELETE SET NULL,
+  CONSTRAINT `asset_maintenance_expense_id_foreign` FOREIGN KEY (`expense_id`) REFERENCES `expenses` (`id`) ON DELETE SET NULL,
+  CONSTRAINT `asset_maintenance_fixed_asset_id_foreign` FOREIGN KEY (`fixed_asset_id`) REFERENCES `fixed_assets` (`id`) ON DELETE CASCADE,
+  CONSTRAINT `asset_maintenance_supplier_id_foreign` FOREIGN KEY (`supplier_id`) REFERENCES `contacts` (`id`) ON DELETE SET NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+/*!40101 SET character_set_client = @saved_cs_client */;
+
+/*!40000 ALTER TABLE `asset_maintenance` DISABLE KEYS */;
+/*!40000 ALTER TABLE `asset_maintenance` ENABLE KEYS */;
+DROP TABLE IF EXISTS `asset_transfers`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!50503 SET character_set_client = utf8mb4 */;
+CREATE TABLE `asset_transfers` (
+  `id` char(26) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `company_id` char(26) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `fixed_asset_id` char(26) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `from_location_id` char(26) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `to_location_id` char(26) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `from_custodian_id` bigint unsigned DEFAULT NULL,
+  `to_custodian_id` bigint unsigned DEFAULT NULL,
+  `transferred_on` date NOT NULL,
+  `reason` text COLLATE utf8mb4_unicode_ci,
+  `created_by` bigint unsigned DEFAULT NULL,
+  `created_at` timestamp NULL DEFAULT NULL,
+  `updated_at` timestamp NULL DEFAULT NULL,
+  PRIMARY KEY (`id`),
+  KEY `asset_transfers_fixed_asset_id_foreign` (`fixed_asset_id`),
+  KEY `asset_transfers_from_location_id_foreign` (`from_location_id`),
+  KEY `asset_transfers_to_location_id_foreign` (`to_location_id`),
+  KEY `asset_transfers_from_custodian_id_foreign` (`from_custodian_id`),
+  KEY `asset_transfers_to_custodian_id_foreign` (`to_custodian_id`),
+  KEY `asset_transfers_created_by_foreign` (`created_by`),
+  KEY `asset_transfers_company_asset_idx` (`company_id`,`fixed_asset_id`),
+  CONSTRAINT `asset_transfers_company_id_foreign` FOREIGN KEY (`company_id`) REFERENCES `companies` (`id`) ON DELETE CASCADE,
+  CONSTRAINT `asset_transfers_created_by_foreign` FOREIGN KEY (`created_by`) REFERENCES `users` (`id`) ON DELETE SET NULL,
+  CONSTRAINT `asset_transfers_fixed_asset_id_foreign` FOREIGN KEY (`fixed_asset_id`) REFERENCES `fixed_assets` (`id`) ON DELETE CASCADE,
+  CONSTRAINT `asset_transfers_from_custodian_id_foreign` FOREIGN KEY (`from_custodian_id`) REFERENCES `users` (`id`) ON DELETE SET NULL,
+  CONSTRAINT `asset_transfers_from_location_id_foreign` FOREIGN KEY (`from_location_id`) REFERENCES `asset_locations` (`id`) ON DELETE SET NULL,
+  CONSTRAINT `asset_transfers_to_custodian_id_foreign` FOREIGN KEY (`to_custodian_id`) REFERENCES `users` (`id`) ON DELETE SET NULL,
+  CONSTRAINT `asset_transfers_to_location_id_foreign` FOREIGN KEY (`to_location_id`) REFERENCES `asset_locations` (`id`) ON DELETE SET NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+/*!40101 SET character_set_client = @saved_cs_client */;
+
+/*!40000 ALTER TABLE `asset_transfers` DISABLE KEYS */;
+/*!40000 ALTER TABLE `asset_transfers` ENABLE KEYS */;
+DROP TABLE IF EXISTS `attendance_records`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!50503 SET character_set_client = utf8mb4 */;
+CREATE TABLE `attendance_records` (
+  `id` char(26) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `company_id` char(26) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `employee_id` char(26) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `worked_on` date NOT NULL,
+  `checked_in_at` datetime DEFAULT NULL,
+  `checked_out_at` datetime DEFAULT NULL,
+  `minutes_worked` int unsigned DEFAULT NULL,
+  `status` varchar(255) COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT 'present',
+  `source` varchar(255) COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT 'manual',
+  `notes` varchar(255) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `recorded_by` bigint unsigned DEFAULT NULL,
+  `created_at` timestamp NULL DEFAULT NULL,
+  `updated_at` timestamp NULL DEFAULT NULL,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `attendance_company_employee_day_unique` (`company_id`,`employee_id`,`worked_on`),
+  KEY `attendance_records_employee_id_foreign` (`employee_id`),
+  KEY `attendance_records_recorded_by_foreign` (`recorded_by`),
+  KEY `attendance_company_day_index` (`company_id`,`worked_on`),
+  KEY `attendance_company_status_index` (`company_id`,`status`),
+  CONSTRAINT `attendance_records_company_id_foreign` FOREIGN KEY (`company_id`) REFERENCES `companies` (`id`) ON DELETE CASCADE,
+  CONSTRAINT `attendance_records_employee_id_foreign` FOREIGN KEY (`employee_id`) REFERENCES `employees` (`id`) ON DELETE CASCADE,
+  CONSTRAINT `attendance_records_recorded_by_foreign` FOREIGN KEY (`recorded_by`) REFERENCES `users` (`id`) ON DELETE SET NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+/*!40101 SET character_set_client = @saved_cs_client */;
+
+/*!40000 ALTER TABLE `attendance_records` DISABLE KEYS */;
+/*!40000 ALTER TABLE `attendance_records` ENABLE KEYS */;
 DROP TABLE IF EXISTS `automation_rules`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
 /*!50503 SET character_set_client = utf8mb4 */;
@@ -970,6 +1103,78 @@ CREATE TABLE `company_user_permission` (
 
 /*!40000 ALTER TABLE `company_user_permission` DISABLE KEYS */;
 /*!40000 ALTER TABLE `company_user_permission` ENABLE KEYS */;
+DROP TABLE IF EXISTS `compliance_filings`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!50503 SET character_set_client = utf8mb4 */;
+CREATE TABLE `compliance_filings` (
+  `id` char(26) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `company_id` char(26) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `compliance_obligation_id` char(26) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `due_on` date NOT NULL,
+  `completed_on` date DEFAULT NULL,
+  `status` varchar(255) COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT 'draft',
+  `period_label` varchar(255) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `reference` varchar(255) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `amount` decimal(14,2) DEFAULT NULL,
+  `notes` text COLLATE utf8mb4_unicode_ci,
+  `completed_by` bigint unsigned DEFAULT NULL,
+  `created_by` bigint unsigned DEFAULT NULL,
+  `created_at` timestamp NULL DEFAULT NULL,
+  `updated_at` timestamp NULL DEFAULT NULL,
+  PRIMARY KEY (`id`),
+  KEY `compliance_filings_compliance_obligation_id_foreign` (`compliance_obligation_id`),
+  KEY `compliance_filings_completed_by_foreign` (`completed_by`),
+  KEY `compliance_filings_created_by_foreign` (`created_by`),
+  KEY `compliance_filings_company_obl_idx` (`company_id`,`compliance_obligation_id`),
+  KEY `compliance_filings_company_status_idx` (`company_id`,`status`),
+  CONSTRAINT `compliance_filings_company_id_foreign` FOREIGN KEY (`company_id`) REFERENCES `companies` (`id`) ON DELETE CASCADE,
+  CONSTRAINT `compliance_filings_completed_by_foreign` FOREIGN KEY (`completed_by`) REFERENCES `users` (`id`) ON DELETE SET NULL,
+  CONSTRAINT `compliance_filings_compliance_obligation_id_foreign` FOREIGN KEY (`compliance_obligation_id`) REFERENCES `compliance_obligations` (`id`) ON DELETE CASCADE,
+  CONSTRAINT `compliance_filings_created_by_foreign` FOREIGN KEY (`created_by`) REFERENCES `users` (`id`) ON DELETE SET NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+/*!40101 SET character_set_client = @saved_cs_client */;
+
+/*!40000 ALTER TABLE `compliance_filings` DISABLE KEYS */;
+/*!40000 ALTER TABLE `compliance_filings` ENABLE KEYS */;
+DROP TABLE IF EXISTS `compliance_obligations`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!50503 SET character_set_client = utf8mb4 */;
+CREATE TABLE `compliance_obligations` (
+  `id` char(26) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `company_id` char(26) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `name` varchar(255) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `reference` varchar(255) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `category` varchar(255) COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT 'other',
+  `authority` varchar(255) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `description` text COLLATE utf8mb4_unicode_ci,
+  `interval_months` smallint unsigned DEFAULT NULL,
+  `schedule_basis` varchar(255) COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT 'due',
+  `next_due_on` date DEFAULT NULL,
+  `lead_days` smallint unsigned NOT NULL DEFAULT '14',
+  `owner_id` bigint unsigned DEFAULT NULL,
+  `department_id` char(26) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `requires_approval` tinyint(1) NOT NULL DEFAULT '0',
+  `is_active` tinyint(1) NOT NULL DEFAULT '1',
+  `notes` text COLLATE utf8mb4_unicode_ci,
+  `created_by` bigint unsigned DEFAULT NULL,
+  `created_at` timestamp NULL DEFAULT NULL,
+  `updated_at` timestamp NULL DEFAULT NULL,
+  `deleted_at` timestamp NULL DEFAULT NULL,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `compliance_obligations_company_name_unq` (`company_id`,`name`),
+  KEY `compliance_obligations_owner_id_foreign` (`owner_id`),
+  KEY `compliance_obligations_department_id_foreign` (`department_id`),
+  KEY `compliance_obligations_created_by_foreign` (`created_by`),
+  KEY `compliance_obligations_company_due_idx` (`company_id`,`next_due_on`),
+  CONSTRAINT `compliance_obligations_company_id_foreign` FOREIGN KEY (`company_id`) REFERENCES `companies` (`id`) ON DELETE CASCADE,
+  CONSTRAINT `compliance_obligations_created_by_foreign` FOREIGN KEY (`created_by`) REFERENCES `users` (`id`) ON DELETE SET NULL,
+  CONSTRAINT `compliance_obligations_department_id_foreign` FOREIGN KEY (`department_id`) REFERENCES `departments` (`id`) ON DELETE SET NULL,
+  CONSTRAINT `compliance_obligations_owner_id_foreign` FOREIGN KEY (`owner_id`) REFERENCES `users` (`id`) ON DELETE SET NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+/*!40101 SET character_set_client = @saved_cs_client */;
+
+/*!40000 ALTER TABLE `compliance_obligations` DISABLE KEYS */;
+/*!40000 ALTER TABLE `compliance_obligations` ENABLE KEYS */;
 DROP TABLE IF EXISTS `contact_notes`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
 /*!50503 SET character_set_client = utf8mb4 */;
@@ -1042,6 +1247,114 @@ CREATE TABLE `contacts` (
 
 /*!40000 ALTER TABLE `contacts` DISABLE KEYS */;
 /*!40000 ALTER TABLE `contacts` ENABLE KEYS */;
+DROP TABLE IF EXISTS `contract_obligations`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!50503 SET character_set_client = utf8mb4 */;
+CREATE TABLE `contract_obligations` (
+  `id` char(26) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `company_id` char(26) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `contract_id` char(26) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `owed_by` varchar(10) COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT 'us',
+  `title` varchar(255) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `description` text COLLATE utf8mb4_unicode_ci,
+  `due_on` date DEFAULT NULL,
+  `completed_on` date DEFAULT NULL,
+  `completed_by` bigint unsigned DEFAULT NULL,
+  `completion_note` text COLLATE utf8mb4_unicode_ci,
+  `created_by` bigint unsigned DEFAULT NULL,
+  `created_at` timestamp NULL DEFAULT NULL,
+  `updated_at` timestamp NULL DEFAULT NULL,
+  PRIMARY KEY (`id`),
+  KEY `contract_obligations_contract_id_foreign` (`contract_id`),
+  KEY `contract_obligations_completed_by_foreign` (`completed_by`),
+  KEY `contract_obligations_created_by_foreign` (`created_by`),
+  KEY `contract_obligations_company_due_idx` (`company_id`,`due_on`),
+  KEY `contract_obligations_company_contract_idx` (`company_id`,`contract_id`),
+  CONSTRAINT `contract_obligations_company_id_foreign` FOREIGN KEY (`company_id`) REFERENCES `companies` (`id`) ON DELETE CASCADE,
+  CONSTRAINT `contract_obligations_completed_by_foreign` FOREIGN KEY (`completed_by`) REFERENCES `users` (`id`) ON DELETE SET NULL,
+  CONSTRAINT `contract_obligations_contract_id_foreign` FOREIGN KEY (`contract_id`) REFERENCES `contracts` (`id`) ON DELETE CASCADE,
+  CONSTRAINT `contract_obligations_created_by_foreign` FOREIGN KEY (`created_by`) REFERENCES `users` (`id`) ON DELETE SET NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+/*!40101 SET character_set_client = @saved_cs_client */;
+
+/*!40000 ALTER TABLE `contract_obligations` DISABLE KEYS */;
+/*!40000 ALTER TABLE `contract_obligations` ENABLE KEYS */;
+DROP TABLE IF EXISTS `contract_renewals`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!50503 SET character_set_client = utf8mb4 */;
+CREATE TABLE `contract_renewals` (
+  `id` char(26) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `company_id` char(26) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `contract_id` char(26) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `previous_ends_on` date DEFAULT NULL,
+  `new_ends_on` date NOT NULL,
+  `previous_value` decimal(16,2) DEFAULT NULL,
+  `new_value` decimal(16,2) DEFAULT NULL,
+  `method` varchar(20) COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT 'negotiated',
+  `renewed_on` date NOT NULL,
+  `notes` text COLLATE utf8mb4_unicode_ci,
+  `created_by` bigint unsigned DEFAULT NULL,
+  `created_at` timestamp NULL DEFAULT NULL,
+  `updated_at` timestamp NULL DEFAULT NULL,
+  PRIMARY KEY (`id`),
+  KEY `contract_renewals_contract_id_foreign` (`contract_id`),
+  KEY `contract_renewals_created_by_foreign` (`created_by`),
+  KEY `contract_renewals_company_contract_idx` (`company_id`,`contract_id`),
+  CONSTRAINT `contract_renewals_company_id_foreign` FOREIGN KEY (`company_id`) REFERENCES `companies` (`id`) ON DELETE CASCADE,
+  CONSTRAINT `contract_renewals_contract_id_foreign` FOREIGN KEY (`contract_id`) REFERENCES `contracts` (`id`) ON DELETE CASCADE,
+  CONSTRAINT `contract_renewals_created_by_foreign` FOREIGN KEY (`created_by`) REFERENCES `users` (`id`) ON DELETE SET NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+/*!40101 SET character_set_client = @saved_cs_client */;
+
+/*!40000 ALTER TABLE `contract_renewals` DISABLE KEYS */;
+/*!40000 ALTER TABLE `contract_renewals` ENABLE KEYS */;
+DROP TABLE IF EXISTS `contracts`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!50503 SET character_set_client = utf8mb4 */;
+CREATE TABLE `contracts` (
+  `id` char(26) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `company_id` char(26) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `title` varchar(255) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `description` text COLLATE utf8mb4_unicode_ci,
+  `contact_id` char(26) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `direction` varchar(20) COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT 'inbound',
+  `type` varchar(40) COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT 'service',
+  `value` decimal(16,2) DEFAULT NULL,
+  `currency` varchar(3) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `starts_on` date NOT NULL,
+  `ends_on` date DEFAULT NULL,
+  `renewal_type` varchar(20) COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT 'none',
+  `renewal_term_months` smallint unsigned DEFAULT NULL,
+  `notice_period_days` smallint unsigned DEFAULT NULL,
+  `notice_by` date DEFAULT NULL,
+  `status` varchar(20) COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT 'draft',
+  `owner_id` bigint unsigned DEFAULT NULL,
+  `terminated_on` date DEFAULT NULL,
+  `termination_reason` text COLLATE utf8mb4_unicode_ci,
+  `terminated_by` bigint unsigned DEFAULT NULL,
+  `notes` text COLLATE utf8mb4_unicode_ci,
+  `created_by` bigint unsigned DEFAULT NULL,
+  `created_at` timestamp NULL DEFAULT NULL,
+  `updated_at` timestamp NULL DEFAULT NULL,
+  `deleted_at` timestamp NULL DEFAULT NULL,
+  PRIMARY KEY (`id`),
+  KEY `contracts_contact_id_foreign` (`contact_id`),
+  KEY `contracts_owner_id_foreign` (`owner_id`),
+  KEY `contracts_terminated_by_foreign` (`terminated_by`),
+  KEY `contracts_created_by_foreign` (`created_by`),
+  KEY `contracts_company_status_idx` (`company_id`,`status`),
+  KEY `contracts_company_notice_idx` (`company_id`,`notice_by`),
+  KEY `contracts_company_ends_idx` (`company_id`,`ends_on`),
+  CONSTRAINT `contracts_company_id_foreign` FOREIGN KEY (`company_id`) REFERENCES `companies` (`id`) ON DELETE CASCADE,
+  CONSTRAINT `contracts_contact_id_foreign` FOREIGN KEY (`contact_id`) REFERENCES `contacts` (`id`) ON DELETE SET NULL,
+  CONSTRAINT `contracts_created_by_foreign` FOREIGN KEY (`created_by`) REFERENCES `users` (`id`) ON DELETE SET NULL,
+  CONSTRAINT `contracts_owner_id_foreign` FOREIGN KEY (`owner_id`) REFERENCES `users` (`id`) ON DELETE SET NULL,
+  CONSTRAINT `contracts_terminated_by_foreign` FOREIGN KEY (`terminated_by`) REFERENCES `users` (`id`) ON DELETE SET NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+/*!40101 SET character_set_client = @saved_cs_client */;
+
+/*!40000 ALTER TABLE `contracts` DISABLE KEYS */;
+/*!40000 ALTER TABLE `contracts` ENABLE KEYS */;
 DROP TABLE IF EXISTS `cost_centres`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
 /*!50503 SET character_set_client = utf8mb4 */;
@@ -1362,6 +1675,7 @@ CREATE TABLE `employees` (
   `cnps_number` varchar(255) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
   `niu` varchar(255) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
   `job_title` varchar(255) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `position_id` char(26) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
   `department` varchar(255) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
   `department_id` char(26) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
   `hired_on` date DEFAULT NULL,
@@ -1388,9 +1702,12 @@ CREATE TABLE `employees` (
   KEY `employees_company_id_last_name_index` (`company_id`,`last_name`),
   KEY `employees_department_id_foreign` (`department_id`),
   KEY `employees_company_id_department_id_index` (`company_id`,`department_id`),
+  KEY `employees_position_id_foreign` (`position_id`),
+  KEY `employees_company_id_position_id_index` (`company_id`,`position_id`),
   CONSTRAINT `employees_company_id_foreign` FOREIGN KEY (`company_id`) REFERENCES `companies` (`id`) ON DELETE CASCADE,
   CONSTRAINT `employees_created_by_foreign` FOREIGN KEY (`created_by`) REFERENCES `users` (`id`) ON DELETE SET NULL,
   CONSTRAINT `employees_department_id_foreign` FOREIGN KEY (`department_id`) REFERENCES `departments` (`id`) ON DELETE SET NULL,
+  CONSTRAINT `employees_position_id_foreign` FOREIGN KEY (`position_id`) REFERENCES `positions` (`id`) ON DELETE SET NULL,
   CONSTRAINT `employees_user_id_foreign` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE SET NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
@@ -1742,6 +2059,8 @@ CREATE TABLE `fixed_assets` (
   `disposal_proceeds` decimal(16,2) DEFAULT NULL,
   `disposal_note` varchar(255) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
   `location` varchar(255) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `asset_location_id` char(26) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `custodian_id` bigint unsigned DEFAULT NULL,
   `notes` text COLLATE utf8mb4_unicode_ci,
   `created_by` bigint unsigned DEFAULT NULL,
   `created_at` timestamp NULL DEFAULT NULL,
@@ -1756,8 +2075,13 @@ CREATE TABLE `fixed_assets` (
   KEY `fixed_assets_company_id_status_index` (`company_id`,`status`),
   KEY `fixed_assets_company_id_acquired_on_index` (`company_id`,`acquired_on`),
   KEY `fixed_assets_company_id_category_index` (`company_id`,`category`),
+  KEY `fixed_assets_asset_location_id_foreign` (`asset_location_id`),
+  KEY `fixed_assets_custodian_id_foreign` (`custodian_id`),
+  KEY `fixed_assets_company_location_idx` (`company_id`,`asset_location_id`),
+  CONSTRAINT `fixed_assets_asset_location_id_foreign` FOREIGN KEY (`asset_location_id`) REFERENCES `asset_locations` (`id`) ON DELETE SET NULL,
   CONSTRAINT `fixed_assets_company_id_foreign` FOREIGN KEY (`company_id`) REFERENCES `companies` (`id`) ON DELETE CASCADE,
   CONSTRAINT `fixed_assets_created_by_foreign` FOREIGN KEY (`created_by`) REFERENCES `users` (`id`) ON DELETE SET NULL,
+  CONSTRAINT `fixed_assets_custodian_id_foreign` FOREIGN KEY (`custodian_id`) REFERENCES `users` (`id`) ON DELETE SET NULL,
   CONSTRAINT `fixed_assets_depreciation_account_id_foreign` FOREIGN KEY (`depreciation_account_id`) REFERENCES `ledger_accounts` (`id`) ON DELETE SET NULL,
   CONSTRAINT `fixed_assets_expense_id_foreign` FOREIGN KEY (`expense_id`) REFERENCES `expenses` (`id`) ON DELETE SET NULL,
   CONSTRAINT `fixed_assets_ledger_account_id_foreign` FOREIGN KEY (`ledger_account_id`) REFERENCES `ledger_accounts` (`id`) ON DELETE SET NULL,
@@ -1813,6 +2137,42 @@ CREATE TABLE `forms` (
 
 /*!40000 ALTER TABLE `forms` DISABLE KEYS */;
 /*!40000 ALTER TABLE `forms` ENABLE KEYS */;
+DROP TABLE IF EXISTS `fuel_logs`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!50503 SET character_set_client = utf8mb4 */;
+CREATE TABLE `fuel_logs` (
+  `id` char(26) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `company_id` char(26) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `fixed_asset_id` char(26) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `driver_id` bigint unsigned DEFAULT NULL,
+  `filled_on` date NOT NULL,
+  `litres` decimal(10,2) NOT NULL,
+  `odometer` int unsigned DEFAULT NULL,
+  `is_full_tank` tinyint(1) NOT NULL DEFAULT '1',
+  `expense_id` char(26) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `supplier_id` char(26) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `created_by` bigint unsigned DEFAULT NULL,
+  `created_at` timestamp NULL DEFAULT NULL,
+  `updated_at` timestamp NULL DEFAULT NULL,
+  PRIMARY KEY (`id`),
+  KEY `fuel_logs_fixed_asset_id_foreign` (`fixed_asset_id`),
+  KEY `fuel_logs_driver_id_foreign` (`driver_id`),
+  KEY `fuel_logs_expense_id_foreign` (`expense_id`),
+  KEY `fuel_logs_supplier_id_foreign` (`supplier_id`),
+  KEY `fuel_logs_created_by_foreign` (`created_by`),
+  KEY `fuel_logs_company_asset_idx` (`company_id`,`fixed_asset_id`),
+  KEY `fuel_logs_company_filled_idx` (`company_id`,`filled_on`),
+  CONSTRAINT `fuel_logs_company_id_foreign` FOREIGN KEY (`company_id`) REFERENCES `companies` (`id`) ON DELETE CASCADE,
+  CONSTRAINT `fuel_logs_created_by_foreign` FOREIGN KEY (`created_by`) REFERENCES `users` (`id`) ON DELETE SET NULL,
+  CONSTRAINT `fuel_logs_driver_id_foreign` FOREIGN KEY (`driver_id`) REFERENCES `users` (`id`) ON DELETE SET NULL,
+  CONSTRAINT `fuel_logs_expense_id_foreign` FOREIGN KEY (`expense_id`) REFERENCES `expenses` (`id`) ON DELETE SET NULL,
+  CONSTRAINT `fuel_logs_fixed_asset_id_foreign` FOREIGN KEY (`fixed_asset_id`) REFERENCES `fixed_assets` (`id`) ON DELETE CASCADE,
+  CONSTRAINT `fuel_logs_supplier_id_foreign` FOREIGN KEY (`supplier_id`) REFERENCES `contacts` (`id`) ON DELETE SET NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+/*!40101 SET character_set_client = @saved_cs_client */;
+
+/*!40000 ALTER TABLE `fuel_logs` DISABLE KEYS */;
+/*!40000 ALTER TABLE `fuel_logs` ENABLE KEYS */;
 DROP TABLE IF EXISTS `goods_receipt_lines`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
 /*!50503 SET character_set_client = utf8mb4 */;
@@ -2168,12 +2528,109 @@ CREATE TABLE `migrations` (
   `migration` varchar(255) COLLATE utf8mb4_unicode_ci NOT NULL,
   `batch` int NOT NULL,
   PRIMARY KEY (`id`)
-) ENGINE=InnoDB AUTO_INCREMENT=84 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=104 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 /*!40000 ALTER TABLE `migrations` DISABLE KEYS */;
-INSERT INTO `migrations` VALUES (1,'0001_01_01_000000_create_users_table',1),(2,'0001_01_01_000001_create_cache_table',1),(3,'0001_01_01_000002_create_jobs_table',1),(4,'2026_07_27_000001_create_companies_table',1),(5,'2026_07_27_000002_create_roles_and_permissions_tables',1),(6,'2026_07_27_000003_add_opes_columns_to_users_table',1),(7,'2026_07_27_000004_create_platform_tables',1),(8,'2026_07_27_000005_create_crm_and_catalogue_tables',1),(9,'2026_07_27_000006_create_sales_tables',1),(10,'2026_07_27_000007_create_payment_tables',1),(11,'2026_07_28_000001_create_artisans_table',1),(12,'2026_07_28_000002_add_two_factor_columns_to_users_table',1),(13,'2026_07_28_000003_create_sync_receipts_table',1),(14,'2026_07_28_000004_create_business_documents_table',1),(15,'2026_07_31_000001_create_forms_tables',1),(16,'2026_07_31_000002_create_events_tables',1),(17,'2026_07_31_100001_add_card_design_to_companies',1),(18,'2026_07_31_100002_add_letterhead_design_to_companies',1),(19,'2026_07_31_100003_create_company_reviews_table',1),(20,'2026_07_31_200001_create_notifications_table',1),(21,'2026_07_31_300001_add_account_lifecycle_to_companies',1),(22,'2026_08_01_000001_add_loyalty_settings_to_companies',1),(23,'2026_08_01_000002_add_loyalty_card_to_contacts',1),(24,'2026_08_01_000003_create_loyalty_transactions_table',1),(25,'2026_08_02_000001_add_plan_to_companies',1),(26,'2026_08_02_000002_create_platform_admins_table',1),(27,'2026_08_03_000001_create_platform_admin_password_reset_tokens_table',1),(28,'2026_08_03_000002_add_ip_and_user_agent_to_platform_admin_activity',1),(29,'2026_08_03_000003_add_soft_deletes_to_platform_admins',1),(30,'2026_08_04_000001_add_two_factor_columns_to_platform_admins_table',1),(31,'2026_08_04_000002_add_role_to_platform_admins_table',1),(32,'2026_08_04_000003_create_company_notes_table',1),(33,'2026_08_05_000001_create_subscription_payments_table',1),(34,'2026_08_05_000002_add_plan_renews_at_to_companies',1),(35,'2026_08_06_000001_add_fiscal_identity_to_companies',1),(36,'2026_08_07_000001_create_ledger_tables',1),(37,'2026_08_08_000001_add_default_sales_account_to_companies',1),(38,'2026_08_08_000002_correct_ledger_account_labels',1),(39,'2026_08_09_000001_add_renewal_reminder_state_to_companies',1),(40,'2026_08_10_000001_create_partner_programme_tables',1),(41,'2026_08_11_000001_create_expenses_tables',1),(42,'2026_08_12_000001_create_hr_tables',1),(43,'2026_08_12_000002_create_payroll_tables',1),(44,'2026_08_12_000003_add_payroll_settings_to_companies',1),(45,'2026_08_13_000001_add_modules_to_companies',1),(46,'2026_08_13_000001_create_personal_access_tokens_table',1),(47,'2026_08_13_000002_create_fixed_assets_tables',1),(48,'2026_08_13_000003_create_banking_tables',1),(49,'2026_08_13_000004_create_stock_locations_tables',1),(50,'2026_08_14_000001_create_stocktakes_and_stock_valuation',1),(51,'2026_08_14_000002_add_invitations_to_company_user',1),(52,'2026_08_15_000001_create_deals_table',1),(53,'2026_08_16_000001_create_idempotency_keys_table',1),(54,'2026_08_17_000001_create_refunds_table',1),(55,'2026_08_17_000001_create_webhook_tables',1),(56,'2026_08_18_000001_add_logo_original_path_to_companies',1),(57,'2026_08_19_000001_create_vip_tables',1),(58,'2026_08_20_000001_add_branding_to_companies',1),(59,'2026_08_21_000001_create_recurring_invoices_table',1),(60,'2026_08_22_000001_create_dunning_tables',1),(61,'2026_08_23_000001_create_goods_receipts_tables',1),(62,'2026_08_24_000001_extend_business_documents',1),(63,'2026_08_24_000002_create_business_document_relations',1),(64,'2026_08_24_000003_create_business_document_folders',1),(65,'2026_08_24_000004_allow_documents_without_a_template',1),(66,'2026_08_25_000001_create_departments_table',1),(67,'2026_08_25_000002_link_departments_to_records',1),(68,'2026_08_26_000001_create_workflow_tables',1),(69,'2026_08_27_000001_create_automation_rules_table',1),(70,'2026_08_28_000001_create_project_tables',1),(71,'2026_08_29_000001_create_business_document_versions_table',1),(72,'2026_08_30_000001_create_business_document_comments_table',1),(73,'2026_08_31_000001_create_business_document_signatures_table',1),(74,'2026_09_01_000001_create_business_document_shares_table',1),(75,'2026_09_02_000001_create_document_retention_and_legal_hold',1),(76,'2026_09_03_000001_create_business_document_numbering_schemes',1),(77,'2026_09_04_000001_create_business_document_templates',1),(78,'2026_09_05_000001_create_document_packages_and_checklists',1),(79,'2026_09_06_000001_create_fiscal_periods_and_cost_centres',1),(80,'2026_09_07_000101_create_collection_activities_table',1),(81,'2026_09_07_000201_create_inventory_traceability_tables',1),(82,'2026_09_07_000301_create_expense_claim_tables',1),(83,'2026_09_08_000001_create_account_transfers_table',1);
+INSERT INTO `migrations` VALUES (1,'0001_01_01_000000_create_users_table',1),(2,'0001_01_01_000001_create_cache_table',1),(3,'0001_01_01_000002_create_jobs_table',1),(4,'2026_07_27_000001_create_companies_table',1),(5,'2026_07_27_000002_create_roles_and_permissions_tables',1),(6,'2026_07_27_000003_add_opes_columns_to_users_table',1),(7,'2026_07_27_000004_create_platform_tables',1),(8,'2026_07_27_000005_create_crm_and_catalogue_tables',1),(9,'2026_07_27_000006_create_sales_tables',1),(10,'2026_07_27_000007_create_payment_tables',1),(11,'2026_07_28_000001_create_artisans_table',1),(12,'2026_07_28_000002_add_two_factor_columns_to_users_table',1),(13,'2026_07_28_000003_create_sync_receipts_table',1),(14,'2026_07_28_000004_create_business_documents_table',1),(15,'2026_07_31_000001_create_forms_tables',1),(16,'2026_07_31_000002_create_events_tables',1),(17,'2026_07_31_100001_add_card_design_to_companies',1),(18,'2026_07_31_100002_add_letterhead_design_to_companies',1),(19,'2026_07_31_100003_create_company_reviews_table',1),(20,'2026_07_31_200001_create_notifications_table',1),(21,'2026_07_31_300001_add_account_lifecycle_to_companies',1),(22,'2026_08_01_000001_add_loyalty_settings_to_companies',1),(23,'2026_08_01_000002_add_loyalty_card_to_contacts',1),(24,'2026_08_01_000003_create_loyalty_transactions_table',1),(25,'2026_08_02_000001_add_plan_to_companies',1),(26,'2026_08_02_000002_create_platform_admins_table',1),(27,'2026_08_03_000001_create_platform_admin_password_reset_tokens_table',1),(28,'2026_08_03_000002_add_ip_and_user_agent_to_platform_admin_activity',1),(29,'2026_08_03_000003_add_soft_deletes_to_platform_admins',1),(30,'2026_08_04_000001_add_two_factor_columns_to_platform_admins_table',1),(31,'2026_08_04_000002_add_role_to_platform_admins_table',1),(32,'2026_08_04_000003_create_company_notes_table',1),(33,'2026_08_05_000001_create_subscription_payments_table',1),(34,'2026_08_05_000002_add_plan_renews_at_to_companies',1),(35,'2026_08_06_000001_add_fiscal_identity_to_companies',1),(36,'2026_08_07_000001_create_ledger_tables',1),(37,'2026_08_08_000001_add_default_sales_account_to_companies',1),(38,'2026_08_08_000002_correct_ledger_account_labels',1),(39,'2026_08_09_000001_add_renewal_reminder_state_to_companies',1),(40,'2026_08_10_000001_create_partner_programme_tables',1),(41,'2026_08_11_000001_create_expenses_tables',1),(42,'2026_08_12_000001_create_hr_tables',1),(43,'2026_08_12_000002_create_payroll_tables',1),(44,'2026_08_12_000003_add_payroll_settings_to_companies',1),(45,'2026_08_13_000001_add_modules_to_companies',1),(46,'2026_08_13_000001_create_personal_access_tokens_table',1),(47,'2026_08_13_000002_create_fixed_assets_tables',1),(48,'2026_08_13_000003_create_banking_tables',1),(49,'2026_08_13_000004_create_stock_locations_tables',1),(50,'2026_08_14_000001_create_stocktakes_and_stock_valuation',1),(51,'2026_08_14_000002_add_invitations_to_company_user',1),(52,'2026_08_15_000001_create_deals_table',1),(53,'2026_08_16_000001_create_idempotency_keys_table',1),(54,'2026_08_17_000001_create_refunds_table',1),(55,'2026_08_17_000001_create_webhook_tables',1),(56,'2026_08_18_000001_add_logo_original_path_to_companies',1),(57,'2026_08_19_000001_create_vip_tables',1),(58,'2026_08_20_000001_add_branding_to_companies',1),(59,'2026_08_21_000001_create_recurring_invoices_table',1),(60,'2026_08_22_000001_create_dunning_tables',1),(61,'2026_08_23_000001_create_goods_receipts_tables',1),(62,'2026_08_24_000001_extend_business_documents',1),(63,'2026_08_24_000002_create_business_document_relations',1),(64,'2026_08_24_000003_create_business_document_folders',1),(65,'2026_08_24_000004_allow_documents_without_a_template',1),(66,'2026_08_25_000001_create_departments_table',1),(67,'2026_08_25_000002_link_departments_to_records',1),(68,'2026_08_26_000001_create_workflow_tables',1),(69,'2026_08_27_000001_create_automation_rules_table',1),(70,'2026_08_28_000001_create_project_tables',1),(71,'2026_08_29_000001_create_business_document_versions_table',1),(72,'2026_08_30_000001_create_business_document_comments_table',1),(73,'2026_08_31_000001_create_business_document_signatures_table',1),(74,'2026_09_01_000001_create_business_document_shares_table',1),(75,'2026_09_02_000001_create_document_retention_and_legal_hold',1),(76,'2026_09_03_000001_create_business_document_numbering_schemes',1),(77,'2026_09_04_000001_create_business_document_templates',1),(78,'2026_09_05_000001_create_document_packages_and_checklists',1),(79,'2026_09_06_000001_create_fiscal_periods_and_cost_centres',1),(80,'2026_09_07_000101_create_collection_activities_table',1),(81,'2026_09_07_000201_create_inventory_traceability_tables',1),(82,'2026_09_07_000301_create_expense_claim_tables',1),(83,'2026_09_08_000001_create_account_transfers_table',1),(84,'2026_09_10_000101_create_payment_run_tables',1),(85,'2026_09_10_000102_create_supplier_statement_tables',1),(86,'2026_09_10_000201_create_purchase_requisition_tables',1),(87,'2026_09_10_000301_create_positions_table',1),(88,'2026_09_10_000302_link_positions_to_employees',1),(89,'2026_09_10_000303_create_attendance_records_table',1),(90,'2026_09_10_000304_create_performance_reviews_table',1),(91,'2026_09_10_000401_create_asset_locations_and_movements',1),(92,'2026_09_11_000101_create_contract_tables',1),(93,'2026_09_11_000201_create_compliance_and_risk_tables',1),(94,'2026_09_11_000401_create_notification_rules_table',1),(95,'2026_09_11_000402_create_notification_preferences_table',1),(96,'2026_09_11_000403_create_notification_deliveries_table',1),(97,'2026_09_11_000501_extend_activity_log_for_audit',1),(98,'2026_09_11_000701_create_service_sla_policies',1),(99,'2026_09_11_000702_create_service_tickets',1),(100,'2026_09_11_000703_create_service_jobs',1),(101,'2026_09_11_000704_log_service_time_on_the_existing_timesheet',1),(102,'2026_09_11_000801_create_fleet_tables',1),(103,'2026_09_11_000802_add_distance_servicing_to_asset_maintenance',1);
 /*!40000 ALTER TABLE `migrations` ENABLE KEYS */;
+DROP TABLE IF EXISTS `notification_deliveries`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!50503 SET character_set_client = utf8mb4 */;
+CREATE TABLE `notification_deliveries` (
+  `id` char(26) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `company_id` char(26) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `rule_id` char(26) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `user_id` bigint unsigned NOT NULL,
+  `event` varchar(255) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `category` varchar(255) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `severity` varchar(255) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `channel` varchar(255) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `status` varchar(255) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `reason` varchar(255) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `title` varchar(255) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `body` text COLLATE utf8mb4_unicode_ci,
+  `url` varchar(255) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `subject_type` varchar(255) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `subject_id` varchar(255) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `dedupe_key` varchar(64) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `release_at` timestamp NULL DEFAULT NULL,
+  `sent_at` timestamp NULL DEFAULT NULL,
+  `created_at` timestamp NULL DEFAULT NULL,
+  `updated_at` timestamp NULL DEFAULT NULL,
+  PRIMARY KEY (`id`),
+  KEY `notification_deliveries_rule_id_foreign` (`rule_id`),
+  KEY `notification_deliveries_user_id_foreign` (`user_id`),
+  KEY `notif_deliveries_user_idx` (`company_id`,`user_id`,`created_at`),
+  KEY `notif_deliveries_dedupe_idx` (`dedupe_key`,`created_at`),
+  KEY `notif_deliveries_pending_idx` (`status`,`release_at`),
+  CONSTRAINT `notification_deliveries_company_id_foreign` FOREIGN KEY (`company_id`) REFERENCES `companies` (`id`) ON DELETE CASCADE,
+  CONSTRAINT `notification_deliveries_rule_id_foreign` FOREIGN KEY (`rule_id`) REFERENCES `notification_rules` (`id`) ON DELETE SET NULL,
+  CONSTRAINT `notification_deliveries_user_id_foreign` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+/*!40101 SET character_set_client = @saved_cs_client */;
+
+/*!40000 ALTER TABLE `notification_deliveries` DISABLE KEYS */;
+/*!40000 ALTER TABLE `notification_deliveries` ENABLE KEYS */;
+DROP TABLE IF EXISTS `notification_preferences`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!50503 SET character_set_client = utf8mb4 */;
+CREATE TABLE `notification_preferences` (
+  `id` char(26) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `company_id` char(26) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `user_id` bigint unsigned NOT NULL,
+  `category` varchar(255) COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT '',
+  `channel` varchar(255) COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT '',
+  `enabled` tinyint(1) DEFAULT NULL,
+  `mode` varchar(255) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `quiet_from` time DEFAULT NULL,
+  `quiet_to` time DEFAULT NULL,
+  `created_at` timestamp NULL DEFAULT NULL,
+  `updated_at` timestamp NULL DEFAULT NULL,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `notif_prefs_scope_unique` (`company_id`,`user_id`,`category`,`channel`),
+  KEY `notification_preferences_user_id_foreign` (`user_id`),
+  CONSTRAINT `notification_preferences_company_id_foreign` FOREIGN KEY (`company_id`) REFERENCES `companies` (`id`) ON DELETE CASCADE,
+  CONSTRAINT `notification_preferences_user_id_foreign` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+/*!40101 SET character_set_client = @saved_cs_client */;
+
+/*!40000 ALTER TABLE `notification_preferences` DISABLE KEYS */;
+/*!40000 ALTER TABLE `notification_preferences` ENABLE KEYS */;
+DROP TABLE IF EXISTS `notification_rules`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!50503 SET character_set_client = utf8mb4 */;
+CREATE TABLE `notification_rules` (
+  `id` char(26) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `company_id` char(26) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `name` varchar(255) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `description` text COLLATE utf8mb4_unicode_ci,
+  `event` varchar(255) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `conditions` json DEFAULT NULL,
+  `category` varchar(255) COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT 'operations',
+  `severity` varchar(255) COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT 'normal',
+  `title` varchar(255) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `body` text COLLATE utf8mb4_unicode_ci,
+  `url` varchar(255) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `recipients` json NOT NULL,
+  `channels` json NOT NULL,
+  `dedupe_minutes` int unsigned NOT NULL DEFAULT '0',
+  `is_active` tinyint(1) NOT NULL DEFAULT '1',
+  `last_fired_at` timestamp NULL DEFAULT NULL,
+  `created_by` bigint unsigned DEFAULT NULL,
+  `created_at` timestamp NULL DEFAULT NULL,
+  `updated_at` timestamp NULL DEFAULT NULL,
+  `deleted_at` timestamp NULL DEFAULT NULL,
+  PRIMARY KEY (`id`),
+  KEY `notification_rules_created_by_foreign` (`created_by`),
+  KEY `notif_rules_company_event_idx` (`company_id`,`event`,`is_active`),
+  CONSTRAINT `notification_rules_company_id_foreign` FOREIGN KEY (`company_id`) REFERENCES `companies` (`id`) ON DELETE CASCADE,
+  CONSTRAINT `notification_rules_created_by_foreign` FOREIGN KEY (`created_by`) REFERENCES `users` (`id`) ON DELETE SET NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+/*!40101 SET character_set_client = @saved_cs_client */;
+
+/*!40000 ALTER TABLE `notification_rules` DISABLE KEYS */;
+/*!40000 ALTER TABLE `notification_rules` ENABLE KEYS */;
 DROP TABLE IF EXISTS `notifications`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
 /*!50503 SET character_set_client = utf8mb4 */;
@@ -2340,6 +2797,65 @@ CREATE TABLE `payment_allocations` (
 
 /*!40000 ALTER TABLE `payment_allocations` DISABLE KEYS */;
 /*!40000 ALTER TABLE `payment_allocations` ENABLE KEYS */;
+DROP TABLE IF EXISTS `payment_run_items`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!50503 SET character_set_client = utf8mb4 */;
+CREATE TABLE `payment_run_items` (
+  `id` char(26) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `company_id` char(26) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `payment_run_id` char(26) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `expense_id` char(26) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `amount` decimal(14,2) NOT NULL,
+  `method` varchar(20) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `status` varchar(20) COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT 'pending',
+  `note` text COLLATE utf8mb4_unicode_ci,
+  `expense_payment_id` char(26) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `created_at` timestamp NULL DEFAULT NULL,
+  `updated_at` timestamp NULL DEFAULT NULL,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `pay_run_item_unique` (`payment_run_id`,`expense_id`),
+  KEY `payment_run_items_expense_id_foreign` (`expense_id`),
+  KEY `payment_run_items_expense_payment_id_foreign` (`expense_payment_id`),
+  KEY `pay_run_item_company_status_idx` (`company_id`,`status`),
+  CONSTRAINT `payment_run_items_company_id_foreign` FOREIGN KEY (`company_id`) REFERENCES `companies` (`id`) ON DELETE CASCADE,
+  CONSTRAINT `payment_run_items_expense_id_foreign` FOREIGN KEY (`expense_id`) REFERENCES `expenses` (`id`) ON DELETE CASCADE,
+  CONSTRAINT `payment_run_items_expense_payment_id_foreign` FOREIGN KEY (`expense_payment_id`) REFERENCES `expense_payments` (`id`) ON DELETE SET NULL,
+  CONSTRAINT `payment_run_items_payment_run_id_foreign` FOREIGN KEY (`payment_run_id`) REFERENCES `payment_runs` (`id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+/*!40101 SET character_set_client = @saved_cs_client */;
+
+/*!40000 ALTER TABLE `payment_run_items` DISABLE KEYS */;
+/*!40000 ALTER TABLE `payment_run_items` ENABLE KEYS */;
+DROP TABLE IF EXISTS `payment_runs`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!50503 SET character_set_client = utf8mb4 */;
+CREATE TABLE `payment_runs` (
+  `id` char(26) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `company_id` char(26) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `reference` varchar(255) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `scheduled_for` date NOT NULL,
+  `status` varchar(20) COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT 'draft',
+  `cash_available` decimal(14,2) NOT NULL DEFAULT '0.00',
+  `currency` varchar(3) COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT 'XAF',
+  `notes` text COLLATE utf8mb4_unicode_ci,
+  `created_by` bigint unsigned DEFAULT NULL,
+  `approved_by` bigint unsigned DEFAULT NULL,
+  `approved_at` timestamp NULL DEFAULT NULL,
+  `created_at` timestamp NULL DEFAULT NULL,
+  `updated_at` timestamp NULL DEFAULT NULL,
+  PRIMARY KEY (`id`),
+  KEY `payment_runs_created_by_foreign` (`created_by`),
+  KEY `payment_runs_approved_by_foreign` (`approved_by`),
+  KEY `pay_run_company_scheduled_idx` (`company_id`,`scheduled_for`),
+  KEY `pay_run_company_status_idx` (`company_id`,`status`),
+  CONSTRAINT `payment_runs_approved_by_foreign` FOREIGN KEY (`approved_by`) REFERENCES `users` (`id`) ON DELETE SET NULL,
+  CONSTRAINT `payment_runs_company_id_foreign` FOREIGN KEY (`company_id`) REFERENCES `companies` (`id`) ON DELETE CASCADE,
+  CONSTRAINT `payment_runs_created_by_foreign` FOREIGN KEY (`created_by`) REFERENCES `users` (`id`) ON DELETE SET NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+/*!40101 SET character_set_client = @saved_cs_client */;
+
+/*!40000 ALTER TABLE `payment_runs` DISABLE KEYS */;
+/*!40000 ALTER TABLE `payment_runs` ENABLE KEYS */;
 DROP TABLE IF EXISTS `payments`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
 /*!50503 SET character_set_client = utf8mb4 */;
@@ -2503,6 +3019,49 @@ CREATE TABLE `payslips` (
 
 /*!40000 ALTER TABLE `payslips` DISABLE KEYS */;
 /*!40000 ALTER TABLE `payslips` ENABLE KEYS */;
+DROP TABLE IF EXISTS `performance_reviews`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!50503 SET character_set_client = utf8mb4 */;
+CREATE TABLE `performance_reviews` (
+  `id` char(26) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `company_id` char(26) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `employee_id` char(26) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `position_id` char(26) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `reviewer_id` bigint unsigned DEFAULT NULL,
+  `period_starts_on` date NOT NULL,
+  `period_ends_on` date NOT NULL,
+  `cycle` varchar(255) COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT 'annual',
+  `status` varchar(255) COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT 'draft',
+  `overall_rating` tinyint unsigned DEFAULT NULL,
+  `summary` text COLLATE utf8mb4_unicode_ci,
+  `strengths` text COLLATE utf8mb4_unicode_ci,
+  `improvements` text COLLATE utf8mb4_unicode_ci,
+  `goals` text COLLATE utf8mb4_unicode_ci,
+  `employee_comment` text COLLATE utf8mb4_unicode_ci,
+  `shared_at` datetime DEFAULT NULL,
+  `acknowledged_at` datetime DEFAULT NULL,
+  `created_by` bigint unsigned DEFAULT NULL,
+  `created_at` timestamp NULL DEFAULT NULL,
+  `updated_at` timestamp NULL DEFAULT NULL,
+  `deleted_at` timestamp NULL DEFAULT NULL,
+  PRIMARY KEY (`id`),
+  KEY `performance_reviews_employee_id_foreign` (`employee_id`),
+  KEY `performance_reviews_position_id_foreign` (`position_id`),
+  KEY `performance_reviews_reviewer_id_foreign` (`reviewer_id`),
+  KEY `performance_reviews_created_by_foreign` (`created_by`),
+  KEY `reviews_company_employee_index` (`company_id`,`employee_id`),
+  KEY `reviews_company_status_index` (`company_id`,`status`),
+  KEY `reviews_company_period_index` (`company_id`,`period_starts_on`),
+  CONSTRAINT `performance_reviews_company_id_foreign` FOREIGN KEY (`company_id`) REFERENCES `companies` (`id`) ON DELETE CASCADE,
+  CONSTRAINT `performance_reviews_created_by_foreign` FOREIGN KEY (`created_by`) REFERENCES `users` (`id`) ON DELETE SET NULL,
+  CONSTRAINT `performance_reviews_employee_id_foreign` FOREIGN KEY (`employee_id`) REFERENCES `employees` (`id`) ON DELETE CASCADE,
+  CONSTRAINT `performance_reviews_position_id_foreign` FOREIGN KEY (`position_id`) REFERENCES `positions` (`id`) ON DELETE SET NULL,
+  CONSTRAINT `performance_reviews_reviewer_id_foreign` FOREIGN KEY (`reviewer_id`) REFERENCES `users` (`id`) ON DELETE SET NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+/*!40101 SET character_set_client = @saved_cs_client */;
+
+/*!40000 ALTER TABLE `performance_reviews` DISABLE KEYS */;
+/*!40000 ALTER TABLE `performance_reviews` ENABLE KEYS */;
 DROP TABLE IF EXISTS `permission_role`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
 /*!50503 SET character_set_client = utf8mb4 */;
@@ -2517,7 +3076,7 @@ CREATE TABLE `permission_role` (
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 /*!40000 ALTER TABLE `permission_role` DISABLE KEYS */;
-INSERT INTO `permission_role` VALUES (1,1),(2,1),(3,1),(4,1),(5,1),(6,1),(7,1),(1,2),(2,2),(1,3),(2,3),(1,4),(2,4),(1,5),(2,5),(3,5),(4,5),(5,5),(6,5),(7,5),(1,6),(2,6),(3,6),(4,6),(5,6),(1,7),(2,7),(3,7),(4,7),(5,7),(1,8),(2,8),(3,8),(4,8),(1,9),(2,9),(1,10),(2,10),(3,10),(1,11),(2,11),(3,11),(4,11),(5,11),(6,11),(7,11),(1,12),(2,12),(3,12),(4,12),(5,12),(6,12),(1,13),(2,13),(1,14),(2,14),(3,14),(4,14),(5,14),(6,14),(7,14),(1,15),(2,15),(3,15),(4,15),(5,15),(6,15),(1,16),(2,16),(4,16),(1,17),(2,17),(3,17),(4,17),(7,17),(1,18),(2,18),(3,18),(4,18),(1,19),(2,19),(3,19),(4,19),(1,20),(2,20),(3,20),(4,20),(1,21),(2,21),(4,21),(1,22),(2,22),(3,22),(4,22),(5,22),(1,23),(2,23),(3,23),(4,23),(5,23),(1,24),(2,24),(4,24),(1,25),(2,25),(3,25),(4,25),(1,26),(2,26),(3,26),(1,27),(2,27),(3,27),(4,27),(1,28),(2,28),(1,29),(2,29),(3,29),(4,29),(1,30),(2,30),(3,30),(4,30),(1,31),(2,31),(1,32),(2,32),(4,32),(1,33),(2,33),(1,34),(2,34),(3,34),(4,34),(1,35),(2,35),(3,35),(1,36),(2,36),(3,36),(1,37),(2,37),(3,37),(4,37),(5,37),(6,37),(7,37),(1,38),(2,38),(3,38),(4,38),(5,38),(6,38),(1,39),(2,39),(3,39),(4,39),(5,39),(1,40),(2,40),(1,41),(2,41),(3,41),(4,41),(5,41),(7,41),(1,42),(2,42),(3,42),(5,42),(1,43),(2,43),(3,43),(5,43),(1,44),(2,44),(3,44),(5,44),(1,45),(2,45),(3,45),(4,45),(5,45),(6,45),(7,45),(1,46),(2,46),(3,46),(1,47),(2,47),(3,47),(1,48),(2,48),(1,49),(2,49),(3,49),(1,50),(2,50),(3,50),(1,51),(2,51),(3,51),(5,51),(1,52),(2,52),(3,52),(1,53),(2,53),(3,53),(1,54),(2,54),(3,54),(4,54),(7,54),(1,55),(2,55),(4,55),(1,56),(2,56),(4,56),(1,57),(2,57),(4,57),(1,58),(2,58),(4,58),(1,59),(2,59),(3,59),(4,59),(7,59),(1,60),(2,60),(4,60),(1,61),(2,61),(4,61),(1,62),(2,62),(4,62),(1,63),(2,63),(3,63),(4,63),(5,63),(7,63),(1,64),(2,64),(3,64),(1,65),(2,65),(3,65),(5,65),(1,66),(2,66),(3,66),(4,66),(5,66),(7,66),(1,67),(2,67),(3,67),(4,67),(5,67),(1,68),(2,68),(3,68),(1,69),(2,69),(1,70),(2,70),(3,70),(1,71),(2,71),(1,72),(2,72),(3,72),(4,72),(5,72),(7,72),(1,73),(2,73),(3,73),(5,73),(1,74),(2,74),(3,74),(5,74),(1,75),(2,75),(3,75),(1,76),(2,76),(3,76),(4,76),(5,76),(7,76),(1,77),(2,77),(3,77),(4,77),(5,77),(6,77),(7,77),(1,78),(2,78),(3,78),(5,78),(1,79),(2,79),(3,79),(5,79),(1,80),(2,80),(3,80),(1,81),(2,81),(3,81),(5,81),(6,81),(1,82),(2,82),(3,82),(4,82),(5,82),(6,82),(7,82),(1,83),(2,83),(3,83),(1,84),(2,84),(3,84),(5,84),(6,84),(1,85),(2,85),(3,85),(1,86),(2,86),(3,86),(1,87),(2,87),(3,87),(1,88),(2,88),(3,88),(4,88),(5,88),(7,88),(1,89),(2,89),(3,89),(4,89),(1,90),(2,90),(3,90),(4,90),(1,91),(2,91),(3,91),(4,91),(1,92),(2,92),(3,92),(4,92),(1,93),(2,93),(3,93),(5,93),(1,94),(2,94),(3,94),(1,95),(2,95),(3,95),(5,95),(1,96),(2,96),(1,97),(2,97),(1,98),(2,98),(1,99),(2,99),(3,99),(4,99),(7,99),(1,100),(2,100),(1,101),(2,101),(3,101),(4,101),(7,101),(1,102),(2,102),(3,102),(1,103),(2,103),(3,103),(1,104),(2,104),(1,105),(2,105),(1,106),(2,106),(1,107),(2,107),(3,107),(1,108),(2,108),(1,109),(2,109),(3,109),(4,109),(1,110),(2,110);
+INSERT INTO `permission_role` VALUES (1,1),(2,1),(3,1),(4,1),(5,1),(6,1),(7,1),(1,2),(2,2),(1,3),(2,3),(1,4),(2,4),(1,5),(2,5),(3,5),(4,5),(5,5),(6,5),(7,5),(1,6),(2,6),(3,6),(4,6),(5,6),(1,7),(2,7),(3,7),(4,7),(5,7),(1,8),(2,8),(3,8),(4,8),(1,9),(2,9),(1,10),(2,10),(3,10),(1,11),(2,11),(3,11),(4,11),(5,11),(6,11),(7,11),(1,12),(2,12),(3,12),(4,12),(5,12),(6,12),(1,13),(2,13),(1,14),(2,14),(3,14),(4,14),(5,14),(6,14),(7,14),(1,15),(2,15),(3,15),(4,15),(5,15),(6,15),(1,16),(2,16),(4,16),(1,17),(2,17),(3,17),(4,17),(7,17),(1,18),(2,18),(3,18),(4,18),(1,19),(2,19),(3,19),(4,19),(1,20),(2,20),(3,20),(4,20),(1,21),(2,21),(4,21),(1,22),(2,22),(3,22),(4,22),(5,22),(1,23),(2,23),(3,23),(4,23),(5,23),(1,24),(2,24),(4,24),(1,25),(2,25),(3,25),(4,25),(1,26),(2,26),(3,26),(1,27),(2,27),(3,27),(4,27),(1,28),(2,28),(1,29),(2,29),(3,29),(4,29),(1,30),(2,30),(3,30),(4,30),(1,31),(2,31),(1,32),(2,32),(4,32),(1,33),(2,33),(1,34),(2,34),(3,34),(4,34),(1,35),(2,35),(3,35),(1,36),(2,36),(3,36),(1,37),(2,37),(3,37),(4,37),(1,38),(2,38),(3,38),(1,39),(2,39),(3,39),(4,39),(1,40),(2,40),(3,40),(1,41),(2,41),(3,41),(1,42),(2,42),(3,42),(1,43),(2,43),(3,43),(4,43),(5,43),(6,43),(7,43),(1,44),(2,44),(3,44),(4,44),(5,44),(6,44),(1,45),(2,45),(3,45),(4,45),(5,45),(1,46),(2,46),(1,47),(2,47),(3,47),(4,47),(5,47),(7,47),(1,48),(2,48),(3,48),(5,48),(1,49),(2,49),(3,49),(5,49),(1,50),(2,50),(3,50),(5,50),(1,51),(2,51),(3,51),(4,51),(5,51),(6,51),(7,51),(1,52),(2,52),(3,52),(1,53),(2,53),(3,53),(1,54),(2,54),(1,55),(2,55),(3,55),(1,56),(2,56),(3,56),(1,57),(2,57),(3,57),(5,57),(1,58),(2,58),(3,58),(1,59),(2,59),(3,59),(1,60),(2,60),(3,60),(4,60),(7,60),(1,61),(2,61),(4,61),(1,62),(2,62),(4,62),(1,63),(2,63),(4,63),(1,64),(2,64),(4,64),(1,65),(2,65),(3,65),(4,65),(1,66),(2,66),(3,66),(4,66),(1,67),(2,67),(3,67),(4,67),(7,67),(1,68),(2,68),(4,68),(1,69),(2,69),(4,69),(1,70),(2,70),(4,70),(1,71),(2,71),(3,71),(4,71),(1,72),(2,72),(3,72),(4,72),(1,73),(2,73),(1,74),(2,74),(1,75),(2,75),(3,75),(4,75),(1,76),(2,76),(4,76),(1,77),(2,77),(3,77),(4,77),(5,77),(1,78),(2,78),(3,78),(5,78),(1,79),(2,79),(3,79),(4,79),(1,80),(2,80),(3,80),(1,81),(2,81),(1,82),(2,82),(3,82),(4,82),(1,83),(2,83),(3,83),(1,84),(2,84),(3,84),(1,85),(2,85),(1,86),(2,86),(3,86),(4,86),(1,87),(2,87),(3,87),(4,87),(1,88),(2,88),(3,88),(4,88),(1,89),(2,89),(3,89),(4,89),(1,90),(2,90),(3,90),(1,91),(2,91),(1,92),(2,92),(3,92),(4,92),(5,92),(7,92),(1,93),(2,93),(3,93),(1,94),(2,94),(3,94),(5,94),(1,95),(2,95),(3,95),(4,95),(5,95),(7,95),(1,96),(2,96),(3,96),(4,96),(5,96),(1,97),(2,97),(3,97),(1,98),(2,98),(1,99),(2,99),(3,99),(1,100),(2,100),(1,101),(2,101),(3,101),(4,101),(5,101),(7,101),(1,102),(2,102),(3,102),(5,102),(1,103),(2,103),(3,103),(5,103),(1,104),(2,104),(3,104),(1,105),(2,105),(3,105),(4,105),(5,105),(7,105),(1,106),(2,106),(3,106),(4,106),(5,106),(6,106),(7,106),(1,107),(2,107),(3,107),(5,107),(1,108),(2,108),(3,108),(5,108),(1,109),(2,109),(3,109),(1,110),(2,110),(3,110),(5,110),(6,110),(1,111),(2,111),(3,111),(4,111),(5,111),(6,111),(7,111),(1,112),(2,112),(3,112),(1,113),(2,113),(3,113),(5,113),(6,113),(1,114),(2,114),(3,114),(1,115),(2,115),(3,115),(1,116),(2,116),(3,116),(1,117),(2,117),(3,117),(4,117),(5,117),(7,117),(1,118),(2,118),(3,118),(4,118),(1,119),(2,119),(3,119),(4,119),(1,120),(2,120),(3,120),(4,120),(1,121),(2,121),(3,121),(4,121),(1,122),(2,122),(3,122),(5,122),(1,123),(2,123),(3,123),(1,124),(2,124),(3,124),(5,124),(1,125),(2,125),(1,126),(2,126),(1,127),(2,127),(1,128),(2,128),(3,128),(4,128),(7,128),(1,129),(2,129),(1,130),(2,130),(3,130),(4,130),(7,130),(1,131),(2,131),(3,131),(1,132),(2,132),(3,132),(1,133),(2,133),(1,134),(2,134),(1,135),(2,135),(1,136),(2,136),(3,136),(1,137),(2,137),(1,138),(2,138),(3,138),(4,138),(1,139),(2,139);
 /*!40000 ALTER TABLE `permission_role` ENABLE KEYS */;
 DROP TABLE IF EXISTS `permissions`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
@@ -2531,11 +3090,11 @@ CREATE TABLE `permissions` (
   `updated_at` timestamp NULL DEFAULT NULL,
   PRIMARY KEY (`id`),
   UNIQUE KEY `permissions_slug_unique` (`slug`)
-) ENGINE=InnoDB AUTO_INCREMENT=111 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=140 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 /*!40000 ALTER TABLE `permissions` DISABLE KEYS */;
-INSERT INTO `permissions` VALUES (1,'business.view','View Business','Business','2026-08-16 12:49:58','2026-08-16 12:49:58'),(2,'business.update','Update Business','Business','2026-08-16 12:49:58','2026-08-16 12:49:58'),(3,'business.manage-branding','Manage Branding Business','Business','2026-08-16 12:49:58','2026-08-16 12:49:58'),(4,'business.manage-stationery','Manage Stationery Business','Business','2026-08-16 12:49:58','2026-08-16 12:49:58'),(5,'sales.view','View Sales','Sales','2026-08-16 12:49:58','2026-08-16 12:49:58'),(6,'sales.create','Create Sales','Sales','2026-08-16 12:49:58','2026-08-16 12:49:58'),(7,'sales.update','Update Sales','Sales','2026-08-16 12:49:58','2026-08-16 12:49:58'),(8,'sales.issue','Issue Sales','Sales','2026-08-16 12:49:58','2026-08-16 12:49:58'),(9,'sales.void','Void Sales','Sales','2026-08-16 12:49:58','2026-08-16 12:49:58'),(10,'sales.approve','Approve Sales','Sales','2026-08-16 12:49:58','2026-08-16 12:49:58'),(11,'receipts.view','View Receipts','Receipts','2026-08-16 12:49:58','2026-08-16 12:49:58'),(12,'receipts.create','Create Receipts','Receipts','2026-08-16 12:49:58','2026-08-16 12:49:58'),(13,'receipts.void','Void Receipts','Receipts','2026-08-16 12:49:58','2026-08-16 12:49:58'),(14,'payments.view','View Payments','Payments','2026-08-16 12:49:58','2026-08-16 12:49:58'),(15,'payments.record','Record Payments','Payments','2026-08-16 12:49:58','2026-08-16 12:49:58'),(16,'payments.refund','Refund Payments','Payments','2026-08-16 12:49:58','2026-08-16 12:49:58'),(17,'expenses.view','View Expenses','Expenses','2026-08-16 12:49:58','2026-08-16 12:49:58'),(18,'expenses.create','Create Expenses','Expenses','2026-08-16 12:49:58','2026-08-16 12:49:58'),(19,'expenses.update','Update Expenses','Expenses','2026-08-16 12:49:58','2026-08-16 12:49:58'),(20,'expenses.pay','Pay Expenses','Expenses','2026-08-16 12:49:58','2026-08-16 12:49:58'),(21,'expenses.void','Void Expenses','Expenses','2026-08-16 12:49:58','2026-08-16 12:49:58'),(22,'expenses.claim-view','Claim View Expenses','Expenses','2026-08-16 12:49:58','2026-08-16 12:49:58'),(23,'expenses.claim-create','Claim Create Expenses','Expenses','2026-08-16 12:49:58','2026-08-16 12:49:58'),(24,'expenses.claim-reimburse','Claim Reimburse Expenses','Expenses','2026-08-16 12:49:58','2026-08-16 12:49:58'),(25,'employees.view','View Employees','Employees','2026-08-16 12:49:58','2026-08-16 12:49:58'),(26,'employees.create','Create Employees','Employees','2026-08-16 12:49:58','2026-08-16 12:49:58'),(27,'employees.update','Update Employees','Employees','2026-08-16 12:49:58','2026-08-16 12:49:58'),(28,'employees.delete','Delete Employees','Employees','2026-08-16 12:49:58','2026-08-16 12:49:58'),(29,'payroll.view','View Payroll','Payroll','2026-08-16 12:49:58','2026-08-16 12:49:58'),(30,'payroll.run','Run Payroll','Payroll','2026-08-16 12:49:58','2026-08-16 12:49:58'),(31,'payroll.approve','Approve Payroll','Payroll','2026-08-16 12:49:58','2026-08-16 12:49:58'),(32,'payroll.pay','Pay Payroll','Payroll','2026-08-16 12:49:58','2026-08-16 12:49:58'),(33,'payroll.void','Void Payroll','Payroll','2026-08-16 12:49:58','2026-08-16 12:49:58'),(34,'leave.view','View Leave','Leave','2026-08-16 12:49:58','2026-08-16 12:49:58'),(35,'leave.request','Request Leave','Leave','2026-08-16 12:49:58','2026-08-16 12:49:58'),(36,'leave.approve','Approve Leave','Leave','2026-08-16 12:49:58','2026-08-16 12:49:58'),(37,'customers.view','View Customers','Customers','2026-08-16 12:49:58','2026-08-16 12:49:58'),(38,'customers.create','Create Customers','Customers','2026-08-16 12:49:58','2026-08-16 12:49:58'),(39,'customers.update','Update Customers','Customers','2026-08-16 12:49:58','2026-08-16 12:49:58'),(40,'customers.delete','Delete Customers','Customers','2026-08-16 12:49:58','2026-08-16 12:49:58'),(41,'deals.view','View Deals','Deals','2026-08-16 12:49:58','2026-08-16 12:49:58'),(42,'deals.create','Create Deals','Deals','2026-08-16 12:49:58','2026-08-16 12:49:58'),(43,'deals.update','Update Deals','Deals','2026-08-16 12:49:58','2026-08-16 12:49:58'),(44,'deals.delete','Delete Deals','Deals','2026-08-16 12:49:58','2026-08-16 12:49:58'),(45,'products.view','View Products','Products','2026-08-16 12:49:58','2026-08-16 12:49:58'),(46,'products.create','Create Products','Products','2026-08-16 12:49:58','2026-08-16 12:49:58'),(47,'products.update','Update Products','Products','2026-08-16 12:49:58','2026-08-16 12:49:58'),(48,'products.delete','Delete Products','Products','2026-08-16 12:49:58','2026-08-16 12:49:58'),(49,'products.adjust-stock','Adjust Stock Products','Products','2026-08-16 12:49:58','2026-08-16 12:49:58'),(50,'products.manage-locations','Manage Locations Products','Products','2026-08-16 12:49:58','2026-08-16 12:49:58'),(51,'products.track-view','Track View Products','Products','2026-08-16 12:49:58','2026-08-16 12:49:58'),(52,'products.track-manage','Track Manage Products','Products','2026-08-16 12:49:58','2026-08-16 12:49:58'),(53,'products.reserve','Reserve Products','Products','2026-08-16 12:49:58','2026-08-16 12:49:58'),(54,'assets.view','View Assets','Assets','2026-08-16 12:49:58','2026-08-16 12:49:58'),(55,'assets.create','Create Assets','Assets','2026-08-16 12:49:58','2026-08-16 12:49:58'),(56,'assets.update','Update Assets','Assets','2026-08-16 12:49:58','2026-08-16 12:49:58'),(57,'assets.depreciate','Depreciate Assets','Assets','2026-08-16 12:49:58','2026-08-16 12:49:58'),(58,'assets.dispose','Dispose Assets','Assets','2026-08-16 12:49:58','2026-08-16 12:49:58'),(59,'banking.view','View Banking','Banking','2026-08-16 12:49:58','2026-08-16 12:49:58'),(60,'banking.manage','Manage Banking','Banking','2026-08-16 12:49:58','2026-08-16 12:49:58'),(61,'banking.import','Import Banking','Banking','2026-08-16 12:49:58','2026-08-16 12:49:58'),(62,'banking.reconcile','Reconcile Banking','Banking','2026-08-16 12:49:58','2026-08-16 12:49:58'),(63,'projects.view','View Projects','Projects','2026-08-16 12:49:58','2026-08-16 12:49:58'),(64,'projects.manage','Manage Projects','Projects','2026-08-16 12:49:58','2026-08-16 12:49:58'),(65,'projects.log-time','Log Time Projects','Projects','2026-08-16 12:49:58','2026-08-16 12:49:58'),(66,'papers.view','View Papers','Papers','2026-08-16 12:49:58','2026-08-16 12:49:58'),(67,'papers.create','Create Papers','Papers','2026-08-16 12:49:58','2026-08-16 12:49:58'),(68,'papers.issue','Issue Papers','Papers','2026-08-16 12:49:58','2026-08-16 12:49:58'),(69,'papers.void','Void Papers','Papers','2026-08-16 12:49:58','2026-08-16 12:49:58'),(70,'papers.share','Share Papers','Papers','2026-08-16 12:49:58','2026-08-16 12:49:58'),(71,'papers.manage','Manage Papers','Papers','2026-08-16 12:49:58','2026-08-16 12:49:58'),(72,'forms.view','View Forms','Forms','2026-08-16 12:49:58','2026-08-16 12:49:58'),(73,'forms.create','Create Forms','Forms','2026-08-16 12:49:58','2026-08-16 12:49:58'),(74,'forms.update','Update Forms','Forms','2026-08-16 12:49:58','2026-08-16 12:49:58'),(75,'forms.delete','Delete Forms','Forms','2026-08-16 12:49:58','2026-08-16 12:49:58'),(76,'forms.responses','Responses Forms','Forms','2026-08-16 12:49:58','2026-08-16 12:49:58'),(77,'events.view','View Events','Events','2026-08-16 12:49:58','2026-08-16 12:49:58'),(78,'events.create','Create Events','Events','2026-08-16 12:49:58','2026-08-16 12:49:58'),(79,'events.update','Update Events','Events','2026-08-16 12:49:58','2026-08-16 12:49:58'),(80,'events.void','Void Events','Events','2026-08-16 12:49:58','2026-08-16 12:49:58'),(81,'events.check-in','Check In Events','Events','2026-08-16 12:49:58','2026-08-16 12:49:58'),(82,'loyalty.view','View Loyalty','Loyalty','2026-08-16 12:49:58','2026-08-16 12:49:58'),(83,'loyalty.manage','Manage Loyalty','Loyalty','2026-08-16 12:49:58','2026-08-16 12:49:58'),(84,'loyalty.redeem','Redeem Loyalty','Loyalty','2026-08-16 12:49:58','2026-08-16 12:49:58'),(85,'vip.view','View Vip','Vip','2026-08-16 12:49:58','2026-08-16 12:49:58'),(86,'vip.manage','Manage Vip','Vip','2026-08-16 12:49:58','2026-08-16 12:49:58'),(87,'vip.sell','Sell Vip','Vip','2026-08-16 12:49:58','2026-08-16 12:49:58'),(88,'reports.view','View Reports','Reports','2026-08-16 12:49:58','2026-08-16 12:49:58'),(89,'reports.export','Export Reports','Reports','2026-08-16 12:49:58','2026-08-16 12:49:58'),(90,'accounting.view','View Accounting','Accounting','2026-08-16 12:49:58','2026-08-16 12:49:58'),(91,'accounting.export','Export Accounting','Accounting','2026-08-16 12:49:58','2026-08-16 12:49:58'),(92,'accounting.manage','Manage Accounting','Accounting','2026-08-16 12:49:58','2026-08-16 12:49:58'),(93,'partners.view','View Partners','Partners','2026-08-16 12:49:58','2026-08-16 12:49:58'),(94,'partners.manage','Manage Partners','Partners','2026-08-16 12:49:58','2026-08-16 12:49:58'),(95,'partners.issue','Issue Partners','Partners','2026-08-16 12:49:58','2026-08-16 12:49:58'),(96,'partners.withdraw','Withdraw Partners','Partners','2026-08-16 12:49:58','2026-08-16 12:49:58'),(97,'webhooks.view','View Webhooks','Webhooks','2026-08-16 12:49:58','2026-08-16 12:49:58'),(98,'webhooks.manage','Manage Webhooks','Webhooks','2026-08-16 12:49:58','2026-08-16 12:49:58'),(99,'workflows.view','View Workflows','Workflows','2026-08-16 12:49:58','2026-08-16 12:49:58'),(100,'workflows.manage','Manage Workflows','Workflows','2026-08-16 12:49:58','2026-08-16 12:49:58'),(101,'departments.view','View Departments','Departments','2026-08-16 12:49:58','2026-08-16 12:49:58'),(102,'departments.manage','Manage Departments','Departments','2026-08-16 12:49:58','2026-08-16 12:49:58'),(103,'users.view','View Users','Users','2026-08-16 12:49:58','2026-08-16 12:49:58'),(104,'users.invite','Invite Users','Users','2026-08-16 12:49:58','2026-08-16 12:49:58'),(105,'users.update-role','Update Role Users','Users','2026-08-16 12:49:58','2026-08-16 12:49:58'),(106,'users.remove','Remove Users','Users','2026-08-16 12:49:58','2026-08-16 12:49:58'),(107,'devices.view','View Devices','Devices','2026-08-16 12:49:59','2026-08-16 12:49:59'),(108,'devices.revoke','Revoke Devices','Devices','2026-08-16 12:49:59','2026-08-16 12:49:59'),(109,'settings.view','View Settings','Settings','2026-08-16 12:49:59','2026-08-16 12:49:59'),(110,'settings.update','Update Settings','Settings','2026-08-16 12:49:59','2026-08-16 12:49:59');
+INSERT INTO `permissions` VALUES (1,'business.view','View Business','Business','2026-08-16 13:52:35','2026-08-16 13:52:35'),(2,'business.update','Update Business','Business','2026-08-16 13:52:35','2026-08-16 13:52:35'),(3,'business.manage-branding','Manage Branding Business','Business','2026-08-16 13:52:35','2026-08-16 13:52:35'),(4,'business.manage-stationery','Manage Stationery Business','Business','2026-08-16 13:52:35','2026-08-16 13:52:35'),(5,'sales.view','View Sales','Sales','2026-08-16 13:52:35','2026-08-16 13:52:35'),(6,'sales.create','Create Sales','Sales','2026-08-16 13:52:35','2026-08-16 13:52:35'),(7,'sales.update','Update Sales','Sales','2026-08-16 13:52:35','2026-08-16 13:52:35'),(8,'sales.issue','Issue Sales','Sales','2026-08-16 13:52:35','2026-08-16 13:52:35'),(9,'sales.void','Void Sales','Sales','2026-08-16 13:52:35','2026-08-16 13:52:35'),(10,'sales.approve','Approve Sales','Sales','2026-08-16 13:52:35','2026-08-16 13:52:35'),(11,'receipts.view','View Receipts','Receipts','2026-08-16 13:52:35','2026-08-16 13:52:35'),(12,'receipts.create','Create Receipts','Receipts','2026-08-16 13:52:35','2026-08-16 13:52:35'),(13,'receipts.void','Void Receipts','Receipts','2026-08-16 13:52:35','2026-08-16 13:52:35'),(14,'payments.view','View Payments','Payments','2026-08-16 13:52:35','2026-08-16 13:52:35'),(15,'payments.record','Record Payments','Payments','2026-08-16 13:52:35','2026-08-16 13:52:35'),(16,'payments.refund','Refund Payments','Payments','2026-08-16 13:52:35','2026-08-16 13:52:35'),(17,'expenses.view','View Expenses','Expenses','2026-08-16 13:52:35','2026-08-16 13:52:35'),(18,'expenses.create','Create Expenses','Expenses','2026-08-16 13:52:35','2026-08-16 13:52:35'),(19,'expenses.update','Update Expenses','Expenses','2026-08-16 13:52:35','2026-08-16 13:52:35'),(20,'expenses.pay','Pay Expenses','Expenses','2026-08-16 13:52:35','2026-08-16 13:52:35'),(21,'expenses.void','Void Expenses','Expenses','2026-08-16 13:52:35','2026-08-16 13:52:35'),(22,'expenses.claim-view','Claim View Expenses','Expenses','2026-08-16 13:52:35','2026-08-16 13:52:35'),(23,'expenses.claim-create','Claim Create Expenses','Expenses','2026-08-16 13:52:35','2026-08-16 13:52:35'),(24,'expenses.claim-reimburse','Claim Reimburse Expenses','Expenses','2026-08-16 13:52:35','2026-08-16 13:52:35'),(25,'employees.view','View Employees','Employees','2026-08-16 13:52:35','2026-08-16 13:52:35'),(26,'employees.create','Create Employees','Employees','2026-08-16 13:52:35','2026-08-16 13:52:35'),(27,'employees.update','Update Employees','Employees','2026-08-16 13:52:35','2026-08-16 13:52:35'),(28,'employees.delete','Delete Employees','Employees','2026-08-16 13:52:35','2026-08-16 13:52:35'),(29,'payroll.view','View Payroll','Payroll','2026-08-16 13:52:35','2026-08-16 13:52:35'),(30,'payroll.run','Run Payroll','Payroll','2026-08-16 13:52:35','2026-08-16 13:52:35'),(31,'payroll.approve','Approve Payroll','Payroll','2026-08-16 13:52:36','2026-08-16 13:52:36'),(32,'payroll.pay','Pay Payroll','Payroll','2026-08-16 13:52:36','2026-08-16 13:52:36'),(33,'payroll.void','Void Payroll','Payroll','2026-08-16 13:52:36','2026-08-16 13:52:36'),(34,'leave.view','View Leave','Leave','2026-08-16 13:52:36','2026-08-16 13:52:36'),(35,'leave.request','Request Leave','Leave','2026-08-16 13:52:36','2026-08-16 13:52:36'),(36,'leave.approve','Approve Leave','Leave','2026-08-16 13:52:36','2026-08-16 13:52:36'),(37,'positions.view','View Positions','Positions','2026-08-16 13:52:36','2026-08-16 13:52:36'),(38,'positions.manage','Manage Positions','Positions','2026-08-16 13:52:36','2026-08-16 13:52:36'),(39,'attendance.view','View Attendance','Attendance','2026-08-16 13:52:36','2026-08-16 13:52:36'),(40,'attendance.record','Record Attendance','Attendance','2026-08-16 13:52:36','2026-08-16 13:52:36'),(41,'reviews.view','View Reviews','Reviews','2026-08-16 13:52:36','2026-08-16 13:52:36'),(42,'reviews.manage','Manage Reviews','Reviews','2026-08-16 13:52:36','2026-08-16 13:52:36'),(43,'customers.view','View Customers','Customers','2026-08-16 13:52:36','2026-08-16 13:52:36'),(44,'customers.create','Create Customers','Customers','2026-08-16 13:52:36','2026-08-16 13:52:36'),(45,'customers.update','Update Customers','Customers','2026-08-16 13:52:36','2026-08-16 13:52:36'),(46,'customers.delete','Delete Customers','Customers','2026-08-16 13:52:36','2026-08-16 13:52:36'),(47,'deals.view','View Deals','Deals','2026-08-16 13:52:36','2026-08-16 13:52:36'),(48,'deals.create','Create Deals','Deals','2026-08-16 13:52:36','2026-08-16 13:52:36'),(49,'deals.update','Update Deals','Deals','2026-08-16 13:52:36','2026-08-16 13:52:36'),(50,'deals.delete','Delete Deals','Deals','2026-08-16 13:52:36','2026-08-16 13:52:36'),(51,'products.view','View Products','Products','2026-08-16 13:52:36','2026-08-16 13:52:36'),(52,'products.create','Create Products','Products','2026-08-16 13:52:36','2026-08-16 13:52:36'),(53,'products.update','Update Products','Products','2026-08-16 13:52:36','2026-08-16 13:52:36'),(54,'products.delete','Delete Products','Products','2026-08-16 13:52:36','2026-08-16 13:52:36'),(55,'products.adjust-stock','Adjust Stock Products','Products','2026-08-16 13:52:36','2026-08-16 13:52:36'),(56,'products.manage-locations','Manage Locations Products','Products','2026-08-16 13:52:36','2026-08-16 13:52:36'),(57,'products.track-view','Track View Products','Products','2026-08-16 13:52:36','2026-08-16 13:52:36'),(58,'products.track-manage','Track Manage Products','Products','2026-08-16 13:52:36','2026-08-16 13:52:36'),(59,'products.reserve','Reserve Products','Products','2026-08-16 13:52:36','2026-08-16 13:52:36'),(60,'assets.view','View Assets','Assets','2026-08-16 13:52:36','2026-08-16 13:52:36'),(61,'assets.create','Create Assets','Assets','2026-08-16 13:52:36','2026-08-16 13:52:36'),(62,'assets.update','Update Assets','Assets','2026-08-16 13:52:36','2026-08-16 13:52:36'),(63,'assets.depreciate','Depreciate Assets','Assets','2026-08-16 13:52:36','2026-08-16 13:52:36'),(64,'assets.dispose','Dispose Assets','Assets','2026-08-16 13:52:36','2026-08-16 13:52:36'),(65,'assets.transfer','Transfer Assets','Assets','2026-08-16 13:52:36','2026-08-16 13:52:36'),(66,'assets.maintain','Maintain Assets','Assets','2026-08-16 13:52:36','2026-08-16 13:52:36'),(67,'banking.view','View Banking','Banking','2026-08-16 13:52:36','2026-08-16 13:52:36'),(68,'banking.manage','Manage Banking','Banking','2026-08-16 13:52:36','2026-08-16 13:52:36'),(69,'banking.import','Import Banking','Banking','2026-08-16 13:52:36','2026-08-16 13:52:36'),(70,'banking.reconcile','Reconcile Banking','Banking','2026-08-16 13:52:36','2026-08-16 13:52:36'),(71,'payables.view','View Payables','Payables','2026-08-16 13:52:36','2026-08-16 13:52:36'),(72,'payables.manage','Manage Payables','Payables','2026-08-16 13:52:36','2026-08-16 13:52:36'),(73,'payables.approve','Approve Payables','Payables','2026-08-16 13:52:36','2026-08-16 13:52:36'),(74,'payables.execute','Execute Payables','Payables','2026-08-16 13:52:36','2026-08-16 13:52:36'),(75,'payables.statement-view','Statement View Payables','Payables','2026-08-16 13:52:36','2026-08-16 13:52:36'),(76,'payables.reconcile','Reconcile Payables','Payables','2026-08-16 13:52:36','2026-08-16 13:52:36'),(77,'procurement.requisition-view','Requisition View Procurement','Procurement','2026-08-16 13:52:36','2026-08-16 13:52:36'),(78,'procurement.requisition-manage','Requisition Manage Procurement','Procurement','2026-08-16 13:52:36','2026-08-16 13:52:36'),(79,'procurement.rfq-view','Rfq View Procurement','Procurement','2026-08-16 13:52:36','2026-08-16 13:52:36'),(80,'procurement.rfq-manage','Rfq Manage Procurement','Procurement','2026-08-16 13:52:36','2026-08-16 13:52:36'),(81,'procurement.rfq-award','Rfq Award Procurement','Procurement','2026-08-16 13:52:36','2026-08-16 13:52:36'),(82,'contracts.view','View Contracts','Contracts','2026-08-16 13:52:36','2026-08-16 13:52:36'),(83,'contracts.manage','Manage Contracts','Contracts','2026-08-16 13:52:36','2026-08-16 13:52:36'),(84,'contracts.renew','Renew Contracts','Contracts','2026-08-16 13:52:36','2026-08-16 13:52:36'),(85,'contracts.terminate','Terminate Contracts','Contracts','2026-08-16 13:52:36','2026-08-16 13:52:36'),(86,'compliance.view','View Compliance','Compliance','2026-08-16 13:52:36','2026-08-16 13:52:36'),(87,'compliance.manage','Manage Compliance','Compliance','2026-08-16 13:52:36','2026-08-16 13:52:36'),(88,'compliance.file','File Compliance','Compliance','2026-08-16 13:52:36','2026-08-16 13:52:36'),(89,'risks.view','View Risks','Risks','2026-08-16 13:52:36','2026-08-16 13:52:36'),(90,'risks.manage','Manage Risks','Risks','2026-08-16 13:52:36','2026-08-16 13:52:36'),(91,'risks.review','Review Risks','Risks','2026-08-16 13:52:36','2026-08-16 13:52:36'),(92,'projects.view','View Projects','Projects','2026-08-16 13:52:36','2026-08-16 13:52:36'),(93,'projects.manage','Manage Projects','Projects','2026-08-16 13:52:36','2026-08-16 13:52:36'),(94,'projects.log-time','Log Time Projects','Projects','2026-08-16 13:52:36','2026-08-16 13:52:36'),(95,'papers.view','View Papers','Papers','2026-08-16 13:52:36','2026-08-16 13:52:36'),(96,'papers.create','Create Papers','Papers','2026-08-16 13:52:36','2026-08-16 13:52:36'),(97,'papers.issue','Issue Papers','Papers','2026-08-16 13:52:36','2026-08-16 13:52:36'),(98,'papers.void','Void Papers','Papers','2026-08-16 13:52:36','2026-08-16 13:52:36'),(99,'papers.share','Share Papers','Papers','2026-08-16 13:52:36','2026-08-16 13:52:36'),(100,'papers.manage','Manage Papers','Papers','2026-08-16 13:52:36','2026-08-16 13:52:36'),(101,'forms.view','View Forms','Forms','2026-08-16 13:52:36','2026-08-16 13:52:36'),(102,'forms.create','Create Forms','Forms','2026-08-16 13:52:36','2026-08-16 13:52:36'),(103,'forms.update','Update Forms','Forms','2026-08-16 13:52:36','2026-08-16 13:52:36'),(104,'forms.delete','Delete Forms','Forms','2026-08-16 13:52:36','2026-08-16 13:52:36'),(105,'forms.responses','Responses Forms','Forms','2026-08-16 13:52:36','2026-08-16 13:52:36'),(106,'events.view','View Events','Events','2026-08-16 13:52:36','2026-08-16 13:52:36'),(107,'events.create','Create Events','Events','2026-08-16 13:52:36','2026-08-16 13:52:36'),(108,'events.update','Update Events','Events','2026-08-16 13:52:36','2026-08-16 13:52:36'),(109,'events.void','Void Events','Events','2026-08-16 13:52:36','2026-08-16 13:52:36'),(110,'events.check-in','Check In Events','Events','2026-08-16 13:52:36','2026-08-16 13:52:36'),(111,'loyalty.view','View Loyalty','Loyalty','2026-08-16 13:52:36','2026-08-16 13:52:36'),(112,'loyalty.manage','Manage Loyalty','Loyalty','2026-08-16 13:52:36','2026-08-16 13:52:36'),(113,'loyalty.redeem','Redeem Loyalty','Loyalty','2026-08-16 13:52:36','2026-08-16 13:52:36'),(114,'vip.view','View Vip','Vip','2026-08-16 13:52:36','2026-08-16 13:52:36'),(115,'vip.manage','Manage Vip','Vip','2026-08-16 13:52:36','2026-08-16 13:52:36'),(116,'vip.sell','Sell Vip','Vip','2026-08-16 13:52:36','2026-08-16 13:52:36'),(117,'reports.view','View Reports','Reports','2026-08-16 13:52:36','2026-08-16 13:52:36'),(118,'reports.export','Export Reports','Reports','2026-08-16 13:52:36','2026-08-16 13:52:36'),(119,'accounting.view','View Accounting','Accounting','2026-08-16 13:52:36','2026-08-16 13:52:36'),(120,'accounting.export','Export Accounting','Accounting','2026-08-16 13:52:36','2026-08-16 13:52:36'),(121,'accounting.manage','Manage Accounting','Accounting','2026-08-16 13:52:36','2026-08-16 13:52:36'),(122,'partners.view','View Partners','Partners','2026-08-16 13:52:36','2026-08-16 13:52:36'),(123,'partners.manage','Manage Partners','Partners','2026-08-16 13:52:36','2026-08-16 13:52:36'),(124,'partners.issue','Issue Partners','Partners','2026-08-16 13:52:36','2026-08-16 13:52:36'),(125,'partners.withdraw','Withdraw Partners','Partners','2026-08-16 13:52:36','2026-08-16 13:52:36'),(126,'webhooks.view','View Webhooks','Webhooks','2026-08-16 13:52:36','2026-08-16 13:52:36'),(127,'webhooks.manage','Manage Webhooks','Webhooks','2026-08-16 13:52:36','2026-08-16 13:52:36'),(128,'workflows.view','View Workflows','Workflows','2026-08-16 13:52:36','2026-08-16 13:52:36'),(129,'workflows.manage','Manage Workflows','Workflows','2026-08-16 13:52:36','2026-08-16 13:52:36'),(130,'departments.view','View Departments','Departments','2026-08-16 13:52:36','2026-08-16 13:52:36'),(131,'departments.manage','Manage Departments','Departments','2026-08-16 13:52:36','2026-08-16 13:52:36'),(132,'users.view','View Users','Users','2026-08-16 13:52:36','2026-08-16 13:52:36'),(133,'users.invite','Invite Users','Users','2026-08-16 13:52:36','2026-08-16 13:52:36'),(134,'users.update-role','Update Role Users','Users','2026-08-16 13:52:36','2026-08-16 13:52:36'),(135,'users.remove','Remove Users','Users','2026-08-16 13:52:36','2026-08-16 13:52:36'),(136,'devices.view','View Devices','Devices','2026-08-16 13:52:36','2026-08-16 13:52:36'),(137,'devices.revoke','Revoke Devices','Devices','2026-08-16 13:52:36','2026-08-16 13:52:36'),(138,'settings.view','View Settings','Settings','2026-08-16 13:52:36','2026-08-16 13:52:36'),(139,'settings.update','Update Settings','Settings','2026-08-16 13:52:36','2026-08-16 13:52:36');
 /*!40000 ALTER TABLE `permissions` ENABLE KEYS */;
 DROP TABLE IF EXISTS `personal_access_tokens`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
@@ -2620,6 +3179,34 @@ CREATE TABLE `platform_admins` (
 
 /*!40000 ALTER TABLE `platform_admins` DISABLE KEYS */;
 /*!40000 ALTER TABLE `platform_admins` ENABLE KEYS */;
+DROP TABLE IF EXISTS `positions`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!50503 SET character_set_client = utf8mb4 */;
+CREATE TABLE `positions` (
+  `id` char(26) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `company_id` char(26) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `department_id` char(26) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `title` varchar(255) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `code` varchar(255) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `description` text COLLATE utf8mb4_unicode_ci,
+  `grade` varchar(255) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `is_active` tinyint(1) NOT NULL DEFAULT '1',
+  `sort_order` int unsigned NOT NULL DEFAULT '0',
+  `created_at` timestamp NULL DEFAULT NULL,
+  `updated_at` timestamp NULL DEFAULT NULL,
+  `deleted_at` timestamp NULL DEFAULT NULL,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `positions_company_id_title_unique` (`company_id`,`title`),
+  KEY `positions_department_id_foreign` (`department_id`),
+  KEY `positions_company_id_is_active_index` (`company_id`,`is_active`),
+  KEY `positions_company_id_department_id_index` (`company_id`,`department_id`),
+  CONSTRAINT `positions_company_id_foreign` FOREIGN KEY (`company_id`) REFERENCES `companies` (`id`) ON DELETE CASCADE,
+  CONSTRAINT `positions_department_id_foreign` FOREIGN KEY (`department_id`) REFERENCES `departments` (`id`) ON DELETE SET NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+/*!40101 SET character_set_client = @saved_cs_client */;
+
+/*!40000 ALTER TABLE `positions` DISABLE KEYS */;
+/*!40000 ALTER TABLE `positions` ENABLE KEYS */;
 DROP TABLE IF EXISTS `project_milestones`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
 /*!50503 SET character_set_client = utf8mb4 */;
@@ -2688,7 +3275,8 @@ DROP TABLE IF EXISTS `project_time_entries`;
 CREATE TABLE `project_time_entries` (
   `id` char(26) COLLATE utf8mb4_unicode_ci NOT NULL,
   `company_id` char(26) COLLATE utf8mb4_unicode_ci NOT NULL,
-  `project_id` char(26) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `project_id` char(26) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `service_job_id` char(26) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
   `task_id` char(26) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
   `user_id` bigint unsigned NOT NULL,
   `worked_on` date NOT NULL,
@@ -2706,8 +3294,11 @@ CREATE TABLE `project_time_entries` (
   KEY `project_time_entries_user_id_foreign` (`user_id`),
   KEY `project_time_entries_company_id_project_id_worked_on_index` (`company_id`,`project_id`,`worked_on`),
   KEY `project_time_entries_company_id_user_id_worked_on_index` (`company_id`,`user_id`,`worked_on`),
+  KEY `project_time_entries_service_job_id_foreign` (`service_job_id`),
+  KEY `project_time_entries_job_idx` (`company_id`,`service_job_id`),
   CONSTRAINT `project_time_entries_company_id_foreign` FOREIGN KEY (`company_id`) REFERENCES `companies` (`id`) ON DELETE CASCADE,
   CONSTRAINT `project_time_entries_project_id_foreign` FOREIGN KEY (`project_id`) REFERENCES `projects` (`id`) ON DELETE CASCADE,
+  CONSTRAINT `project_time_entries_service_job_id_foreign` FOREIGN KEY (`service_job_id`) REFERENCES `service_jobs` (`id`) ON DELETE SET NULL,
   CONSTRAINT `project_time_entries_task_id_foreign` FOREIGN KEY (`task_id`) REFERENCES `project_tasks` (`id`) ON DELETE SET NULL,
   CONSTRAINT `project_time_entries_user_id_foreign` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
@@ -2756,6 +3347,75 @@ CREATE TABLE `projects` (
 
 /*!40000 ALTER TABLE `projects` DISABLE KEYS */;
 /*!40000 ALTER TABLE `projects` ENABLE KEYS */;
+DROP TABLE IF EXISTS `purchase_requisition_lines`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!50503 SET character_set_client = utf8mb4 */;
+CREATE TABLE `purchase_requisition_lines` (
+  `id` char(26) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `company_id` char(26) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `purchase_requisition_id` char(26) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `item_id` char(26) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `description` varchar(255) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `quantity` decimal(15,3) NOT NULL DEFAULT '1.000',
+  `unit` varchar(255) COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT 'unit',
+  `estimated_unit_price` decimal(14,2) NOT NULL DEFAULT '0.00',
+  `estimated_total` decimal(14,2) NOT NULL DEFAULT '0.00',
+  `sort_order` int unsigned NOT NULL DEFAULT '0',
+  `created_at` timestamp NULL DEFAULT NULL,
+  `updated_at` timestamp NULL DEFAULT NULL,
+  PRIMARY KEY (`id`),
+  KEY `purchase_requisition_lines_company_id_foreign` (`company_id`),
+  KEY `purchase_requisition_lines_item_id_foreign` (`item_id`),
+  KEY `preq_lines_sort_idx` (`purchase_requisition_id`,`sort_order`),
+  CONSTRAINT `purchase_requisition_lines_company_id_foreign` FOREIGN KEY (`company_id`) REFERENCES `companies` (`id`) ON DELETE CASCADE,
+  CONSTRAINT `purchase_requisition_lines_item_id_foreign` FOREIGN KEY (`item_id`) REFERENCES `items` (`id`) ON DELETE SET NULL,
+  CONSTRAINT `purchase_requisition_lines_purchase_requisition_id_foreign` FOREIGN KEY (`purchase_requisition_id`) REFERENCES `purchase_requisitions` (`id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+/*!40101 SET character_set_client = @saved_cs_client */;
+
+/*!40000 ALTER TABLE `purchase_requisition_lines` DISABLE KEYS */;
+/*!40000 ALTER TABLE `purchase_requisition_lines` ENABLE KEYS */;
+DROP TABLE IF EXISTS `purchase_requisitions`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!50503 SET character_set_client = utf8mb4 */;
+CREATE TABLE `purchase_requisitions` (
+  `id` char(26) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `company_id` char(26) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `number` varchar(255) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `title` varchar(255) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `justification` text COLLATE utf8mb4_unicode_ci,
+  `needed_by` date DEFAULT NULL,
+  `department_id` char(26) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `cost_centre_id` char(26) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `status` varchar(255) COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT 'draft',
+  `currency` varchar(3) COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT 'XAF',
+  `estimated_total` decimal(14,2) NOT NULL DEFAULT '0.00',
+  `submitted_at` timestamp NULL DEFAULT NULL,
+  `approved_at` timestamp NULL DEFAULT NULL,
+  `ordered_at` timestamp NULL DEFAULT NULL,
+  `purchase_order_id` char(26) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `notes` text COLLATE utf8mb4_unicode_ci,
+  `created_by` bigint unsigned DEFAULT NULL,
+  `created_at` timestamp NULL DEFAULT NULL,
+  `updated_at` timestamp NULL DEFAULT NULL,
+  `deleted_at` timestamp NULL DEFAULT NULL,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `preq_company_number_unq` (`company_id`,`number`),
+  KEY `purchase_requisitions_department_id_foreign` (`department_id`),
+  KEY `purchase_requisitions_cost_centre_id_foreign` (`cost_centre_id`),
+  KEY `purchase_requisitions_purchase_order_id_foreign` (`purchase_order_id`),
+  KEY `purchase_requisitions_created_by_foreign` (`created_by`),
+  KEY `preq_company_status_idx` (`company_id`,`status`,`needed_by`),
+  CONSTRAINT `purchase_requisitions_company_id_foreign` FOREIGN KEY (`company_id`) REFERENCES `companies` (`id`) ON DELETE CASCADE,
+  CONSTRAINT `purchase_requisitions_cost_centre_id_foreign` FOREIGN KEY (`cost_centre_id`) REFERENCES `cost_centres` (`id`) ON DELETE SET NULL,
+  CONSTRAINT `purchase_requisitions_created_by_foreign` FOREIGN KEY (`created_by`) REFERENCES `users` (`id`) ON DELETE SET NULL,
+  CONSTRAINT `purchase_requisitions_department_id_foreign` FOREIGN KEY (`department_id`) REFERENCES `departments` (`id`) ON DELETE SET NULL,
+  CONSTRAINT `purchase_requisitions_purchase_order_id_foreign` FOREIGN KEY (`purchase_order_id`) REFERENCES `documents` (`id`) ON DELETE SET NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+/*!40101 SET character_set_client = @saved_cs_client */;
+
+/*!40000 ALTER TABLE `purchase_requisitions` DISABLE KEYS */;
+/*!40000 ALTER TABLE `purchase_requisitions` ENABLE KEYS */;
 DROP TABLE IF EXISTS `receipts`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
 /*!50503 SET character_set_client = utf8mb4 */;
@@ -2871,6 +3531,176 @@ CREATE TABLE `refunds` (
 
 /*!40000 ALTER TABLE `refunds` DISABLE KEYS */;
 /*!40000 ALTER TABLE `refunds` ENABLE KEYS */;
+DROP TABLE IF EXISTS `rfq_lines`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!50503 SET character_set_client = utf8mb4 */;
+CREATE TABLE `rfq_lines` (
+  `id` char(26) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `company_id` char(26) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `rfq_id` char(26) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `purchase_requisition_line_id` char(26) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `item_id` char(26) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `description` varchar(255) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `quantity` decimal(15,3) NOT NULL DEFAULT '1.000',
+  `unit` varchar(255) COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT 'unit',
+  `specification` text COLLATE utf8mb4_unicode_ci,
+  `sort_order` int unsigned NOT NULL DEFAULT '0',
+  `created_at` timestamp NULL DEFAULT NULL,
+  `updated_at` timestamp NULL DEFAULT NULL,
+  PRIMARY KEY (`id`),
+  KEY `rfq_lines_company_id_foreign` (`company_id`),
+  KEY `rfq_lines_preq_line_fk` (`purchase_requisition_line_id`),
+  KEY `rfq_lines_item_id_foreign` (`item_id`),
+  KEY `rfq_lines_sort_idx` (`rfq_id`,`sort_order`),
+  CONSTRAINT `rfq_lines_company_id_foreign` FOREIGN KEY (`company_id`) REFERENCES `companies` (`id`) ON DELETE CASCADE,
+  CONSTRAINT `rfq_lines_item_id_foreign` FOREIGN KEY (`item_id`) REFERENCES `items` (`id`) ON DELETE SET NULL,
+  CONSTRAINT `rfq_lines_preq_line_fk` FOREIGN KEY (`purchase_requisition_line_id`) REFERENCES `purchase_requisition_lines` (`id`) ON DELETE SET NULL,
+  CONSTRAINT `rfq_lines_rfq_id_foreign` FOREIGN KEY (`rfq_id`) REFERENCES `rfqs` (`id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+/*!40101 SET character_set_client = @saved_cs_client */;
+
+/*!40000 ALTER TABLE `rfq_lines` DISABLE KEYS */;
+/*!40000 ALTER TABLE `rfq_lines` ENABLE KEYS */;
+DROP TABLE IF EXISTS `rfq_suppliers`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!50503 SET character_set_client = utf8mb4 */;
+CREATE TABLE `rfq_suppliers` (
+  `id` char(26) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `company_id` char(26) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `rfq_id` char(26) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `supplier_id` char(26) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `invited_at` timestamp NULL DEFAULT NULL,
+  `responded_at` timestamp NULL DEFAULT NULL,
+  `declined_at` timestamp NULL DEFAULT NULL,
+  `note` text COLLATE utf8mb4_unicode_ci,
+  `created_at` timestamp NULL DEFAULT NULL,
+  `updated_at` timestamp NULL DEFAULT NULL,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `rfq_suppliers_unq` (`rfq_id`,`supplier_id`),
+  KEY `rfq_suppliers_company_id_foreign` (`company_id`),
+  KEY `rfq_suppliers_supplier_id_foreign` (`supplier_id`),
+  CONSTRAINT `rfq_suppliers_company_id_foreign` FOREIGN KEY (`company_id`) REFERENCES `companies` (`id`) ON DELETE CASCADE,
+  CONSTRAINT `rfq_suppliers_rfq_id_foreign` FOREIGN KEY (`rfq_id`) REFERENCES `rfqs` (`id`) ON DELETE CASCADE,
+  CONSTRAINT `rfq_suppliers_supplier_id_foreign` FOREIGN KEY (`supplier_id`) REFERENCES `contacts` (`id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+/*!40101 SET character_set_client = @saved_cs_client */;
+
+/*!40000 ALTER TABLE `rfq_suppliers` DISABLE KEYS */;
+/*!40000 ALTER TABLE `rfq_suppliers` ENABLE KEYS */;
+DROP TABLE IF EXISTS `rfqs`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!50503 SET character_set_client = utf8mb4 */;
+CREATE TABLE `rfqs` (
+  `id` char(26) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `company_id` char(26) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `purchase_requisition_id` char(26) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `number` varchar(255) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `title` varchar(255) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `status` varchar(255) COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT 'draft',
+  `issued_on` date DEFAULT NULL,
+  `closes_on` date DEFAULT NULL,
+  `responded_at` timestamp NULL DEFAULT NULL,
+  `awarded_at` timestamp NULL DEFAULT NULL,
+  `purchase_order_id` char(26) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `terms` text COLLATE utf8mb4_unicode_ci,
+  `notes` text COLLATE utf8mb4_unicode_ci,
+  `created_by` bigint unsigned DEFAULT NULL,
+  `created_at` timestamp NULL DEFAULT NULL,
+  `updated_at` timestamp NULL DEFAULT NULL,
+  `deleted_at` timestamp NULL DEFAULT NULL,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `rfq_company_number_unq` (`company_id`,`number`),
+  KEY `rfqs_purchase_requisition_id_foreign` (`purchase_requisition_id`),
+  KEY `rfqs_purchase_order_id_foreign` (`purchase_order_id`),
+  KEY `rfqs_created_by_foreign` (`created_by`),
+  KEY `rfq_company_status_idx` (`company_id`,`status`,`closes_on`),
+  CONSTRAINT `rfqs_company_id_foreign` FOREIGN KEY (`company_id`) REFERENCES `companies` (`id`) ON DELETE CASCADE,
+  CONSTRAINT `rfqs_created_by_foreign` FOREIGN KEY (`created_by`) REFERENCES `users` (`id`) ON DELETE SET NULL,
+  CONSTRAINT `rfqs_purchase_order_id_foreign` FOREIGN KEY (`purchase_order_id`) REFERENCES `documents` (`id`) ON DELETE SET NULL,
+  CONSTRAINT `rfqs_purchase_requisition_id_foreign` FOREIGN KEY (`purchase_requisition_id`) REFERENCES `purchase_requisitions` (`id`) ON DELETE SET NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+/*!40101 SET character_set_client = @saved_cs_client */;
+
+/*!40000 ALTER TABLE `rfqs` DISABLE KEYS */;
+/*!40000 ALTER TABLE `rfqs` ENABLE KEYS */;
+DROP TABLE IF EXISTS `risk_controls`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!50503 SET character_set_client = utf8mb4 */;
+CREATE TABLE `risk_controls` (
+  `id` char(26) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `company_id` char(26) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `risk_id` char(26) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `title` varchar(255) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `description` text COLLATE utf8mb4_unicode_ci,
+  `kind` varchar(255) COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT 'preventive',
+  `status` varchar(255) COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT 'planned',
+  `owner_id` bigint unsigned DEFAULT NULL,
+  `due_on` date DEFAULT NULL,
+  `implemented_on` date DEFAULT NULL,
+  `effectiveness` tinyint unsigned DEFAULT NULL,
+  `created_by` bigint unsigned DEFAULT NULL,
+  `created_at` timestamp NULL DEFAULT NULL,
+  `updated_at` timestamp NULL DEFAULT NULL,
+  PRIMARY KEY (`id`),
+  KEY `risk_controls_risk_id_foreign` (`risk_id`),
+  KEY `risk_controls_owner_id_foreign` (`owner_id`),
+  KEY `risk_controls_created_by_foreign` (`created_by`),
+  KEY `risk_controls_company_risk_idx` (`company_id`,`risk_id`),
+  CONSTRAINT `risk_controls_company_id_foreign` FOREIGN KEY (`company_id`) REFERENCES `companies` (`id`) ON DELETE CASCADE,
+  CONSTRAINT `risk_controls_created_by_foreign` FOREIGN KEY (`created_by`) REFERENCES `users` (`id`) ON DELETE SET NULL,
+  CONSTRAINT `risk_controls_owner_id_foreign` FOREIGN KEY (`owner_id`) REFERENCES `users` (`id`) ON DELETE SET NULL,
+  CONSTRAINT `risk_controls_risk_id_foreign` FOREIGN KEY (`risk_id`) REFERENCES `risks` (`id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+/*!40101 SET character_set_client = @saved_cs_client */;
+
+/*!40000 ALTER TABLE `risk_controls` DISABLE KEYS */;
+/*!40000 ALTER TABLE `risk_controls` ENABLE KEYS */;
+DROP TABLE IF EXISTS `risks`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!50503 SET character_set_client = utf8mb4 */;
+CREATE TABLE `risks` (
+  `id` char(26) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `company_id` char(26) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `reference` varchar(255) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `title` varchar(255) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `description` text COLLATE utf8mb4_unicode_ci,
+  `category` varchar(255) COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT 'operational',
+  `likelihood` tinyint unsigned NOT NULL,
+  `impact` tinyint unsigned NOT NULL,
+  `residual_likelihood` tinyint unsigned DEFAULT NULL,
+  `residual_impact` tinyint unsigned DEFAULT NULL,
+  `treatment` varchar(255) COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT 'mitigate',
+  `status` varchar(255) COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT 'open',
+  `owner_id` bigint unsigned DEFAULT NULL,
+  `department_id` char(26) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `identified_on` date DEFAULT NULL,
+  `review_interval_months` smallint unsigned DEFAULT NULL,
+  `last_reviewed_on` date DEFAULT NULL,
+  `next_review_on` date DEFAULT NULL,
+  `closed_on` date DEFAULT NULL,
+  `closure_reason` text COLLATE utf8mb4_unicode_ci,
+  `closed_by` bigint unsigned DEFAULT NULL,
+  `created_by` bigint unsigned DEFAULT NULL,
+  `created_at` timestamp NULL DEFAULT NULL,
+  `updated_at` timestamp NULL DEFAULT NULL,
+  `deleted_at` timestamp NULL DEFAULT NULL,
+  PRIMARY KEY (`id`),
+  KEY `risks_owner_id_foreign` (`owner_id`),
+  KEY `risks_department_id_foreign` (`department_id`),
+  KEY `risks_closed_by_foreign` (`closed_by`),
+  KEY `risks_created_by_foreign` (`created_by`),
+  KEY `risks_company_status_idx` (`company_id`,`status`),
+  KEY `risks_company_review_idx` (`company_id`,`next_review_on`),
+  CONSTRAINT `risks_closed_by_foreign` FOREIGN KEY (`closed_by`) REFERENCES `users` (`id`) ON DELETE SET NULL,
+  CONSTRAINT `risks_company_id_foreign` FOREIGN KEY (`company_id`) REFERENCES `companies` (`id`) ON DELETE CASCADE,
+  CONSTRAINT `risks_created_by_foreign` FOREIGN KEY (`created_by`) REFERENCES `users` (`id`) ON DELETE SET NULL,
+  CONSTRAINT `risks_department_id_foreign` FOREIGN KEY (`department_id`) REFERENCES `departments` (`id`) ON DELETE SET NULL,
+  CONSTRAINT `risks_owner_id_foreign` FOREIGN KEY (`owner_id`) REFERENCES `users` (`id`) ON DELETE SET NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+/*!40101 SET character_set_client = @saved_cs_client */;
+
+/*!40000 ALTER TABLE `risks` DISABLE KEYS */;
+/*!40000 ALTER TABLE `risks` ENABLE KEYS */;
 DROP TABLE IF EXISTS `roles`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
 /*!50503 SET character_set_client = utf8mb4 */;
@@ -2889,7 +3719,7 @@ CREATE TABLE `roles` (
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 /*!40000 ALTER TABLE `roles` DISABLE KEYS */;
-INSERT INTO `roles` VALUES (1,'owner','Owner',NULL,1,1,'2026-08-16 12:49:59','2026-08-16 12:49:59'),(2,'administrator','Administrator',NULL,2,1,'2026-08-16 12:50:01','2026-08-16 12:50:01'),(3,'manager','Manager',NULL,3,1,'2026-08-16 12:50:02','2026-08-16 12:50:02'),(4,'accountant','Accountant',NULL,4,1,'2026-08-16 12:50:03','2026-08-16 12:50:03'),(5,'sales-officer','Sales Officer',NULL,5,1,'2026-08-16 12:50:04','2026-08-16 12:50:04'),(6,'cashier','Cashier',NULL,6,1,'2026-08-16 12:50:04','2026-08-16 12:50:04'),(7,'read-only','Read Only',NULL,7,1,'2026-08-16 12:50:04','2026-08-16 12:50:04');
+INSERT INTO `roles` VALUES (1,'owner','Owner',NULL,1,1,'2026-08-16 13:52:36','2026-08-16 13:52:36'),(2,'administrator','Administrator',NULL,2,1,'2026-08-16 13:52:38','2026-08-16 13:52:38'),(3,'manager','Manager',NULL,3,1,'2026-08-16 13:52:39','2026-08-16 13:52:39'),(4,'accountant','Accountant',NULL,4,1,'2026-08-16 13:52:40','2026-08-16 13:52:40'),(5,'sales-officer','Sales Officer',NULL,5,1,'2026-08-16 13:52:40','2026-08-16 13:52:40'),(6,'cashier','Cashier',NULL,6,1,'2026-08-16 13:52:41','2026-08-16 13:52:41'),(7,'read-only','Read Only',NULL,7,1,'2026-08-16 13:52:41','2026-08-16 13:52:41');
 /*!40000 ALTER TABLE `roles` ENABLE KEYS */;
 DROP TABLE IF EXISTS `salary_components`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
@@ -2920,6 +3750,218 @@ CREATE TABLE `salary_components` (
 
 /*!40000 ALTER TABLE `salary_components` DISABLE KEYS */;
 /*!40000 ALTER TABLE `salary_components` ENABLE KEYS */;
+DROP TABLE IF EXISTS `service_job_parts`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!50503 SET character_set_client = utf8mb4 */;
+CREATE TABLE `service_job_parts` (
+  `id` char(26) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `company_id` char(26) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `service_job_id` char(26) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `item_id` char(26) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `description` varchar(255) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `quantity` decimal(15,3) NOT NULL DEFAULT '1.000',
+  `unit` varchar(255) COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT 'unit',
+  `unit_price` decimal(15,2) NOT NULL DEFAULT '0.00',
+  `is_billable` tinyint(1) NOT NULL DEFAULT '1',
+  `created_at` timestamp NULL DEFAULT NULL,
+  `updated_at` timestamp NULL DEFAULT NULL,
+  PRIMARY KEY (`id`),
+  KEY `service_job_parts_service_job_id_foreign` (`service_job_id`),
+  KEY `service_job_parts_item_id_foreign` (`item_id`),
+  KEY `service_job_parts_job_idx` (`company_id`,`service_job_id`),
+  CONSTRAINT `service_job_parts_company_id_foreign` FOREIGN KEY (`company_id`) REFERENCES `companies` (`id`) ON DELETE CASCADE,
+  CONSTRAINT `service_job_parts_item_id_foreign` FOREIGN KEY (`item_id`) REFERENCES `items` (`id`) ON DELETE SET NULL,
+  CONSTRAINT `service_job_parts_service_job_id_foreign` FOREIGN KEY (`service_job_id`) REFERENCES `service_jobs` (`id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+/*!40101 SET character_set_client = @saved_cs_client */;
+
+/*!40000 ALTER TABLE `service_job_parts` DISABLE KEYS */;
+/*!40000 ALTER TABLE `service_job_parts` ENABLE KEYS */;
+DROP TABLE IF EXISTS `service_jobs`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!50503 SET character_set_client = utf8mb4 */;
+CREATE TABLE `service_jobs` (
+  `id` char(26) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `company_id` char(26) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `ticket_id` char(26) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `reference` varchar(255) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `technician_id` bigint unsigned DEFAULT NULL,
+  `scheduled_for` timestamp NULL DEFAULT NULL,
+  `estimated_minutes` int unsigned DEFAULT NULL,
+  `started_at` timestamp NULL DEFAULT NULL,
+  `completed_at` timestamp NULL DEFAULT NULL,
+  `status` varchar(255) COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT 'scheduled',
+  `on_site_notes` text COLLATE utf8mb4_unicode_ci,
+  `customer_signature_name` text COLLATE utf8mb4_unicode_ci,
+  `fixed_asset_id` char(26) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `asset_maintenance_id` char(26) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `is_billable` tinyint(1) NOT NULL DEFAULT '1',
+  `document_id` char(26) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `created_by` bigint unsigned DEFAULT NULL,
+  `created_at` timestamp NULL DEFAULT NULL,
+  `updated_at` timestamp NULL DEFAULT NULL,
+  `deleted_at` timestamp NULL DEFAULT NULL,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `service_jobs_reference_unq` (`company_id`,`reference`),
+  KEY `service_jobs_ticket_id_foreign` (`ticket_id`),
+  KEY `service_jobs_technician_id_foreign` (`technician_id`),
+  KEY `service_jobs_fixed_asset_id_foreign` (`fixed_asset_id`),
+  KEY `service_jobs_asset_maintenance_id_foreign` (`asset_maintenance_id`),
+  KEY `service_jobs_document_id_foreign` (`document_id`),
+  KEY `service_jobs_created_by_foreign` (`created_by`),
+  KEY `service_jobs_schedule_idx` (`company_id`,`status`,`scheduled_for`),
+  KEY `service_jobs_technician_idx` (`company_id`,`technician_id`,`scheduled_for`),
+  KEY `service_jobs_ticket_idx` (`company_id`,`ticket_id`),
+  CONSTRAINT `service_jobs_asset_maintenance_id_foreign` FOREIGN KEY (`asset_maintenance_id`) REFERENCES `asset_maintenance` (`id`) ON DELETE SET NULL,
+  CONSTRAINT `service_jobs_company_id_foreign` FOREIGN KEY (`company_id`) REFERENCES `companies` (`id`) ON DELETE CASCADE,
+  CONSTRAINT `service_jobs_created_by_foreign` FOREIGN KEY (`created_by`) REFERENCES `users` (`id`) ON DELETE SET NULL,
+  CONSTRAINT `service_jobs_document_id_foreign` FOREIGN KEY (`document_id`) REFERENCES `documents` (`id`) ON DELETE SET NULL,
+  CONSTRAINT `service_jobs_fixed_asset_id_foreign` FOREIGN KEY (`fixed_asset_id`) REFERENCES `fixed_assets` (`id`) ON DELETE SET NULL,
+  CONSTRAINT `service_jobs_technician_id_foreign` FOREIGN KEY (`technician_id`) REFERENCES `users` (`id`) ON DELETE SET NULL,
+  CONSTRAINT `service_jobs_ticket_id_foreign` FOREIGN KEY (`ticket_id`) REFERENCES `service_tickets` (`id`) ON DELETE SET NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+/*!40101 SET character_set_client = @saved_cs_client */;
+
+/*!40000 ALTER TABLE `service_jobs` DISABLE KEYS */;
+/*!40000 ALTER TABLE `service_jobs` ENABLE KEYS */;
+DROP TABLE IF EXISTS `service_sla_policies`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!50503 SET character_set_client = utf8mb4 */;
+CREATE TABLE `service_sla_policies` (
+  `id` char(26) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `company_id` char(26) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `name` varchar(255) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `description` text COLLATE utf8mb4_unicode_ci,
+  `is_default` tinyint(1) NOT NULL DEFAULT '0',
+  `clock` varchar(255) COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT 'business',
+  `timezone` varchar(255) COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT 'UTC',
+  `business_hours` json DEFAULT NULL,
+  `holidays` json DEFAULT NULL,
+  `is_active` tinyint(1) NOT NULL DEFAULT '1',
+  `created_by` bigint unsigned DEFAULT NULL,
+  `created_at` timestamp NULL DEFAULT NULL,
+  `updated_at` timestamp NULL DEFAULT NULL,
+  `deleted_at` timestamp NULL DEFAULT NULL,
+  PRIMARY KEY (`id`),
+  KEY `service_sla_policies_created_by_foreign` (`created_by`),
+  KEY `service_sla_policies_active_idx` (`company_id`,`is_active`),
+  CONSTRAINT `service_sla_policies_company_id_foreign` FOREIGN KEY (`company_id`) REFERENCES `companies` (`id`) ON DELETE CASCADE,
+  CONSTRAINT `service_sla_policies_created_by_foreign` FOREIGN KEY (`created_by`) REFERENCES `users` (`id`) ON DELETE SET NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+/*!40101 SET character_set_client = @saved_cs_client */;
+
+/*!40000 ALTER TABLE `service_sla_policies` DISABLE KEYS */;
+/*!40000 ALTER TABLE `service_sla_policies` ENABLE KEYS */;
+DROP TABLE IF EXISTS `service_sla_targets`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!50503 SET character_set_client = utf8mb4 */;
+CREATE TABLE `service_sla_targets` (
+  `id` char(26) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `company_id` char(26) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `sla_policy_id` char(26) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `priority` varchar(255) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `response_minutes` int unsigned DEFAULT NULL,
+  `resolution_minutes` int unsigned DEFAULT NULL,
+  `created_at` timestamp NULL DEFAULT NULL,
+  `updated_at` timestamp NULL DEFAULT NULL,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `service_sla_targets_priority_unq` (`sla_policy_id`,`priority`),
+  KEY `service_sla_targets_company_id_foreign` (`company_id`),
+  CONSTRAINT `service_sla_targets_company_id_foreign` FOREIGN KEY (`company_id`) REFERENCES `companies` (`id`) ON DELETE CASCADE,
+  CONSTRAINT `service_sla_targets_sla_policy_id_foreign` FOREIGN KEY (`sla_policy_id`) REFERENCES `service_sla_policies` (`id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+/*!40101 SET character_set_client = @saved_cs_client */;
+
+/*!40000 ALTER TABLE `service_sla_targets` DISABLE KEYS */;
+/*!40000 ALTER TABLE `service_sla_targets` ENABLE KEYS */;
+DROP TABLE IF EXISTS `service_ticket_events`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!50503 SET character_set_client = utf8mb4 */;
+CREATE TABLE `service_ticket_events` (
+  `id` char(26) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `company_id` char(26) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `ticket_id` char(26) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `kind` varchar(255) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `from_status` varchar(255) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `to_status` varchar(255) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `clock_minutes` int DEFAULT NULL,
+  `note` text COLLATE utf8mb4_unicode_ci,
+  `user_id` bigint unsigned DEFAULT NULL,
+  `occurred_at` timestamp NOT NULL,
+  `created_at` timestamp NULL DEFAULT NULL,
+  `updated_at` timestamp NULL DEFAULT NULL,
+  PRIMARY KEY (`id`),
+  KEY `service_ticket_events_ticket_id_foreign` (`ticket_id`),
+  KEY `service_ticket_events_user_id_foreign` (`user_id`),
+  KEY `service_ticket_events_feed_idx` (`company_id`,`ticket_id`,`occurred_at`),
+  CONSTRAINT `service_ticket_events_company_id_foreign` FOREIGN KEY (`company_id`) REFERENCES `companies` (`id`) ON DELETE CASCADE,
+  CONSTRAINT `service_ticket_events_ticket_id_foreign` FOREIGN KEY (`ticket_id`) REFERENCES `service_tickets` (`id`) ON DELETE CASCADE,
+  CONSTRAINT `service_ticket_events_user_id_foreign` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE SET NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+/*!40101 SET character_set_client = @saved_cs_client */;
+
+/*!40000 ALTER TABLE `service_ticket_events` DISABLE KEYS */;
+/*!40000 ALTER TABLE `service_ticket_events` ENABLE KEYS */;
+DROP TABLE IF EXISTS `service_tickets`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!50503 SET character_set_client = utf8mb4 */;
+CREATE TABLE `service_tickets` (
+  `id` char(26) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `company_id` char(26) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `reference` varchar(255) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `contact_id` char(26) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `subject` varchar(255) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `description` text COLLATE utf8mb4_unicode_ci,
+  `priority` varchar(255) COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT 'normal',
+  `channel` varchar(255) COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT 'phone',
+  `category` varchar(255) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `status` varchar(255) COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT 'new',
+  `assignee_id` bigint unsigned DEFAULT NULL,
+  `department_id` char(26) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `fixed_asset_id` char(26) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `project_id` char(26) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `sla_policy_id` char(26) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `opened_at` timestamp NOT NULL,
+  `response_due_at` timestamp NULL DEFAULT NULL,
+  `resolution_due_at` timestamp NULL DEFAULT NULL,
+  `first_response_at` timestamp NULL DEFAULT NULL,
+  `resolved_at` timestamp NULL DEFAULT NULL,
+  `closed_at` timestamp NULL DEFAULT NULL,
+  `paused_at` timestamp NULL DEFAULT NULL,
+  `paused_minutes` int unsigned NOT NULL DEFAULT '0',
+  `breach_notified_at` timestamp NULL DEFAULT NULL,
+  `resolution` text COLLATE utf8mb4_unicode_ci,
+  `created_by` bigint unsigned DEFAULT NULL,
+  `created_at` timestamp NULL DEFAULT NULL,
+  `updated_at` timestamp NULL DEFAULT NULL,
+  `deleted_at` timestamp NULL DEFAULT NULL,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `service_tickets_reference_unq` (`company_id`,`reference`),
+  KEY `service_tickets_contact_id_foreign` (`contact_id`),
+  KEY `service_tickets_assignee_id_foreign` (`assignee_id`),
+  KEY `service_tickets_department_id_foreign` (`department_id`),
+  KEY `service_tickets_fixed_asset_id_foreign` (`fixed_asset_id`),
+  KEY `service_tickets_project_id_foreign` (`project_id`),
+  KEY `service_tickets_sla_policy_id_foreign` (`sla_policy_id`),
+  KEY `service_tickets_created_by_foreign` (`created_by`),
+  KEY `service_tickets_queue_idx` (`company_id`,`status`,`priority`),
+  KEY `service_tickets_response_due_idx` (`company_id`,`status`,`response_due_at`),
+  KEY `service_tickets_resolution_due_idx` (`company_id`,`status`,`resolution_due_at`),
+  KEY `service_tickets_assignee_idx` (`company_id`,`assignee_id`,`status`),
+  KEY `service_tickets_customer_idx` (`company_id`,`contact_id`),
+  CONSTRAINT `service_tickets_assignee_id_foreign` FOREIGN KEY (`assignee_id`) REFERENCES `users` (`id`) ON DELETE SET NULL,
+  CONSTRAINT `service_tickets_company_id_foreign` FOREIGN KEY (`company_id`) REFERENCES `companies` (`id`) ON DELETE CASCADE,
+  CONSTRAINT `service_tickets_contact_id_foreign` FOREIGN KEY (`contact_id`) REFERENCES `contacts` (`id`) ON DELETE SET NULL,
+  CONSTRAINT `service_tickets_created_by_foreign` FOREIGN KEY (`created_by`) REFERENCES `users` (`id`) ON DELETE SET NULL,
+  CONSTRAINT `service_tickets_department_id_foreign` FOREIGN KEY (`department_id`) REFERENCES `departments` (`id`) ON DELETE SET NULL,
+  CONSTRAINT `service_tickets_fixed_asset_id_foreign` FOREIGN KEY (`fixed_asset_id`) REFERENCES `fixed_assets` (`id`) ON DELETE SET NULL,
+  CONSTRAINT `service_tickets_project_id_foreign` FOREIGN KEY (`project_id`) REFERENCES `projects` (`id`) ON DELETE SET NULL,
+  CONSTRAINT `service_tickets_sla_policy_id_foreign` FOREIGN KEY (`sla_policy_id`) REFERENCES `service_sla_policies` (`id`) ON DELETE SET NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+/*!40101 SET character_set_client = @saved_cs_client */;
+
+/*!40000 ALTER TABLE `service_tickets` DISABLE KEYS */;
+/*!40000 ALTER TABLE `service_tickets` ENABLE KEYS */;
 DROP TABLE IF EXISTS `sessions`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
 /*!50503 SET character_set_client = utf8mb4 */;
@@ -3209,6 +4251,135 @@ CREATE TABLE `subscription_payments` (
 
 /*!40000 ALTER TABLE `subscription_payments` DISABLE KEYS */;
 /*!40000 ALTER TABLE `subscription_payments` ENABLE KEYS */;
+DROP TABLE IF EXISTS `supplier_quotation_lines`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!50503 SET character_set_client = utf8mb4 */;
+CREATE TABLE `supplier_quotation_lines` (
+  `id` char(26) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `company_id` char(26) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `supplier_quotation_id` char(26) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `rfq_line_id` char(26) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `item_id` char(26) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `description` varchar(255) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `quantity` decimal(15,3) NOT NULL DEFAULT '1.000',
+  `unit` varchar(255) COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT 'unit',
+  `unit_price` decimal(14,2) NOT NULL DEFAULT '0.00',
+  `tax_amount` decimal(14,2) NOT NULL DEFAULT '0.00',
+  `line_total` decimal(14,2) NOT NULL DEFAULT '0.00',
+  `sort_order` int unsigned NOT NULL DEFAULT '0',
+  `created_at` timestamp NULL DEFAULT NULL,
+  `updated_at` timestamp NULL DEFAULT NULL,
+  PRIMARY KEY (`id`),
+  KEY `supplier_quotation_lines_company_id_foreign` (`company_id`),
+  KEY `squote_lines_rfq_line_fk` (`rfq_line_id`),
+  KEY `supplier_quotation_lines_item_id_foreign` (`item_id`),
+  KEY `squote_lines_sort_idx` (`supplier_quotation_id`,`sort_order`),
+  CONSTRAINT `squote_lines_quote_fk` FOREIGN KEY (`supplier_quotation_id`) REFERENCES `supplier_quotations` (`id`) ON DELETE CASCADE,
+  CONSTRAINT `squote_lines_rfq_line_fk` FOREIGN KEY (`rfq_line_id`) REFERENCES `rfq_lines` (`id`) ON DELETE SET NULL,
+  CONSTRAINT `supplier_quotation_lines_company_id_foreign` FOREIGN KEY (`company_id`) REFERENCES `companies` (`id`) ON DELETE CASCADE,
+  CONSTRAINT `supplier_quotation_lines_item_id_foreign` FOREIGN KEY (`item_id`) REFERENCES `items` (`id`) ON DELETE SET NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+/*!40101 SET character_set_client = @saved_cs_client */;
+
+/*!40000 ALTER TABLE `supplier_quotation_lines` DISABLE KEYS */;
+/*!40000 ALTER TABLE `supplier_quotation_lines` ENABLE KEYS */;
+DROP TABLE IF EXISTS `supplier_quotations`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!50503 SET character_set_client = utf8mb4 */;
+CREATE TABLE `supplier_quotations` (
+  `id` char(26) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `company_id` char(26) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `rfq_id` char(26) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `supplier_id` char(26) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `reference` varchar(255) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `status` varchar(255) COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT 'received',
+  `quoted_on` date DEFAULT NULL,
+  `valid_until` date DEFAULT NULL,
+  `lead_time_days` smallint unsigned DEFAULT NULL,
+  `payment_terms` varchar(255) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `currency` varchar(3) COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT 'XAF',
+  `subtotal` decimal(14,2) NOT NULL DEFAULT '0.00',
+  `tax_total` decimal(14,2) NOT NULL DEFAULT '0.00',
+  `total` decimal(14,2) NOT NULL DEFAULT '0.00',
+  `notes` text COLLATE utf8mb4_unicode_ci,
+  `recorded_by` bigint unsigned DEFAULT NULL,
+  `created_at` timestamp NULL DEFAULT NULL,
+  `updated_at` timestamp NULL DEFAULT NULL,
+  `deleted_at` timestamp NULL DEFAULT NULL,
+  PRIMARY KEY (`id`),
+  KEY `supplier_quotations_rfq_id_foreign` (`rfq_id`),
+  KEY `supplier_quotations_supplier_id_foreign` (`supplier_id`),
+  KEY `supplier_quotations_recorded_by_foreign` (`recorded_by`),
+  KEY `squote_rfq_total_idx` (`company_id`,`rfq_id`,`total`),
+  KEY `squote_supplier_idx` (`company_id`,`supplier_id`),
+  CONSTRAINT `supplier_quotations_company_id_foreign` FOREIGN KEY (`company_id`) REFERENCES `companies` (`id`) ON DELETE CASCADE,
+  CONSTRAINT `supplier_quotations_recorded_by_foreign` FOREIGN KEY (`recorded_by`) REFERENCES `users` (`id`) ON DELETE SET NULL,
+  CONSTRAINT `supplier_quotations_rfq_id_foreign` FOREIGN KEY (`rfq_id`) REFERENCES `rfqs` (`id`) ON DELETE CASCADE,
+  CONSTRAINT `supplier_quotations_supplier_id_foreign` FOREIGN KEY (`supplier_id`) REFERENCES `contacts` (`id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+/*!40101 SET character_set_client = @saved_cs_client */;
+
+/*!40000 ALTER TABLE `supplier_quotations` DISABLE KEYS */;
+/*!40000 ALTER TABLE `supplier_quotations` ENABLE KEYS */;
+DROP TABLE IF EXISTS `supplier_statement_lines`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!50503 SET character_set_client = utf8mb4 */;
+CREATE TABLE `supplier_statement_lines` (
+  `id` char(26) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `company_id` char(26) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `supplier_statement_id` char(26) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `line_date` date NOT NULL,
+  `reference` varchar(255) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `description` varchar(255) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `amount` decimal(14,2) NOT NULL,
+  `status` varchar(20) COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT 'unmatched',
+  `expense_id` char(26) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `matched_at` timestamp NULL DEFAULT NULL,
+  `note` text COLLATE utf8mb4_unicode_ci,
+  `created_at` timestamp NULL DEFAULT NULL,
+  `updated_at` timestamp NULL DEFAULT NULL,
+  PRIMARY KEY (`id`),
+  KEY `supplier_statement_lines_expense_id_foreign` (`expense_id`),
+  KEY `sup_stmt_line_stmt_status_idx` (`supplier_statement_id`,`status`),
+  KEY `sup_stmt_line_company_exp_idx` (`company_id`,`expense_id`),
+  CONSTRAINT `supplier_statement_lines_company_id_foreign` FOREIGN KEY (`company_id`) REFERENCES `companies` (`id`) ON DELETE CASCADE,
+  CONSTRAINT `supplier_statement_lines_expense_id_foreign` FOREIGN KEY (`expense_id`) REFERENCES `expenses` (`id`) ON DELETE SET NULL,
+  CONSTRAINT `supplier_statement_lines_supplier_statement_id_foreign` FOREIGN KEY (`supplier_statement_id`) REFERENCES `supplier_statements` (`id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+/*!40101 SET character_set_client = @saved_cs_client */;
+
+/*!40000 ALTER TABLE `supplier_statement_lines` DISABLE KEYS */;
+/*!40000 ALTER TABLE `supplier_statement_lines` ENABLE KEYS */;
+DROP TABLE IF EXISTS `supplier_statements`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!50503 SET character_set_client = utf8mb4 */;
+CREATE TABLE `supplier_statements` (
+  `id` char(26) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `company_id` char(26) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `supplier_id` char(26) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `reference` varchar(255) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `statement_date` date NOT NULL,
+  `period_from` date DEFAULT NULL,
+  `period_to` date DEFAULT NULL,
+  `closing_balance` decimal(14,2) NOT NULL DEFAULT '0.00',
+  `currency` varchar(3) COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT 'XAF',
+  `status` varchar(20) COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT 'open',
+  `notes` text COLLATE utf8mb4_unicode_ci,
+  `imported_by` bigint unsigned DEFAULT NULL,
+  `created_at` timestamp NULL DEFAULT NULL,
+  `updated_at` timestamp NULL DEFAULT NULL,
+  PRIMARY KEY (`id`),
+  KEY `supplier_statements_imported_by_foreign` (`imported_by`),
+  KEY `sup_stmt_company_date_idx` (`company_id`,`statement_date`),
+  KEY `sup_stmt_supplier_date_idx` (`supplier_id`,`statement_date`),
+  CONSTRAINT `supplier_statements_company_id_foreign` FOREIGN KEY (`company_id`) REFERENCES `companies` (`id`) ON DELETE CASCADE,
+  CONSTRAINT `supplier_statements_imported_by_foreign` FOREIGN KEY (`imported_by`) REFERENCES `users` (`id`) ON DELETE SET NULL,
+  CONSTRAINT `supplier_statements_supplier_id_foreign` FOREIGN KEY (`supplier_id`) REFERENCES `contacts` (`id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+/*!40101 SET character_set_client = @saved_cs_client */;
+
+/*!40000 ALTER TABLE `supplier_statements` DISABLE KEYS */;
+/*!40000 ALTER TABLE `supplier_statements` ENABLE KEYS */;
 DROP TABLE IF EXISTS `sync_receipts`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
 /*!50503 SET character_set_client = utf8mb4 */;
@@ -3364,6 +4535,67 @@ CREATE TABLE `users` (
 
 /*!40000 ALTER TABLE `users` DISABLE KEYS */;
 /*!40000 ALTER TABLE `users` ENABLE KEYS */;
+DROP TABLE IF EXISTS `vehicle_details`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!50503 SET character_set_client = utf8mb4 */;
+CREATE TABLE `vehicle_details` (
+  `id` char(26) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `company_id` char(26) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `fixed_asset_id` char(26) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `registration` varchar(255) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `vin` varchar(255) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `make` varchar(255) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `model` varchar(255) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `year` smallint unsigned DEFAULT NULL,
+  `fuel_type` varchar(255) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `tank_litres` decimal(8,2) DEFAULT NULL,
+  `insurance_expires_on` date DEFAULT NULL,
+  `roadworthy_expires_on` date DEFAULT NULL,
+  `licence_expires_on` date DEFAULT NULL,
+  `notes` text COLLATE utf8mb4_unicode_ci,
+  `created_at` timestamp NULL DEFAULT NULL,
+  `updated_at` timestamp NULL DEFAULT NULL,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `vehicle_details_fixed_asset_id_unique` (`fixed_asset_id`),
+  UNIQUE KEY `vehicle_details_company_plate_unique` (`company_id`,`registration`),
+  CONSTRAINT `vehicle_details_company_id_foreign` FOREIGN KEY (`company_id`) REFERENCES `companies` (`id`) ON DELETE CASCADE,
+  CONSTRAINT `vehicle_details_fixed_asset_id_foreign` FOREIGN KEY (`fixed_asset_id`) REFERENCES `fixed_assets` (`id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+/*!40101 SET character_set_client = @saved_cs_client */;
+
+/*!40000 ALTER TABLE `vehicle_details` DISABLE KEYS */;
+/*!40000 ALTER TABLE `vehicle_details` ENABLE KEYS */;
+DROP TABLE IF EXISTS `vehicle_trips`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!50503 SET character_set_client = utf8mb4 */;
+CREATE TABLE `vehicle_trips` (
+  `id` char(26) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `company_id` char(26) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `fixed_asset_id` char(26) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `driver_id` bigint unsigned DEFAULT NULL,
+  `trip_date` date NOT NULL,
+  `start_odometer` int unsigned NOT NULL,
+  `end_odometer` int unsigned NOT NULL,
+  `purpose` varchar(255) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `notes` text COLLATE utf8mb4_unicode_ci,
+  `created_by` bigint unsigned DEFAULT NULL,
+  `created_at` timestamp NULL DEFAULT NULL,
+  `updated_at` timestamp NULL DEFAULT NULL,
+  PRIMARY KEY (`id`),
+  KEY `vehicle_trips_fixed_asset_id_foreign` (`fixed_asset_id`),
+  KEY `vehicle_trips_driver_id_foreign` (`driver_id`),
+  KEY `vehicle_trips_created_by_foreign` (`created_by`),
+  KEY `vehicle_trips_company_asset_idx` (`company_id`,`fixed_asset_id`),
+  KEY `vehicle_trips_company_date_idx` (`company_id`,`trip_date`),
+  CONSTRAINT `vehicle_trips_company_id_foreign` FOREIGN KEY (`company_id`) REFERENCES `companies` (`id`) ON DELETE CASCADE,
+  CONSTRAINT `vehicle_trips_created_by_foreign` FOREIGN KEY (`created_by`) REFERENCES `users` (`id`) ON DELETE SET NULL,
+  CONSTRAINT `vehicle_trips_driver_id_foreign` FOREIGN KEY (`driver_id`) REFERENCES `users` (`id`) ON DELETE SET NULL,
+  CONSTRAINT `vehicle_trips_fixed_asset_id_foreign` FOREIGN KEY (`fixed_asset_id`) REFERENCES `fixed_assets` (`id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+/*!40101 SET character_set_client = @saved_cs_client */;
+
+/*!40000 ALTER TABLE `vehicle_trips` DISABLE KEYS */;
+/*!40000 ALTER TABLE `vehicle_trips` ENABLE KEYS */;
 DROP TABLE IF EXISTS `verification_scans`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
 /*!50503 SET character_set_client = utf8mb4 */;

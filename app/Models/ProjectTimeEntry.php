@@ -52,6 +52,19 @@ class ProjectTimeEntry extends Model
         return $this->belongsTo(User::class);
     }
 
+    /**
+     * The service visit these hours were worked on, where they were.
+     *
+     * Service management logs its technicians' time here rather than keeping a
+     * timesheet of its own: it is the same fact — one person, one day, so many
+     * hours, at a rate, frozen once billed — and two tables would mean two
+     * answers to "how many hours did she work in September".
+     */
+    public function serviceJob(): BelongsTo
+    {
+        return $this->belongsTo(ServiceJob::class, 'service_job_id');
+    }
+
     public function scopeBillable(Builder $query): Builder
     {
         return $query->where('is_billable', true);

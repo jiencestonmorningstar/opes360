@@ -63,6 +63,24 @@ class DomainEvents
             'sales.payment.recorded',
         ],
 
+        /*
+         * Compliance. The events a business wants a rule against: tell the
+         * accountant when a return is filed, tell the director when one is
+         * refused. Deliberately no `compliance.obligation.overdue` — overdue
+         * is a state the calendar computes, not a moment something happened,
+         * and an event for it would need a scheduler to fire it and would
+         * then fire again every day it stayed true.
+         */
+        'compliance' => [
+            'compliance.filing.completed',
+            'compliance.filing.rejected',
+        ],
+
+        'risk' => [
+            'risk.reviewed',
+            'risk.closed',
+        ],
+
         'hr' => [
             'hr.employee.created',
             'hr.employee.ended',

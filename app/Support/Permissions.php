@@ -45,6 +45,22 @@ class Permissions
         'Employees' => ['view', 'create', 'update', 'delete'],
         'Payroll' => ['view', 'run', 'approve', 'pay', 'void'],
         'Leave' => ['view', 'request', 'approve'],
+        // The post, not the person in it. Grouped with Departments rather than
+        // Employees for the same reason: a job outlives whoever holds it.
+        'Positions' => ['view', 'manage'],
+        /*
+         * `record` is deliberately not implied by `view`. Seeing that a team
+         * turned up is a supervisor's business; writing what hours somebody
+         * worked is the input to a wage, and the two are not the same trust.
+         */
+        'Attendance' => ['view', 'record'],
+        /*
+         * No `acknowledge` here. An employee acknowledges their own review by
+         * being its subject, exactly as an approver approves by being asked —
+         * an ability would let an administrator grant somebody the right to
+         * sign off a review that is not about them.
+         */
+        'Reviews' => ['view', 'manage'],
         'Customers' => ['view', 'create', 'update', 'delete'],
         // The sales pipeline. Separate from Sales, which is the paperwork:
         // a junior can chase a deal without being able to issue the invoice
@@ -65,8 +81,85 @@ class Permissions
         // What the business owns and what it banks with. Both are the
         // accountant's ground rather than the shopkeeper's, which is why they
         // are separate groups instead of actions on Accounting.
-        'Assets' => ['view', 'create', 'update', 'depreciate', 'dispose'],
+        /*
+         * `transfer` and `maintain` are separate from `update` because they are
+         * a different job done by different people. A storeman signs equipment
+         * out to a driver and books its next service; neither act should carry
+         * the ability to restate what the thing cost or how fast it is being
+         * written off, which is what `update` means here.
+         */
+        'Assets' => ['view', 'create', 'update', 'depreciate', 'dispose', 'transfer', 'maintain'],
         'Banking' => ['view', 'manage', 'import', 'reconcile'],
+        /*
+         * Deciding which bills to pay, and releasing the money.
+         *
+         * `approve` and `execute` are kept apart from `manage` on purpose.
+         * PaymentScheduler::execute() refuses an unapproved run, and that
+         * refusal is the only thing between a misclick and an emptied bank
+         * account. One person building the run and another releasing it is
+         * what makes that a control rather than a speed bump — so the seeder
+         * must not grant them together by default.
+         */
+        'Payables' => ['view', 'manage', 'approve', 'execute', 'statement-view', 'reconcile'],
+        /*
+         * The steps before a purchase order: asking, quoting, choosing.
+         *
+         * Note there is no `approve` — a requisition goes through the workflow
+         * engine, where being asked is the permission. `award` is separate
+         * because choosing a supplier is where the money is actually committed;
+         * everything before it is enquiry.
+         */
+        'Procurement' => ['requisition-view', 'requisition-manage', 'rfq-view', 'rfq-manage', 'rfq-award'],
+        /*
+         * Agreements with other people. `renew` and `terminate` are split out
+         * from `manage` because each one either commits the business to
+         * another term or ends something it is being paid under — writing a
+         * draft is not the same act as signing the business up for a year.
+         *
+         * No `approve`, as everywhere else: being asked is the permission.
+         */
+        'Contracts' => ['view', 'manage', 'renew', 'terminate'],
+        /*
+         * Statutory duties and the evidence they were met. `file` is separate
+         * from `manage` because keeping the calendar and swearing that a
+         * return went in are different acts, and the second is the one
+         * somebody may later have to stand behind.
+         */
+        'Compliance' => ['view', 'manage', 'file'],
+        /*
+         * `review` is deliberately not `manage`. Marking a risk down is the
+         * one act the register exists to make somebody else do — a risk owner
+         * who can quietly reassess their own risk turns the whole thing into
+         * a list of things that used to worry people.
+         */
+        'Risks' => ['view', 'manage', 'review'],
+        /*
+         * The service desk. `bill` is split from `complete` because finishing
+         * the work and charging for it are decided by different people —
+         * a technician says the machine runs again; whether that visit is
+         * chargeable under the customer's contract is not their call.
+         *
+         * No `approve`: being asked by the workflow is the permission.
+         */
+        'Service' => ['view', 'create', 'update', 'assign', 'schedule', 'complete', 'bill', 'manage-sla'],
+        /*
+         * Who may read the trail, and who may read the report on who can do
+         * what. Both are Owner and Administrator only.
+         *
+         * The audit log holds every change anyone has made, and the
+         * governance report names the people whose permissions conflict.
+         * Handing either to a wider audience turns a control into a
+         * surveillance tool, and the second one tells whoever reads it
+         * exactly which combination of abilities goes unwatched.
+         */
+        'Audit' => ['view', 'govern'],
+        /*
+         * Writing the rules that decide who gets told what. Not granted with
+         * `settings.update`, because a rule is the difference between a
+         * breach being noticed and not — muting one is a quiet act with loud
+         * consequences, and the audit trail should show who did it.
+         */
+        'Notifications' => ['manage'],
         /*
          * Business documents. `share` and `manage` are separate from the rest
          * for two different reasons.

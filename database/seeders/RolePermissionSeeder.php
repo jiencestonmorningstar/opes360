@@ -25,18 +25,68 @@ class RolePermissionSeeder extends Seeder
             'Sales' => ['view', 'create', 'update', 'issue', 'approve'],
             'Receipts' => ['view', 'create'],
             'Payments' => ['view', 'record'],
-            'Expenses' => ['view', 'create', 'update', 'pay', 'claim-view', 'claim-create'],
+            /*
+             * A manager runs the business's operations. They do not keep its
+             * books, and the two are separated here deliberately.
+             *
+             * No `pay`. A manager who can both enter a supplier bill and
+             * settle it can invent a supplier and pay them, and nothing in
+             * the system would show anything unusual — the bill would look
+             * exactly like every other bill. Recording what was spent is
+             * operations; releasing the money is the accountant's, and
+             * approving it the owner's.
+             */
+            'Expenses' => ['view', 'create', 'update', 'claim-view', 'claim-create'],
             // Keeps the staff file and decides leave — the day-to-day of
             // managing people. Approving a month's payroll and posting it to
             // the books is not that job, so 'approve' and 'pay' stay above.
             'Employees' => ['view', 'create', 'update'],
-            'Payroll' => ['view', 'run'],
+            /*
+             * No `run`, for the same reason as `expenses.pay` and it matters
+             * more here: a manager already creates employees. Add the ability
+             * to run the payroll and one person can put a person who does not
+             * exist on the payroll and pay them every month. Running a month
+             * is bookkeeping; the manager sees the result.
+             */
+            'Payroll' => ['view'],
             'Leave' => ['view', 'request', 'approve'],
             'Customers' => ['view', 'create', 'update'],
             'Deals' => ['view', 'create', 'update', 'delete'],
             'Products' => ['view', 'create', 'update', 'adjust-stock', 'manage-locations', 'track-view', 'track-manage', 'reserve'],
-            'Assets' => ['view'],
+            // Signs equipment out to staff and books its servicing, without
+            // being able to restate what it cost or how it depreciates.
+            'Assets' => ['view', 'transfer', 'maintain'],
             'Banking' => ['view'],
+            /*
+             * Deciding which bills get paid this week is treasury, not
+             * operations — it belongs with whoever keeps the books and knows
+             * what cash is actually there. A manager sees that a bill is
+             * outstanding through Expenses; they do not schedule its payment.
+             */
+            'Payables' => ['view'],
+            // Runs the sourcing: raises requisitions, opens RFQs, invites
+            // suppliers. Awarding commits the spend and stays above.
+            'Procurement' => ['requisition-view', 'requisition-manage', 'rfq-view', 'rfq-manage'],
+            // The org chart's other half — the posts, not the people in them.
+            'Positions' => ['view', 'manage'],
+            'Attendance' => ['view', 'record'],
+            'Reviews' => ['view', 'manage'],
+            // Writes and renews agreements. Not `terminate`: ending a contract
+            // early usually costs the business something, and that is a
+            // decision the owner should be the one making.
+            'Contracts' => ['view', 'manage', 'renew'],
+            // Keeps the calendar — which licences and inspections are due is
+            // an operational matter. Filing the return is not: it is the
+            // accountant's signature on what the business has declared.
+            'Compliance' => ['view', 'manage'],
+            // Raises risks and records controls, but cannot mark a risk down —
+            // see the note on `risks.review`.
+            'Risks' => ['view', 'manage'],
+            // Runs the desk day to day. Not `manage-sla`: what the business
+            // has promised its customers is a commercial commitment, and a
+            // manager under pressure must not be able to relax the target
+            // they are being measured against.
+            'Service' => ['view', 'create', 'update', 'assign', 'schedule', 'complete', 'bill'],
             // Runs projects day to day: creates them, sets the budget, adds
             // the team, and logs their own time on them.
             'Projects' => ['view', 'manage', 'log-time'],
@@ -50,7 +100,11 @@ class RolePermissionSeeder extends Seeder
             // Runs the programme: sets up tiers and can sign a customer up.
             'Vip' => ['view', 'manage', 'sell'],
             'Reports' => ['view', 'export'],
-            'Accounting' => ['view', 'export', 'manage'],
+            // Reads the accounts and takes figures out of them. Not `manage`:
+            // that is the chart itself and the journals behind it, and a
+            // manager who can redraw where costs land can make a department's
+            // overspend appear somewhere else.
+            'Accounting' => ['view', 'export'],
             // Runs the counter in a secretariat: adds clients and prints their
             // stationery. Withdrawing the balance is not a counter job, so
             // 'withdraw' stays with the Owner and Administrator.
@@ -83,8 +137,23 @@ class RolePermissionSeeder extends Seeder
             'Products' => ['view'],
             // The asset register and the bank reconciliation are the
             // accountant's work before they are anybody's.
-            'Assets' => ['view', 'create', 'update', 'depreciate', 'dispose'],
+            'Assets' => ['view', 'create', 'update', 'depreciate', 'dispose', 'transfer', 'maintain'],
             'Banking' => ['view', 'manage', 'import', 'reconcile'],
+            // Reconciling a supplier's statement against our books is the same
+            // job as reconciling the bank. Building the payment run is too.
+            // Approving and executing it are not — those are the owner's, for
+            // the same reason approving the payroll is.
+            'Payables' => ['view', 'manage', 'statement-view', 'reconcile'],
+            'Procurement' => ['requisition-view', 'rfq-view'],
+            // The statutory calendar is the accountant's work — the tax
+            // returns and CNPS declarations on it are theirs to file.
+            'Compliance' => ['view', 'manage', 'file'],
+            'Contracts' => ['view'],
+            'Risks' => ['view'],
+            'Positions' => ['view'],
+            // Reads attendance because absence deductions are entered onto the
+            // payroll run by hand, and this is where the evidence for one is.
+            'Attendance' => ['view'],
             // Costing a project against the books is the accountant's before
             // it is anyone's.
             'Projects' => ['view'],
@@ -114,6 +183,12 @@ class RolePermissionSeeder extends Seeder
             // Anybody who spends their own money on the business's behalf needs
             // to be able to claim it back; approving it is the workflow's job.
             'Expenses' => ['claim-view', 'claim-create'],
+            // Asking for something is not spending it. Anybody doing the job
+            // can raise a requisition; the workflow decides whether it happens.
+            'Procurement' => ['requisition-view', 'requisition-manage'],
+            // A sales officer takes the call that becomes a ticket. Raising
+            // one is the same act as taking the complaint.
+            'Service' => ['view', 'create', 'update'],
             // Chasing a client's project is close enough to the deal it grew
             // out of that a sales officer needs to see it, and to log time
             // spent on it, without being able to move its budget.

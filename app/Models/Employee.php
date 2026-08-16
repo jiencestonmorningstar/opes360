@@ -77,6 +77,33 @@ class Employee extends Model
         return $this->belongsTo(Department::class, 'department_id');
     }
 
+    /**
+     * The job held, since positions became an entity.
+     *
+     * Named `positionRecord` for exactly the reason `departmentRecord` is:
+     * this model still carries a free-text `job_title` column — the API
+     * resource exposes it, payroll snapshots it onto payslips and the team
+     * screens edit it — and Eloquent resolves an attribute before it looks for
+     * a relation. Calling this `jobTitle` would be silently shadowed by the
+     * `job_title` attribute, returning the typed string forever with nothing
+     * erroring. `position` is free of that trap today, but naming the two
+     * links differently would invite somebody to "fix" the older one.
+     */
+    public function positionRecord(): BelongsTo
+    {
+        return $this->belongsTo(Position::class, 'position_id');
+    }
+
+    public function attendanceRecords(): HasMany
+    {
+        return $this->hasMany(AttendanceRecord::class);
+    }
+
+    public function performanceReviews(): HasMany
+    {
+        return $this->hasMany(PerformanceReview::class);
+    }
+
     public function contracts(): HasMany
     {
         return $this->hasMany(EmploymentContract::class);

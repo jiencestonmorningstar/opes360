@@ -47,6 +47,69 @@ class Guides
             'audience' => 'admin',
         ],
 
+        'service-desk' => [
+            'title' => 'The service desk',
+            'group' => 'Working together',
+            'summary' => 'Customer tickets, the visits that resolve them, and the response times you have promised.',
+            'audience' => 'everyone',
+        ],
+
+        'notification-rules' => [
+            'title' => 'Who gets told what',
+            'group' => 'Working together',
+            'summary' => 'Rules that decide who hears about what, and how to stop the noise without going deaf.',
+            'audience' => 'admin',
+        ],
+
+        'audit-trail' => [
+            'title' => 'The audit trail',
+            'group' => 'Your business',
+            'summary' => 'Who changed what and when, and the report on who can do things nobody should be able to do alone.',
+            'audience' => 'admin',
+        ],
+
+        'contracts' => [
+            'title' => 'Contracts',
+            'group' => 'Your business',
+            'summary' => 'Agreements, what each side owes, and the notice date that decides whether one renews itself.',
+            'audience' => 'everyone',
+        ],
+
+        'compliance-and-risk' => [
+            'title' => 'Deadlines and risks',
+            'group' => 'Your business',
+            'summary' => 'The statutory calendar, the evidence you met it, and the register of what could go wrong.',
+            'audience' => 'admin',
+        ],
+
+        'asset-movements' => [
+            'title' => 'Where your equipment is',
+            'group' => 'Your business',
+            'summary' => 'Sites, who is holding what, and keeping servicing from being remembered too late.',
+            'audience' => 'everyone',
+        ],
+
+        'paying-suppliers' => [
+            'title' => 'Deciding which bills to pay',
+            'group' => 'Money',
+            'summary' => 'Building a payment run against the cash you actually have, and checking a supplier’s statement against your books.',
+            'audience' => 'admin',
+        ],
+
+        'requisitions-and-quotes' => [
+            'title' => 'Asking before buying',
+            'group' => 'Money',
+            'summary' => 'Requisitions, requests for quotation, and comparing what suppliers come back with.',
+            'audience' => 'everyone',
+        ],
+
+        'attendance-and-reviews' => [
+            'title' => 'Positions, attendance and reviews',
+            'group' => 'Your business',
+            'summary' => 'The posts people hold, the hours they work, and the reviews that go on their file.',
+            'audience' => 'admin',
+        ],
+
         'approvals' => [
             'title' => 'Approvals and workflows',
             'group' => 'Working together',

@@ -3,12 +3,14 @@
 namespace App\Models;
 
 use App\Models\Concerns\BelongsToCompany;
+use App\Models\Concerns\EmitsDomainEvents;
 use App\Support\Accounting\ChartOfAccounts;
 use Illuminate\Database\Eloquent\Concerns\HasUlids;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Support\Carbon;
 
@@ -23,6 +25,7 @@ use Illuminate\Support\Carbon;
 class FixedAsset extends Model
 {
     use BelongsToCompany;
+    use EmitsDomainEvents;
     use HasFactory;
     use HasUlids;
     use SoftDeletes;
@@ -73,6 +76,86 @@ class FixedAsset extends Model
     public function depreciationEntries(): HasMany
     {
         return $this->hasMany(DepreciationEntry::class);
+    }
+
+    /**
+     * Deliberately NOT `location()`: this model has a `location` string column,
+     * and an attribute of the same name shadows the relation — `$asset->location`
+     * would keep returning the free text and never load the site. The same trap
+     * caught `Employee::departmentRecord()`; the naming follows that precedent.
+     */
+    public function locationRecord(): BelongsTo
+    {
+        return $this->belongsTo(AssetLocation::class, 'asset_location_id');
+    }
+
+    public function custodian(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'custodian_id');
+    }
+
+    public function transfers(): HasMany
+    {
+        return $this->hasMany(AssetTransfer::class)->latest('transferred_on');
+    }
+
+    public function maintenance(): HasMany
+    {
+        return $this->hasMany(AssetMaintenance::class);
+    }
+
+    /**
+     * Faults reported against this machine by the service desk.
+     *
+     * Separate from `maintenance()` on purpose: maintenance is what the
+     * business planned to do to it, a ticket is what somebody says went wrong.
+     * Where a visit turns out to be the planned service after all, the job
+     * links to the maintenance record rather than copying it.
+     */
+    public function serviceTickets(): HasMany
+    {
+        return $this->hasMany(ServiceTicket::class)->latest('opened_at');
+    }
+
+    /**
+     * The vehicle side of an asset that happens to be driven.
+     *
+     * Named `vehicle` and not `registration` or `details` for the reason set
+     * out above `locationRecord`: the plate lives on the other model as a
+     * `registration` column, and a relation sharing a column's name is
+     * shadowed by it without a word of complaint.
+     */
+    public function vehicle(): HasOne
+    {
+        return $this->hasOne(VehicleDetail::class, 'fixed_asset_id');
+    }
+
+    public function trips(): HasMany
+    {
+        return $this->hasMany(VehicleTrip::class, 'fixed_asset_id')->latest('trip_date');
+    }
+
+    public function fuelLogs(): HasMany
+    {
+        return $this->hasMany(FuelLog::class, 'fixed_asset_id')->latest('filled_on');
+    }
+
+    /**
+     * Whether this is something the fleet screens have anything to say about.
+     *
+     * Read off the vehicle record rather than the category, because a business
+     * may well file a motorbike or a generator trailer under something else and
+     * still want a milometer against it. Having the details is the answer.
+     */
+    public function isVehicle(): bool
+    {
+        return $this->vehicle !== null;
+    }
+
+    /** Where it is, preferring the real site over whatever was typed. */
+    public function locationName(): ?string
+    {
+        return $this->locationRecord?->name ?? ($this->location ?: null);
     }
 
     public function categoryLabel(): string

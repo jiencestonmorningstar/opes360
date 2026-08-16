@@ -73,12 +73,29 @@ class ModulesTest extends TestCase
     {
         $enabled = Modules::enabledFor($this->company);
 
-        // `vip` is the one documented exception (see config/modules.php): it
-        // is meaningless until a business has configured a tier, and most
-        // businesses never will, so it ships off rather than as an empty
-        // screen nobody asked for.
+        /*
+         * Three documented exceptions, each for the same reason: they are
+         * meaningless to the business that has just signed up, and an empty
+         * screen nobody asked for is worse than no screen.
+         *
+         * `vip` needs a tier configured before it means anything, and most
+         * businesses never will. `payables` and `procurement` are the two
+         * halves of a purchasing department — a shop that pays its supplier
+         * when the supplier turns up has nothing to schedule, and asking it to
+         * raise a requisition to buy a broom is the caricature of an ERP that
+         * this product exists not to be. `service` is a desk with technicians
+         * and response-time promises, which most businesses on this product do
+         * not run. All switch on the day the business grows into them.
+         *
+         * Audit is not in this list because audit is not a module at all.
+         * `Modules::forAbility` denies through `Gate::before`, so a switchable
+         * audit would let a business turn off its own trail — and the person
+         * with both the motive and `settings.update` is the same person.
+         */
+        $offByDefault = ['vip', 'payables', 'procurement', 'service'];
+
         foreach (array_keys(Modules::catalogue()) as $key) {
-            if ($key === 'vip') {
+            if (in_array($key, $offByDefault, true)) {
                 continue;
             }
 

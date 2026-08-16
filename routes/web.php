@@ -3,6 +3,7 @@
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\Billing\SubscriptionWebhookController;
 use App\Http\Controllers\DemoRequestController;
+use App\Http\Controllers\DocumentShareController;
 use App\Http\Controllers\EventPublicController;
 use App\Http\Controllers\FormExportController;
 use App\Http\Controllers\FormPublicController;
@@ -11,45 +12,44 @@ use App\Http\Controllers\MarketingController;
 use App\Http\Controllers\PayrollExportController;
 use App\Http\Controllers\PrintController;
 use App\Http\Controllers\ProfileController;
+use App\Http\Controllers\SignatureController;
 use App\Http\Controllers\SyncController;
 use App\Http\Controllers\TicketController;
-use App\Http\Controllers\DocumentShareController;
-use App\Http\Controllers\SignatureController;
 use App\Http\Controllers\VerificationController;
 use App\Livewire\Accounting\Declarations as AccountingDeclarations;
 use App\Livewire\Accounting\Index as AccountingIndex;
 use App\Livewire\Assets\Index as AssetsIndex;
+use App\Livewire\Assets\Movements as AssetMovementsScreen;
+use App\Livewire\Audit\Governance as AuditGovernance;
+use App\Livewire\Audit\Index as AuditIndex;
 use App\Livewire\Banking\Index as BankingIndex;
 use App\Livewire\Business\Artisans as BusinessArtisans;
+use App\Livewire\Business\Branding as BusinessBranding;
 use App\Livewire\Business\Companies as BusinessCompanies;
 use App\Livewire\Business\Departments as BusinessDepartments;
-use App\Livewire\Guides\Index as GuidesIndex;
-use App\Livewire\Projects\Index as ProjectsIndex;
-use App\Livewire\Workflow\Inbox as WorkflowInbox;
 use App\Livewire\Business\Edit as BusinessEdit;
-use App\Livewire\Business\Branding as BusinessBranding;
 use App\Livewire\Business\Logo as BusinessLogo;
 use App\Livewire\Business\Reviews as BusinessReviews;
 use App\Livewire\Business\Stationery;
 use App\Livewire\CalendarPage\Index as CalendarIndex;
 use App\Livewire\Customers\Form as CustomerForm;
 use App\Livewire\Customers\Index as CustomersIndex;
-use App\Livewire\Deals\Form as DealForm;
-use App\Livewire\Imports\Index as ImportsIndex;
-use App\Livewire\Vip\Members as VipMembers;
-use App\Livewire\Vip\Tiers as VipTiers;
-use App\Livewire\Deals\Index as DealsIndex;
 use App\Livewire\Customers\Show as CustomerShow;
 use App\Livewire\Dashboard;
+use App\Livewire\Deals\Form as DealForm;
+use App\Livewire\Deals\Index as DealsIndex;
 use App\Livewire\Documents\Create as DocumentCreate;
 use App\Livewire\Documents\Show as DocumentShow;
 use App\Livewire\Events\Index as EventsIndex;
 use App\Livewire\Events\Manage as EventsManage;
 use App\Livewire\Events\Show as EventsShow;
 use App\Livewire\Expenses\Index as ExpensesIndex;
+use App\Livewire\Fleet\Vehicles as FleetVehicles;
 use App\Livewire\Forms\Builder as FormsBuilder;
 use App\Livewire\Forms\Index as FormsIndex;
 use App\Livewire\Forms\Responses as FormsResponses;
+use App\Livewire\Guides\Index as GuidesIndex;
+use App\Livewire\Imports\Index as ImportsIndex;
 use App\Livewire\Invitations\Accept as InvitationAccept;
 use App\Livewire\Onboarding\Register;
 use App\Livewire\Papers\Compose as PapersCompose;
@@ -63,21 +63,27 @@ use App\Livewire\Payroll\Index as PayrollIndex;
 use App\Livewire\Payroll\Show as PayrollShow;
 use App\Livewire\Products\Form as ProductForm;
 use App\Livewire\Products\Index as ProductsIndex;
+use App\Livewire\Projects\Index as ProjectsIndex;
 use App\Livewire\Reports\Aging as ReportsAging;
 use App\Livewire\Reports\Collections as ReportsCollections;
-use App\Livewire\Reports\Statement as ReportsStatement;
 use App\Livewire\Reports\Index as ReportsIndex;
+use App\Livewire\Reports\Statement as ReportsStatement;
 use App\Livewire\Sales\Index as SalesIndex;
 use App\Livewire\Scan;
 use App\Livewire\Settings\ApiTokens as SettingsApiTokens;
-use App\Livewire\Settings\Webhooks as SettingsWebhooks;
 use App\Livewire\Settings\Billing as SettingsBilling;
 use App\Livewire\Settings\Index as SettingsIndex;
+use App\Livewire\Settings\NotificationRules;
+use App\Livewire\Settings\NotificationSettings;
+use App\Livewire\Settings\Webhooks as SettingsWebhooks;
 use App\Livewire\Stock\Count as StockCount;
 use App\Livewire\Stock\Locations as StockLocations;
 use App\Livewire\Stock\Valuation as StockValuation;
 use App\Livewire\Team\Index as TeamIndex;
 use App\Livewire\Team\Show as TeamShow;
+use App\Livewire\Vip\Members as VipMembers;
+use App\Livewire\Vip\Tiers as VipTiers;
+use App\Livewire\Workflow\Inbox as WorkflowInbox;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Route;
@@ -280,6 +286,29 @@ Route::middleware('auth')->group(function () {
     Route::get('/accounting/declarations', AccountingDeclarations::class)
         ->middleware('can:accounting.view')->name('accounting.declarations');
     Route::get('/assets', AssetsIndex::class)->middleware('can:assets.view')->name('assets');
+    // Gated on `assets.view` rather than `assets.transfer`: a storeman needs
+    // to see where things are before being trusted to move them, and the
+    // buttons on the screen carry the stricter gates themselves.
+    Route::get('/assets/movements', AssetMovementsScreen::class)
+        ->middleware('can:assets.view')->name('assets.movements');
+    // Under /assets rather than at /fleet, because a vehicle IS an asset —
+    // a separate top-level section would invite a separate vehicle register
+    // to grow beside it, which is the whole thing this avoided.
+    Route::get('/assets/fleet', FleetVehicles::class)
+        ->middleware('can:assets.view')->name('assets.fleet');
+
+    Route::get('/settings/notification-rules', NotificationRules::class)
+        ->middleware('can:notifications.manage')->name('settings.notification-rules');
+    // No permission on this one: it is the signed-in person's own choice of
+    // what they are told about. Gating it would mean an administrator had to
+    // grant somebody the right to mute their own email.
+    Route::get('/settings/notifications', NotificationSettings::class)
+        ->name('settings.notifications');
+
+    Route::get('/audit', AuditIndex::class)
+        ->middleware('can:audit.view')->name('audit');
+    Route::get('/audit/governance', AuditGovernance::class)
+        ->middleware('can:audit.govern')->name('audit.governance');
     Route::get('/banking', BankingIndex::class)->middleware('can:banking.view')->name('banking');
 
     /*

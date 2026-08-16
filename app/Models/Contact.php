@@ -57,6 +57,17 @@ class Contact extends Model
     }
 
     /**
+     * What this customer has asked the service desk for.
+     *
+     * The desk keeps no customer list of its own — this is the customer, and
+     * a ticket points at it.
+     */
+    public function serviceTickets(): HasMany
+    {
+        return $this->hasMany(ServiceTicket::class)->latest('opened_at');
+    }
+
+    /**
      * Recompute what this customer owes, from the documents themselves.
      *
      * `balance` is a cached rollup — the customers list sorts and pages on it,

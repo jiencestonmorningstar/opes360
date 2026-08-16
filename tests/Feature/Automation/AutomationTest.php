@@ -275,6 +275,12 @@ class AutomationTest extends AutomationTestCase
 
         $this->expense()->emitDomainEvent('expense.recorded');
 
-        Notification::assertSentTo($manager, \App\Notifications\AutomationNotification::class);
+        /*
+         * Through the notification engine, not around it. An automation that
+         * sent its own message would bypass the recipient's mutes, quiet hours
+         * and digest — and the notification settings screen would be quietly
+         * lying about what it controls. See Phase 4.4.
+         */
+        Notification::assertSentTo($manager, \App\Notifications\RuleNotification::class);
     }
 }
