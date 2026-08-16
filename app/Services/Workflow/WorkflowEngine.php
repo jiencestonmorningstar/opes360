@@ -44,7 +44,7 @@ class WorkflowEngine
 
             $this->record($instance, null, $submitter, 'submitted', null, 'Submitted');
 
-            $instance->emitDomainEvent('workflow.started', [
+            $this->announce($instance, 'workflow.started', $subject, [
                 'subject_type' => $subject->getMorphClass(),
                 'subject_id' => $subject->getKey(),
             ]);
@@ -216,7 +216,7 @@ class WorkflowEngine
 
                 // Announced, so somebody can be told rather than discovering
                 // it when the invoice is a fortnight old.
-                $instance->emitDomainEvent('workflow.stalled', ['step' => $step->name]);
+                $this->announce($instance, 'workflow.stalled', $subject, ['step' => $step->name]);
 
                 return $instance->fresh();
             }
@@ -278,7 +278,7 @@ class WorkflowEngine
          */
         $instance->update(['status' => 'changes_requested']);
 
-        $instance->emitDomainEvent('workflow.changes_requested');
+        $this->announce($instance, 'workflow.changes_requested', $instance->subject);
 
         return $instance->fresh();
     }
@@ -291,9 +291,31 @@ class WorkflowEngine
 
         // workflow.approved / .rejected / .cancelled — the events a rule
         // listens to in order to advance whatever comes next.
-        $instance->emitDomainEvent('workflow.'.$status);
+        $this->announce($instance, 'workflow.'.$status, $instance->subject);
 
         return $instance->fresh();
+    }
+
+    /**
+     * Announces through the actual approvable record, never through the
+     * WorkflowInstance wrapper.
+     *
+     * The instance is infrastructure — a document, an expense and a project
+     * all produce one indistinguishably. An event whose subject was the
+     * instance would carry that indistinguishability into every listener,
+     * including TranslateDocumentWorkflowEvents, which exists specifically to
+     * tell a document's approval apart from anyone else's. Guarded with
+     * method_exists rather than an interface, because not every Approvable
+     * model is guaranteed to also emit domain events — Approvable and
+     * EmitsDomainEvents are deliberately separate traits.
+     */
+    protected function announce(WorkflowInstance $instance, string $event, ?Model $subject, array $context = []): void
+    {
+        if ($subject === null || ! method_exists($subject, 'emitDomainEvent')) {
+            return;
+        }
+
+        $subject->emitDomainEvent($event, $context + ['workflow_instance_id' => $instance->id]);
     }
 
     protected function record(

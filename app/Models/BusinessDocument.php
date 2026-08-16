@@ -2,7 +2,9 @@
 
 namespace App\Models;
 
+use App\Models\Concerns\Approvable;
 use App\Models\Concerns\BelongsToCompany;
+use App\Models\Concerns\EmitsDomainEvents;
 use App\Services\Documents\DocumentVersioner;
 use App\Support\DocumentKinds;
 use App\Support\DocumentTemplates;
@@ -24,7 +26,9 @@ use RuntimeException;
  */
 class BusinessDocument extends Model
 {
+    use Approvable;
     use BelongsToCompany;
+    use EmitsDomainEvents;
     use HasUlids;
     use SoftDeletes;
 
@@ -75,6 +79,19 @@ class BusinessDocument extends Model
     public function owner(): BelongsTo
     {
         return $this->belongsTo(User::class, 'owner_id');
+    }
+
+    /**
+     * What an automation rule may set here — filing fields only, the same set
+     * already allow-listed for an issued document's booted() guard. Never
+     * title, body or recipient: those are content, and a settings screen must
+     * not be able to rewrite what a document says.
+     *
+     * @return array<int, string>
+     */
+    public function automatableFields(): array
+    {
+        return ['kind', 'description', 'security', 'tags', 'folder_id', 'department_id', 'owner_id', 'expires_on'];
     }
 
     /** Which part of the business the document is filed under, not who wrote it. */

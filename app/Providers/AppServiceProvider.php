@@ -4,6 +4,7 @@ namespace App\Providers;
 
 use App\Events\DomainEvent;
 use App\Listeners\RunAutomationRules;
+use App\Listeners\TranslateDocumentWorkflowEvents;
 use App\Models\Artisan;
 use App\Models\BusinessDocument;
 use App\Models\Company;
@@ -49,6 +50,7 @@ class AppServiceProvider extends ServiceProvider
          * else would only hide it.
          */
         Event::listen(DomainEvent::class, RunAutomationRules::class);
+        Event::listen(DomainEvent::class, TranslateDocumentWorkflowEvents::class);
 
         // Fail loudly in development on lazy loads and bad attribute assignment,
         // rather than shipping N+1 queries to a phone on a slow connection.

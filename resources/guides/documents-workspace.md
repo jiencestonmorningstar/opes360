@@ -75,6 +75,13 @@ checked, but are not ready to commit to it being final. A locked draft can
 still be unlocked, or issued outright; locking is not a step on the way to
 issuing, it is a separate hold you can put on and take off.
 
+## Approval
+
+A document can be sent for approval the same way any other approvable record
+in the business is — see [Approvals and workflows](/guides/approvals) for how
+that works in general. Once submitted, it shows as **awaiting approval** until
+somebody with a say in it answers.
+
 ## Activity
 
 Every document has a timeline: created, filed, revised, issued, commented on

@@ -210,6 +210,33 @@ written twice, slightly differently.
 
 ---
 
+## Module-named events
+
+The engine emits generic `workflow.started` / `.approved` / `.rejected` /
+`.changes_requested` / `.stalled` — deliberately generic, because it serves
+every approvable model and must not know that "documents" or "expenses"
+exist. But an automation rule scoped to "any document event" needs a
+`document.*` name to match against, not a name that could equally be an
+expense's.
+
+The fix is a translator, not a special case in the engine.
+`App\Listeners\TranslateDocumentWorkflowEvents` listens for the generic name,
+and — only when the event's subject is a `BusinessDocument` — re-dispatches it
+under the matching `document.*` name from the master spec's catalogue
+(`document.submitted`, `.approved`, `.rejected`, `.changes.requested`). Any
+future module wanting the same thing (`expense.approved`, `project.approved`)
+adds its own translator the same way, rather than teaching the engine a second
+module's vocabulary.
+
+**The one bug this pattern already caught:** the engine's first cut emitted
+through `$instance->emitDomainEvent(...)` — the `WorkflowInstance` wrapper —
+rather than through the actual subject. Every event's `subject` was therefore
+the instance, never the document, expense or project underneath it, and no
+translator or subject-specific automation rule could ever match. Fixed by
+routing every emission through the real subject (`$instance->subject`),
+guarded with `method_exists($subject, 'emitDomainEvent')` since not every
+`Approvable` model is guaranteed to also emit domain events.
+
 ## What this does not touch
 
 `document_approvals`, the sales-specific approval that already exists and
