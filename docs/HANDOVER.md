@@ -1,9 +1,21 @@
 # Opes360 — handover
 
-**Date:** 2026-08-16
+**Date:** 2026-08-16 (launch gate)
 **Branch:** `claude/documents-phase-1` (off `main`; not yet pushed — see §1 before pushing)
-**Suite:** 2,652 tests, 12,144 assertions, all passing
-**Migrations:** all applied to both MySQL (tests/schema) and the SQLite dev DB; `opes360-install.sql` regenerated
+**Suite:** 2,844 tests, 12,932 assertions, all passing
+**Migrations:** all applied to both MySQL (tests/schema) and the SQLite dev DB; `opes360-install.sql` regenerated (380 KB)
+
+**Since the section below was written, the platform was completed:** the full
+Documents spec (bulk actions, watermarks with no off-switch on status marks,
+analytics, daily reminders), Phase 5 infrastructure (PDF output via one
+swappable wrapper, a single upload gate with optional ClamAV, global Ctrl-K
+search that filters results by the searcher's own permissions, audit
+retention with a ten-year money floor), and the four launch verticals —
+insurance broking, sales orders & delivery, transport with public tracking,
+and property management — each a thin layer over the platform, each off by
+default, each with its money-committing act split into its own ability.
+Plans: docs/superpowers/plans/2026-08-16-industry-verticals.md. Per-feature
+decisions: docs/handoff/*.md (now ~30 documents — read the one you touch).
 
 ## 0. Where things stand (2026-08-16 session)
 
