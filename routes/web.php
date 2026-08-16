@@ -9,9 +9,11 @@ use App\Http\Controllers\FormExportController;
 use App\Http\Controllers\FormPublicController;
 use App\Http\Controllers\LoyaltyController;
 use App\Http\Controllers\MarketingController;
+use App\Http\Controllers\Orders\DeliveryNotePrintController;
 use App\Http\Controllers\PayrollExportController;
 use App\Http\Controllers\PrintController;
 use App\Http\Controllers\ProfileController;
+use App\Http\Controllers\ShipmentTrackingController;
 use App\Http\Controllers\SignatureController;
 use App\Http\Controllers\SyncController;
 use App\Http\Controllers\TicketController;
@@ -46,6 +48,8 @@ use App\Livewire\Deals\Form as DealForm;
 use App\Livewire\Deals\Index as DealsIndex;
 use App\Livewire\Documents\Create as DocumentCreate;
 use App\Livewire\Documents\Show as DocumentShow;
+use App\Livewire\Estate\Index as EstateIndex;
+use App\Livewire\Estate\Show as EstateShow;
 use App\Livewire\Events\Index as EventsIndex;
 use App\Livewire\Events\Manage as EventsManage;
 use App\Livewire\Events\Show as EventsShow;
@@ -58,10 +62,16 @@ use App\Livewire\Guides\Index as GuidesIndex;
 use App\Livewire\Hr\Attendance as HrAttendance;
 use App\Livewire\Hr\Reviews as HrReviews;
 use App\Livewire\Imports\Index as ImportsIndex;
+use App\Livewire\Insurance\Index as InsuranceIndex;
+use App\Livewire\Insurance\Show as InsuranceShow;
 use App\Livewire\Invitations\Accept as InvitationAccept;
 use App\Livewire\Leads\Index as LeadsIndex;
+use App\Livewire\Logistics\Index as LogisticsIndex;
+use App\Livewire\Logistics\Show as LogisticsShow;
 use App\Livewire\Manufacturing\Index as ManufacturingIndex;
 use App\Livewire\Onboarding\Register;
+use App\Livewire\Orders\Index as OrdersIndex;
+use App\Livewire\Orders\Show as OrdersShow;
 use App\Livewire\Papers\Analytics as PapersAnalytics;
 use App\Livewire\Papers\Compose as PapersCompose;
 use App\Livewire\Papers\Index as PapersIndex;
@@ -367,6 +377,28 @@ Route::middleware('auth')->group(function () {
      * needs to see what is running out is not always the person allowed to
      * ask for money. The accept button carries the stricter gate itself.
      */
+    Route::get('/logistics', LogisticsIndex::class)
+        ->middleware('can:logistics.view')->name('logistics');
+    Route::get('/logistics/{shipment}', LogisticsShow::class)
+        ->middleware('can:logistics.view')->name('logistics.show');
+
+    Route::get('/estate', EstateIndex::class)
+        ->middleware('can:estate.view')->name('estate');
+    Route::get('/estate/{property}', EstateShow::class)
+        ->middleware('can:estate.view')->name('estate.show');
+
+    Route::get('/orders', OrdersIndex::class)
+        ->middleware('can:orders.view')->name('orders');
+    Route::get('/orders/{order}', OrdersShow::class)
+        ->middleware('can:orders.view')->name('orders.show');
+    Route::get('/orders/delivery-notes/{note}/print', DeliveryNotePrintController::class)
+        ->middleware('can:orders.view')->name('orders.delivery-note');
+
+    Route::get('/insurance', InsuranceIndex::class)
+        ->middleware('can:insurance.view')->name('insurance');
+    Route::get('/insurance/{policy}', InsuranceShow::class)
+        ->middleware('can:insurance.view')->name('insurance.show');
+
     Route::get('/manufacturing', ManufacturingIndex::class)
         ->middleware('can:manufacturing.view')->name('manufacturing');
 
@@ -538,6 +570,11 @@ Route::post('/jobs/{token}', [VacancyPublicController::class, 'submit'])
  * number; the ticket lands in the ordinary service desk with the SLA running.
  * The POST is throttled harder than the page for the same reason as jobs.
  */
+// Where is my parcel — the receiver holds the tracking token, not a login.
+// Status history only; never another customer's cargo.
+Route::get('/track/{token}', [ShipmentTrackingController::class, 'show'])
+    ->middleware('throttle:60,1')->name('shipment.track');
+
 Route::middleware('throttle:60,1')->group(function () {
     Route::get('/triage/{token}', [TriagePublicController::class, 'show'])->name('triage.show');
     Route::get('/triage/{token}/done', [TriagePublicController::class, 'done'])->name('triage.done');

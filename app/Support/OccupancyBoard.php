@@ -2,6 +2,7 @@
 
 namespace App\Support;
 
+use App\Models\Contract;
 use App\Models\Property;
 use App\Models\PropertyUnit;
 use App\Models\Tenancy;
@@ -91,7 +92,7 @@ class OccupancyBoard
      * forked: if the watch's idea of "expiring" changes, this changes with
      * it.
      *
-     * @return Collection<int, array{tenancy: Tenancy, contract: \App\Models\Contract}>
+     * @return Collection<int, array{tenancy: Tenancy, contract: Contract}>
      */
     public function leasesEnding(int $days = 60): Collection
     {

@@ -93,6 +93,17 @@ class RolePermissionSeeder extends Seeder
             'Service' => ['view', 'create', 'update', 'assign', 'schedule', 'complete', 'bill'],
             // Runs the workshop: recipes, orders, and completing a run.
             'Manufacturing' => ['view', 'manage', 'complete'],
+            // Places cover and assesses claims. Not `settle`: paying a
+            // claim is real money and stays with the owner.
+            'Insurance' => ['view', 'manage'],
+            // Runs fulfilment end to end — confirming commits stock and
+            // delivering moves it, both operational acts done hourly.
+            'Orders' => ['view', 'manage', 'confirm', 'deliver'],
+            // Keeps the property register and moves tenants in. Not
+            // `end-tenancy`: settling a deposit moves held money.
+            'Estate' => ['view', 'manage'],
+            // Runs the dispatch board day to day.
+            'Logistics' => ['view', 'manage', 'dispatch'],
             // Runs projects day to day: creates them, sets the budget, adds
             // the team, and logs their own time on them.
             'Projects' => ['view', 'manage', 'log-time'],

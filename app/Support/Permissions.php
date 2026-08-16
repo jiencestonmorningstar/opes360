@@ -156,6 +156,29 @@ class Permissions
         // `products.adjust-stock`, and not implied by writing a recipe.
         'Manufacturing' => ['view', 'manage', 'complete'],
         /*
+         * Broking cover. `settle` is the money act — paying a claim commits
+         * real funds and stays above the people who assess it, the same
+         * split as payables' approve/execute.
+         */
+        'Insurance' => ['view', 'manage', 'settle'],
+        /*
+         * Outbound fulfilment. `confirm` commits stock (reservations),
+         * `deliver` moves it off the shelf — two different trusts, and
+         * neither is implied by writing the order up.
+         */
+        'Orders' => ['view', 'manage', 'confirm', 'deliver'],
+        /*
+         * Property management. `end-tenancy` settles the deposit — money
+         * leaves the liability account — so it stays above the person who
+         * keeps the day-to-day register.
+         */
+        'Estate' => ['view', 'manage', 'end-tenancy'],
+        /*
+         * Transport. `dispatch` commits the vehicle and every promise
+         * aboard it; loading a manifest is paperwork, sending it is not.
+         */
+        'Logistics' => ['view', 'manage', 'dispatch'],
+        /*
          * Who may read the trail, and who may read the report on who can do
          * what. Both are Owner and Administrator only.
          *

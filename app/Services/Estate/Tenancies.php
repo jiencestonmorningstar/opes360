@@ -250,7 +250,7 @@ class Tenancies
 
         if ($retained < 0 || $retained > $deposit) {
             throw new RuntimeException(
-                "The retained amount must be between 0 and the deposit held (".number_format($deposit, 2).').'
+                'The retained amount must be between 0 and the deposit held ('.number_format($deposit, 2).').'
             );
         }
 

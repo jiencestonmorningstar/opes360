@@ -6,6 +6,7 @@ use App\Models\Contact;
 use App\Models\FixedAsset;
 use App\Models\Shipment;
 use App\Models\TripManifest;
+use App\Models\User;
 use App\Services\Logistics\Dispatch;
 use App\Support\CurrentCompany;
 use Illuminate\Contracts\View\View;
@@ -107,7 +108,7 @@ class Index extends Component
         try {
             app(Dispatch::class)->openManifest(
                 FixedAsset::findOrFail($this->vehicleId),
-                $this->driverId ? \App\Models\User::find((int) $this->driverId) : null,
+                $this->driverId ? User::find((int) $this->driverId) : null,
                 $this->departsOn,
                 auth()->user(),
             );

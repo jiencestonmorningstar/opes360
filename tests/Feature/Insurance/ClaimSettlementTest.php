@@ -3,6 +3,7 @@
 namespace Tests\Feature\Insurance;
 
 use App\Models\InsuranceClaim;
+use App\Models\InsurancePolicy;
 use App\Models\Role;
 use App\Services\Insurance\Claims;
 use App\Services\Insurance\Policies;
@@ -142,6 +143,6 @@ class ClaimSettlementTest extends InsuranceTestCase
         $this->assertFalse(method_exists(Claims::class, 'approve'));
         $this->assertFalse(method_exists(Policies::class, 'approve'));
         $this->assertFalse(method_exists(InsuranceClaim::class, 'approve'));
-        $this->assertFalse(method_exists(\App\Models\InsurancePolicy::class, 'approve'));
+        $this->assertFalse(method_exists(InsurancePolicy::class, 'approve'));
     }
 }

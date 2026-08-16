@@ -4,6 +4,7 @@ namespace Tests\Feature\Logistics;
 
 use App\Models\BusinessDocument;
 use App\Models\VehicleTrip;
+use App\Services\Documents\DocumentSignatureRequests;
 use RuntimeException;
 
 class DispatchTest extends LogisticsTestCase
@@ -92,7 +93,7 @@ class DispatchTest extends LogisticsTestCase
         $this->assertSame($this->receiver->name, $signature->signer_name);
 
         // Signing goes through the same service every other paper signs with.
-        app(\App\Services\Documents\DocumentSignatureRequests::class)->sign($signature);
+        app(DocumentSignatureRequests::class)->sign($signature);
         $this->assertSame('signed', $signature->fresh()->status);
     }
 

@@ -4,6 +4,8 @@ namespace Tests\Feature\Insurance;
 
 use App\Events\DomainEvent;
 use App\Listeners\SettleApprovedInsuranceClaims;
+use App\Livewire\Insurance\Index;
+use App\Livewire\Insurance\Show;
 use App\Models\Company;
 use App\Models\Contact;
 use App\Models\InsuranceClaim;
@@ -21,6 +23,7 @@ use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\Gate;
+use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Str;
 use Tests\TestCase;
 
@@ -81,6 +84,16 @@ abstract class InsuranceTestCase extends TestCase
          * settled claim untouched.
          */
         Event::listen(DomainEvent::class, SettleApprovedInsuranceClaims::class);
+
+        /*
+         * The routes are the integrator's to add to routes/web.php; named
+         * here so the blades' route() calls resolve while the screens are
+         * under test. These are the names the handoff document expects.
+         */
+        Route::get('/insurance', Index::class)
+            ->middleware(['web'])->name('insurance');
+        Route::get('/insurance/{policy}', Show::class)
+            ->middleware(['web'])->name('insurance.show');
 
         $this->client = Contact::create([
             'company_id' => $this->company->id,

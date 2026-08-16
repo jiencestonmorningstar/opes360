@@ -4,6 +4,7 @@ namespace App\Services\Logistics;
 
 use App\Enums\DocumentStatus;
 use App\Enums\DocumentType;
+use App\Models\BusinessDocument;
 use App\Models\Contact;
 use App\Models\Document;
 use App\Models\DocumentLine;
@@ -13,7 +14,6 @@ use App\Models\TripManifest;
 use App\Models\User;
 use App\Models\VehicleTrip;
 use App\Services\Documents\DocumentSignatureRequests;
-use App\Models\BusinessDocument;
 use App\Support\UniqueId;
 use App\Support\Vat;
 use Illuminate\Support\Facades\DB;
@@ -127,11 +127,10 @@ class Dispatch
             throw new RuntimeException("{$manifest->reference} is {$manifest->statusLabel()} — only an open manifest can be loaded.");
         }
 
-        if ($shipment->status !== 'booked') {
-            throw new RuntimeException("{$shipment->reference} is {$shipment->statusLabel()} and cannot be loaded.");
-        }
-
         return DB::transaction(function () use ($shipment, $manifest, $by) {
+            // The aboard check first, so the refusal names the manifest the
+            // shipment is on — "cannot be loaded" with no reason is a message
+            // somebody at a loading bay cannot act on.
             $aboard = $shipment->manifests()
                 ->where('trip_manifests.status', 'open')
                 ->lockForUpdate()
@@ -141,6 +140,10 @@ class Dispatch
                 throw new RuntimeException(
                     "{$shipment->reference} is already aboard {$aboard->reference}. Unload it there first."
                 );
+            }
+
+            if ($shipment->status !== 'booked') {
+                throw new RuntimeException("{$shipment->reference} is {$shipment->statusLabel()} and cannot be loaded.");
             }
 
             $manifest->shipments()->attach($shipment->id, ['company_id' => $shipment->company_id]);

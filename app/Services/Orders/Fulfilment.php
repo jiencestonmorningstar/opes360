@@ -21,6 +21,7 @@ use App\Services\Stock\StockReservations;
 use App\Support\CurrentCompany;
 use App\Support\Vat;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Str;
 use RuntimeException;
 
 /**
@@ -193,9 +194,9 @@ class Fulfilment
      * transaction.
      *
      * @param  array<string, float|string|null>  $picks  line id → quantity to
-     *         deliver now. A missing or null entry means "everything reserved
-     *         on that line"; 0 means "skip it". Partial delivery is normal —
-     *         the remainder stays reserved and the order stays open.
+     *                                                   deliver now. A missing or null entry means "everything reserved
+     *                                                   on that line"; 0 means "skip it". Partial delivery is normal —
+     *                                                   the remainder stays reserved and the order stays open.
      */
     public function deliver(SalesOrder $order, array $picks = [], ?User $actor = null, ?string $note = null): DeliveryNote
     {
@@ -384,7 +385,9 @@ class Fulfilment
                 ])->save();
             }
 
-            $order->invoices()->attach($invoice->id);
+            // The pivot's ulid key is supplied here: attach() knows nothing
+            // about HasUlids.
+            $order->invoices()->attach($invoice->id, ['id' => strtolower((string) Str::ulid())]);
 
             $order->load('lines');
 

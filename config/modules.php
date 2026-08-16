@@ -11,6 +11,7 @@ use App\Models\Contact;
 use App\Models\Contract;
 use App\Models\CrmActivity;
 use App\Models\Deal;
+use App\Models\DeliveryNote;
 use App\Models\Document;
 use App\Models\Employee;
 use App\Models\Event;
@@ -18,6 +19,8 @@ use App\Models\Expense;
 use App\Models\FixedAsset;
 use App\Models\Form;
 use App\Models\FuelLog;
+use App\Models\InsuranceClaim;
+use App\Models\InsurancePolicy;
 use App\Models\Item;
 use App\Models\JobApplication;
 use App\Models\JobOffer;
@@ -29,18 +32,23 @@ use App\Models\PayrollRun;
 use App\Models\Payslip;
 use App\Models\PerformanceReview;
 use App\Models\Project;
+use App\Models\Property;
 use App\Models\PurchaseRequisition;
 use App\Models\Receipt;
 use App\Models\Rfq;
 use App\Models\Risk;
+use App\Models\SalesOrder;
 use App\Models\ServiceJob;
 use App\Models\ServiceSlaPolicy;
 use App\Models\ServiceTicket;
+use App\Models\Shipment;
 use App\Models\StockLocation;
 use App\Models\Stocktake;
 use App\Models\SupplierQuotation;
 use App\Models\SupplierStatement;
+use App\Models\Tenancy;
 use App\Models\Ticket;
+use App\Models\TripManifest;
 use App\Models\Vacancy;
 use App\Models\VehicleDetail;
 use App\Models\VehicleTrip;
@@ -252,6 +260,53 @@ return [
         'default' => true,
         'groups' => ['compliance', 'risks'],
         'models' => [ComplianceObligation::class, Risk::class],
+    ],
+
+    /*
+     * The four industry verticals. Each is a thin layer over the platform —
+     * an insurance premium is an ordinary invoice, a lease is a contract, a
+     * truck is a fleet asset, an order consumes the existing reservations —
+     * and each ships off, because a shop does not broker cover and a broker
+     * does not pick stock. See docs/superpowers/plans/2026-08-16-industry-verticals.md.
+     */
+    'insurance' => [
+        'label' => 'Insurance broking',
+        'description' => 'Policies, the cover-lapse watch, claims and the commissions insurers owe you.',
+        'icon' => 'shield-check',
+        'default' => false,
+        'requires' => ['customers', 'sales'],
+        'groups' => ['insurance'],
+        'models' => [InsurancePolicy::class, InsuranceClaim::class],
+    ],
+
+    'orders' => [
+        'label' => 'Sales orders & delivery',
+        'description' => 'Customer orders, stock reserved against them, delivery notes and the backorders you can see.',
+        'icon' => 'cube',
+        'default' => false,
+        'requires' => ['products', 'sales'],
+        'groups' => ['orders'],
+        'models' => [SalesOrder::class, DeliveryNote::class],
+    ],
+
+    'logistics' => [
+        'label' => 'Transport & shipments',
+        'description' => 'Shipments, trip manifests, proof of delivery, and a tracking link for the customer.',
+        'icon' => 'briefcase',
+        'default' => false,
+        'requires' => ['customers'],
+        'groups' => ['logistics'],
+        'models' => [Shipment::class, TripManifest::class],
+    ],
+
+    'estate' => [
+        'label' => 'Property management',
+        'description' => 'Properties, tenancies, rent that invoices itself, deposits held properly, and the occupancy board.',
+        'icon' => 'home',
+        'default' => false,
+        'requires' => ['customers', 'contracts', 'sales'],
+        'groups' => ['estate'],
+        'models' => [Property::class, Tenancy::class],
     ],
 
     'manufacturing' => [

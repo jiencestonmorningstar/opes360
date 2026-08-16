@@ -12,6 +12,7 @@ use App\Models\DeliveryNote;
 use App\Models\Item;
 use App\Models\Role;
 use App\Models\SalesOrder;
+use App\Models\SalesOrderLine;
 use App\Models\StockMovement;
 use App\Models\StockReservation;
 use App\Models\User;
@@ -147,7 +148,7 @@ class FulfilmentTest extends TestCase
         // Held through the EXISTING reservations mechanism — a live
         // StockReservation row, not a parallel table.
         $reservation = StockReservation::query()
-            ->where('reference_type', \App\Models\SalesOrderLine::class)
+            ->where('reference_type', SalesOrderLine::class)
             ->where('reference_id', $line->id)
             ->first();
 
