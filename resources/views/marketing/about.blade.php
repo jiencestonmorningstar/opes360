@@ -62,6 +62,10 @@
                 ['academic-cap', 'Schools & professional practices', 'Chargeable work tracked against a budget, documents generated on your letterhead, and a staff room paid through real payroll.'],
                 ['briefcase', 'NGOs & project-driven organisations', 'Projects with milestones, time and cost, requisitions that ask before money is spent, and an audit trail funders can rely on.'],
                 ['truck', 'Businesses with people in the field', 'A fleet with trips, fuel logs and distance-based servicing, tied to the service desk that sends the technicians out.'],
+                ['shield', 'Insurance brokers & agencies', 'A policy watch for cover lapsing unagreed, and claims that settle only through approval — at the amount the approver saw.'],
+                ['cube', 'Distributors & wholesalers', 'Orders confirmed against real stock with backorders you can see, QR-verified delivery notes, and an invoice for what actually went.'],
+                ['truck', 'Transporters', 'Trip manifests off your own fleet, e-signed proof of delivery, and a tracking link that shows the customer their shipment and nothing else.'],
+                ['home', 'Property managers & landlords', 'A lease that is a real contract, rent that bills itself monthly, and deposits held as a liability in the books until settled with a reason.'],
             ] as [$icon, $title, $body])
                 <div class="card p-5">
                     <span class="flex size-10 items-center justify-center rounded-lg bg-tint-blue">

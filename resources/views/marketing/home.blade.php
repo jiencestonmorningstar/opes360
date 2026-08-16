@@ -62,6 +62,8 @@
         ['icon' => 'academic-cap', 'label' => 'Education'],
         ['icon' => 'building', 'label' => 'Hospitality'],
         ['icon' => 'truck', 'label' => 'Logistics'],
+        ['icon' => 'shield', 'label' => 'Insurance'],
+        ['icon' => 'home', 'label' => 'Real Estate'],
         ['icon' => 'spark', 'label' => 'Agriculture'],
         ['icon' => 'briefcase', 'label' => 'Professional Services'],
     ];

@@ -200,6 +200,34 @@ class Guides
             'summary' => 'Confidentiality levels, sharing, and what restricted actually means.',
             'audience' => 'everyone',
         ],
+
+        'insurance' => [
+            'title' => 'Broking insurance',
+            'group' => 'Industries',
+            'summary' => 'Policies and their premiums, claims that settle through approval, and the alarm for cover lapsing unagreed.',
+            'audience' => 'everyone',
+        ],
+
+        'sales-orders' => [
+            'title' => 'Customer orders and delivery',
+            'group' => 'Industries',
+            'summary' => 'Orders confirmed against real stock, backorders you can see, delivery notes with a QR, and an invoice for what actually went.',
+            'audience' => 'everyone',
+        ],
+
+        'logistics' => [
+            'title' => 'Running a transport business',
+            'group' => 'Industries',
+            'summary' => 'Shipments, trip manifests, signed proof of delivery, and a tracking link that shows the customer their cargo and nothing else.',
+            'audience' => 'everyone',
+        ],
+
+        'property-management' => [
+            'title' => 'Letting a property',
+            'group' => 'Industries',
+            'summary' => 'Buildings and units, tenancies whose lease is a real contract, deposits in the books, and rent that bills itself.',
+            'audience' => 'everyone',
+        ],
     ];
 
     /** @return array<string, array<string, string>> */

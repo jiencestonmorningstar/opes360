@@ -82,6 +82,17 @@
                 ['cog', 'Module switches', 'A hairdresser does not need a fixed asset register. Every module can be switched off per business — the screens go quiet, and the data waits untouched for the day you switch it back on.'],
             ],
         ],
+        [
+            'eyebrow' => 'The industries',
+            'title' => 'Vertical editions, each a thin layer over the same platform',
+            'accent' => 'purple',
+            'modules' => [
+                ['shield', 'Insurance brokerage', 'Policies, premiums and commissions, a watch for cover lapsing unagreed, and claims that settle only through approval — at the amount the approver saw.'],
+                ['truck', 'Sales orders & delivery', 'Customer orders confirmed against real stock, backorders you can see, QR-verified delivery notes, and an invoice for what actually went out.'],
+                ['truck', 'Logistics & dispatch', 'Shipments and trip manifests off your own fleet, e-signed proof of delivery, and a public tracking link that shows one shipment and nothing else.'],
+                ['home', 'Property management', 'Buildings, units and tenancies: the lease is a real contract, rent bills itself monthly, and the deposit sits in the books as a liability until settled with a reason.'],
+            ],
+        ],
     ];
 @endphp
 
@@ -122,8 +133,9 @@
 @endforeach
 
 {{-- Saying who it is not for is a claim of honesty the rest of the page can
-     borrow from. Grounded in docs/GAP-ANALYSIS.md: manufacturing and supply
-     chain are explicitly not built. --}}
+     borrow from. Kept current as verticals ship: sales orders, logistics,
+     insurance and property management now exist, so the line names only what
+     is still genuinely missing. --}}
 <section class="border-t border-border py-14 sm:py-18">
     <div class="mx-auto max-w-6xl px-5">
         <div class="max-w-2xl">
@@ -131,8 +143,9 @@
             <h2 class="mt-3 text-[24px] font-bold leading-tight tracking-[-0.025em] text-ink sm:text-[30px]">What it does not do yet</h2>
             <p class="mt-4 text-[15px] leading-relaxed text-muted">
                 Opes360 is built for small and medium businesses in Cameroon and the wider OHADA space —
-                shops and traders, secretariats, service firms and workshops, clinics and pharmacies,
-                schools, professional practices, NGOs and businesses with technicians in the field.
+                shops and traders, distributors, secretariats, service firms and workshops, clinics
+                and pharmacies, schools, professional practices, NGOs, insurance brokers,
+                transporters, property managers and businesses with technicians in the field.
                 It is not yet the right tool for a manufacturer who needs bills of materials and
                 production planning, or for a large group wanting deep multi-entity consolidation.
                 If that is you, we would rather say so here than after you have moved your data in.
