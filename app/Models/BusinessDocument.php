@@ -108,6 +108,30 @@ class BusinessDocument extends Model
         return $query->where('kind', $kind);
     }
 
+    /**
+     * Excludes restricted documents this user may not open.
+     *
+     * The same rule `BusinessDocumentPolicy::readable()` enforces per-record —
+     * open to the owner and to holders of `papers.manage`, closed to everyone
+     * else — expressed as a query so a list can apply it up front rather than
+     * fetching every restricted row just to filter it out in PHP. A workspace
+     * that merely left a restricted document out of a list would have hidden
+     * it, which is not the same as refusing it: the policy is still the
+     * authority on whether its URL, its API route or its id can reach it.
+     */
+    public function scopeReadableBy(Builder $query, User $user, bool $mayManage): Builder
+    {
+        if ($mayManage) {
+            return $query;
+        }
+
+        return $query->where(function (Builder $q) use ($user) {
+            $q->whereNull('security')
+                ->orWhere('security', '!=', 'restricted')
+                ->orWhere('owner_id', $user->id);
+        });
+    }
+
     protected static function booted(): void
     {
         static::updating(function (BusinessDocument $document) {

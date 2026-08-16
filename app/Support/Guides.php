@@ -75,6 +75,13 @@ class Guides
             'audience' => 'everyone',
         ],
 
+        'documents-workspace' => [
+            'title' => 'Finding a document',
+            'group' => 'Documents',
+            'summary' => 'Search, filters and the overview counters on the Documents screen.',
+            'audience' => 'everyone',
+        ],
+
         'document-security' => [
             'title' => 'Who can see a document',
             'group' => 'Documents',

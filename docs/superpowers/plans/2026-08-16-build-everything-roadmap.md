@@ -52,7 +52,7 @@ Everything in Part 1 of the gap analysis not blocked on absent infrastructure.
 
 | # | Item |
 |---|---|
-| 2.1 | Workspace screen — search, filters, folder tree, counters, pagination (§3) |
+| 2.1 | ~~Workspace screen~~ **Done** — search, kind/security/folder/tag filters, folder tree, five overview counters, confidentiality enforced via `BusinessDocument::scopeReadableBy()` so a restricted document is refused at the query, not filtered out after fetching. Guide: `documents-workspace.md` |
 | 2.2 | Library API — `/api/v1/library`, `/relations` (§47) |
 | 2.3 | Versions, locking and finalisation (§12, §70–71) |
 | 2.4 | Version comparison (§13) |

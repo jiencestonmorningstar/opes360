@@ -48,6 +48,65 @@
         @endforeach
     </div>
 
+    {{-- Overview counters (Documents plan §3): Total, Mine, Drafts, Expiring, Archived. --}}
+    <div class="mt-4 grid grid-cols-2 gap-2.5 min-[560px]:grid-cols-3 lg:grid-cols-5">
+        @foreach ([
+            ['label' => 'Total', 'value' => $counters['total']],
+            ['label' => 'Mine', 'value' => $counters['mine']],
+            ['label' => 'Drafts', 'value' => $counters['drafts']],
+            ['label' => 'Expiring', 'value' => $counters['expiring']],
+            ['label' => 'Archived', 'value' => $counters['archived']],
+        ] as $counter)
+            <div class="card p-3.5">
+                <p class="tnum text-[19px] font-bold leading-none text-ink">{{ $counter['value'] }}</p>
+                <p class="mt-1 text-[12px] font-semibold text-muted">{{ $counter['label'] }}</p>
+            </div>
+        @endforeach
+    </div>
+
+    {{-- Filters: kind, security, folder, tag — Documents plan §3. --}}
+    <div class="mt-4 flex flex-wrap items-center gap-2">
+        <select wire:model.live="kind" class="focusable h-10 rounded-full border border-border bg-surface px-3.5 text-[13.5px] text-ink-2">
+            <option value="">Any kind</option>
+            @foreach ($kindGroups as $group => $kinds)
+                <optgroup label="{{ $group }}">
+                    @foreach ($kinds as $key => $label)
+                        <option value="{{ $key }}">{{ $label }}</option>
+                    @endforeach
+                </optgroup>
+            @endforeach
+        </select>
+
+        <select wire:model.live="security" class="focusable h-10 rounded-full border border-border bg-surface px-3.5 text-[13.5px] text-ink-2">
+            <option value="">Any security level</option>
+            @foreach (\App\Support\DocumentKinds::securityLevels() as $key => $level)
+                <option value="{{ $key }}">{{ $level['label'] }}</option>
+            @endforeach
+        </select>
+
+        @if ($folders->isNotEmpty())
+            <select wire:model.live="folderId" class="focusable h-10 rounded-full border border-border bg-surface px-3.5 text-[13.5px] text-ink-2">
+                <option value="">Any folder</option>
+                @foreach ($folders as $folder)
+                    <option value="{{ $folder->id }}">{{ $folder->name }}</option>
+                    @foreach ($folder->children as $child)
+                        <option value="{{ $child->id }}">— {{ $child->name }}</option>
+                    @endforeach
+                @endforeach
+            </select>
+        @endif
+
+        <input type="text" wire:model.live.debounce.400ms="tag" placeholder="Tag…"
+               class="focusable h-10 w-32 rounded-full border border-border bg-surface px-3.5 text-[13.5px] text-ink placeholder:text-faint">
+
+        @if ($kind !== '' || $security !== '' || $folderId !== '' || $tag !== '')
+            <button type="button" wire:click="clearFilters"
+                    class="focusable flex h-10 items-center rounded-full px-3.5 text-[13.5px] font-semibold text-muted hover:bg-surface-2">
+                Clear filters
+            </button>
+        @endif
+    </div>
+
     {{-- List --}}
     <div class="mt-4 space-y-2.5">
         @forelse ($papers as $paper)
