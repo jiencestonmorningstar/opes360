@@ -40,3 +40,21 @@ anywhere else: by search, by the API, by its own link. See
 restricted documents, they are left out of every counter too — "Total" is not
 a claim about the business's entire document library, it is a claim about
 yours.
+
+## Filing versus editing
+
+Moving a document into a folder, tagging it, changing its owner or setting
+when it expires is **filing** — organising where a document lives, not
+changing what it says. Filing works on a document at any stage, including one
+that has already been issued and signed.
+
+Changing the actual content — its title, its wording, who it is addressed to
+— is **editing**, and that only works on a draft. Once a document is issued it
+is frozen: revise a draft, or void it and issue a replacement. This is why you
+can move a signed contract into a different folder six months later, but you
+cannot go back and change what it says.
+
+## For developers
+
+Everything on this screen is also reachable over the API — see §22 of
+`docs/API.md` for `GET /api/v1/library` and the filing endpoints.

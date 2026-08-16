@@ -84,6 +84,22 @@ class DocumentPermissionTest extends DocumentsTestCase
      * its owner can open is no use to a business that has to work on it, so
      * only the top level narrows the audience.
      */
+    /**
+     * Filing is not editing. update() rightly refuses any change to an issued
+     * document — but file() must still allow moving one into a folder, or the
+     * one case filing exists for (an already-signed contract) is the one case
+     * it could never be used on.
+     */
+    public function test_an_issued_document_can_still_be_filed(): void
+    {
+        $paper = $this->document();
+        $paper->issued_at = now();
+        $paper->forceFill(['status' => 'issued', 'content_hash' => hash('sha256', $paper->canonicalPayload())])->save();
+
+        $this->assertFalse($this->owner->can('update', $paper));
+        $this->assertTrue($this->owner->can('file', $paper));
+    }
+
     public function test_a_confidential_document_is_marked_but_not_walled_off(): void
     {
         $clerk = $this->memberAt(Role::SALES_OFFICER);

@@ -74,6 +74,23 @@ class BusinessDocumentPolicy extends CompanyScopedPolicy
     }
 
     /**
+     * Filing: kind, tags, folder, department, owner, expiry. Not `update` —
+     * deliberately. `update()` requires a draft because it is content, and an
+     * issued document's filing survives precisely because filing is not
+     * content. Reusing `update` here would make it impossible to file an
+     * issued document at all, which is the one case filing matters most for.
+     *
+     * Gated the same as making a document in the first place: whoever may
+     * create one may organise where it lives.
+     */
+    public function file(User $user, BusinessDocument $paper): bool
+    {
+        return $this->owns($paper)
+            && $this->allows($user, 'create')
+            && $this->readable($user, $paper);
+    }
+
+    /**
      * The confidentiality rule, in one place.
      *
      * Every ability above runs through it rather than each re-deriving it,

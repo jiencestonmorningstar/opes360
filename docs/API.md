@@ -1130,9 +1130,43 @@ integration's.
 
 See `docs/workflows.md`.
 
-## 22. What is not here yet
+## 22. Library (Documents)
 
-Every module through Approvals has an API. **Projects does not yet** — it
+The Documents module — Module 13's generator plus the filing layer around it.
+`GET /api/v1/library` lists what the token's user can see; a restricted
+document a user cannot open never appears, is never returned by
+`GET /api/v1/library/{document}`, and 403s rather than 404s if requested
+directly — the policy is the same one the screen uses.
+
+`POST /api/v1/library` composes a document from a template. Uploading a file
+is a browser action (the Papers screen) and is not on this endpoint.
+
+`PUT /api/v1/library/{document}` accepts **filing fields only** — `kind`,
+`security`, `tags`, `folder_id`, `department_id`, `owner_id`, `expires_on`.
+Never title, body or recipient. This is deliberate and enforced twice: the
+model refuses any other field on an issued document regardless of what is
+sent, and the endpoint authorises through a `file` ability separate from
+`update` — `update` requires a draft, because it is content; filing is not
+content, and has to work on an issued document or it is useless for the
+documents that most need managing.
+
+`POST` / `DELETE /api/v1/library/{document}/relations` attach or remove a
+link to an ERP record — `contact`, `employee`, `document` (an ERP sales
+document) or `project`. No document is ever copied into this table; a
+relation only records what a document is about. The related type is a closed
+list, not an arbitrary class name, so a token cannot attach a document to a
+model with no tenant scope.
+
+Linking requires `papers.share`, not `papers.manage` — attaching a document to
+a customer sends it somewhere beyond a straightforward read, the same
+reasoning that already separates `share` from `view`.
+
+`content_hash` is never returned by any endpoint here. It exists to detect
+tampering, not to be handed to whoever is checking.
+
+## 23. What is not here yet
+
+Every module through Library has an API. **Projects does not yet** — it
 shipped 2026-08-16 with a screen and no API, and that is a gap to close, not a
 choice; note it here rather than let the claim below overstate what exists.
 

@@ -11,6 +11,7 @@ use App\Http\Controllers\Api\ExpenseController;
 use App\Http\Controllers\Api\FormController;
 use App\Http\Controllers\Api\ImportController;
 use App\Http\Controllers\Api\ItemController;
+use App\Http\Controllers\Api\LibraryController;
 use App\Http\Controllers\Api\LoyaltyController;
 use App\Http\Controllers\Api\PartnerController;
 use App\Http\Controllers\Api\PaymentController;
@@ -172,6 +173,9 @@ Route::prefix('v1')->group(function (): void {
             Route::get('approvals', [ApprovalController::class, 'index'])->name('api.v1.approvals.index');
             Route::get('approvals/{approval}', [ApprovalController::class, 'show'])->name('api.v1.approvals.show');
 
+            Route::get('library', [LibraryController::class, 'index'])->name('api.v1.library.index');
+            Route::get('library/{document}', [LibraryController::class, 'show'])->name('api.v1.library.show');
+
             Route::prefix('accounting')->name('api.v1.accounting.')->group(function (): void {
                 Route::get('accounts', [AccountingController::class, 'accounts'])->name('accounts');
                 Route::get('trial-balance', [AccountingController::class, 'trialBalance'])->name('trial-balance');
@@ -191,6 +195,16 @@ Route::prefix('v1')->group(function (): void {
              */
             Route::post('approvals/{approval}/decisions', [ApprovalController::class, 'decide'])
                 ->name('api.v1.approvals.decide');
+
+            Route::post('library', [LibraryController::class, 'store'])->name('api.v1.library.store');
+            Route::match(['put', 'patch'], 'library/{document}', [LibraryController::class, 'update'])
+                ->name('api.v1.library.update');
+            Route::delete('library/{document}', [LibraryController::class, 'destroy'])
+                ->name('api.v1.library.destroy');
+            Route::post('library/{document}/relations', [LibraryController::class, 'attachRelation'])
+                ->name('api.v1.library.relations.attach');
+            Route::delete('library/{document}/relations', [LibraryController::class, 'detachRelation'])
+                ->name('api.v1.library.relations.detach');
 
             // Editing a tier changes what future sales get, never what a
             // member was already sold. Cancelling stops a benefit rather than

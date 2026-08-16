@@ -48,9 +48,9 @@ layer, the company/branding configuration, and the offline sync engine.
 
 | § | Capability | State |
 |---|---|---|
-| 20 | Permission model — `papers.share`, `papers.manage`, restricted enforced in the policy | **Under way.** Tests written and red; catalogue, seeder and policy still to change |
-| 3 | Workspace dashboard — counters, search, filters, folder tree | Papers index exists as a plain list; not yet the workspace |
-| 47 | API — `/api/v1/library` and `/relations` | Not started; every other module has an API |
+| 20 | Permission model — `papers.share`, `papers.manage`, restricted enforced in the policy | **Done.** |
+| 3 | Workspace dashboard — counters, search, filters, folder tree | **Done.** Confidentiality enforced at the query via `scopeReadableBy()`, not filtered after fetching |
+| 47 | API — `/api/v1/library` and `/relations` | **Done.** `docs/API.md` §22. A `file` ability, separate from `update`, so an issued document can still be filed — `update` correctly requires a draft |
 
 ### Not built (C)
 
