@@ -55,6 +55,21 @@ class BusinessDocument extends Model
             >= DocumentKinds::securityRank('confidential');
     }
 
+    /**
+     * The top classification, and the only one that narrows who may read the
+     * document. Confidential marks a document; restricted closes it.
+     *
+     * The distinction is deliberate. A level that only its author can open is
+     * useless to a business that has to work on the thing, so making every
+     * sensitive document restricted would only teach people to stop marking
+     * them. See BusinessDocumentPolicy, which is where this is enforced.
+     */
+    public function isRestricted(): bool
+    {
+        return DocumentKinds::securityRank($this->security)
+            >= DocumentKinds::securityRank('restricted');
+    }
+
     public function owner(): BelongsTo
     {
         return $this->belongsTo(User::class, 'owner_id');

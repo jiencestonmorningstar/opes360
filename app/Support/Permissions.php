@@ -49,7 +49,22 @@ class Permissions
         // are separate groups instead of actions on Accounting.
         'Assets' => ['view', 'create', 'update', 'depreciate', 'dispose'],
         'Banking' => ['view', 'manage', 'import', 'reconcile'],
-        'Papers' => ['view', 'create', 'issue', 'void'],
+        /*
+         * Business documents. `share` and `manage` are separate from the rest
+         * for two different reasons.
+         *
+         * `share` sends a document outside the business, which is a different
+         * act from writing one: whoever holds it can put a signed contract in
+         * front of somebody who was never meant to see it, and no amount of
+         * `view` implies that.
+         *
+         * `manage` is the confidentiality key. A document marked `restricted`
+         * is readable only by the person who owns it and by holders of this
+         * ability, so granting it is granting sight of everything the business
+         * has decided to keep close — which is why it stops at the Owner and
+         * the Administrator in the seeder.
+         */
+        'Papers' => ['view', 'create', 'issue', 'void', 'share', 'manage'],
         'Forms' => ['view', 'create', 'update', 'delete', 'responses'],
         'Events' => ['view', 'create', 'update', 'void', 'check-in'],
         'Loyalty' => ['view', 'manage', 'redeem'],

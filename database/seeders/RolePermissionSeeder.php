@@ -37,7 +37,10 @@ class RolePermissionSeeder extends Seeder
             'Products' => ['view', 'create', 'update', 'adjust-stock', 'manage-locations'],
             'Assets' => ['view'],
             'Banking' => ['view'],
-            'Papers' => ['view', 'create', 'issue'],
+            // Sends documents out on the company's behalf, which is the job.
+            // Not 'manage': that is sight of every restricted document in the
+            // business, and a manager who needs one can be given it by hand.
+            'Papers' => ['view', 'create', 'issue', 'share'],
             'Forms' => ['view', 'create', 'update', 'delete', 'responses'],
             'Events' => ['view', 'create', 'update', 'void', 'check-in'],
             'Loyalty' => ['view', 'manage', 'redeem'],

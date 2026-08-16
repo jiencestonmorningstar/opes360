@@ -41,6 +41,23 @@ abstract class DocumentsTestCase extends TestCase
         app(CurrentCompany::class)->set($this->company);
     }
 
+    /**
+     * A second person in the same company, at a lesser role.
+     *
+     * Every confidentiality test needs one: the Owner short-circuits every
+     * permission check by design, so a test driven by the Owner proves nothing
+     * about what anybody else can reach.
+     */
+    protected function memberAt(string $role): User
+    {
+        $user = User::factory()->create();
+
+        $this->joinCompany($this->company, $user, $role);
+        $user->forceFill(['current_company_id' => $this->company->id])->save();
+
+        return $user;
+    }
+
     protected function document(array $attributes = []): BusinessDocument
     {
         return BusinessDocument::create(array_merge([
