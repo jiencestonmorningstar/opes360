@@ -86,10 +86,24 @@ None of these exist. Each is a substantial subsystem in its own right and
 should get its own plan (and likely its own spec/brainstorm pass) rather than
 a subtask here:
 
-8. **§8.1 Collaborative CLM** — contract state transitions triggering
-   AR/AP holds, inventory allocation, milestone billing. Partially
-   buildable today on top of the existing lifecycle state machine (#3 above)
-   and domain events, without needing #6 first.
+8. **§8.1 Collaborative CLM** — **ERP binding for e-signature shipped
+   2026-08-17**. `ActivateApprovedContracts` already put a contract into
+   force the moment its *internal* approval came back yes; the missing half
+   was the *external* route — a contract sent out for e-signature with no
+   internal workflow at all. `app/Listeners/ActivateContractsOnDocumentSigned.php`
+   closes that: the moment every party has signed the linked paper
+   (`document.signed`), a still-draft contract activates automatically,
+   deferring to any internal approval already in progress rather than
+   racing it. Co-authoring/redlining is already covered by the rich editor
+   + anchored comments (items 1 and 10). **Not** built: the specific
+   "release AR/AP holds, shift inventory allocation, initiate milestone
+   billing" examples from §8.1's prose — this codebase has no generic
+   concept of an AR/AP hold or inventory allocation tied to a contract, so
+   inventing one would be speculative. What *does* exist is the same
+   domain-event mechanism (`contract.activated`, already emitted by
+   `ContractLifecycle::activate()`) that any future concrete downstream
+   action — billing, holds, whatever a real business rule turns out to
+   need — can already listen for without further plumbing.
 9. **§8.2 Collaborative BI spreadsheet** (`OPES_SUM`, `OPES_LOOKUP`
    formulas). Entirely new: a formula-cell grid, not the rich-text editor.
    Independent of the rest of this roadmap.
