@@ -24,7 +24,7 @@ locking or CRDT/OT.
 | §4.2 milestone versioning | Explicit version rows, not per-keystroke | `DocumentVersioner`, `business_document_versions` |
 | §5.1 (partial) concurrency | *Some* lock during co-edit | Soft/whole-document lock only (`editing_user_id`, 90s heartbeat, "request takeover") — not paragraph-level |
 | §7 lifecycle state machine | Draft → Review → Approved → Archived | `BusinessDocument` status + `DocumentRetention` lifecycle label |
-| §6 visual masking of restricted fields | `{{employee.salary}}` → •••• | Not verified — check `DocumentFieldRegistry` consumers before assuming |
+| §6 visual masking of restricted fields | `{{employee.salary}}` → •••• | **Verified moot, 2026-08-17**: every provider registered in `AppServiceProvider` (`company`, `customer`, `employee`, `project`) exposes only name/address-class fields — no salary, SSN, or other sensitive field is registered anywhere. There is currently nothing for a mask to hide. Building masking now would be speculative infrastructure for a field that doesn't exist; the real trigger is the day a module registers a genuinely sensitive field, at which point that module's registration is the place to add the permission check — not a platform-wide masking layer built ahead of need. |
 
 ## Confirmed gaps, mapped to the master doc's own §9.1 phases
 
@@ -49,10 +49,10 @@ locking or CRDT/OT.
     later rename of the linked customer/employee/project can never change
     what an already-issued document reads. A body with no chips is left
     byte-for-byte untouched. See `tests/Feature/Documents/LiveTokenChipTest.php`.
-2. **Visual masking of restricted fields** (§6). Needs verification — if
-   `DocumentFieldRegistry` values are ever rendered without a permission
-   check at the point of substitution, `{{employee.salary}}` leaks to anyone
-   who can open the document.
+2. ~~**Visual masking of restricted fields**~~ (§6) — **verified moot,
+   2026-08-17**, not built. See the table above: no sensitive field is
+   registered yet, so there is nothing to mask. Revisit when a module
+   actually registers one.
 3. **Paragraph/line-level locking** (§9 roadmap item, extends §5.1). Current
    lock is whole-document. Real gap only if multiple simultaneous editors are
    a product priority — confirm before investing, since it requires a
