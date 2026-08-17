@@ -24,6 +24,11 @@ class WorkflowStep extends Model
         'approval' => 'Approval',
         'signature' => 'Signature',
         'task' => 'Task',
+        // §5 item 3 of the Documents completion plan: composes a document
+        // from `compose_template` when this step is reached, then advances
+        // on its own — nobody is asked to approve anything, so it never
+        // takes an assignment the way the other four types do.
+        'compose_document' => 'Compose a document',
     ];
 
     public const APPROVER_MODES = [

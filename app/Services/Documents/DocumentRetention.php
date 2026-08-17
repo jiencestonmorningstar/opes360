@@ -84,6 +84,11 @@ class DocumentRetention
             'legal_hold_set_at' => now(),
         ])->save();
 
+        // Compliance's moment: a document just became undeletable regardless
+        // of what the retention schedule says. Worth telling someone
+        // directly rather than leaving it to be noticed on the record.
+        $document->emitDomainEvent('document.legal_hold.placed', ['reason' => $reason]);
+
         return $document->fresh();
     }
 
@@ -95,6 +100,8 @@ class DocumentRetention
             'legal_hold_set_by' => null,
             'legal_hold_set_at' => null,
         ])->save();
+
+        $document->emitDomainEvent('document.legal_hold.lifted');
 
         return $document->fresh();
     }

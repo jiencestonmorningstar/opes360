@@ -38,10 +38,40 @@ class DocumentComposer
      * cannot be prevented from choosing the same key as a built-in template,
      * since App\Support\DocumentTemplates::exists() already refuses that at
      * creation, so there is never a real collision to arbitrate here.
+     *
+     * $language only ever affects a custom template's body (§44): if it names
+     * one of the template's variants, that variant's body is substituted for
+     * the array's `body` key before anything else touches it — merge() and
+     * everything it calls stay entirely unaware that variants exist. The
+     * built-in catalogue has no variants, so $language is simply ignored for
+     * those keys, exactly as before.
      */
-    protected function resolveTemplate(string $templateKey): ?array
+    protected function resolveTemplate(string $templateKey, ?string $language = null): ?array
     {
-        return $this->customTemplates->find($templateKey) ?? DocumentTemplates::find($templateKey);
+        $custom = $this->customTemplates->findModel($templateKey);
+
+        if ($custom !== null) {
+            $template = $custom->toTemplateArray();
+            $template['body'] = $this->customTemplates->bodyFor($custom, $language);
+
+            return $template;
+        }
+
+        return DocumentTemplates::find($templateKey);
+    }
+
+    /**
+     * Every language a template offers a picker for — empty for a built-in
+     * template or a custom one with no variants, in which case Compose has
+     * nothing to pick between and shows no picker.
+     *
+     * @return array<int, string>
+     */
+    public function availableLanguages(string $templateKey): array
+    {
+        $custom = $this->customTemplates->findModel($templateKey);
+
+        return $custom === null ? [] : $this->customTemplates->languagesFor($custom);
     }
 
     /**
@@ -62,12 +92,17 @@ class DocumentComposer
      * keyed by the relation a registered field provider expects:
      * `['customer' => $contact]`. See DocumentFieldRegistry.
      *
+     * $language picks a translated body from a custom template that has
+     * more than one (§44) — built-in templates and single-body custom ones
+     * ignore it entirely, which is what keeps this opt-in per template
+     * rather than a behaviour change for every existing caller.
+     *
      * @param  array<string, mixed>  $fields
      * @param  array<string, mixed>  $context
      */
-    public function merge(string $templateKey, array $fields, Company $company, array $context = []): string
+    public function merge(string $templateKey, array $fields, Company $company, array $context = [], ?string $language = null): string
     {
-        $template = $this->resolveTemplate($templateKey);
+        $template = $this->resolveTemplate($templateKey, $language);
 
         if ($template === null) {
             throw new RuntimeException("Unknown template [{$templateKey}].");
@@ -76,7 +111,10 @@ class DocumentComposer
         $values = $this->automaticValues($company, $context)
             + $this->presentableFields($template, $fields);
 
-        $body = $this->resolveOptionalSegments($this->dedent($template['body']), $values);
+        $body = $this->resolveOptionalSegments(
+            $this->dedent($this->bodyFor($templateKey, $template, $language, $company)),
+            $values,
+        );
 
         $body = preg_replace_callback(
             '/\{\{\s*([a-z0-9_.]+)\s*\}\}/i',
@@ -85,6 +123,72 @@ class DocumentComposer
         );
 
         return $this->tidy($body);
+    }
+
+    /**
+     * The raw body merge() should fill in, before either resolveOptionalSegments()
+     * or placeholder substitution run.
+     *
+     * Only a custom template with at least one translation row ever reads
+     * anything but its own `body` column — a built-in template, or a custom
+     * one nobody has translated yet, is untouched by this method.
+     *
+     * @param  array<string, mixed>  $template
+     */
+    protected function bodyFor(string $templateKey, array $template, ?string $language, Company $company): string
+    {
+        $model = $this->customTemplates->findModel($templateKey);
+
+        if ($model === null) {
+            return $template['body'];
+        }
+
+        $variants = $this->customTemplates->languagesFor($model);
+
+        if ($variants === []) {
+            return $template['body'];
+        }
+
+        $target = $language ?? $this->defaultLanguage($company);
+
+        return $this->customTemplates->bodyFor($model, in_array($target, $variants, true) ? $target : null);
+    }
+
+    /**
+     * The language actually used to produce the body merge() just returned,
+     * for the caller to record on BusinessDocument->language.
+     *
+     * Null for a built-in template or a custom one with no translations —
+     * exactly the templates §44 leaves alone. For a translated template it
+     * is never null: either the requested (or company-default) language had
+     * a variant and that is what is reported, or it did not and the body
+     * fell back to the template's own default — which this attributes to
+     * the company's configured language, the closest thing a body with no
+     * per-language row has to one.
+     */
+    public function resolveLanguage(string $templateKey, ?string $language, Company $company): ?string
+    {
+        $model = $this->customTemplates->findModel($templateKey);
+
+        if ($model === null) {
+            return null;
+        }
+
+        $variants = $this->customTemplates->languagesFor($model);
+
+        if ($variants === []) {
+            return null;
+        }
+
+        $target = $language ?? $this->defaultLanguage($company);
+
+        return in_array($target, $variants, true) ? $target : $this->defaultLanguage($company);
+    }
+
+    /** The company's configured language (§44), defaulting like every other unset company setting. */
+    protected function defaultLanguage(Company $company): string
+    {
+        return $company->language ?? config('app.locale', 'en');
     }
 
     /**
@@ -325,8 +429,47 @@ class DocumentComposer
 
             $document->forceFill(['verification_token_id' => $token->id])->saveQuietly();
 
+            // §59's name for this moment — the draft becomes the permanent,
+            // numbered record a rule can act on (file it, notify a customer,
+            // start a countdown).
+            $document->emitDomainEvent('document.published');
+
             return $document;
         });
+    }
+
+    /**
+     * A fresh draft that starts from an existing document's content.
+     *
+     * The only route by which a "duplicate" document may exist — everything
+     * that makes a BusinessDocument a BusinessDocument (id, numbering,
+     * versioning, hash) is produced by BusinessDocument::create() /
+     * DocumentVersioner exactly as it would be for a document typed in by
+     * hand. Nothing here reaches into another table.
+     *
+     * Deliberately narrow about what carries over. Content (template,
+     * title, recipient, fields, body, kind) is what somebody duplicating a
+     * document is asking to reuse. Filing metadata — folder, department,
+     * owner, security, tags, expiry — is reset rather than copied, because
+     * "start a new one like this" is a statement about the words, not a
+     * request to also inherit where the original happened to be filed.
+     * Comments, versions and shares are relations of the *original* row and
+     * are never touched: a new id means there is nothing to copy them onto
+     * that would still mean the same thing.
+     */
+    public function duplicate(BusinessDocument $source, User $user): BusinessDocument
+    {
+        return BusinessDocument::create([
+            'template' => $source->template,
+            'title' => 'Copy of '.$source->title,
+            'recipient' => $source->recipient,
+            'fields' => $source->fields,
+            'body' => $source->body,
+            'kind' => $source->kind,
+            'language' => $source->language,
+            'status' => 'draft',
+            'created_by' => $user->id,
+        ]);
     }
 
     public function void(BusinessDocument $document, User $user, ?string $reason = null): BusinessDocument
@@ -349,6 +492,11 @@ class DocumentComposer
             // A scan of the paper already handed over must report it as void
             // rather than valid.
             $document->verificationToken?->forceFill(['revoked_at' => now()])->save();
+
+            // The one other thing that can happen to an issued document. A
+            // business that reacts to `document.published` almost certainly
+            // wants to react to its undoing too.
+            $document->emitDomainEvent('document.voided', ['reason' => $reason]);
 
             return $document;
         });

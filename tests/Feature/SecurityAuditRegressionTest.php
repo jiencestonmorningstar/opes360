@@ -370,9 +370,19 @@ class SecurityAuditRegressionTest extends TestCase
         $this->post('/e/'.$event->share_token, $payload(1))->assertRedirect();
         $this->post('/e/'.$event->share_token, $payload(2))->assertRedirect();
 
+        // The guest middleware clears the current-company singleton on every
+        // one of these requests — correctly, that is what keeps a public page
+        // from leaking another tenant's data — including the GET just below.
+        // So the serial is read BEFORE that request, not after: a re-pin here
+        // would only be undone by the GET's own middleware, the same trap
+        // that made this assertion flaky the first time it was written this
+        // way. See PublicTenancyTest for the general pattern.
+        app(CurrentCompany::class)->set($this->company);
+        $firstSerial = Ticket::orderBy('created_at')->first()->serial;
+
         $this->get('/e/'.$event->share_token.'/tickets')
             ->assertOk()
-            ->assertSee(Ticket::orderBy('created_at')->first()->serial);
+            ->assertSee($firstSerial);
 
         $this->assertCount(3, session('purchased_tickets'));
     }

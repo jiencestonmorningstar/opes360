@@ -5,6 +5,8 @@ namespace App\Services\Documents;
 use App\Models\BusinessDocument;
 use App\Models\BusinessDocumentChecklist;
 use App\Models\BusinessDocumentPackage;
+use App\Models\Department;
+use App\Models\Project;
 use App\Support\DocumentKinds;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Collection;
@@ -42,6 +44,33 @@ class DocumentDossiers
             ->all();
 
         return ['total' => $documents->count(), 'groups' => $groups];
+    }
+
+    /**
+     * §9 — a department's document folder, in name only: the same query as
+     * forRecord(), named for the screen that reads it. Departments carries no
+     * folder_id and no stored relation of its own; whatever is linked to the
+     * department via DocumentLinker (folder_id on a document, or an explicit
+     * link) is the whole answer, so there is nothing here that could drift
+     * from a department being renamed, merged or archived.
+     *
+     * @return array{total: int, groups: array<string, array{label: string, documents: Collection}>}
+     */
+    public function forDepartment(Department $department): array
+    {
+        return $this->forRecord($department);
+    }
+
+    /**
+     * §10 — a project's document folder, the same shape and the same
+     * reasoning as forDepartment(): a question asked of DocumentLinker, not a
+     * row that could disagree with it.
+     *
+     * @return array{total: int, groups: array<string, array{label: string, documents: Collection}>}
+     */
+    public function forProject(Project $project): array
+    {
+        return $this->forRecord($project);
     }
 
     // ── Packages ─────────────────────────────────────────────────────────

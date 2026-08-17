@@ -33,6 +33,17 @@ class Compose extends Component
     /** @var array<string, string> */
     public array $fields = [];
 
+    /**
+     * Which body variant to compose with, for a custom template that has
+     * more than one (§44). Empty string means "let DocumentComposer pick
+     * the company's default" — kept as a string rather than null so the
+     * <select> in the view has a plain value to bind to.
+     */
+    public string $language = '';
+
+    /** @var array<int, string> Every language this template has a variant for; empty for every template §44 does not touch. */
+    public array $availableLanguages = [];
+
     public function mount(?string $template = null, ?BusinessDocument $paper = null): void
     {
         $this->paper = $paper?->exists ? $paper : null;
@@ -45,6 +56,7 @@ class Compose extends Component
             $this->templateKey = $this->paper->template;
             $this->title = $this->paper->title;
             $this->fields = array_map(fn ($v) => (string) $v, $this->paper->fields ?? []);
+            $this->language = (string) ($this->paper->language ?? '');
         } else {
             $exists = DocumentTemplates::exists((string) $template)
                 || app(CustomDocumentTemplates::class)->exists((string) $template);
@@ -56,6 +68,21 @@ class Compose extends Component
             $this->fields = collect($this->definition()['fields'])
                 ->mapWithKeys(fn (array $field) => [$field['key'] => (string) ($field['default'] ?? '')])
                 ->all();
+        }
+
+        $customModel = app(CustomDocumentTemplates::class)->findModel($this->templateKey);
+        $this->availableLanguages = $customModel !== null
+            ? app(CustomDocumentTemplates::class)->languagesFor($customModel)
+            : [];
+
+        /*
+         * A new document's picker opens on the company's configured
+         * language rather than blank — §44's "defaulting to the company's
+         * configured language". An edited draft keeps whatever it was
+         * already composed in, set above from $this->paper->language.
+         */
+        if ($this->paper === null && $this->language === '') {
+            $this->language = (string) (app(CurrentCompany::class)->get()->language ?? 'en');
         }
     }
 
@@ -71,6 +98,7 @@ class Compose extends Component
             $this->templateKey,
             $this->fields,
             app(CurrentCompany::class)->get(),
+            language: $this->language !== '' ? $this->language : null,
         );
     }
 
@@ -92,6 +120,7 @@ class Compose extends Component
 
         $composer = app(DocumentComposer::class);
         $company = app(CurrentCompany::class)->get();
+        $requestedLanguage = $this->language !== '' ? $this->language : null;
 
         $attributes = [
             'template' => $this->templateKey,
@@ -100,7 +129,13 @@ class Compose extends Component
             'fields' => $this->fields,
             // Composed once and stored: a later edit to the template library
             // must never rewrite a document someone has already been shown.
-            'body' => $composer->merge($this->templateKey, $this->fields, $company),
+            'body' => $composer->merge($this->templateKey, $this->fields, $company, language: $requestedLanguage),
+            // Null for a built-in or untranslated template — see
+            // DocumentComposer::resolveLanguage(). Never overwritten for an
+            // existing draft that already carries one unless the picker was
+            // actually used, since resolveLanguage() is deterministic given
+            // the same inputs.
+            'language' => $composer->resolveLanguage($this->templateKey, $requestedLanguage, $company),
         ];
 
         if ($this->paper) {

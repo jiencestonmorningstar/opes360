@@ -3,6 +3,7 @@
 namespace App\Services\Documents;
 
 use App\Models\BusinessDocument;
+use App\Models\BusinessDocumentBundle;
 use App\Models\BusinessDocumentFolder;
 use App\Models\User;
 use App\Services\DocumentComposer;
@@ -149,12 +150,19 @@ class BulkActions
      * packager, exactly as a package download skips them. Never empty on
      * disk — ZipArchive writes nothing at all for an archive with no entries,
      * so the packager adds a README in that case.
+     *
+     * §60: past DocumentBundles' size threshold, and only when a real queue
+     * is configured, this returns the pending BusinessDocumentBundle record
+     * instead of a path — see DocumentBundles::request() for why sync never
+     * takes that branch.
+     *
+     * @return string|BusinessDocumentBundle
      */
-    public function zip(Collection $documents, User $actor): string
+    public function zip(Collection $documents, User $actor)
     {
         $readable = $documents->filter(fn (BusinessDocument $document) => Gate::forUser($actor)->allows('view', $document));
 
-        return $this->bundles->zipDocuments($readable);
+        return $this->bundles->request($readable, $actor);
     }
 
     /**

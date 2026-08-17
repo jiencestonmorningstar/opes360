@@ -75,6 +75,13 @@ class EmbedTest extends TestCase
             'answers' => ['f-name' => 'Ada'],
         ])->assertOk()->assertSee('Response recorded');
 
+        // The guest middleware clears the current-company singleton on this
+        // request — correctly, that is the fix for the cross-tenant leak it
+        // exists to prevent — so reading the tenant-scoped row back needs its
+        // own company context re-pinned, the same way every other public-route
+        // test does after a guest request (see PublicTenancyTest).
+        app(CurrentCompany::class)->set($this->company);
+
         $this->assertSame('Ada', FormResponse::sole()->answers['f-name']);
     }
 

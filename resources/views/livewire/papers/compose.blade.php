@@ -51,6 +51,21 @@
                     <input type="text" wire:model.live.debounce.400ms="title" class="{{ $inputClass }}">
                     @error('title') <p class="mt-1 text-[12.5px] font-medium text-warning">{{ $message }}</p> @enderror
                 </label>
+
+                {{-- Only a custom template with more than one body variant
+                     offers this (§44) — a built-in or untranslated template
+                     never shows the picker at all. --}}
+                @if (count($availableLanguages) >= 1)
+                    <label class="mt-4 block">
+                        <span class="{{ $labelClass }}">Language</span>
+                        <select wire:model.live="language" class="{{ $inputClass }}">
+                            <option value="">Company default</option>
+                            @foreach ($availableLanguages as $code)
+                                <option value="{{ $code }}">{{ strtoupper($code) }}</option>
+                            @endforeach
+                        </select>
+                    </label>
+                @endif
             </x-ui.panel>
 
             <x-ui.panel :title="$definition['name']">

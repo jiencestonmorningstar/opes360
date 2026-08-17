@@ -149,7 +149,7 @@ class DocumentVersioner
     {
         $next = (int) $document->versions()->max('version_number') + 1;
 
-        return BusinessDocumentVersion::create([
+        $version = BusinessDocumentVersion::create([
             'business_document_id' => $document->id,
             'version_number' => $next,
             'title' => $document->title,
@@ -158,6 +158,16 @@ class DocumentVersioner
             'body' => $document->body,
             'created_by' => auth()->id() ?? $document->created_by,
         ]);
+
+        // Fires for every snapshot, including the initial one — a rule that
+        // wants "this document changed content" wants every version, not
+        // just the edits after the first.
+        $document->emitDomainEvent('document.version.created', [
+            'version_id' => $version->id,
+            'version_number' => $version->version_number,
+        ]);
+
+        return $version;
     }
 
     /**
@@ -178,6 +188,13 @@ class DocumentVersioner
             'fields' => $version->fields,
             'body' => $version->body,
         ])->save();
+
+        // Distinct from the document.version.created the save() above also
+        // triggers: "somebody rolled this back" is news a collaborator wants
+        // even when they would not care about an ordinary edit.
+        $document->emitDomainEvent('document.version.restored', [
+            'restored_from_version_number' => $version->version_number,
+        ]);
 
         return $document->fresh();
     }

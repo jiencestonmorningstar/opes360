@@ -115,11 +115,50 @@ class BrandingGlassTest extends TestCase
     public function test_print_never_blurs(): void
     {
         $css = $this->compiledCss();
+        $printRules = $this->printMediaBlocks($css);
 
-        preg_match('/@media print\{(.*?)(?=@media|$)/s', $css, $m);
+        $this->assertNotEmpty($printRules, 'no @media print block in the stylesheet');
+        $this->assertStringContainsString('backdrop-filter:none!important', implode('', $printRules));
+    }
 
-        $this->assertNotEmpty($m, 'no print block in the stylesheet');
-        $this->assertStringContainsString('backdrop-filter:none!important', $m[1]);
+    /**
+     * Every `@media print{...}` block's own content, brace-matched rather
+     * than text-matched up to the next literal `@media`.
+     *
+     * Minified Tailwind v4 output puts print rules in several separate
+     * blocks — a base-layer one, a utilities one, an authored override —
+     * interleaved with unrelated `@media` queries (dark mode, breakpoints).
+     * A naive `(.*?)(?=@media|$)` capture stops at whichever `@media` comes
+     * first, print or not, and can swallow hundreds of characters of
+     * unrelated CSS instead of the print rule that mattered — exactly what
+     * broke this test in 2026-08-17's rebuild for no reason a human wrote.
+     *
+     * @return array<int, string>
+     */
+    protected function printMediaBlocks(string $css): array
+    {
+        $blocks = [];
+        $offset = 0;
+
+        while (($start = strpos($css, '@media print{', $offset)) !== false) {
+            $bodyStart = $start + strlen('@media print{');
+            $depth = 1;
+            $i = $bodyStart;
+
+            while ($depth > 0 && $i < strlen($css)) {
+                if ($css[$i] === '{') {
+                    $depth++;
+                } elseif ($css[$i] === '}') {
+                    $depth--;
+                }
+                $i++;
+            }
+
+            $blocks[] = substr($css, $bodyStart, $i - $bodyStart - 1);
+            $offset = $i;
+        }
+
+        return $blocks;
     }
 
     /** The document print views must not carry the glass class at all. */

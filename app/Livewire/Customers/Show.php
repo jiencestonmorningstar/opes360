@@ -5,8 +5,11 @@ namespace App\Livewire\Customers;
 use App\Models\Contact;
 use App\Models\Document;
 use App\Models\Payment;
+use App\Services\Documents\CustomDocumentTemplates;
+use App\Services\Documents\RecordDocumentComposer;
 use App\Services\LoyaltyLedger;
 use App\Support\CurrentCompany;
+use App\Support\DocumentTemplates;
 use Illuminate\Contracts\View\View;
 use Illuminate\Foundation\Auth\Access\AuthorizesRequests;
 use Livewire\Component;
@@ -23,6 +26,10 @@ class Show extends Component
     public string $redeemPoints = '';
 
     public string $redeemNote = '';
+
+    public bool $composing = false;
+
+    public string $composeTemplate = '';
 
     public function mount(Contact $contact): void
     {
@@ -72,6 +79,39 @@ class Show extends Component
         $this->redeemNote = '';
     }
 
+    /**
+     * A draft pre-filled with this customer's own details, so composing a
+     * letter no longer means typing their name and address by hand into a
+     * blank template. The customer is linked back the same way the manual
+     * "attach to a record" action on the document's own screen would do it.
+     */
+    public function composeForCustomer(RecordDocumentComposer $composer): void
+    {
+        $this->authorize('papers.create');
+
+        $this->validate(['composeTemplate' => ['required', 'string']]);
+
+        $template = DocumentTemplates::find($this->composeTemplate)
+            ?? app(CustomDocumentTemplates::class)->find($this->composeTemplate);
+
+        if ($template === null) {
+            $this->addError('composeTemplate', 'That template no longer exists.');
+
+            return;
+        }
+
+        $document = $composer->composeDraft(
+            record: $this->contact,
+            templateKey: $this->composeTemplate,
+            fields: [],
+            title: ($template['title'] ?? $template['name'] ?? 'Document').' — '.$this->contact->displayName(),
+            company: app(CurrentCompany::class)->get(),
+            user: auth()->user(),
+        );
+
+        $this->redirectRoute('papers.edit', $document, navigate: true);
+    }
+
     public function render(): View
     {
         $documents = Document::query()
@@ -89,6 +129,7 @@ class Show extends Component
 
         return view('livewire.customers.show', [
             'documents' => $documents,
+            'templates' => DocumentTemplates::all() + app(CustomDocumentTemplates::class)->allPublishedAsArray(),
             'payments' => Payment::query()
                 ->where('contact_id', $this->contact->id)
                 ->with('receipt')

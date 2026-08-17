@@ -242,6 +242,12 @@
                                 </form>
                                 @error('taskTitle') <p class="mt-1 text-[12.5px] text-negative">{{ $message }}</p> @enderror
                             @endcan
+
+                            {{-- Project document dossier (§10) — a question asked of
+                                 DocumentLinker, not a folder stored on the project. --}}
+                            <div class="mt-4">
+                                <x-documents.library-panel :record="$openProject" title="Project dossier" />
+                            </div>
                         </div>
                     @endif
                 </div>

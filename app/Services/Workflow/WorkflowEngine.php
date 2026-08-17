@@ -203,6 +203,22 @@ class WorkflowEngine
                 continue;
             }
 
+            /*
+             * §5 item 3 of the Documents completion plan: a compose_document
+             * step asks nobody for a decision, so it is handled and stepped
+             * past here rather than falling into the approver-assignment
+             * path below — the one branch this method gains for the new
+             * type, additive alongside review/approval/signature/task, which
+             * are untouched.
+             */
+            if ($step->type === 'compose_document') {
+                app(ComposeDocumentStep::class)->handle($instance, $step);
+
+                $instance->update(['position' => $position, 'status' => 'running']);
+
+                continue;
+            }
+
             $approvers = $this->approvers->resolve($step, $subject);
 
             /*
@@ -238,6 +254,12 @@ class WorkflowEngine
                     ],
                 );
             }
+
+            // Catalogued since the engine's own beginning but never actually
+            // raised — a step reaching an approver is exactly "somebody was
+            // asked to look at this", which TranslateDocumentWorkflowEvents
+            // restates as document.review.requested for a document subject.
+            $this->announce($instance, 'workflow.step.assigned', $subject, ['step' => $step->name]);
 
             return $instance->fresh();
         }

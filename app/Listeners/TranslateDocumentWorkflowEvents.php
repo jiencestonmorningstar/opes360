@@ -23,6 +23,7 @@ class TranslateDocumentWorkflowEvents
 {
     protected const MAP = [
         'workflow.started' => 'document.submitted',
+        'workflow.step.assigned' => 'document.review.requested',
         'workflow.approved' => 'document.approved',
         'workflow.rejected' => 'document.rejected',
         'workflow.changes_requested' => 'document.changes.requested',

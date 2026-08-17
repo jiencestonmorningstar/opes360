@@ -36,6 +36,7 @@ class AutomationRule extends Model
         'notify_role' => 'Notify everyone with a role',
         'send_webhook' => 'Send a webhook',
         'set_field' => 'Set a field on the record',
+        'compose_document' => 'Draft a document from a template',
     ];
 
     protected $guarded = ['id'];

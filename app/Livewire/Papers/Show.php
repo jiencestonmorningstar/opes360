@@ -4,6 +4,7 @@ namespace App\Livewire\Papers;
 
 use App\Models\BusinessDocument;
 use App\Services\DocumentComposer;
+use App\Services\Documents\DocumentActivity;
 use App\Support\DocumentTemplates;
 use Illuminate\Contracts\View\View;
 use Illuminate\Foundation\Auth\Access\AuthorizesRequests;
@@ -38,6 +39,20 @@ class Show extends Component
         }
 
         $this->paper = $this->paper->fresh()->load('verificationToken');
+    }
+
+    /**
+     * §5 item 1 of the Documents completion plan: a fresh draft that starts
+     * from this document's content, through DocumentComposer::duplicate() —
+     * never a second creation path.
+     */
+    public function duplicate(): void
+    {
+        $this->authorize('papers.create');
+
+        $copy = app(DocumentComposer::class)->duplicate($this->paper, auth()->user());
+
+        $this->redirectRoute('papers.edit', $copy);
     }
 
     /** Sought before issuing; the engine's verdict shows on this screen. */
@@ -90,11 +105,28 @@ class Show extends Component
 
     public function render(): View
     {
+        /*
+         * §53 side panel: everything below was already built as a service
+         * or a relation for the API layer (DocumentActivity, the version/
+         * comment/share/signature relations, the retention flags on the
+         * model) — this is the audit's finding that Show.php simply never
+         * rendered any of it. Wiring it here is read-only and cheap; a
+         * write UI for shares/signatures/retention stays out (§53 lists
+         * the panel, not new write flows, and each of those already has
+         * one via its own screen or API).
+         */
         return view('livewire.papers.show', [
             'bodyHtml' => app(DocumentComposer::class)->toHtml($this->paper->body),
             'notice' => ($this->paper->template()['binding'] ?? false)
                 ? DocumentTemplates::reviewNotice()
                 : null,
+            'activity' => auth()->user()?->can('papers.manage')
+                ? app(DocumentActivity::class)->timeline($this->paper)->sortByDesc('at')->take(8)->values()
+                : collect(),
+            'versionCount' => $this->paper->versions()->count(),
+            'commentCount' => $this->paper->comments()->count(),
+            'shares' => $this->paper->shares()->latest()->limit(5)->get(),
+            'signatures' => $this->paper->signatures()->latest()->limit(5)->get(),
         ])->layout('components.layouts.app', [
             'title' => $this->paper->title,
             'active' => 'papers',

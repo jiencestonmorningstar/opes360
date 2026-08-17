@@ -1,7 +1,10 @@
 # Gap analysis — what is built, part-built, and not built
 
-**Date:** 2026-08-17 (refreshed against the working tree after the hardening
-gate and audit fix waves 1–3; originally written 2026-08-16)
+**Date:** 2026-08-17 (refreshed after the Documents completion pass — creation
+routes, the document.* event stream, extension points, multilingual
+templates, department/project dossiers, background bundling, and the
+rich-editor/soft-lock wave that shipped just before it; originally written
+2026-08-16)
 **Measured against:** `docs/superpowers/specs/2026-08-16-documents-master-spec.md`
 (the Documents master specification and the ERP completeness checklist inside
 it).
@@ -70,56 +73,58 @@ layer, the company/branding configuration, and the offline sync engine.
 
 ### Not built (C)
 
-Grouped by why, because "not built" covers three very different situations.
+Everything that had no missing prerequisite is now built. What remains is
+either a genuine infrastructure gap or an argued-against trade-off — both
+recorded so the decision is visible, not silent.
 
 **Deferred for a missing prerequisite — the dependency does not exist in the
-codebase at all:**
+codebase or on this box at all:**
 
 | § | Capability | Missing prerequisite |
 |---|---|---|
-| 6 | Rich document editor | No editor; composition today is template-field fill |
-| 22 | Preview (PDF, DOCX, office formats) | No preview/conversion tier |
+| 22 | Preview (DOCX, office formats) | No conversion tier. PDF preview is no longer blocked — a `BusinessDocument` and its bundles already render as PDF — but Office-format preview still needs a converter |
 | 23–24 | DOCX import/export | No DOCX engine |
-| ~~24~~ | ~~Server-side PDF export~~ | **Shipped 2026-08-16** — real PDFs through one swappable wrapper (`docs/handoff/pdf-engine.md`); `window.print()` no longer the only path |
-| 14, 16 | Concurrent editing, presence, track changes | No websocket tier |
-| ~~26~~ | ~~Content and indexed search~~ | **Shipped 2026-08-16** — global Ctrl-K search filtering results by the searcher's own permissions, with an `opes:search-reindex` rebuild command (`docs/handoff/search-integration.md`) |
-| 27 | OCR | No OCR service |
+| 27 | OCR | No Tesseract on this box yet — a VPS item, not a code gap |
 | 41–42 | AI assistant and AI search | No AI provider configured |
 | 43 | Translation workflows | No translation service |
-| 9, 10 | Department, project and dossier folders | **Neither departments nor projects exist as entities.** `employees.department` is a free-text string, not a table |
 
-**Not yet started, no prerequisite missing — these were the rest of the
-roadmap when first written. Struck-through rows have since shipped
-(2026-08-16 Documents completion pass — bulk actions, watermarks, analytics,
-daily reminders — plus the admin/audit work):**
+**Shipped in the 2026-08-17 completion pass:**
 
-| § | Capability |
-|---|---|
-| 5 | Creation routes beyond blank/template/upload — duplicate, from existing, from ERP record, from workflow, from automation |
-| ~~17–18~~ | ~~Workflow stages and the approval engine~~ — **shipped**: the platform workflow engine landed and Documents consumes it (`Approvable` + `TranslateDocumentWorkflowEvents`) |
-| ~~30~~ | ~~Documents-specific audit trail~~ — **shipped** with the audit-to-45-models pass; `DocumentActivity` merges audit, versions and comments |
-| ~~33~~ | ~~Alerts — expiry and workflow-stalled notifications~~ — **shipped** in the Documents completion pass (daily reminders) |
-| ~~39~~ | ~~Combined-PDF bundles~~ — **unblocked**: the server-side PDF engine shipped (`docs/handoff/pdf-engine.md`) |
-| 44 | Multilingual templates (the `language` column exists; nothing consumes it) |
-| ~~46~~ | ~~Documents administration screens~~ — **shipped** (analytics/admin in the completion pass) |
-| 50–51 | Offline document handling and the mobile document interface |
-| 53 | The full document view with its side panels |
-| 54, 59 | Automation hooks and the `document.*` event stream |
-| 58 | Extension points for other modules to register types, fields, triggers |
-| 60 | Background/queued processing for large files |
-| ~~68~~ | ~~Bulk operations~~ — **shipped** (`BulkActions`; remaining individual actions listed in `docs/handoff/2.16-bulk.md`) |
-| ~~71–73~~ | ~~Finalisation artefacts, watermarks, print control~~ — **shipped**: watermarks with no off-switch on status marks |
-| ~~74–75~~ | ~~Analytics and the admin dashboard~~ — **shipped** (`papers.analytics`) |
+| § | Capability | Where |
+|---|---|---|
+| 6 | Rich document editor | Tiptap on draft documents, `app/Livewire/Papers/Edit.php` — autosave, version snapshots at a sane cadence, sanitised HTML in and out |
+| 70 (extended) | Soft edit-locking | A second editor gets read-only with "X is editing"; a stale lock (crashed tab, 90s) is claimable; a save without the lock is refused. This is deliberately NOT §14 — see below |
+| 5 | Creation routes — duplicate, from an ERP record, from a workflow step, from an automation rule | `DocumentComposer::duplicate()`, `RecordDocumentComposer`, the `compose_document` workflow step type, the `compose_document` automation action — all four terminate in the one composer, never a parallel creator |
+| 54, 59 | The `document.*` event stream | Audited against the catalogue the way the earlier platform audit checked `hr.*` — found and fixed the same drift class: events catalogued but never emitted (`document.created`, `.published`, `.shared`, `.version.created`, `.review.requested`) and real moments with no name at all (`.voided`, `.commented`, `.version.restored`, `.legal_hold.placed/lifted`). A parity test now proves every catalogued `document.*` name has a real emission site |
+| 58 | Extension points for other modules | `DocumentTypeRegistry`, mirroring `DocumentFieldRegistry`'s pattern — a module registers a kind without Documents importing it. Automation triggers/actions already reached `document.*` generically; confirmed, not rebuilt |
+| 44 | Multilingual templates | The `language` column finally does something — per-template body variants, a language picker on Compose when a template has more than one, falling back to the default body rather than ever composing blank |
+| 9, 10 | Department and project dossier folders | Departments and Projects are both real entities now, unblocking this row. Built the same way every other dossier is — a query over existing links, never a stored folder that could drift from reality |
+| 60 | Background processing for large files | ZIP bundling over 20 files/20MB and search reindex-on-upload both move to a queue when one exists, and both still complete synchronously and correctly under `QUEUE_CONNECTION=sync` — the same fail-safe pattern the webhook fix established |
+| 53 | Full document view audit | `Papers/Show.php` gained the read-only Details and Recent activity panels its backing services (`DocumentActivity`, shares, signatures, retention) already supported but never surfaced. Related-records, permissions and attachments panels are named in the handoff as needing real new infrastructure, not stubbed |
+| ~~17–18, 24, 26, 30, 33, 39, 46, 68, 71–75~~ | Workflow engine, PDF export, search, audit trail, alerts, PDF bundles, admin screens, bulk actions, watermarks, analytics | **Shipped 2026-08-16**, unchanged since the last pass |
 
-**Argued against rather than merely deferred** (recorded so the decision is
-visible, not silent):
+**Assessed, not built:**
 
-- **§14 realtime co-editing.** Months of OT/CRDT work plus a websocket tier,
-  for something most tenants will never have two people doing simultaneously,
-  on an offline-first PWA. Locking (§70) buys most of the value for a fraction
-  of the cost.
-- **§23–24 DOCX import/export.** The weakest value-per-effort item in the
-  brief.
+- **§50–51 offline document handling.** `SyncEngine` has no binary-transfer
+  story and `BusinessDocument` lacks the sync-sequence columns `Document`
+  has. Assessed rather than deferred by default: papers are not usually
+  created at the point of poor connectivity the way a sale is, so the
+  argument for wiring this is weaker than it looks. Revisit if evidence says
+  otherwise.
+
+**Argued against rather than merely deferred:**
+
+- **§14 realtime co-editing.** Still the right call, and now tested against
+  a real alternative rather than a hypothetical one: soft locking (above)
+  ships instead, and buys most of the value — nobody's edit is silently
+  overwritten — for a fraction of the cost of OT/CRDT plus a websocket tier,
+  on an offline-first PWA where two people editing one document at the same
+  second is rare. The documented upgrade path is Laravel Reverb, self-hosted
+  on the VPS, with Tiptap-collab as the step after presence — feasible now
+  that a VPS exists, still not worth it until locking's value is proven
+  insufficient.
+- **§23–24 DOCX import/export.** Unchanged — the weakest value-per-effort
+  item in the brief.
 
 ---
 

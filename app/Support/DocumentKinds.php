@@ -2,6 +2,8 @@
 
 namespace App\Support;
 
+use App\Services\Documents\DocumentTypeRegistry;
+
 /**
  * What kind of thing a document is.
  *
@@ -19,8 +21,21 @@ class DocumentKinds
 {
     public const FALLBACK_LABEL = 'Document';
 
-    /** @return array<string, array{label: string, group: string}> */
+    /**
+     * The built-in catalogue plus whatever other modules have registered
+     * through DocumentTypeRegistry. A built-in key always wins a collision —
+     * built-ins are listed second in the merge below, on purpose — so a
+     * registered kind can never silently reassign what one already means.
+     *
+     * @return array<string, array{label: string, group: string}>
+     */
     public static function all(): array
+    {
+        return self::builtIn() + DocumentTypeRegistry::all();
+    }
+
+    /** @return array<string, array{label: string, group: string}> */
+    protected static function builtIn(): array
     {
         return [
             // General

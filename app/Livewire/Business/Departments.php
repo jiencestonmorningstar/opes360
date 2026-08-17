@@ -30,6 +30,9 @@ class Departments extends Component
 
     public bool $showArchived = false;
 
+    /** Which department's document dossier (§9) is unfolded, mirroring Projects\Index's task/milestone panel. */
+    public ?string $openDocuments = null;
+
     public function rules(): array
     {
         return [
@@ -121,6 +124,11 @@ class Departments extends Component
         $department->update(['is_active' => true]);
     }
 
+    public function toggleDocuments(string $id): void
+    {
+        $this->openDocuments = $this->openDocuments === $id ? null : $id;
+    }
+
     public function render(): View
     {
         $departments = Department::query()
@@ -132,6 +140,9 @@ class Departments extends Component
 
         return view('livewire.business.departments', [
             'departments' => $departments,
+            'openDepartment' => $this->openDocuments !== null
+                ? $departments->firstWhere('id', $this->openDocuments)
+                : null,
         ])->layout('components.layouts.app', ['title' => 'Departments', 'active' => 'business']);
     }
 }

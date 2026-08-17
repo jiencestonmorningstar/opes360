@@ -47,6 +47,35 @@ class DomainEvents
              */
             'document.expiring',
             'document.signature.overdue',
+
+            /*
+             * Not named by §59 verbatim, but real lifecycle moments the brief's
+             * list left implicit — the 2026-08-17 completion pass catalogues
+             * them so a rule can be written against each:
+             *
+             * - `document.voided`: the one thing that can happen to an issued
+             *   document besides expiring. A business wants to know when a
+             *   signed contract stops being valid, same as it wants to know
+             *   when one starts.
+             * - `document.commented`: somebody left a note on a document. The
+             *   mention notification already exists (DocumentCommentMention);
+             *   this is the event a broader "notify the document's owner"
+             *   rule would listen for, mentioned or not.
+             * - `document.version.restored`: a draft was rolled back to an
+             *   earlier version — distinct from `document.version.created`,
+             *   which also fires for it, because "somebody undid recent work"
+             *   is a different thing to react to than "somebody saved".
+             * - `document.legal_hold.placed` / `.lifted`: the moment
+             *   retention's one override engages or disengages — the event
+             *   compliance or legal would want to be told about directly,
+             *   rather than having to notice a document silently became
+             *   undeletable.
+             */
+            'document.voided',
+            'document.commented',
+            'document.version.restored',
+            'document.legal_hold.placed',
+            'document.legal_hold.lifted',
         ],
 
         // The approval engine. What a rule listens to in order to advance

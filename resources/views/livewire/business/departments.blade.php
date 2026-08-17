@@ -94,7 +94,20 @@
                                 Restore
                             </button>
                         @endif
+
+                        @can('papers.view')
+                            <button type="button" wire:click="toggleDocuments('{{ $department->id }}')"
+                                    class="focusable flex h-9 items-center rounded-full border border-border bg-surface px-4 text-[13px] font-semibold text-ink-2 hover:bg-surface-2">
+                                {{ $openDocuments === $department->id ? 'Hide documents' : 'Documents' }}
+                            </button>
+                        @endcan
                     </div>
+
+                    @if ($openDocuments === $department->id && $openDepartment)
+                        <div class="mt-3 basis-full">
+                            <x-documents.library-panel :record="$openDepartment" title="Department dossier" />
+                        </div>
+                    @endif
                 </div>
             @empty
                 <p class="py-6 text-center text-[13.5px] text-muted">No departments yet. Add the first one on the left.</p>

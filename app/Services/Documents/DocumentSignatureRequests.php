@@ -51,7 +51,7 @@ class DocumentSignatureRequests
          * though the actual row says 'pending', and the very next isPending()
          * check on it would be wrong.
          */
-        return collect($signers)->values()->map(fn (array $signer, int $index) => BusinessDocumentSignature::create([
+        $created = collect($signers)->values()->map(fn (array $signer, int $index) => BusinessDocumentSignature::create([
             'business_document_id' => $document->id,
             'order' => $index + 1,
             'signer_name' => $signer['name'],
@@ -60,6 +60,16 @@ class DocumentSignatureRequests
             'signing_token' => BusinessDocumentSignature::newSigningToken(),
             'status' => 'pending',
         ]));
+
+        // The moment a signature round opens — distinct from document.signed,
+        // which is the round completing. A rule that wants to chase a slow
+        // signer needs to know a request went out in the first place.
+        $document->emitDomainEvent('document.signature.requested', [
+            'mode' => $mode,
+            'signer_count' => $created->count(),
+        ]);
+
+        return $created;
     }
 
     public function sign(BusinessDocumentSignature $signature, ?string $ipAddress = null): BusinessDocumentSignature

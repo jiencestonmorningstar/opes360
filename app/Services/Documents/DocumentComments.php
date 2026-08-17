@@ -40,6 +40,11 @@ class DocumentComments
 
         $this->notifyMentioned($comment, $author);
 
+        // Separate from the mention notification: this fires for every
+        // comment, mentioned or not, for a rule that just wants to know a
+        // document is being discussed.
+        $document->emitDomainEvent('document.commented', ['comment_id' => $comment->id]);
+
         return $comment;
     }
 

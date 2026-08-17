@@ -133,6 +133,17 @@
                         @endcan
                     @endif
 
+                    {{-- §5 item 1 of the Documents completion plan: works on a draft or an
+                         issued document alike — duplicating is reading the content, never
+                         editing the original, so it needs no isDraft() gate of its own. --}}
+                    @can('papers.create')
+                        <button type="button" wire:click="duplicate" wire:loading.attr="disabled"
+                                class="focusable flex h-11 w-full items-center justify-center gap-2 rounded-xl bg-surface-2 text-[14px] font-semibold text-ink-2 transition-colors hover:bg-tint-blue hover:text-brand">
+                            <x-icon name="document-plus" class="size-[18px]" stroke-width="2" />
+                            Duplicate
+                        </button>
+                    @endcan
+
                     @if ($paper->verificationToken)
                         <a href="{{ route('verification.show', $paper->verificationToken->token) }}" target="_blank"
                            class="focusable flex h-11 w-full items-center justify-center gap-2 rounded-xl bg-surface-2 text-[14px] font-semibold text-ink-2 transition-colors hover:bg-tint-blue hover:text-brand">
@@ -150,6 +161,55 @@
                     @endif
                 </div>
             </x-ui.panel>
+
+            {{-- §53 side panel: activity, versions, comments, shares, signatures, legal hold. --}}
+            <x-ui.panel title="Details">
+                <div class="space-y-3 text-[14px]">
+                    <div class="flex items-center justify-between">
+                        <span class="text-muted">Versions</span>
+                        <span class="tnum font-semibold text-ink">{{ $versionCount }}</span>
+                    </div>
+                    <div class="flex items-center justify-between">
+                        <span class="text-muted">Comments</span>
+                        <span class="tnum font-semibold text-ink">{{ $commentCount }}</span>
+                    </div>
+                    @if ($paper->isUnderLegalHold())
+                        <div class="flex items-center justify-between">
+                            <span class="text-muted">Legal hold</span>
+                            <x-ui.status-badge label="On hold" tone="warning" />
+                        </div>
+                    @endif
+                    @if ($shares->isNotEmpty())
+                        <div class="flex items-center justify-between">
+                            <span class="text-muted">Shares</span>
+                            <span class="tnum font-semibold text-ink">{{ $shares->count() }} active</span>
+                        </div>
+                    @endif
+                    @if ($signatures->isNotEmpty())
+                        <div class="flex items-center justify-between">
+                            <span class="text-muted">Signatures</span>
+                            <span class="text-ink-2">
+                                {{ $signatures->where('status', 'signed')->count() }}/{{ $signatures->count() }} signed
+                            </span>
+                        </div>
+                    @endif
+                </div>
+            </x-ui.panel>
+
+            @can('papers.manage')
+                @if ($activity->isNotEmpty())
+                    <x-ui.panel title="Recent activity">
+                        <ul class="space-y-3 text-[13.5px]">
+                            @foreach ($activity as $event)
+                                <li class="flex items-start justify-between gap-3">
+                                    <span class="text-ink-2">{{ $event['summary'] }}</span>
+                                    <span class="shrink-0 text-[12px] text-faint">{{ $event['at']?->diffForHumans() }}</span>
+                                </li>
+                            @endforeach
+                        </ul>
+                    </x-ui.panel>
+                @endif
+            @endcan
 
             @if ($voidingOpen)
                 <x-ui.panel title="Void this document">

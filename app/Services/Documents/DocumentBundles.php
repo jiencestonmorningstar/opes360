@@ -2,13 +2,18 @@
 
 namespace App\Services\Documents;
 
+use App\Jobs\BuildDocumentBundle;
 use App\Models\BusinessDocument;
+use App\Models\BusinessDocumentBundle;
 use App\Models\BusinessDocumentPackage;
+use App\Models\Media;
+use App\Models\User;
 use App\Services\DocumentComposer;
 use App\Support\CurrentCompany;
 use App\Support\DocumentTemplates;
 use App\Support\Pdf;
 use App\Support\Watermarks;
+use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 use RuntimeException;
@@ -28,7 +33,85 @@ use ZipArchive;
  */
 class DocumentBundles
 {
+    /**
+     * §60 — where "large" starts. Past either number, building the ZIP
+     * inline would hold an HTTP request (and, on shared PHP-FPM hosting, a
+     * worker process) open long enough to risk a gateway timeout for
+     * something that has nothing to do with request/response latency.
+     *
+     * 20 files: comfortably more than any package a person assembles by
+     * hand in one sitting, but well below a bulk selection across a whole
+     * folder. 20 MB: a handful of scanned, multi-page contracts — the
+     * uploads DocumentFiler itself caps at 25 MB each, so three or four of
+     * those already clears it.
+     *
+     * Both are argued thresholds, not measured ones: there is no production
+     * traffic yet to tune them against. They only matter when a real queue
+     * is configured — see request() below — so getting them slightly wrong
+     * costs a slower request on a queued install, never a broken one.
+     */
+    public const LARGE_FILE_COUNT = 20;
+
+    public const LARGE_BYTES = 20 * 1024 * 1024;
+
     public function __construct(protected DocumentFiler $filer) {}
+
+    /**
+     * The one entry point bulk/package downloads should call from now on.
+     *
+     * Under the `sync` queue connection — the default, and what shared
+     * hosting without a worker runs — a queued dispatch executes inline
+     * anyway, but *inside* this call, at the depth the retry-avoidance
+     * lesson from DeliverWebhook teaches: don't let a job whose only escape
+     * hatch is "queue it for later" pretend that escape hatch exists when
+     * nothing is polling the queue. So on `sync` this always returns a
+     * ready path, built right here, exactly as it always did.
+     *
+     * With a real queue configured, a selection over either threshold is
+     * handed to BuildDocumentBundle and this returns the pending record
+     * instead of a path — the caller (a Livewire action) tells the user it
+     * is on its way rather than blocking the click.
+     *
+     * @param  Collection<int, BusinessDocument>  $documents
+     * @return string|BusinessDocumentBundle a path when built synchronously, the pending record when queued
+     */
+    public function request(Collection $documents, User $actor)
+    {
+        $company = app(CurrentCompany::class)->get();
+
+        if (config('queue.default') === 'sync' || $company === null || ! $this->isLarge($documents)) {
+            return $this->zipDocuments($documents);
+        }
+
+        $bundle = BusinessDocumentBundle::create([
+            'company_id' => $company->id,
+            'created_by' => $actor->id,
+            'status' => 'pending',
+            'document_count' => $documents->count(),
+        ]);
+
+        BuildDocumentBundle::dispatch($bundle->id, $company->id, $documents->pluck('id')->all());
+
+        return $bundle;
+    }
+
+    /**
+     * @param  Collection<int, BusinessDocument>  $documents
+     */
+    public function isLarge(Collection $documents): bool
+    {
+        if ($documents->count() > self::LARGE_FILE_COUNT) {
+            return true;
+        }
+
+        $bytes = Media::query()
+            ->where('collection', 'document')
+            ->where('attachable_type', (new BusinessDocument)->getMorphClass())
+            ->whereIn('attachable_id', $documents->pluck('id'))
+            ->sum('size');
+
+        return $bytes > self::LARGE_BYTES;
+    }
 
     /**
      * Writes a ZIP of every uploaded file in a package to a temporary path

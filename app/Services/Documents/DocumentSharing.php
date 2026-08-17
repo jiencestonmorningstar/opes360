@@ -23,7 +23,7 @@ class DocumentSharing
         ?string $password = null,
         bool $allowDownload = true,
     ): BusinessDocumentShare {
-        return BusinessDocumentShare::create([
+        $share = BusinessDocumentShare::create([
             'business_document_id' => $document->id,
             'created_by' => $actor->id,
             'share_token' => BusinessDocumentShare::newShareToken(),
@@ -31,6 +31,13 @@ class DocumentSharing
             'password_hash' => $password !== null ? Hash::make($password) : null,
             'allow_download' => $allowDownload,
         ]);
+
+        // The moment a document leaves the workspace for someone without an
+        // account — the event a "notify the owner when this goes external"
+        // rule wants.
+        $document->emitDomainEvent('document.shared', ['share_id' => $share->id]);
+
+        return $share;
     }
 
     public function revoke(BusinessDocumentShare $share): BusinessDocumentShare

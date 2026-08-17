@@ -4,8 +4,13 @@ namespace App\Services\Automation;
 
 use App\Events\DomainEvent;
 use App\Models\AutomationRule;
+use App\Models\BusinessDocument;
+use App\Models\Company;
 use App\Models\User;
 use App\Models\Workflow;
+use App\Services\DocumentComposer;
+use App\Services\Documents\DocumentLinker;
+use App\Services\Documents\RecordDocumentComposer;
 use App\Services\Notifications\NotificationDispatcher;
 use App\Services\Notifications\NotificationMessage;
 use App\Services\WebhookDispatcher;
@@ -38,6 +43,10 @@ class ActionRunner
             'send_webhook' => $this->sendWebhook($event),
             'set_field' => $this->setField($event->subject, $config),
             'notify_user', 'notify_role' => $this->notify($event, $rule->action, $config),
+            // §5 item 4 of the Documents completion plan: "when X happens,
+            // draft template Y" — through DocumentComposer, the same single
+            // path every other creation route in this file already uses.
+            'compose_document' => $this->composeDocument($event, $config),
             default => throw new RuntimeException("Unknown automation action [{$rule->action}]."),
         };
 
@@ -109,6 +118,57 @@ class ActionRunner
         }
 
         $subject->forceFill([$field => $config['value'] ?? null])->save();
+    }
+
+    /**
+     * "When X happens, draft template Y" — a document composed from the
+     * event's own subject.
+     *
+     * Field context is resolved the same way an ERP-record "new document"
+     * would resolve it (RecordDocumentComposer): a subject Documents already
+     * knows how to talk about — a Contract, say — seeds `{{ contract.* }}`
+     * automatically; anything else composes with company-only context rather
+     * than failing the rule, since "no context available" is the normal case
+     * for most triggering records, not an error.
+     *
+     * Deliberately produces a draft. An automation that also issued the
+     * document would need a user to attribute the issue to, which an
+     * automated trigger does not reliably have — see startWorkflow()'s
+     * submitter requirement for the same reason stated the other way round.
+     *
+     * @param  array<string, mixed>  $config
+     */
+    protected function composeDocument(DomainEvent $event, array $config): void
+    {
+        $templateKey = $config['template'] ?? null;
+
+        if (! is_string($templateKey) || $templateKey === '') {
+            throw new RuntimeException('A compose_document action needs a template key.');
+        }
+
+        $company = Company::find($event->companyId);
+
+        if ($company === null) {
+            throw new RuntimeException('A compose_document action needs a current company.');
+        }
+
+        $recordComposer = app(RecordDocumentComposer::class);
+        $subject = $event->subject;
+        $contextKey = $recordComposer->contextKeyFor($subject);
+        $context = $contextKey !== null ? [$contextKey => $subject] : [];
+
+        $user = $event->actorId !== null ? User::find($event->actorId) : null;
+
+        $document = BusinessDocument::create([
+            'template' => $templateKey,
+            'title' => (string) ($config['title'] ?? $templateKey),
+            'fields' => [],
+            'body' => app(DocumentComposer::class)->merge($templateKey, [], $company, $context),
+            'status' => 'draft',
+            'created_by' => $user?->id,
+        ]);
+
+        app(DocumentLinker::class)->attach($document, $subject, $config['link_role'] ?? 'about', $user);
     }
 
     /**

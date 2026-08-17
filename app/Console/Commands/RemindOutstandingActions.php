@@ -42,6 +42,7 @@ class RemindOutstandingActions extends Command
     {
         $raised = $this->overdueAssignments()
             + $this->expiringDocuments()
+            + $this->expiredDocuments()
             + $this->staleSignatureRequests();
 
         $this->info("{$raised} reminder(s) raised.");
@@ -115,6 +116,39 @@ class RemindOutstandingActions extends Command
         return $raised;
     }
 
+    /**
+     * A document that has now actually lapsed — as opposed to expiringDocuments()
+     * above, which is still inside its warning window. Announced once ever
+     * rather than once a day: expiring is a countdown a rule may want nudged
+     * daily, but lapsing is a single transition, and re-raising it every day
+     * forever would make `document.expired` indistinguishable from a mute
+     * that never stopped ringing.
+     */
+    protected function expiredDocuments(): int
+    {
+        $documents = BusinessDocument::query()
+            ->acrossAllCompanies()
+            ->where('status', '!=', 'void')
+            ->expired()
+            ->get();
+
+        $raised = 0;
+
+        foreach ($documents as $document) {
+            if ($this->everAnnounced('document.expired', $document)) {
+                continue;
+            }
+
+            $document->emitDomainEvent('document.expired', [
+                'expired_on' => $document->expires_on?->toDateString(),
+            ]);
+
+            $raised++;
+        }
+
+        return $raised;
+    }
+
     protected function staleSignatureRequests(): int
     {
         $days = max(1, (int) $this->option('signature-days'));
@@ -167,6 +201,17 @@ class RemindOutstandingActions extends Command
             ->where('subject_type', $subject->getMorphClass())
             ->where('subject_id', (string) $subject->getKey())
             ->where('created_at', '>=', now()->startOfDay())
+            ->exists();
+    }
+
+    /** Has the dispatcher ever logged this news about this record, any day? */
+    protected function everAnnounced(string $event, Model $subject): bool
+    {
+        return NotificationDelivery::query()
+            ->withoutGlobalScopes()
+            ->where('event', $event)
+            ->where('subject_type', $subject->getMorphClass())
+            ->where('subject_id', (string) $subject->getKey())
             ->exists();
     }
 }

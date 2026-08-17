@@ -3,6 +3,7 @@
 namespace App\Services\Documents;
 
 use App\Models\BusinessDocumentTemplate;
+use App\Models\BusinessDocumentTemplateTranslation;
 use App\Models\User;
 use App\Support\DocumentTemplates;
 use RuntimeException;
@@ -116,6 +117,63 @@ class CustomDocumentTemplates
             ->get()
             ->mapWithKeys(fn (BusinessDocumentTemplate $t) => [$t->key => $t->toTemplateArray()])
             ->all();
+    }
+
+    // ── Language variants (§44) ─────────────────────────────────────────
+
+    /**
+     * The published custom template model itself, for callers that need
+     * more than the array shape find() returns — namely DocumentComposer
+     * checking for language variants. Additive alongside find(); nothing
+     * that already calls find() needs to change.
+     */
+    public function findModel(string $key): ?BusinessDocumentTemplate
+    {
+        return BusinessDocumentTemplate::query()
+            ->where('key', $key)
+            ->published()
+            ->first();
+    }
+
+    /** Every language a template has a variant for. @return array<int, string> */
+    public function languagesFor(BusinessDocumentTemplate $template): array
+    {
+        return $template->translations()->pluck('language')->all();
+    }
+
+    /**
+     * Create or replace a template's body in one language, additive to the
+     * template's own default body which is never touched by this.
+     */
+    public function setTranslation(BusinessDocumentTemplate $template, string $language, string $body): BusinessDocumentTemplateTranslation
+    {
+        return $template->translations()->updateOrCreate(
+            ['language' => $language],
+            ['company_id' => $template->company_id, 'body' => $body],
+        );
+    }
+
+    public function removeTranslation(BusinessDocumentTemplate $template, string $language): void
+    {
+        $template->translations()->where('language', $language)->delete();
+    }
+
+    /**
+     * The body to compose with in a given language, or the template's own
+     * default body if that language has no variant (or none was asked for).
+     * Never returns blank: this is the fallback DocumentComposer relies on.
+     */
+    public function bodyFor(BusinessDocumentTemplate $template, ?string $language): string
+    {
+        if ($language !== null) {
+            $variant = $template->translations()->where('language', $language)->first();
+
+            if ($variant !== null) {
+                return $variant->body;
+            }
+        }
+
+        return $template->body;
     }
 
     protected function snapshot(BusinessDocumentTemplate $template): void

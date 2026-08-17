@@ -107,6 +107,36 @@
 
             <x-documents.library-panel :record="$contact" class="mt-5" />
 
+            @can('papers.create')
+                <div class="mt-2 flex items-center gap-2 px-1.5">
+                    @if (! $composing)
+                        <button type="button" wire:click="$set('composing', true)"
+                                class="tap focusable text-[13.5px] font-semibold text-brand">
+                            + New document for {{ $contact->displayName() }}
+                        </button>
+                    @else
+                        <form wire:submit="composeForCustomer" class="flex flex-1 items-center gap-2">
+                            <select wire:model="composeTemplate"
+                                    class="h-10 flex-1 rounded-lg border border-border bg-surface px-3 text-[13.5px] text-ink">
+                                <option value="">Choose a template…</option>
+                                @foreach ($templates as $key => $template)
+                                    <option value="{{ $key }}">{{ $template['name'] ?? $template['title'] ?? $key }}</option>
+                                @endforeach
+                            </select>
+                            <button type="submit"
+                                    class="tap focusable shrink-0 rounded-full bg-fill-brand px-4 py-2 text-[13.5px] font-semibold text-white">
+                                Create
+                            </button>
+                            <button type="button" wire:click="$set('composing', false)"
+                                    class="tap focusable shrink-0 text-[13.5px] text-muted">
+                                Cancel
+                            </button>
+                        </form>
+                    @endif
+                </div>
+                @error('composeTemplate') <p class="px-1.5 text-[13px] text-rose-600">{{ $message }}</p> @enderror
+            @endcan
+
             {{-- Payments --}}
             @if ($payments->isNotEmpty())
                 <x-ui.panel title="Recent Payments" body-class="-mx-1.5">

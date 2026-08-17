@@ -108,4 +108,52 @@ class DomainEventCatalogueParityTest extends TestCase
             );
         }
     }
+
+    /**
+     * Every document.* event in the catalogue actually has an emission site.
+     *
+     * The same drift the hr.* test above guards against — catalogued but
+     * never emitted — found on the 2026-08-17 Documents completion pass:
+     * document.created, document.version.created, document.published,
+     * document.shared and friends were all listed in §59's catalogue with no
+     * code behind them. This is the reason it cannot happen again. Two of the
+     * names are emitted indirectly, via TranslateDocumentWorkflowEvents
+     * restating a workflow.* event as a document.* one, so this checks for
+     * either form.
+     */
+    public function test_the_document_events_are_actually_emitted_somewhere(): void
+    {
+        $source = collect(File::allFiles(app_path()))->map->getContents()->implode("\n");
+
+        /** @var array<string, string> document.* name => the workflow.* name it is translated from */
+        $translatedFrom = [
+            'document.submitted' => 'workflow.started',
+            'document.review.requested' => 'workflow.step.assigned',
+            'document.approved' => 'workflow.approved',
+            'document.rejected' => 'workflow.rejected',
+            'document.changes.requested' => 'workflow.changes_requested',
+        ];
+
+        foreach (DomainEvents::forModule('document') as $name) {
+            $directLiteral = "emitDomainEvent('{$name}'";
+
+            if (str_contains($source, $directLiteral)) {
+                continue;
+            }
+
+            /*
+             * The workflow.* side is one of WorkflowEngine's dynamic
+             * emitDomainEvent() calls (see DYNAMIC_EXCEPTIONS above) — the
+             * literal that actually appears in source is the workflow.* name
+             * passed to announce(), not a literal emitDomainEvent() call.
+             */
+            $viaTranslation = array_key_exists($name, $translatedFrom)
+                && str_contains($source, "'{$translatedFrom[$name]}'");
+
+            $this->assertTrue(
+                $viaTranslation,
+                "`{$name}` is catalogued but nothing emits it (directly, or via a translator) — a rule written against it never fires."
+            );
+        }
+    }
 }

@@ -202,7 +202,15 @@ class BusinessDocument extends Model
          * must not flood the history with a version identical to the one
          * before it. See DocumentVersioner for exactly which columns count.
          */
-        static::created(fn (BusinessDocument $document) => app(DocumentVersioner::class)->snapshotInitial($document));
+        static::created(function (BusinessDocument $document) {
+            app(DocumentVersioner::class)->snapshotInitial($document);
+
+            // The one moment every other document.* event presupposes: the
+            // record exists. A rule that files newly-created documents into
+            // a workflow needs this one, not document.version.created, which
+            // fires on every content edit too.
+            $document->emitDomainEvent('document.created');
+        });
         static::updated(fn (BusinessDocument $document) => app(DocumentVersioner::class)->snapshotIfChanged($document));
     }
 

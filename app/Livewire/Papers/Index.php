@@ -3,7 +3,9 @@
 namespace App\Livewire\Papers;
 
 use App\Models\BusinessDocument;
+use App\Models\BusinessDocumentBundle;
 use App\Models\BusinessDocumentFolder;
+use App\Services\DocumentComposer;
 use App\Services\Documents\BulkActions;
 use App\Services\Documents\CustomDocumentTemplates;
 use App\Support\DocumentKinds;
@@ -11,6 +13,8 @@ use App\Support\DocumentTemplates;
 use Illuminate\Contracts\View\View;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Collection;
+use Illuminate\Foundation\Auth\Access\AuthorizesRequests;
+use Illuminate\Support\Facades\Storage;
 use Livewire\Attributes\Url;
 use Livewire\Component;
 use Livewire\WithPagination;
@@ -27,6 +31,7 @@ use Symfony\Component\HttpFoundation\BinaryFileResponse;
  */
 class Index extends Component
 {
+    use AuthorizesRequests;
     use WithPagination;
 
     #[Url]
@@ -68,6 +73,24 @@ class Index extends Component
      * as long as the screen showing it.
      */
     public string $bulkSummary = '';
+
+    /**
+     * §5 item 1 of the Documents completion plan: a row-level "duplicate",
+     * through the same DocumentComposer::duplicate() the Show screen's button
+     * calls — one implementation, two entry points.
+     */
+    public function duplicate(string $paperId): void
+    {
+        $document = BusinessDocument::query()
+            ->readableBy(auth()->user(), (bool) auth()->user()?->can('papers.manage'))
+            ->findOrFail($paperId);
+
+        $this->authorize('papers.create');
+
+        $copy = app(DocumentComposer::class)->duplicate($document, auth()->user());
+
+        $this->redirectRoute('papers.edit', $copy);
+    }
 
     public function updatedSearch(): void
     {
@@ -164,9 +187,54 @@ class Index extends Component
             return null;
         }
 
-        $path = app(BulkActions::class)->zip($documents, auth()->user());
+        $result = app(BulkActions::class)->zip($documents, auth()->user());
 
-        return response()->download($path, 'documents.zip')->deleteFileAfterSend(true);
+        // §60: a large selection with a real queue configured comes back as
+        // a pending bundle record, not a path — see DocumentBundles::request().
+        // Under `sync` (no worker provisioned) $result is always a path, so
+        // this branch is dead weight on shared hosting and that is the point.
+        if ($result instanceof BusinessDocumentBundle) {
+            $this->bulkSummary = 'That is a large selection — building it in the background. '
+                .'You will get a notification when it is ready to download.';
+            $this->clearSelection();
+
+            return null;
+        }
+
+        return response()->download($result, 'documents.zip')->deleteFileAfterSend(true);
+    }
+
+    /**
+     * §60 — fetches a bundle BuildDocumentBundle finished building. Reached
+     * from the "ready" notification / the downloads panel, never a raw URL:
+     * this is a Livewire action, so it is already behind the same
+     * authentication the rest of the workspace requires, and it re-checks
+     * that the bundle belongs to this company before serving it.
+     */
+    public function downloadBundle(string $bundleId): ?BinaryFileResponse
+    {
+        $bundle = BusinessDocumentBundle::query()->find($bundleId);
+
+        if ($bundle === null || ! $bundle->isReady() || $bundle->path === null) {
+            $this->bulkSummary = 'That download is not ready yet.';
+
+            return null;
+        }
+
+        $disk = Storage::disk($bundle->disk ?? 'documents');
+
+        if (! $disk->exists($bundle->path)) {
+            $this->bulkSummary = 'That download has expired.';
+
+            return null;
+        }
+
+        return response()->streamDownload(
+            function () use ($disk, $bundle) {
+                echo $disk->get($bundle->path);
+            },
+            $bundle->filename ?? 'documents.zip',
+        );
     }
 
     /**
