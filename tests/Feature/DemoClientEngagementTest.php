@@ -170,6 +170,10 @@ class DemoClientEngagementTest extends TestCase
             ],
         ])->assertRedirect('/f/'.$form->share_token.'/thanks');
 
+        // The guest POST fail-closes the CurrentCompany singleton; re-pin it
+        // for the scoped assertions below (the test process shares it).
+        app(CurrentCompany::class)->set($company);
+
         $response = FormResponse::where('form_id', $form->id)->sole();
 
         $this->assertSame(self::NAME, $response->answers['name']);
@@ -222,6 +226,10 @@ class DemoClientEngagementTest extends TestCase
             'buyer_phone' => self::PHONE,
             'quantities' => [$vip->id => 1],
         ])->assertRedirect('/e/'.$event->share_token.'/tickets');
+
+        // The guest POST fail-closes the CurrentCompany singleton; re-pin it
+        // for the scoped assertions below (the test process shares it).
+        app(CurrentCompany::class)->set($company);
 
         $ticket = Ticket::where('buyer_email', self::EMAIL)->where('event_id', $event->id)->sole();
 
