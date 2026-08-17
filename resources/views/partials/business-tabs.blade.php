@@ -5,6 +5,7 @@
         ['label' => 'Logo', 'route' => 'logo', 'icon' => 'spark'],
         ['label' => 'Branding', 'route' => 'business.branding', 'icon' => 'palette'],
         ['label' => 'Stationery', 'route' => 'stationery', 'icon' => 'printer'],
+        ['label' => 'Watermark', 'route' => 'watermark', 'icon' => 'shield'],
         ['label' => 'Departments', 'route' => 'departments', 'icon' => 'building'],
         ['label' => 'Artisans', 'route' => 'artisans', 'icon' => 'users'],
         ['label' => 'Businesses', 'route' => 'businesses', 'icon' => 'cube'],

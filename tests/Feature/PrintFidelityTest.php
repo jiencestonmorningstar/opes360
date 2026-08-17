@@ -126,6 +126,103 @@ class PrintFidelityTest extends TestCase
             ->assertSee('Scan to verify this receipt');
     }
 
+    /* ------------------------------------------------------------------ *
+     * Branding — the company's own colour on its own paperwork
+     * ------------------------------------------------------------------ */
+
+    public function test_a_printed_documents_type_label_uses_the_companys_brand_colour(): void
+    {
+        $this->company->forceFill(['brand_tokens' => ['primary' => '#ff6a00']])->save();
+        $document = $this->issuedInvoice();
+
+        $html = $this->actingAs($this->user)->get(route('documents.print', $document))->getContent();
+
+        $this->assertStringContainsString('--brand: #ff6a00;', $html);
+    }
+
+    public function test_a_printed_document_falls_back_to_the_platform_palette_with_no_branding_set(): void
+    {
+        // No explicit brand_tokens/branding — brandToken('primary', …) still
+        // resolves through the derived default palette (see BrandPalette),
+        // never the caller's hex literal; this only pins that *something*
+        // renders, not the platform's specific default shade.
+        $document = $this->issuedInvoice();
+
+        $html = $this->actingAs($this->user)->get(route('documents.print', $document))->getContent();
+
+        $this->assertMatchesRegularExpression('/--brand: #[0-9a-f]{6};/', $html);
+    }
+
+    public function test_a_printed_receipt_uses_the_companys_brand_colour_on_the_paid_total(): void
+    {
+        $this->company->forceFill(['brand_tokens' => ['primary' => '#16a34a']])->save();
+        $invoice = $this->issuedInvoice();
+        app(PaymentRecorder::class)->record($invoice, $this->user, 100.0, PaymentMethod::Cash);
+        $receipt = Receipt::firstOrFail();
+
+        $html = $this->actingAs($this->user)->get(route('receipts.print', $receipt))->getContent();
+
+        $this->assertStringContainsString('--brand: #16a34a;', $html);
+    }
+
+    public function test_a_generated_watermark_appears_on_a_printed_document_once_switched_on(): void
+    {
+        $this->company->forceFill([
+            'watermark_path' => 'watermarks/test/seal.svg',
+            'show_watermark' => true,
+        ])->save();
+        \Illuminate\Support\Facades\Storage::disk('public')->put('watermarks/test/seal.svg', '<svg></svg>');
+        $document = $this->issuedInvoice();
+
+        $html = $this->actingAs($this->user)->get(route('documents.print', $document))->getContent();
+
+        $this->assertStringContainsString('class="watermark"', $html);
+        $this->assertStringContainsString('seal.svg', $html);
+    }
+
+    public function test_a_configured_but_disabled_watermark_does_not_appear(): void
+    {
+        $this->company->forceFill([
+            'watermark_path' => 'watermarks/test/seal.svg',
+            'show_watermark' => false,
+        ])->save();
+        \Illuminate\Support\Facades\Storage::disk('public')->put('watermarks/test/seal.svg', '<svg></svg>');
+        $document = $this->issuedInvoice();
+
+        $html = $this->actingAs($this->user)->get(route('documents.print', $document))->getContent();
+
+        $this->assertStringNotContainsString('seal.svg', $html);
+    }
+
+    public function test_a_paper_carries_the_watermark_too_once_switched_on(): void
+    {
+        $this->company->forceFill([
+            'watermark_path' => 'watermarks/test/seal.svg',
+            'show_watermark' => true,
+        ])->save();
+        \Illuminate\Support\Facades\Storage::disk('public')->put('watermarks/test/seal.svg', '<svg></svg>');
+
+        $composer = app(DocumentComposer::class);
+        $paper = BusinessDocument::create([
+            'template' => 'service_agreement',
+            'title' => 'Alpha Builders — supervision',
+            'recipient' => 'Alpha Builders Ltd',
+            'status' => 'draft',
+            'fields' => ['client_name' => 'Alpha Builders Ltd'],
+            'body' => $composer->merge(
+                'service_agreement',
+                ['client_name' => 'Alpha Builders Ltd', 'fee' => '$100'],
+                $this->company,
+            ),
+            'created_by' => $this->user->id,
+        ]);
+        $paper = $composer->issue($paper, $this->user);
+
+        $html = $this->actingAs($this->user)->get(route('papers.print', $paper))->getContent();
+
+        $this->assertStringContainsString('seal.svg', $html);
+    }
+
     public function test_a_printed_paper_carries_its_verification_qr(): void
     {
         $composer = app(DocumentComposer::class);

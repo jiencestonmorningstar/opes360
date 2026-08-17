@@ -96,6 +96,14 @@
         @media screen and (max-width: 560px) {
             .sheet { transform: scale(.44); margin-bottom: calc(297mm * -.56); }
         }
+
+        /* The seal/logo watermark — same treatment as the sales-document
+           print view. Fixed rather than absolute so a multi-page contract
+           carries it on every page, and print-color-adjust is load-bearing:
+           browsers drop background imagery on print by default to save ink. */
+        .brand-watermark { position: fixed; inset: 0; z-index: 0; pointer-events: none; display: flex; align-items: center; justify-content: center; }
+        .brand-watermark img { width: 55%; max-width: 110mm; opacity: 0.05; transform: rotate(-24deg); -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+        .sheet { position: relative; z-index: 1; }
     </style>
 </head>
 <body>
@@ -105,6 +113,14 @@
     'watermark' => $watermark ?? null,
     'confidentialFooter' => $confidentialFooter ?? null,
 ])
+
+{{-- A dedicated seal/custom watermark, when the business generated or
+     uploaded one and switched it on; the logo stands in faintly otherwise. --}}
+@if ($company->show_watermark && $company->watermarkUrl())
+    <div class="brand-watermark" aria-hidden="true"><img src="{{ $company->watermarkUrl() }}" alt=""></div>
+@elseif ($company->logoUrl())
+    <div class="brand-watermark" aria-hidden="true"><img src="{{ $company->logoUrl() }}" alt=""></div>
+@endif
 
 <div class="sheet design-{{ $design }}" style="--brand: {{ $brand }}">
     @if ($design === 'sidebar')

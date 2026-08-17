@@ -28,7 +28,15 @@
          * `--fs` carries the base so every element scales from one number
          * rather than each being overridden twice.
          */
-        :root { --fs: 17px; --fs-small: 14px; }
+        :root {
+            --fs: 17px; --fs-small: 14px;
+            /* The one brand touch a printed page gets: the document-type
+               label reads as "this company's invoice", not a generic one.
+               brandToken() resolves through the derived default palette
+               for a company that has not set an explicit colour, so
+               nothing looks unbranded by default — see BrandPalette. */
+            --brand: {{ $company->brandToken('primary', '#2563eb') }};
+        }
         body {
             font-family: 'Inter', -apple-system, 'Segoe UI', Roboto, sans-serif;
             font-size: var(--fs); color: #0f172a; line-height: 1.5;
@@ -60,7 +68,7 @@
         .letterhead-center .letterhead-logo { margin-left: auto; margin-right: auto; }
         .muted { color: #64748b; }
         .small { font-size: var(--fs-small); }
-        .doc-type { font-size: calc(var(--fs) * 1.24); font-weight: 800; text-transform: uppercase; letter-spacing: 0.06em; color: #2563eb; text-align: right; }
+        .doc-type { font-size: calc(var(--fs) * 1.24); font-weight: 800; text-transform: uppercase; letter-spacing: 0.06em; color: var(--brand); text-align: right; }
         .doc-number { font-size: calc(var(--fs) * 1.05); font-weight: 700; text-align: right; }
 
         /* Notes are a document inside the document — a scope, terms, exclusions.
@@ -175,9 +183,15 @@
 </head>
 <body>
 <div class="sheet">
-    {{-- Behind everything, on every page. Only when the business has a logo:
-         a watermark of nothing is an empty grey smudge. --}}
-    @if ($company->logoUrl())
+    {{-- Behind everything, on every page. A company that generated or
+         uploaded a dedicated watermark (seal or custom image) and switched
+         it on gets that; otherwise the logo itself stands in, faintly, so
+         a document is never left with an empty grey smudge. --}}
+    @if ($company->show_watermark && $company->watermarkUrl())
+        <div class="watermark" aria-hidden="true">
+            <img src="{{ $company->watermarkUrl() }}" alt="">
+        </div>
+    @elseif ($company->logoUrl())
         <div class="watermark" aria-hidden="true">
             <img src="{{ $company->logoUrl() }}" alt="">
         </div>

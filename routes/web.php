@@ -33,6 +33,7 @@ use App\Livewire\Business\Companies as BusinessCompanies;
 use App\Livewire\Business\Departments as BusinessDepartments;
 use App\Livewire\Business\Edit as BusinessEdit;
 use App\Livewire\Business\Logo as BusinessLogo;
+use App\Livewire\Business\Watermark as BusinessWatermark;
 use App\Livewire\Business\Positions as BusinessPositions;
 use App\Livewire\Business\Reviews as BusinessReviews;
 use App\Livewire\Business\Stationery;
@@ -275,6 +276,7 @@ Route::middleware('auth')->group(function () {
     Route::get('/business/logo', BusinessLogo::class)->middleware('can:business.manage-branding')->name('logo');
     Route::get('/business/logo/download', [PrintController::class, 'logo'])->middleware('can:business.manage-branding')->name('logo.download');
     Route::get('/business/stationery', Stationery::class)->middleware('can:business.manage-stationery')->name('stationery');
+    Route::get('/business/watermark', BusinessWatermark::class)->middleware('can:business.manage-branding')->name('watermark');
     Route::get('/business/departments', BusinessDepartments::class)->middleware('can:departments.view')->name('departments');
     // No permission gate: being assigned IS the permission. A gate here would
     // mean somebody the engine had just asked to approve an invoice could not

@@ -13,6 +13,11 @@
     <style>
         @page { size: {{ $width }}mm auto; margin: {{ $thermal ? '3mm' : '12mm' }}; }
         * { margin: 0; padding: 0; box-sizing: border-box; }
+        /* The one brand touch a till slip gets: the paid total reads as
+           this business's colour, not a generic one. A thermal head prints
+           one colour regardless, so this only shows on A4/PDF receipts —
+           see the .big rule below, unset under the thermal branch. */
+        :root { --brand: {{ $company->brandToken('primary', '#0f172a') }}; }
         body {
             font-family: {{ $thermal ? "'Courier New', monospace" : "'Inter', -apple-system, sans-serif" }};
             font-size: {{ $thermal ? '8.5pt' : '10pt' }};
@@ -33,7 +38,7 @@
            instead of pushing past the slip edge. */
         .row > span:first-child { flex-shrink: 0; }
         .row > span:last-child { text-align: right; overflow-wrap: anywhere; min-width: 0; }
-        .big { font-weight: 800; font-size: {{ $thermal ? '11pt' : '14pt' }}; }
+        .big { font-weight: 800; font-size: {{ $thermal ? '11pt' : '14pt' }}; {{ $thermal ? '' : 'color: var(--brand);' }} }
         .qr { display: flex; justify-content: center; margin-top: 10px; page-break-inside: avoid; }
         .qr svg { max-width: 100%; }
         .print-bar { position: fixed; inset: auto 0 0 0; background: #0f172a; display: flex; justify-content: center; padding: 12px; }

@@ -53,12 +53,13 @@ class PrintController extends Controller
     public function document(Request $request, Document $document, QrCodes $qr, Pdf $pdf)
     {
         $document->load(['contact', 'lines', 'verificationToken']);
+        $company = app(CurrentCompany::class)->get();
 
         $data = [
             'document' => $document,
-            'company' => app(CurrentCompany::class)->get(),
+            'company' => $company,
             'qrSvg' => $document->verificationToken
-                ? $qr->svg($document->verificationToken->publicUrl(), 132)
+                ? $qr->svg($document->verificationToken->publicUrl(), 132, brand: $company)
                 : null,
             'autoprint' => $request->boolean('print'),
         ];
@@ -146,7 +147,7 @@ class PrintController extends Controller
             'totalDebits' => $lines->sum('debit'),
             'totalCredits' => $lines->sum('credit'),
             'closing' => $running,
-            'qrSvg' => $qr->svg($token->publicUrl(), 110),
+            'qrSvg' => $qr->svg($token->publicUrl(), 110, brand: $company),
             'autoprint' => $request->boolean('print'),
         ];
 
@@ -205,7 +206,7 @@ class PrintController extends Controller
                 ? DocumentTemplates::reviewNotice()
                 : null,
             'qrSvg' => $paper->verificationToken
-                ? $qr->svg($paper->verificationToken->publicUrl(), 120)
+                ? $qr->svg($paper->verificationToken->publicUrl(), 120, brand: $company)
                 : null,
             'autoprint' => $request->boolean('print'),
         ];
@@ -236,7 +237,7 @@ class PrintController extends Controller
         return view('print.loyalty-card', [
             'company' => $company,
             'contact' => $contact,
-            'qrSvg' => $qr->svg($contact->loyaltyVerificationToken->publicUrl(), 110),
+            'qrSvg' => $qr->svg($contact->loyaltyVerificationToken->publicUrl(), 110, brand: $company),
         ]);
     }
 
@@ -259,7 +260,7 @@ class PrintController extends Controller
             'membership' => $membership,
             // Older memberships predate card issuing, so this is not assumed.
             'qrSvg' => $membership->verificationToken
-                ? $qr->svg($membership->verificationToken->publicUrl(), 110)
+                ? $qr->svg($membership->verificationToken->publicUrl(), 110, brand: $company)
                 : null,
         ]);
     }
@@ -311,6 +312,7 @@ class PrintController extends Controller
                 // on one; the letterhead and stamp keep the default.
                 margin: $asset === 'card' ? 0 : 2,
                 level: $asset === 'card' ? ErrorCorrectionLevel::M() : null,
+                brand: $company,
             ),
         ]);
     }
@@ -381,6 +383,7 @@ class PrintController extends Controller
                 $asset === 'letterhead' ? 150 : 110,
                 margin: $asset === 'card' ? 0 : 2,
                 level: $asset === 'card' ? ErrorCorrectionLevel::M() : null,
+                brand: $subject,
             ),
         ]);
     }
@@ -410,12 +413,13 @@ class PrintController extends Controller
     public function receipt(Request $request, Receipt $receipt, QrCodes $qr)
     {
         $receipt->load(['contact', 'payment', 'cashier', 'verificationToken']);
+        $company = app(CurrentCompany::class)->get();
 
         return view('print.receipt', [
             'receipt' => $receipt,
-            'company' => app(CurrentCompany::class)->get(),
+            'company' => $company,
             'qrSvg' => $receipt->verificationToken
-                ? $qr->svg($receipt->verificationToken->publicUrl(), 120)
+                ? $qr->svg($receipt->verificationToken->publicUrl(), 120, brand: $company)
                 : null,
             'autoprint' => $request->boolean('print'),
         ]);
@@ -437,16 +441,17 @@ class PrintController extends Controller
     public function waybill(Request $request, Shipment $shipment, QrCodes $qr, Pdf $pdf)
     {
         $shipment->load(['sender', 'receiver', 'events']);
+        $company = app(CurrentCompany::class)->get();
 
         $data = [
             'shipment' => $shipment,
-            'company' => app(CurrentCompany::class)->get(),
+            'company' => $company,
             'watermark' => match ($shipment->status) {
                 'cancelled' => 'CANCELLED',
                 'returned' => 'RETURNED',
                 default => null,
             },
-            'qrSvg' => $qr->svg($shipment->trackingUrl(), 120),
+            'qrSvg' => $qr->svg($shipment->trackingUrl(), 120, brand: $company),
             'autoprint' => $request->boolean('print'),
         ];
 

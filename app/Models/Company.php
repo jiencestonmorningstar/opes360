@@ -64,6 +64,7 @@ class Company extends Model
             'renewal_reminder_for' => 'date',
             'vat_registered' => 'boolean',
             'prices_include_tax' => 'boolean',
+            'show_watermark' => 'boolean',
             'vat_rate' => 'decimal:4',
             'capital_social' => 'decimal:2',
         ];
@@ -328,6 +329,23 @@ class Company extends Model
         }
 
         return Storage::disk('public')->url($this->logo_path);
+    }
+
+    /**
+     * The background watermark for printed documents, as a URL a printed
+     * page can load — an uploaded image if one was chosen, otherwise the
+     * generated seal for `watermark_seal` (see SealComposer). Null when the
+     * business has never set one, distinct from `show_watermark` being off:
+     * a company can have a watermark configured and simply not display it
+     * yet, so print views must check both.
+     */
+    public function watermarkUrl(): ?string
+    {
+        if (! $this->watermark_path) {
+            return null;
+        }
+
+        return Storage::disk('public')->url($this->watermark_path);
     }
 
     public function initials(): string

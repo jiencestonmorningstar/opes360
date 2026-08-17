@@ -123,7 +123,9 @@ class Show extends Component
             'types' => $this->event->ticketTypes,
             'stats' => $stats,
             'tickets' => $list->paginate(25),
-            'shareQr' => $this->event->isPublished() ? $qr->svg($this->event->publicUrl()) : null,
+            'shareQr' => $this->event->isPublished()
+                ? $qr->svg($this->event->publicUrl(), brand: app(\App\Support\CurrentCompany::class)->get())
+                : null,
         ])->layout('components.layouts.app', [
             'title' => $this->event->title,
             'active' => 'events',

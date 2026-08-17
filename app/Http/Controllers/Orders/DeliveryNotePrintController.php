@@ -26,13 +26,14 @@ class DeliveryNotePrintController extends Controller
         Gate::authorize('orders.view');
 
         $note->load(['order.contact', 'lines', 'verificationToken']);
+        $company = app(CurrentCompany::class)->get();
 
         $data = [
             'note' => $note,
-            'company' => app(CurrentCompany::class)->get(),
+            'company' => $company,
             'watermark' => $note->statusMark(),
             'qrSvg' => $note->verificationToken
-                ? $qr->svg($note->verificationToken->publicUrl(), 132)
+                ? $qr->svg($note->verificationToken->publicUrl(), 132, brand: $company)
                 : null,
             'autoprint' => $request->boolean('print'),
         ];

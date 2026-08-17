@@ -86,11 +86,15 @@ class VerificationController extends Controller
     {
         // The QR encodes the verification URL; render it even for revoked tokens
         // so a printed code and its on-screen twin never disagree.
-        if ($this->findToken($token) === null) {
+        $verification = $this->findToken($token);
+
+        if ($verification === null) {
             abort(404);
         }
 
-        return response($qr->svg(url('/v/'.$token)), 200, [
+        $company = Company::find($verification->company_id);
+
+        return response($qr->svg(url('/v/'.$token), brand: $company), 200, [
             'Content-Type' => 'image/svg+xml',
             'Cache-Control' => 'public, max-age=86400',
         ]);
