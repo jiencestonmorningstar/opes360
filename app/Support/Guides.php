@@ -201,6 +201,104 @@ class Guides
             'audience' => 'everyone',
         ],
 
+        'sales-and-invoicing' => [
+            'title' => 'Selling and getting paid',
+            'group' => 'Money',
+            'summary' => 'Quotations, proformas, invoices, receipts, credit notes, voiding, and recording what the customer paid.',
+            'audience' => 'everyone',
+        ],
+
+        'customers' => [
+            'title' => 'Customers',
+            'group' => 'Money',
+            'summary' => 'The contact book, what each customer owes, their statement, and chasing what is overdue.',
+            'audience' => 'everyone',
+        ],
+
+        'products-and-stock' => [
+            'title' => 'Products and stock',
+            'group' => 'Money',
+            'summary' => 'What you sell, what it costs, where it sits, counting it, and tracing a batch when something goes wrong.',
+            'audience' => 'everyone',
+        ],
+
+        'expenses' => [
+            'title' => 'Spending money',
+            'group' => 'Money',
+            'summary' => 'Supplier bills, staff expense claims and their reimbursement, and the TVA you can claim back.',
+            'audience' => 'everyone',
+        ],
+
+        'banking-reconciliation' => [
+            'title' => 'Matching the bank',
+            'group' => 'Money',
+            'summary' => 'Importing a bank statement and matching every line to what the books already say.',
+            'audience' => 'admin',
+        ],
+
+        'accounting' => [
+            'title' => 'The books, in plain words',
+            'group' => 'Money',
+            'summary' => 'The SYSCOHADA chart of accounts, journals, ledgers and the statements — without the jargon.',
+            'audience' => 'admin',
+        ],
+
+        'payroll' => [
+            'title' => 'Paying your staff',
+            'group' => 'Your business',
+            'summary' => 'Payroll runs, CNPS and IRPP, employer charges, and why a paid run can only be voided, never edited.',
+            'audience' => 'admin',
+        ],
+
+        'reports' => [
+            'title' => 'Reports',
+            'group' => 'Your business',
+            'summary' => 'The reports screen, the executive view, and where each number comes from.',
+            'audience' => 'everyone',
+        ],
+
+        'forms' => [
+            'title' => 'Shareable forms',
+            'group' => 'Working together',
+            'summary' => 'Build a form, share the link, and work with what comes back.',
+            'audience' => 'everyone',
+        ],
+
+        'events-and-tickets' => [
+            'title' => 'Events and tickets',
+            'group' => 'Your business',
+            'summary' => 'Selling tickets to an event and scanning them at the door.',
+            'audience' => 'everyone',
+        ],
+
+        'partners' => [
+            'title' => 'The partner programme',
+            'group' => 'Programmes',
+            'summary' => 'Secretariats and agents who sign businesses up: their client book, the cards they issue, and the commission they earn.',
+            'audience' => 'admin',
+        ],
+
+        'vip' => [
+            'title' => 'VIP memberships',
+            'group' => 'Programmes',
+            'summary' => 'Paid tiers, member cards, and the billing that keeps a membership alive.',
+            'audience' => 'everyone',
+        ],
+
+        'imports' => [
+            'title' => 'Bringing your data in',
+            'group' => 'Start here',
+            'summary' => 'Loading customers, products and opening balances from spreadsheets, and fixing what does not fit.',
+            'audience' => 'admin',
+        ],
+
+        'api-tokens-and-webhooks' => [
+            'title' => 'API tokens and webhooks',
+            'group' => 'For developers',
+            'summary' => 'Creating a token, what its abilities mean, calling the API, and being told when something changes.',
+            'audience' => 'developer',
+        ],
+
         'insurance' => [
             'title' => 'Broking insurance',
             'group' => 'Industries',
