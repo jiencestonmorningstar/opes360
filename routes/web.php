@@ -84,6 +84,8 @@ use App\Livewire\Partners\Earnings as PartnerEarnings;
 use App\Livewire\Payables\Reconcile as PayablesReconcile;
 use App\Livewire\Payables\Runs as PayablesRuns;
 use App\Livewire\Payables\Schedule as PayablesSchedule;
+use App\Livewire\Spreadsheets\Edit as SpreadsheetsEdit;
+use App\Livewire\Spreadsheets\Index as SpreadsheetsIndex;
 use App\Livewire\Payments\Index as PaymentsIndex;
 use App\Livewire\Payroll\Index as PayrollIndex;
 use App\Livewire\Payroll\Show as PayrollShow;
@@ -488,6 +490,14 @@ Route::middleware('auth')->group(function () {
     // field fill), and this is the rich-text screen that opens after.
     Route::get('/library/{paper}/editor', PapersEdit::class)->middleware('can:view,paper')->name('papers.editor');
     Route::get('/library/{paper}/print', [PrintController::class, 'paper'])->middleware('can:view,paper')->name('papers.print');
+
+    /*
+     * §8.2 of the master spec — a collaborative BI grid whose cells can
+     * pull live figures (OPES_SUM/OPES_LOOKUP) from the ERP.
+     */
+    Route::get('/spreadsheets', SpreadsheetsIndex::class)->middleware('can:viewAny,'.\App\Models\Spreadsheet::class)->name('spreadsheets.index');
+    Route::get('/spreadsheets/{sheet}', SpreadsheetsEdit::class)->middleware('can:view,sheet')->name('spreadsheets.edit');
+
     /*
      * Module 16 — Opes Forms. The builder saves as it goes, so "create" is a
      * server action that makes a draft and lands in the builder, not a page.

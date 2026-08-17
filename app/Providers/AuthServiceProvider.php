@@ -16,6 +16,7 @@ use App\Models\Item;
 use App\Models\Payment;
 use App\Models\Project;
 use App\Models\Receipt;
+use App\Models\Spreadsheet;
 use App\Models\Ticket;
 use App\Models\User;
 use App\Models\VipMembership;
@@ -34,6 +35,7 @@ use App\Policies\ItemPolicy;
 use App\Policies\PaymentPolicy;
 use App\Policies\ProjectPolicy;
 use App\Policies\ReceiptPolicy;
+use App\Policies\SpreadsheetPolicy;
 use App\Policies\TicketPolicy;
 use App\Policies\VipMembershipPolicy;
 use App\Policies\WorkflowPolicy;
@@ -67,6 +69,7 @@ class AuthServiceProvider extends ServiceProvider
         VipMembership::class => VipMembershipPolicy::class,
         Project::class => ProjectPolicy::class,
         Workflow::class => WorkflowPolicy::class,
+        Spreadsheet::class => SpreadsheetPolicy::class,
     ];
 
     public function boot(): void

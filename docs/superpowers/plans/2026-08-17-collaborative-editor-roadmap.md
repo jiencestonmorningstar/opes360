@@ -104,9 +104,27 @@ a subtask here:
    `ContractLifecycle::activate()`) that any future concrete downstream
    action — billing, holds, whatever a real business rule turns out to
    need — can already listen for without further plumbing.
-9. **§8.2 Collaborative BI spreadsheet** (`OPES_SUM`, `OPES_LOOKUP`
-   formulas). Entirely new: a formula-cell grid, not the rich-text editor.
-   Independent of the rest of this roadmap.
+9. **§8.2 Collaborative BI spreadsheet** — **v1 shipped 2026-08-17**. A
+   fixed 8×25 grid (`Spreadsheets\Index`/`Edit`) whose cells resolve
+   `=OPES_SUM("invoices","total")`, `=OPES_LOOKUP(...)`, cell references
+   (`=A1+B2`) and arithmetic through a hand-written recursive-descent
+   parser (`FormulaEngine`/`SpreadsheetEngine`). `SpreadsheetDataSources` is
+   an allowlist registry — the same extension-point shape as
+   `DocumentFieldRegistry` — with `invoices` and `contracts` registered as
+   working examples; a formula can only read the exact fields a source
+   explicitly lists, never an arbitrary column. Gated behind
+   `accounting.view`/`accounting.manage` rather than a new permission
+   group. **Not** built: dynamic grid resize (fixed size documented in
+   `Spreadsheets\Edit`'s docblock), multi-sheet workbooks, real-time
+   co-editing of a sheet (same VPS/Reverb blocker as the rest of this
+   roadmap), a sidebar nav entry (reachable by direct link only for now),
+   and per-source permission finer than the whole-tool gate (e.g. "only
+   Accounting may query payroll" — the registry supports it structurally,
+   nothing populates it since no sensitive source is registered yet, same
+   reasoning as item 2's masking verification above). Tests:
+   `tests/Feature/Spreadsheets/SpreadsheetEngineTest.php` (engine, 13
+   cases), `tests/Feature/Spreadsheets/SpreadsheetScreensTest.php` (UI/auth,
+   5 cases).
 10. **§8.3 Contextual communication hub with audio annotations** —
     **block-level anchoring shipped 2026-08-17**. A comment now pins to a
     specific paragraph/heading/list-item/table-row

@@ -90,6 +90,7 @@ class AppServiceProvider extends ServiceProvider
         // instance DocumentComposer resolves — a fresh instance per
         // app()->make() call would lose every registration between them.
         $this->app->singleton(DocumentFieldRegistry::class);
+        $this->app->singleton(\App\Services\Spreadsheets\SpreadsheetDataSources::class);
     }
 
     public function boot(): void
@@ -117,6 +118,7 @@ class AppServiceProvider extends ServiceProvider
         GlobalSearch::observe();
 
         $this->registerDocumentFieldProviders();
+        $this->registerSpreadsheetDataSources();
 
         // Fail loudly in development on lazy loads and bad attribute assignment,
         // rather than shipping N+1 queries to a phone on a slow connection.
@@ -320,5 +322,34 @@ class AppServiceProvider extends ServiceProvider
                 'project.code' => (string) ($project->code ?? ''),
             ];
         });
+    }
+
+    /**
+     * §8.2 of the master spec — the allowlist `OPES_SUM`/`OPES_LOOKUP`
+     * formulas are allowed to read. Two examples, on the same reasoning as
+     * `registerDocumentFieldProviders()`: proof the extension point works,
+     * and every field a formula can already use. A third module registers
+     * its own the same way, in its own `boot()`, without Spreadsheets
+     * knowing it exists.
+     */
+    protected function registerSpreadsheetDataSources(): void
+    {
+        $sources = $this->app->make(\App\Services\Spreadsheets\SpreadsheetDataSources::class);
+
+        $sources->register(
+            'invoices',
+            fn (Company $company) => Document::query()->invoices(),
+            sumFields: ['total', 'amount_paid', 'balance'],
+            lookupFields: ['total', 'amount_paid', 'balance', 'status'],
+            keyField: 'number',
+        );
+
+        $sources->register(
+            'contracts',
+            fn (Company $company) => Contract::query()->live(),
+            sumFields: ['value'],
+            lookupFields: ['value', 'status', 'title'],
+            keyField: 'title',
+        );
     }
 }
