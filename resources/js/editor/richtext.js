@@ -2,6 +2,7 @@ import { Editor } from '@tiptap/core';
 import StarterKit from '@tiptap/starter-kit';
 import { TableKit } from '@tiptap/extension-table';
 import { fieldTokenExtensions } from './field-token.js';
+import { BlockAnchor } from './block-anchor.js';
 
 /**
  * The Tiptap island for the papers rich editor.
@@ -53,6 +54,7 @@ export default function richEditor({ content, editable, availableTokens = {} }) 
                     }),
                     TableKit.configure({ table: { resizable: false } }),
                     ...fieldTokenExtensions(this.availableTokens),
+                    BlockAnchor,
                 ],
                 onTransaction: () => { this.tick++; },
                 onUpdate: () => this.queueSave(),
@@ -89,6 +91,18 @@ export default function richEditor({ content, editable, availableTokens = {} }) 
 
         setContent(html) {
             this.editor.commands.setContent(html, { emitUpdate: false });
+        },
+
+        /**
+         * "Comment on this paragraph" — pins the next comment to whatever
+         * block the caret is currently in (§8.3). The block already has a
+         * stable id by the time this runs; BlockAnchor assigns one to every
+         * paragraph/heading/list-item/table-row as soon as it exists.
+         */
+        commentOnCurrentBlock() {
+            const blockId = this.editor?.storage.blockAnchor.currentBlockId();
+
+            this.$wire.anchorNextCommentTo(blockId);
         },
 
         run(action) {

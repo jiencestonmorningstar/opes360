@@ -150,6 +150,52 @@ class DocumentCommentTest extends DocumentsTestCase
         $this->assertFalse($bystander->can('resolve', $comment));
     }
 
+    // ── Block anchoring (§8.3) ───────────────────────────────────────────
+
+    public function test_a_comment_can_be_anchored_to_a_block(): void
+    {
+        $paper = $this->document();
+
+        $comment = $this->comments()->post($paper, $this->owner, 'This clause is wrong.', anchorId: 'block-42');
+
+        $this->assertSame('block-42', $comment->anchor_id);
+    }
+
+    public function test_a_reply_inherits_its_parents_anchor(): void
+    {
+        $paper = $this->document();
+        $original = $this->comments()->post($paper, $this->owner, 'Fix this.', anchorId: 'block-42');
+
+        $reply = $this->comments()->post($paper, $this->owner, 'Done.', $original);
+
+        $this->assertSame('block-42', $reply->anchor_id);
+    }
+
+    public function test_a_comment_with_no_anchor_is_document_level_as_before(): void
+    {
+        $paper = $this->document();
+
+        $comment = $this->comments()->post($paper, $this->owner, 'General remark.');
+
+        $this->assertNull($comment->anchor_id);
+    }
+
+    public function test_open_thread_counts_group_by_anchor_and_skip_resolved_and_replies(): void
+    {
+        $paper = $this->document();
+        $first = $this->comments()->post($paper, $this->owner, 'A', anchorId: 'block-1');
+        $this->comments()->post($paper, $this->owner, 'B', anchorId: 'block-1');
+        $second = $this->comments()->post($paper, $this->owner, 'C', anchorId: 'block-2');
+        $this->comments()->post($paper, $this->owner, 'D'); // unanchored — excluded
+        $this->comments()->post($paper, $this->owner, 'Reply', $first); // reply — excluded
+
+        $this->comments()->resolve($second, $this->owner);
+
+        $counts = $this->comments()->openThreadCountsByAnchor($paper);
+
+        $this->assertSame(['block-1' => 2], $counts);
+    }
+
     protected function comments(): DocumentComments
     {
         return app(DocumentComments::class);

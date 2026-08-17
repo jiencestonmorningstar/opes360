@@ -93,10 +93,17 @@ a subtask here:
 9. **§8.2 Collaborative BI spreadsheet** (`OPES_SUM`, `OPES_LOOKUP`
    formulas). Entirely new: a formula-cell grid, not the rich-text editor.
    Independent of the rest of this roadmap.
-10. **§8.3 Contextual communication hub with audio annotations**. Comments
-    anchored to specific blocks already partially exist (`DocumentComments`
-    — see gap analysis §15) but block/sentence-level anchoring and audio
-    notes do not.
+10. **§8.3 Contextual communication hub with audio annotations** —
+    **block-level anchoring shipped 2026-08-17**. A comment now pins to a
+    specific paragraph/heading/list-item/table-row
+    (`resources/js/editor/block-anchor.js`'s stable `data-block-id`s,
+    `business_document_comments.anchor_id`), with a "Comment here" toolbar
+    action and a pinned-comment indicator in the editor. See
+    `docs/handoff/rich-editor.md` § "Anchored comments" for the full design
+    and what's deliberately not built yet: live highlighting of blocks with
+    open threads (the data exists via
+    `DocumentComments::openThreadCountsByAnchor()`, nothing decorates the
+    editor DOM with it), and audio annotations (not started at all).
 11. **§8.4 RFP/vendor portal**. New external-facing surface, analogous to
     the existing `DocumentSharing` external-link pattern but with structured
     input fields rather than view-only access.

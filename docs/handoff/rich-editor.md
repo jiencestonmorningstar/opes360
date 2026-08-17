@@ -51,6 +51,37 @@ choosing one inserts an immutable chip, deletable only as a whole unit.
   and §9 "Reverse Tokenization" are still open; same roadmap plan, item 5).
 - **Tests**: `tests/Feature/Documents/LiveTokenChipTest.php`.
 
+## Anchored comments (2026-08-17 addition, §8.3)
+
+A comment can now pin to a specific block — paragraph, heading, list item,
+or table row — instead of only ever being document-level.
+
+- **Stable block ids**: `resources/js/editor/block-anchor.js`'s `BlockAnchor`
+  extension stamps a `data-block-id` on every paragraph/heading/list-item/
+  table-row the moment it exists (a ProseMirror `appendTransaction`, so it
+  survives typing, splitting, pasting). The id itself is opaque — only
+  uniqueness and stability across edits matter.
+- **Pinning a comment**: the "Comment here" toolbar button reads the block id
+  at the caret (`editor.storage.blockAnchor.currentBlockId()`) and calls
+  `$wire.anchorNextCommentTo(id)`; the comment form shows a "Pinned to a
+  specific paragraph" chip with a Clear button. `Edit::postComment()` passes
+  `commentAnchorId` through to `DocumentComments::post(..., anchorId: …)`,
+  which clears back to `null` after posting.
+- **Storage**: `business_document_comments.anchor_id` (nullable string),
+  migration `2026_09_18_000002_add_anchor_id_to_business_document_comments`.
+  A reply inherits its parent's anchor rather than needing its own — a
+  thread stays pinned to the block it started on.
+- **Sanitizer**: `data-block-id` is now allowed on `p`, `h1`, `h2`, `h3`,
+  `li`, `tr` — nothing else on those tags.
+- **Deliberately NOT built**: live in-editor highlighting/badges on blocks
+  that already have open threads (`DocumentComments::openThreadCountsByAnchor()`
+  computes the data and is exposed to the view, but nothing decorates the
+  ProseMirror DOM with it yet — a straightforward follow-up, not attempted
+  here to keep this change reviewable). Audio annotations (§8.3's other
+  half) are not built at all.
+- **Tests**: `tests/Feature/Documents/DocumentCommentTest.php` (backend),
+  `tests/Feature/Documents/RichEditorTest.php` (Livewire wiring).
+
 ## What shipped
 
 | Piece | Where |

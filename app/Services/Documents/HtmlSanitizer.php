@@ -38,6 +38,16 @@ class HtmlSanitizer
         'th' => ['colspan', 'rowspan'],
         'td' => ['colspan', 'rowspan'],
         'span' => ['data-token'],
+        // §8.3 block anchoring — the stable id a comment thread pins to.
+        // Tiptap's BlockAnchor extension stamps this on every paragraph,
+        // heading, list item and table row; kept here so a round-trip
+        // through save/sanitize/reload does not orphan an existing comment.
+        'p' => ['data-block-id'],
+        'h1' => ['data-block-id'],
+        'h2' => ['data-block-id'],
+        'h3' => ['data-block-id'],
+        'li' => ['data-block-id'],
+        'tr' => ['data-block-id'],
     ];
 
     public function clean(string $html): string

@@ -286,4 +286,37 @@ class RichEditorTest extends DocumentsTestCase
         $this->assertSame('One', $fresh->title);
         $this->assertSame(3, $fresh->versions()->count()); // restore is its own version
     }
+
+    /* ------------------------------------------------------------------ *
+     * Anchored comments — §8.3
+     * ------------------------------------------------------------------ */
+
+    public function test_the_editor_pins_the_next_comment_to_the_block_it_names(): void
+    {
+        $this->actingAs($this->owner);
+        $paper = $this->document();
+
+        Livewire::test(Edit::class, ['paper' => $paper])
+            ->call('anchorNextCommentTo', 'b123')
+            ->assertSet('commentAnchorId', 'b123')
+            ->set('commentBody', 'Fix this clause.')
+            ->call('postComment')
+            ->assertSet('commentAnchorId', null); // cleared after posting
+
+        $this->assertSame('b123', $paper->comments()->first()->anchor_id);
+    }
+
+    public function test_clearing_the_anchor_posts_a_document_level_comment(): void
+    {
+        $this->actingAs($this->owner);
+        $paper = $this->document();
+
+        Livewire::test(Edit::class, ['paper' => $paper])
+            ->call('anchorNextCommentTo', 'b123')
+            ->call('clearCommentAnchor')
+            ->set('commentBody', 'General remark.')
+            ->call('postComment');
+
+        $this->assertNull($paper->comments()->first()->anchor_id);
+    }
 }

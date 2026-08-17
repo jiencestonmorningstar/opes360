@@ -38,6 +38,9 @@ class Edit extends Component
 
     public string $commentBody = '';
 
+    /** The block id the editor last told us the caret is in — §8.3's anchored comments. */
+    public ?string $commentAnchorId = null;
+
     public function mount(BusinessDocument $paper): void
     {
         $this->authorize('view', $paper);
@@ -163,10 +166,27 @@ class Edit extends Component
         $this->authorize('view', $this->paper);
         $this->validate(['commentBody' => ['required', 'string', 'max:2000']]);
 
-        app(DocumentComments::class)->post($this->paper, auth()->user(), trim($this->commentBody));
+        app(DocumentComments::class)->post(
+            $this->paper,
+            auth()->user(),
+            trim($this->commentBody),
+            anchorId: $this->commentAnchorId,
+        );
 
         $this->commentBody = '';
+        $this->commentAnchorId = null;
         $this->paper->refresh();
+    }
+
+    /** The editor telling us which block a "Comment on this" click targeted. */
+    public function anchorNextCommentTo(?string $blockId): void
+    {
+        $this->commentAnchorId = $blockId;
+    }
+
+    public function clearCommentAnchor(): void
+    {
+        $this->commentAnchorId = null;
     }
 
     public function render(): View
@@ -178,6 +198,7 @@ class Edit extends Component
             'versions' => $this->paper->versions()->orderByDesc('version_number')->with('creator')->limit(30)->get(),
             'comments' => $this->paper->comments()->whereNull('parent_id')->with('author')->orderByDesc('created_at')->limit(50)->get(),
             'availableTokens' => app(DocumentComposer::class)->availableTokens($this->paper),
+            'openThreadCountsByAnchor' => app(DocumentComments::class)->openThreadCountsByAnchor($this->paper),
         ])->layout('components.layouts.app', [
             'title' => 'Edit '.$this->paper->title,
             'active' => 'papers',

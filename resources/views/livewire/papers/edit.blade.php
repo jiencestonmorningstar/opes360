@@ -59,6 +59,12 @@
                                 class="focusable rounded-lg px-2.5 py-1.5 text-[13px] font-semibold text-ink-2 hover:bg-surface-2"
                                 :aria-label="button.label" x-text="button.text"></button>
                     </template>
+                    <span class="mx-1 h-5 w-px bg-border" aria-hidden="true"></span>
+                    <button type="button" x-on:click="commentOnCurrentBlock()"
+                            class="focusable rounded-lg px-2.5 py-1.5 text-[13px] font-semibold text-ink-2 hover:bg-surface-2"
+                            aria-label="Comment on this paragraph">
+                        Comment here
+                    </button>
                 </div>
 
                 <div wire:ignore>
@@ -111,6 +117,12 @@
 
             <x-ui.panel title="Comments">
                 <form wire:submit="postComment" class="mb-3">
+                    @if ($commentAnchorId)
+                        <div class="mb-2 flex items-center justify-between rounded-lg bg-tint-blue px-2.5 py-1.5 text-[12.5px] font-medium text-brand">
+                            <span>Pinned to a specific paragraph</span>
+                            <button type="button" wire:click="clearCommentAnchor" class="focusable font-semibold hover:underline">Clear</button>
+                        </div>
+                    @endif
                     <textarea wire:model="commentBody" rows="2" placeholder="Leave a remark…"
                               class="w-full rounded-xl border border-border bg-surface px-3 py-2 text-[13.5px] text-ink focus:border-brand focus:outline-none focus:ring-2 focus:ring-brand/20"></textarea>
                     @error('commentBody') <p class="mt-1 text-[12.5px] font-medium text-warning">{{ $message }}</p> @enderror
@@ -124,6 +136,9 @@
                         <li>
                             <p class="font-semibold text-ink">{{ $comment->author?->name ?? 'Someone' }}
                                 <span class="ml-1 font-normal text-faint">{{ $comment->created_at->diffForHumans(short: true) }}</span>
+                                @if ($comment->anchor_id)
+                                    <span class="ml-1 rounded bg-tint-blue px-1.5 py-0.5 text-[11px] font-semibold text-brand">on paragraph</span>
+                                @endif
                             </p>
                             <p class="mt-0.5 whitespace-pre-line text-ink-2">{{ $comment->body }}</p>
                         </li>
