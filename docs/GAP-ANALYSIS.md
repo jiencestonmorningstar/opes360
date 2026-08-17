@@ -1,12 +1,13 @@
 # Gap analysis — what is built, part-built, and not built
 
-**Date:** 2026-08-16
+**Date:** 2026-08-17 (refreshed against the working tree after the hardening
+gate and audit fix waves 1–3; originally written 2026-08-16)
 **Measured against:** `docs/superpowers/specs/2026-08-16-documents-master-spec.md`
 (the Documents master specification and the ERP completeness checklist inside
 it).
 
 **Method.** Every line below was checked against the working tree on
-2026-08-16 — models, migrations, services, Livewire components, routes,
+2026-08-17 — models, migrations, services, Livewire components, routes,
 `config/modules.php`, `app/Support/Permissions.php` and `docs/API.md`. Nothing
 here is inferred from the brief or from what a module's name suggests.
 
@@ -17,8 +18,11 @@ here is inferred from the brief or from what a module's name suggests.
 
 ## Part 1 — The Documents module
 
-Phase 1 of `docs/superpowers/plans/2026-08-15-documents-core.md` is roughly
-half delivered. The table follows the master spec's own section numbers.
+Phase 1 of `docs/superpowers/plans/2026-08-15-documents-core.md` is delivered,
+and the 2026-08-16 completion pass (bulk actions, watermarks, analytics, daily
+reminders) closed most of what the first draft of this document listed as
+"not built". The tables follow the master spec's own section numbers;
+struck-through rows shipped after the original 2026-08-16 assessment.
 
 ### Built (A)
 
@@ -76,34 +80,36 @@ codebase at all:**
 | 6 | Rich document editor | No editor; composition today is template-field fill |
 | 22 | Preview (PDF, DOCX, office formats) | No preview/conversion tier |
 | 23–24 | DOCX import/export | No DOCX engine |
-| 24 | Server-side PDF export | PDF is `window.print()` today |
+| ~~24~~ | ~~Server-side PDF export~~ | **Shipped 2026-08-16** — real PDFs through one swappable wrapper (`docs/handoff/pdf-engine.md`); `window.print()` no longer the only path |
 | 14, 16 | Concurrent editing, presence, track changes | No websocket tier |
-| 26 | Content and indexed search | No search index |
+| ~~26~~ | ~~Content and indexed search~~ | **Shipped 2026-08-16** — global Ctrl-K search filtering results by the searcher's own permissions, with an `opes:search-reindex` rebuild command (`docs/handoff/search-integration.md`) |
 | 27 | OCR | No OCR service |
 | 41–42 | AI assistant and AI search | No AI provider configured |
 | 43 | Translation workflows | No translation service |
 | 9, 10 | Department, project and dossier folders | **Neither departments nor projects exist as entities.** `employees.department` is a free-text string, not a table |
 
-**Not yet started, no prerequisite missing — these are simply the rest of the
-roadmap:**
+**Not yet started, no prerequisite missing — these were the rest of the
+roadmap when first written. Struck-through rows have since shipped
+(2026-08-16 Documents completion pass — bulk actions, watermarks, analytics,
+daily reminders — plus the admin/audit work):**
 
 | § | Capability |
 |---|---|
 | 5 | Creation routes beyond blank/template/upload — duplicate, from existing, from ERP record, from workflow, from automation |
-| 17–18 | Workflow stages and the approval engine |
-| 30 | Documents-specific audit trail (the suite has `activity_log`; Documents does not write a full document audit yet) |
-| 33 | Alerts — expiry and workflow-stalled notifications specifically for documents (the My Actions centre and its `workflow.stalled` event already exist; a scheduled expiry check does not) |
-| 39 | **Combined-PDF bundles only.** ZIP bundles are built; merging a package into one PDF needs the server-side PDF engine that is still an open infrastructure decision (Phase 5) |
+| ~~17–18~~ | ~~Workflow stages and the approval engine~~ — **shipped**: the platform workflow engine landed and Documents consumes it (`Approvable` + `TranslateDocumentWorkflowEvents`) |
+| ~~30~~ | ~~Documents-specific audit trail~~ — **shipped** with the audit-to-45-models pass; `DocumentActivity` merges audit, versions and comments |
+| ~~33~~ | ~~Alerts — expiry and workflow-stalled notifications~~ — **shipped** in the Documents completion pass (daily reminders) |
+| ~~39~~ | ~~Combined-PDF bundles~~ — **unblocked**: the server-side PDF engine shipped (`docs/handoff/pdf-engine.md`) |
 | 44 | Multilingual templates (the `language` column exists; nothing consumes it) |
-| 46 | Documents administration screens |
+| ~~46~~ | ~~Documents administration screens~~ — **shipped** (analytics/admin in the completion pass) |
 | 50–51 | Offline document handling and the mobile document interface |
 | 53 | The full document view with its side panels |
 | 54, 59 | Automation hooks and the `document.*` event stream |
 | 58 | Extension points for other modules to register types, fields, triggers |
 | 60 | Background/queued processing for large files |
-| 68 | Bulk operations |
-| 71–73 | Finalisation artefacts, watermarks, print control by permission |
-| 74–75 | Analytics and the admin dashboard |
+| ~~68~~ | ~~Bulk operations~~ — **shipped** (`BulkActions`; remaining individual actions listed in `docs/handoff/2.16-bulk.md`) |
+| ~~71–73~~ | ~~Finalisation artefacts, watermarks, print control~~ — **shipped**: watermarks with no off-switch on status marks |
+| ~~74–75~~ | ~~Analytics and the admin dashboard~~ — **shipped** (`papers.analytics`) |
 
 **Argued against rather than merely deferred** (recorded so the decision is
 visible, not silent):
@@ -140,51 +146,76 @@ visible, not silent):
 
 | # | Domain | Verdict | Note |
 |---|---|---|---|
-| 13 | Manufacturing | **C** | Nothing. Only relevant if OPES360 targets manufacturers. |
-| 14 | Supply chain | **C** | Nothing beyond reorder levels. |
+| 13 | Manufacturing | **A** | **Built 2026-08-16/17.** Bills of material, production orders, backflush to the stock ledger (`app/Services/Manufacturing/Production.php`, `manufacturing` module in `config/modules.php`). A follow-up fix (commit `645e9d9`) imported the `BillOfMaterial`/`ProductionOrder` model classes the module map points at, closing a silently-wrong policy denial. See `docs/handoff/manufacturing-integration.md`. |
+| 14 | Supply chain | **A** | **Built 2026-08-16/17** on top of the existing reorder levels: supplier links per item with lead times, a replenishment read model (days of cover, "will run out before delivery"), and accepting a suggestion raises a **draft requisition** through the existing procurement path — nothing here can mint a PO or commit money (`app/Support/Replenishment.php`, `app/Services/Procurement/Replenisher.php`, `docs/handoff/supply-chain-integration.md`). |
 | 15 | Logistics / fleet | **A** | **Built 2026-08-16, as an extension of fixed assets rather than a module of its own** — nine of the twelve things a fleet feature is usually asked for already existed on assets (register, location, driver, reassignment with history, service schedule, completion, cost-via-expense, disposal). What was genuinely missing: vehicle papers as a one-to-one extension of the asset, trips, fuel logs, expiry alerts, and servicing scheduled by **distance**. That last is the real addition, and it extends `AssetMaintenance` and `AssetServicing` rather than paralleling them, so there is still one outstanding list and one overdue count. The odometer is derived from the highest recorded reading, never stored — a stored counter goes stale the first time a mistyped trip is corrected, and the schedule would then count from a number nobody could reproduce. A fuel log holds no amount at all: it reads the expense every time. |
 | 16 | Service management | **A** (+ walk-in triage 2026-08-16: the company's existing printed QR opens a public mobile intake at /triage/{token}; tickets are created only through TicketDesk with the SLA running, a visitor's "very urgent" caps at high because urgent is the business's promise to make, and the page never mints Contacts — an open public page must not fill the customer book with junk) | **Built 2026-08-16.** Tickets, visits, parts, and SLA policies with a working-hours calendar. Time is logged to the **existing** project timesheet (`service_job_id` added, `project_id` made nullable) rather than a second one; a maintenance visit completes the existing `AssetMaintenance`; billing drafts an ordinary invoice `Document` and holds a link, never a copy. SLA deadlines are stored as absolute instants already walked through the calendar, and are always *recomputed* as `opened_at + target + paused` rather than nudged, so pause/escalate/reopen are idempotent instead of drifting. The clock stops while waiting on the customer and while resolved. (`Ticket` remains event ticketing — an easy misreading of the model list.) |
 | 17 | Contracts management | **A** | **Built 2026-08-16, on Documents as the brief specified** — the signed paper is a `BusinessDocument`, so versioning, retention, legal hold, sharing and e-signature already apply; contracts carry no number of their own. The centre of the design is `notice_by`, the last day notice can be served: stored rather than derived so it can be indexed, rewritten on every save so it cannot drift from `ends_on`, and refused outright when a contract auto-renews with an end date but no notice period, because that combination promises a warning that can never be given. `ContractWatch` keeps *deadline coming*, *deadline gone*, and *deadline gone on a self-renewing contract* as three separate lists rather than one that gets skimmed. |
 | 18 | Compliance & risk | **A** | **Built 2026-08-16.** Statutory obligations with evidence (an ordinary `BusinessDocument`, so retention and legal hold apply), filings through the existing workflow engine, and a risk register. The decision worth knowing: unlike equipment servicing, the next occurrence is counted **from the due date by default**, because a late tax return does not move the DGI's quarters — but `schedule_basis` can be set to `completion` for a licence, which genuinely does run a year from renewal. One rule cannot serve both; getting it wrong is invisible for one cycle and a year adrift by the fourth. Residual risk scores are entered by a person and never derived from attached controls — a control on paper lowers nothing, and auto-lowering manufactures a reassuring number nobody chose. |
-| 19 | BI & analytics | **B** | Reports and aging exist; no executive dashboard, KPI set, profitability or forecasting. |
+| 19 | BI & analytics | **B** | Reports, aging, and the executive dashboard (landed 2026-08-16, `executive` navigation view) exist; sales forecasting reads off the pipeline (Tier-1 #7). Still missing: per-module profitability and a configurable KPI set. |
 | 20 | Workflow & approval engine | **A** | **Built 2026-08-16.** Workflows, ordered steps, instances, assignments and immutable decisions. Sequential, parallel and numeric quorum; role/department/user/owner/manager/creator approver modes resolved at assignment time; amount-based and field conditions as data; delegation with provenance; reject vs. changes-requested kept distinct; a step with no possible approver stalls rather than passing. `/actions` is the cross-module inbox. Trigger→action automation shipped separately (`AutomationRule`, ERP #20 automation half, below) and Documents now consumes the engine (`Approvable` + `TranslateDocumentWorkflowEvents`, restating generic events as `document.*`). See `docs/workflows.md`. **Admin screens built 2026-08-16** at /settings/workflows: copy-on-write versioning lets a workflow be edited while approvals are in flight (they finish under the rules they started with — refusing the edit would be a deadlock, since a workflow is discovered broken precisely when something is stuck in it); empty-approver steps warn rather than block; a workflow with no steps cannot be activated or made default, because the engine approves everything instantly on no steps and that is the one way an admin screen could become a rubber stamp. Every business is also seeded five default paths (DefaultWorkflows), with a per-currency requisition threshold, and opes:seed-workflows backfills businesses that predate it. `document_approvals` remains as the sales-specific mechanism, untouched on purpose. |
 | 21 | Notifications | **A** (for what is in scope) | **Completed 2026-08-16 by extending the single existing path, not adding a second.** User-configurable rules on domain events, reusing `WorkflowConditions` and `WorkflowApprovers` unforked so conditions and recipient resolution mean the same thing here as in approvals — recipients are resolved when the event fires, never when the rule is written. Per-user preferences, quiet hours that *hold and release* rather than drop, digests, deduplication fingerprinted on record **and** message, and a delivery log so "I was never told" is answerable. Exactly one `critical` severity bypasses all four noise controls, and keeping it to one is load-bearing: a mute nobody can trust gets replaced by a mail-client filter that hides the critical ones too. **SMS and WhatsApp are out of scope by the user's decision** (no paid gateway); they are catalogued as unavailable and a rule naming one logs `channel_unavailable` rather than pretending. Adding one later is a channel class and two config keys. |
 | 22 | Enterprise Documents | **B** | Part 1 above. |
 | 23 | E-signature | **B** | **Built 2026-08-16, inside Documents as the brief specified.** Sequential and parallel rounds, per-signer status, decline with reason, a public unauthenticated signing link resolved cross-tenant the same way `/v/{token}` verification already is. On completion, mints a `VerificationToken` the same way `DocumentIssuer` does on issue — no second verification system. **Missing: signature fields placed on the document itself (a signature block at a specific position in the text), reminders (needs a scheduled job — none exists yet for Documents), and an admin screen** — requesting a round is API/service-only today. |
-| 24 | Audit & governance | **A** | **Completed 2026-08-16.** The capture existed and observed 9 models; nothing could read it, nothing recorded reads, and permission grants left no trace at all. Now: one `Audit` write path the existing observer delegates to, coverage extended to **45 models** on the rule "money, permissions, or a person's record, and only where it is mutable"; a `subject_label` so a deleted record still reads as itself, which is the case the log is kept for; an audit screen and a per-record history panel; and a governance screen reporting segregation-of-duties conflicts from what people *actually hold*, including hand-made grants. Reads are logged narrowly — one named person's confidential record, an explicitly restricted document, or an export — windowed at one row per person per record per 15 minutes, except exports, which are never grouped because two exports are two copies loose in the world. Contents are never copied into the log. Deliberately **not** a switchable module: `Modules::forAbility` denies through `Gate::before`, so a switchable audit lets a business disable its own trail, and the person with the motive holds `settings.update`. **Known gap: no retention policy**, and this roughly triples the log's growth. |
-| 25 | Administration | **B** | Companies, users, roles, permissions, numbering, currencies, taxes, module switches, branding. **Missing: branches, departments, fiscal periods, approval rules, workflow configuration.** |
+| 24 | Audit & governance | **A** | **Completed 2026-08-16.** The capture existed and observed 9 models; nothing could read it, nothing recorded reads, and permission grants left no trace at all. Now: one `Audit` write path the existing observer delegates to, coverage extended to **45 models** on the rule "money, permissions, or a person's record, and only where it is mutable"; a `subject_label` so a deleted record still reads as itself, which is the case the log is kept for; an audit screen and a per-record history panel; and a governance screen reporting segregation-of-duties conflicts from what people *actually hold*, including hand-made grants. Reads are logged narrowly — one named person's confidential record, an explicitly restricted document, or an export — windowed at one row per person per record per 15 minutes, except exports, which are never grouped because two exports are two copies loose in the world. Contents are never copied into the log. Deliberately **not** a switchable module: `Modules::forAbility` denies through `Gate::before`, so a switchable audit lets a business disable its own trail, and the person with the motive holds `settings.update`. **Retention shipped 2026-08-16** (`app/Support/AuditRetention.php`, `opes:prune-audit` scheduled nightly): pruning with a ten-year floor on financial subjects, so the growth concern is answered without letting money history be shredded. Residuals recorded in `docs/handoff/audit-retention.md` — pruned rows are deleted, not archived, and legal hold covers documents only. |
+| 25 | Administration | **B** | Companies, users, roles, permissions, numbering, currencies, taxes, module switches, branding. Departments (entity, nested, archivable), fiscal periods with closing, and workflow/approval configuration (`/settings/workflows`, with copy-on-write versioning and `DefaultWorkflows` seeding) all landed 2026-08-16. **Still missing: branches.** |
 
 ### The brief's three concerns, answered
 
-1. **"A proper accounting engine."** Largely present, and stronger than the
-   brief assumed — double-entry, GL, trial balance, income statement, balance
-   sheet, AR/AP aging, bank reconciliation and tax declarations are all built.
-   The real remaining holes are **fiscal periods, period closing, cost centres
-   and a cash-flow statement**, not the engine itself.
-2. **"One workflow engine."** Correct, and unbuilt. This should be built
-   **before** Documents §17–18, or Documents will ship the fourth
-   approval mechanism in the product.
-3. **"The Documents platform."** Half-built; Part 1 says exactly which half.
+1. **"A proper accounting engine."** Present, and complete against the brief —
+   double-entry, GL, trial balance, income statement, balance sheet, AR/AP
+   aging, bank reconciliation and tax declarations, **plus** the four holes the
+   first draft of this document named: fiscal periods and period closing
+   (enforced at `Ledger::post()`, the single posting path), cost centres on
+   journal lines, and a direct-method cash-flow statement. All landed
+   2026-08-16 — see `resources/guides/closing-the-books.md`.
+2. **"One workflow engine."** **Built** (`app/Services/Workflow/`, Tier-2 #20
+   above): sequential/parallel/quorum steps, conditions as data, delegation,
+   admin screens at `/settings/workflows` with copy-on-write versioning, and
+   `DefaultWorkflows` seeding with an `opes:seed-workflows` backfill. Documents
+   §17–18 consume it (`Approvable`) rather than growing a fourth approval
+   mechanism, which was the risk this concern named.
+3. **"The Documents platform."** Substantially built; Part 1 says exactly
+   what is in and what is deliberately out. The remaining "C" items are those
+   waiting on infrastructure (websockets, AI, DOCX) or argued against.
+
+---
+
+## Part 3 — The four launch verticals
+
+Not in the original brief, built 2026-08-16 and hardened 2026-08-16/17
+(commits `9d8b4fe`, `cb15fde`, `f3d2026`). Each is a thin layer over the
+platform, **off by default** per business, with its money-committing act split
+into its own ability. Plan: `docs/superpowers/plans/2026-08-16-industry-verticals.md`.
+
+| Vertical | Verdict | Where / what |
+|---|---|---|
+| Insurance broking | **A** | Policies, claims, renewals, endorsements, premium instalments (`app/Services/Insurance/{Policies,Claims}.php`). Hardened in `f3d2026`. Guide: `resources/guides/insurance.md`. |
+| Sales orders & delivery | **A** | Orders, fulfilment, backorders, returns and credit (`app/Services/Orders/{Fulfilment,Returns,OrderNumbers}.php`). Guide: `resources/guides/sales-orders.md`. |
+| Logistics / transport | **A** | Manifests, waybills, freight rate cards, public tracking (`app/Services/Logistics/{Dispatch,RateCards}.php`, `FreightRate`). Guide: `resources/guides/logistics.md` — thin on rate cards per the docs audit. |
+| Property / estate | **A** | Landlords with statements, tenancies, rent reviews (`app/Services/Estate/{Landlords,Tenancies}.php`, `TenancyRentChange`). Guide: `resources/guides/property-management.md` — silent on rent reviews per the docs audit. |
+
+Known limit shared by all four: **no API** — `routes/api.php` carries no
+insurance, orders, logistics or estate routes (docs audit §3; Wave 4 of
+`docs/audits/PLAN.md`).
 
 ---
 
 ## What this changes about the plan
 
-Three items, in order of consequence:
+The three items the first draft put here are all resolved: the workflow engine
+is built (and did come before Documents §17–18, so the product has one approval
+mechanism, not four); Projects exists as a Tier-1 domain; and departments are
+an entity, backfilled from the old free-text column. What remains, in order of
+consequence, is Wave 4 of `docs/audits/PLAN.md`:
 
-1. **The workflow engine now outranks Documents §17–19.** The brief's own rule
-   forbids a Documents-only approval engine, so either the platform engine
-   comes first or those sections stay deferred. Deferring them is the cheaper
-   answer for now; building a Documents-local one is the answer that will have
-   to be undone.
-2. **Projects (Tier 1 #11) blocks several Documents sections** — project
-   folders, project relationships, project dossiers, project field binding. It
-   was cut from the Documents plan as "not a Documents job", which remains
-   right; it is a Tier-1 ERP gap in its own right.
-3. **Departments are needed in two places at once** — Documents §3/§9/§10 and
-   ERP #9/#25 — and exist as a free-text string on `employees`. Promoting them
-   to an entity is a small, self-contained piece of work that unblocks a
-   disproportionate amount of the brief.
+1. **API surface** — the four verticals, service desk and manufacturing have
+   no API routes; workflow-rule CRUD is screen-only.
+2. **Guides for the platform core** — 15 modules (sales, customers, products,
+   accounting, payroll, expenses, banking, forms, events, reports, partners…)
+   ship with no guide, and the vertical guides miss their newest capabilities
+   (rent reviews, rate cards).
+3. **Branches** (Administration #25) — the one named admin gap left.
 
 The rest of the brief's architectural rules are already being followed:
 Documents extends `business_documents` rather than claiming `documents`,

@@ -19,6 +19,28 @@ A project can be linked to an existing customer. It does not get a customer
 list of its own — the one in **Customers** is the only one, and a project
 simply points at an entry in it.
 
+## The life of a project
+
+A project moves through five states: **planning → active → on hold →
+completed**, with **cancelled** available from any working state.
+
+- A new project starts in **planning** — the budget, team and task list are
+  taking shape, and nothing says work has begun.
+- **Active** is work in progress. Put it **on hold** when it stalls — a client
+  gone quiet, a payment awaited — and back to active when it resumes.
+- **Completed** is a claim the task list must agree with: completing is
+  refused while any task is still open. Finish the tasks or cancel the
+  project — otherwise the status filter becomes a place to hide unfinished
+  work. A short job can go from planning straight to completed; forcing a
+  two-day job through "active" first would be ceremony.
+- **Cancelled** does not check for open tasks — abandoning a project abandons
+  its tasks with it, and that is the point of cancelling.
+
+Completed and cancelled are the end of the road: neither can be reopened,
+because reviving finished work would silently reopen a budget somebody has
+already reported on. Either way the project keeps its **close date** — when
+work actually ended, however it ended.
+
 ## Tracking cost
 
 Every project shows what it has cost so far: hours logged, at the rate they

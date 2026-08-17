@@ -1,7 +1,7 @@
 # Opes360 — handover
 
 **Date:** 2026-08-16 (launch gate)
-**Branch:** `claude/documents-phase-1` (off `main`; not yet pushed — see §1 before pushing)
+**Branch:** `main` (everything merged; the repo's GitHub default/PR branch is `claude/opes360-phase-planning-min3mv`)
 **Suite:** 2,932 tests, 13,291 assertions, all passing (post-hardening gate, 2026-08-17)
 **Migrations:** all applied to both MySQL (tests/schema) and the SQLite dev DB; `opes360-install.sql` regenerated (380 KB)
 

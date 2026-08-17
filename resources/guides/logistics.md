@@ -21,6 +21,23 @@ times the weight, floored at the route's minimum. The card proposes, the
 person decides — a figure you type over the proposal stands, because freight
 in this market is negotiated cargo by cargo.
 
+## Rate cards: the price of a route, written down once
+
+A **rate card** is one route's price on paper: a per-kilogram rate and a
+**minimum** — the floor, because the smallest job the business will send a
+truck for still costs something. One card per route; saving the same route
+again edits the card rather than piling up rivals, and the route matches
+however it is typed — "douala" is Douala.
+
+When a booking names a route with a card, the quote is per-kg times the
+weight, floored at the minimum; cargo with no weight quotes the floor. The
+card **proposes, it never dictates**: the figure lands in the freight field
+for the clerk to keep or overtype. A card that dictated the price would
+simply be routed around with a creative route name, and then the table would
+be a lie as well as a nuisance. What the card buys you is a counter clerk who
+does not price from memory — and a manager who can see, shipment by shipment,
+where the negotiated figure left the card.
+
 ## The waybill
 
 Print the **waybill** from the shipment page — the consignment note that

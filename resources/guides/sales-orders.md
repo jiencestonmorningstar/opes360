@@ -83,6 +83,25 @@ The printed page and the **PDF** (the download button next to Print) come
 from the same template, so what the driver carries and what you email are the
 same paper.
 
+## When the invoice goes unpaid
+
+An order's job does not end at the invoice; it ends at the money. Invoices
+past their due date land the customer on the **collections queue** — the
+working list that sits on top of the aging report and answers the question
+the report cannot: *who to ring first*. Broken promises to pay come top
+(the conversation is already open, and the date passed), then everyone with
+no arrangement, ordered by overdue money weighted by age — old debt outranks
+merely large debt, because two hundred thousand at 150 days is the one about
+to become a bad debt. Customers who have promised a date that has not yet
+arrived sit at the bottom: ringing somebody on Thursday about a Friday
+promise loses a customer you were about to be paid by.
+
+This is also where the **credit limit check** at confirm gets its teeth: the
+overdue balance it refuses an order against is the same figure the queue
+chases. The full treatment — recording calls and promises, dunning
+reminders, and what the queue shows — lives with the customer's account; see
+[Customers](/guides/customers).
+
 ## When goods come back
 
 **Record a return** against the delivery note the goods left on — that is
