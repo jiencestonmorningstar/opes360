@@ -3,7 +3,7 @@
 **Date:** 2026-08-16 (launch gate)
 **Branch:** `main` (everything merged; the repo's GitHub default/PR branch is `claude/opes360-phase-planning-min3mv`)
 **Suite:** 3,149 tests, 14,497 assertions, all passing — verified by reading the full log, not a summary (2026-08-17, post-Documents-completion).
-**Migrations:** all applied to both MySQL (tests/schema) and the SQLite dev DB; `opes360-install.sql``opes360-install.sql` regenerated (392 KB) against a fresh empty MySQL database, which is what caught the migration-ordering bug this session's own closing gate found
+**Migrations:** all applied to both MySQL (tests/schema) and the SQLite dev DB; `opes360-install.sql` regenerated (392 KB) against a fresh empty MySQL database, which is what caught the migration-ordering bug this session's own closing gate found
 
 **Since the section below was written, the platform was completed:** the full
 Documents spec (bulk actions, watermarks with no off-switch on status marks,
