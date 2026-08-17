@@ -216,6 +216,13 @@
                                                                 It is in place
                                                             </button>
                                                         @endunless
+                                                        @if ($control->status !== 'failed')
+                                                            <button type="button" wire:click="markControlFailed('{{ $control->id }}')"
+                                                                    wire:confirm="Mark this control as not working? The risk it treats deserves another look."
+                                                                    class="tap focusable rounded-full border border-border px-3 py-1 text-[13px] font-semibold text-rose-600">
+                                                                It is not working
+                                                            </button>
+                                                        @endif
                                                     @endcan
                                                 </li>
                                             @endforeach
@@ -241,7 +248,38 @@
                                                 Mark reviewed
                                             </button>
                                         @endcan
+                                        @can('risks.manage')
+                                            <button type="button" wire:click="startClosing('{{ $risk->id }}')"
+                                                    class="tap focusable rounded-full border border-border px-4 py-2 text-[13.5px] font-semibold text-rose-600">
+                                                Close this risk
+                                            </button>
+                                        @endcan
                                     </div>
+
+                                    @if ($closing === $risk->id)
+                                        <div class="mt-4 rounded-xl border border-border bg-surface p-4">
+                                            @error('closing')
+                                                <p class="mb-3 text-[14px] font-semibold text-rose-600">{{ $message }}</p>
+                                            @enderror
+
+                                            <label class="{{ $labelClass }}">Why is this no longer on the register?</label>
+                                            <input type="text" wire:model="closureReason"
+                                                   placeholder="The supplier was replaced; the exposure is gone."
+                                                   class="{{ $inputClass }}">
+                                            @error('closureReason') <p class="mt-1 text-[13px] text-rose-600">{{ $message }}</p> @enderror
+
+                                            <div class="mt-3 flex gap-2">
+                                                <button type="button" wire:click="closeRisk"
+                                                        class="tap focusable rounded-full bg-fill-red px-5 py-2 text-[14.5px] font-semibold text-white">
+                                                    Close it
+                                                </button>
+                                                <button type="button" wire:click="cancel"
+                                                        class="tap focusable rounded-full border border-border px-5 py-2 text-[14.5px] font-semibold text-ink-2">
+                                                    Cancel
+                                                </button>
+                                            </div>
+                                        </div>
+                                    @endif
 
                                     @if ($addingControlTo === $risk->id)
                                         <div class="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
@@ -362,6 +400,36 @@
                 </tbody>
             </table>
         </div>
+
+        @if ($closedRisks->isNotEmpty())
+            {{-- A closure is visible and reversible, never a disappearance. --}}
+            <p class="mt-7 text-[13px] font-semibold uppercase tracking-wide text-muted">Recently closed</p>
+            <div class="mt-2 overflow-hidden rounded-2xl border border-border">
+                <table class="w-full text-left text-[14.5px]">
+                    <tbody>
+                        @foreach ($closedRisks as $risk)
+                            <tr class="border-b border-border last:border-b-0" wire:key="closed-{{ $risk->id }}">
+                                <td class="px-4 py-3 font-semibold text-ink">
+                                    {{ $risk->title }}
+                                    <span class="block text-[13px] font-normal text-muted">
+                                        Closed {{ $risk->closed_on?->toFormattedDateString() }}
+                                        @if ($risk->closure_reason) — {{ $risk->closure_reason }} @endif
+                                    </span>
+                                </td>
+                                <td class="px-4 py-3 text-right">
+                                    @can('risks.manage')
+                                        <button type="button" wire:click="reopenRisk('{{ $risk->id }}')"
+                                                class="tap focusable rounded-full border border-border px-3.5 py-1.5 text-[13.5px] font-semibold text-ink-2">
+                                            Reopen
+                                        </button>
+                                    @endcan
+                                </td>
+                            </tr>
+                        @endforeach
+                    </tbody>
+                </table>
+            </div>
+        @endif
     @endif
 
     {{-- ────────────────────────────────────────────── needs looking at ── --}}

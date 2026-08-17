@@ -221,10 +221,17 @@ class UploadGate
         }
     }
 
-    /** Where clamd listens, or null when no scanner is configured. */
+    /**
+     * Where clamd listens, or null when no scanner is configured.
+     *
+     * config(), not env(): this used to be a raw env() call — the only one in
+     * app/ — which reads null after `php artisan config:cache` runs, and that
+     * cache is part of every documented production deploy. The one place raw
+     * env() would have disabled scanning was production itself.
+     */
     public function socket(): ?string
     {
-        $socket = (string) env('CLAMAV_SOCKET', '');
+        $socket = (string) config('services.clamav.socket', '');
 
         return $socket === '' ? null : $socket;
     }

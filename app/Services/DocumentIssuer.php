@@ -34,15 +34,26 @@ class DocumentIssuer
      */
     public function issue(Document $document, User $user, ?string $number = null): Document
     {
-        if ($document->status !== DocumentStatus::Draft) {
-            throw new RuntimeException(sprintf(
-                'Document %s is already %s and cannot be issued again.',
-                $document->number ?? $document->id,
-                $document->status->value,
-            ));
-        }
-
         return DB::transaction(function () use ($document, $user, $number) {
+            /*
+             * The draft guard runs on a row locked inside the transaction,
+             * not on the caller's in-memory copy: two concurrent issues (a
+             * double-click, a retried job, a replayed sync envelope) would
+             * both pass a stale check and each burn a number, mint a token
+             * and take the stock off the shelf again. Same lock-before-check
+             * as PaymentRecorder::record.
+             */
+            Document::query()->lockForUpdate()->findOrFail($document->getKey());
+            $document->refresh();
+
+            if ($document->status !== DocumentStatus::Draft) {
+                throw new RuntimeException(sprintf(
+                    'Document %s is already %s and cannot be issued again.',
+                    $document->number ?? $document->id,
+                    $document->status->value,
+                ));
+            }
+
             $document->issue_date ??= now()->toDateString();
             $document->number ??= $number ?? $this->numbers->next($document->type);
             $document->status = DocumentStatus::Issued;
@@ -52,7 +63,7 @@ class DocumentIssuer
 
             // Hash from a refreshed model so stored casts ("250.00"), not raw PHP
             // values (250), are what verification recomputes against later.
-            $document->refresh()->load('lines');
+            $document->refresh()->load('lines', 'contact');
             $document->forceFill([
                 'content_hash' => hash('sha256', $document->canonicalPayload()),
             ])->saveQuietly();

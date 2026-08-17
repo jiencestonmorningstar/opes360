@@ -106,7 +106,12 @@ class Edit extends Component
         $this->validate([
             'name' => ['required', 'string', 'max:120'],
             'description' => ['nullable', 'string', 'max:500'],
-            'subjectType' => ['required', Rule::in(array_keys(WorkflowSubjects::CATALOGUE))],
+            // The workflow's own current subject stays valid even when it has
+            // left the catalogue — an old path must still be renameable.
+            'subjectType' => ['required', Rule::in(array_unique(array_merge(
+                array_keys(WorkflowSubjects::CATALOGUE),
+                [$this->workflow->subject_type],
+            )))],
         ]);
 
         /*

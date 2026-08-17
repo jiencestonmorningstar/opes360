@@ -98,6 +98,20 @@
                             </a>
                         @endcan
 
+                        @can('update', $paper)
+                            @if ($paper->isAwaitingApproval())
+                                <p class="rounded-xl bg-tint-warning px-3 py-2 text-center text-[13px] font-semibold text-warning">
+                                    Awaiting approval
+                                </p>
+                            @else
+                                <button type="button" wire:click="submitForApproval" wire:loading.attr="disabled"
+                                        class="focusable flex h-11 w-full items-center justify-center gap-2 rounded-xl bg-surface-2 text-[14px] font-semibold text-ink-2 transition-colors hover:bg-tint-blue hover:text-brand">
+                                    <x-icon name="clipboard" class="size-[18px]" stroke-width="2" />
+                                    Send for approval
+                                </button>
+                            @endif
+                        @endcan
+
                         @can('papers.issue')
                             <button type="button" wire:click="issue" wire:loading.attr="disabled"
                                     class="focusable flex h-11 w-full items-center justify-center gap-2 rounded-xl bg-surface-2 text-[14px] font-semibold text-ink-2 transition-colors hover:bg-tint-blue hover:text-brand">

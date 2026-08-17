@@ -216,6 +216,27 @@ class Index extends Component
             : 'Sent for sign-off. It counts as filed once it is approved.');
     }
 
+    /**
+     * A refused filing goes back to being prepared, so it can be corrected
+     * and refiled. The deadline the refusal was about has not moved.
+     */
+    public function reprepare(string $filingId): void
+    {
+        Gate::authorize('compliance.file');
+
+        $filing = ComplianceFiling::findOrFail($filingId);
+
+        try {
+            app(ComplianceRegister::class)->returnToPreparer($filing);
+        } catch (RuntimeException $e) {
+            $this->addError('refused', $e->getMessage());
+
+            return;
+        }
+
+        session()->flash('status', 'Back with the preparer. Correct it and file it again.');
+    }
+
     public function toggleHistory(string $obligationId): void
     {
         $this->showingHistory = $this->showingHistory === $obligationId ? null : $obligationId;
@@ -231,6 +252,13 @@ class Index extends Component
             'overdue' => $calendar->overdue()->load('owner'),
             'dueSoon' => $calendar->dueSoon()->load('owner'),
             'inProgress' => $calendar->inProgress(),
+            // Refused filings need a way back — listed so they can be sent
+            // back to the preparer rather than sitting as a dead end.
+            'refused' => ComplianceFiling::query()
+                ->where('status', 'rejected')
+                ->with('obligation')
+                ->latest('updated_at')
+                ->get(),
             'obligations' => ComplianceObligation::query()
                 ->with(['owner', 'filings'])
                 ->orderByRaw('next_due_on IS NULL, next_due_on')

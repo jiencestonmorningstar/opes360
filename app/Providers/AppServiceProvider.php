@@ -72,6 +72,7 @@ use Illuminate\Pagination\Paginator;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Blade;
 use Illuminate\Support\Facades\Date;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\Facades\Vite;
 use Illuminate\Support\ServiceProvider;
@@ -142,7 +143,26 @@ class AppServiceProvider extends ServiceProvider
             return Limit::perMinute(120)->by($key);
         });
 
-        Model::preventLazyLoading(! $this->app->isProduction());
+        /*
+         * Lazy-load prevention is on everywhere — but production swaps the
+         * exception for a log line. Throwing in production would turn every
+         * N+1 that slipped past dev into a user-facing 500; staying silent
+         * (the old behaviour) meant those regressions shipped invisibly.
+         * Logging is the middle path: the page still renders, and the log
+         * names the model and relation so the missing eager-load is a
+         * one-line fix instead of a profiling session.
+         */
+        Model::preventLazyLoading();
+
+        if ($this->app->isProduction()) {
+            Model::handleLazyLoadingViolationUsing(function (Model $model, string $relation) {
+                Log::warning('Lazy-loading violation: add an eager load.', [
+                    'model' => get_class($model),
+                    'relation' => $relation,
+                ]);
+            });
+        }
+
         Model::preventSilentlyDiscardingAttributes(! $this->app->isProduction());
 
         Vite::prefetch(concurrency: 3);

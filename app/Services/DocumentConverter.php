@@ -11,6 +11,7 @@ use App\Services\Accounting\Ledger;
 use App\Services\Accounting\RecordsBusinessEvents;
 use App\Services\Stock\StockLedger;
 use App\Support\CurrentCompany;
+use App\Support\Vat;
 use App\Support\WebhookEvents;
 use Illuminate\Support\Facades\DB;
 use RuntimeException;
@@ -85,6 +86,16 @@ class DocumentConverter
         return round((float) $invoice->total - $this->creditedTotal($invoice), 2);
     }
 
+    /** The TVA those notes have already reclaimed. */
+    protected function creditedTax(Document $invoice): float
+    {
+        return round((float) Document::query()
+            ->where('parent_document_id', $invoice->id)
+            ->ofType(DocumentType::CreditNote)
+            ->issued()
+            ->sum('tax_total'), 2);
+    }
+
     /**
      * Credit part of an invoice.
      *
@@ -112,32 +123,54 @@ class DocumentConverter
             throw new RuntimeException('A draft or voided invoice has nothing to credit.');
         }
 
-        $amount = round($amount, 2);
+        // A note in the invoice's own currency rounds the invoice's own way:
+        // an XAF credit note showing 6 455,56 F promises a fraction of a franc
+        // that does not exist and can never be settled.
+        $decimals = Vat::decimalsFor($invoice->currency);
+        $amount = round($amount, $decimals);
 
         if ($amount <= 0) {
             throw new RuntimeException('A credit note for nothing is not a credit note.');
         }
 
-        $available = $this->creditableAmount($invoice);
+        return DB::transaction(function () use ($invoice, $user, $amount, $decimals, $reason) {
+            // Re-read under a row lock: two credits raised against the same
+            // invoice at once must not both pass the remaining-amount check on
+            // stale data and together credit more than was ever charged.
+            $invoice = Document::query()->lockForUpdate()->findOrFail($invoice->getKey());
 
-        if ($amount - $available > 0.005) {
-            throw new RuntimeException(sprintf(
-                'That is more than is left to credit on this invoice (%s).',
-                number_format($available, 2)
-            ));
-        }
+            $available = $this->creditableAmount($invoice);
 
-        // Whole invoice, nothing credited yet: copy it, so the credit note is
-        // the invoice's mirror image on paper as well as in the books.
-        if (abs($amount - (float) $invoice->total) < 0.005 && $this->creditedTotal($invoice) < 0.005) {
-            return $this->convert($invoice, $user);
-        }
+            if ($amount - $available > 0.005) {
+                throw new RuntimeException(sprintf(
+                    'That is more than is left to credit on this invoice (%s).',
+                    number_format($available, 2)
+                ));
+            }
 
-        $gross = (float) $invoice->total;
-        $tax = $gross > 0 ? round($amount * ((float) $invoice->tax_total / $gross), 2) : 0.0;
-        $net = round($amount - $tax, 2);
+            // Whole invoice, nothing credited yet: copy it, so the credit note
+            // is the invoice's mirror image on paper as well as in the books.
+            if (abs($amount - (float) $invoice->total) < 0.005 && $this->creditedTotal($invoice) < 0.005) {
+                return $this->convert($invoice, $user);
+            }
 
-        return DB::transaction(function () use ($invoice, $user, $amount, $net, $tax, $reason) {
+            /*
+             * The last slice takes the TVA that is actually left rather than
+             * its proportional share. Rounding each slice's share to whole
+             * francs strands a franc or two of TVA on an invoice credited in
+             * pieces — fully credited would no longer mean fully reclaimed,
+             * and the declaration would keep a residue no note accounts for.
+             */
+            $gross = (float) $invoice->total;
+
+            if (abs($amount - $available) < 0.005) {
+                $tax = round((float) $invoice->tax_total - $this->creditedTax($invoice), $decimals);
+            } else {
+                $tax = $gross > 0 ? round($amount * ((float) $invoice->tax_total / $gross), $decimals) : 0.0;
+            }
+
+            $net = round($amount - $tax, $decimals);
+
             $note = Document::create([
                 'type' => DocumentType::CreditNote,
                 'contact_id' => $invoice->contact_id,
@@ -191,7 +224,27 @@ class DocumentConverter
         }
 
         return DB::transaction(function () use ($source, $target, $user) {
-            $source->loadMissing('lines');
+            /*
+             * Re-checked under a row lock. The guard above reads before the
+             * transaction, so two full-value conversions racing each other
+             * could both pass it and together credit the invoice twice — the
+             * same double-click this method exists to refuse, just with two
+             * cursors instead of one. Mirrors PaymentRecorder's lock.
+             */
+            if ($target === DocumentType::CreditNote) {
+                $source = Document::query()->lockForUpdate()->findOrFail($source->getKey());
+
+                if ($this->creditedTotal($source) > 0.005) {
+                    throw new RuntimeException(sprintf(
+                        'Part of this invoice has already been credited. Credit the remaining %s instead.',
+                        number_format($this->creditableAmount($source), 2)
+                    ));
+                }
+            }
+
+            // Contact loaded too: the locked re-read above is a fresh model,
+            // and lazy loading is disabled app-wide.
+            $source->loadMissing('lines', 'contact');
 
             $copy = Document::create([
                 'type' => $target,
@@ -253,17 +306,29 @@ class DocumentConverter
      */
     public function void(Document $document, User $user, ?string $reason = null): Document
     {
-        if ($document->status === DocumentStatus::Void) {
-            throw new RuntimeException('This document is already void.');
-        }
-
-        if ((float) $document->amount_paid > 0) {
-            throw new RuntimeException(
-                'This document has payments against it. Refund or reallocate them before voiding.'
-            );
-        }
-
         return DB::transaction(function () use ($document, $user, $reason) {
+            /*
+             * Both guards run on a row locked inside the transaction, never
+             * on the caller's in-memory copy: a void racing a payment (the
+             * PaymentRecorder transaction also locks this row) must see the
+             * committed amount_paid, or it voids a document money has just
+             * been taken against. Same lock-before-check as PaymentRecorder.
+             */
+            Document::query()->lockForUpdate()->findOrFail($document->getKey());
+            $document->refresh();
+
+            if ($document->status === DocumentStatus::Void) {
+                throw new RuntimeException('This document is already void.');
+            }
+
+            if ((float) $document->amount_paid > 0) {
+                throw new RuntimeException(
+                    'This document has payments against it. Refund or reallocate them before voiding.'
+                );
+            }
+
+            $document->loadMissing('verificationToken', 'contact', 'company');
+
             $document->forceFill([
                 'status' => DocumentStatus::Void,
                 'balance' => 0,

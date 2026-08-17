@@ -7,7 +7,6 @@ use App\Services\DealPipeline;
 use Illuminate\Contracts\View\View;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Foundation\Auth\Access\AuthorizesRequests;
-use Illuminate\Support\Collection;
 use Livewire\Attributes\Url;
 use Livewire\Component;
 use RuntimeException;
@@ -66,42 +65,69 @@ class Index extends Component
         $this->redirectRoute('documents.show', $document, navigate: true);
     }
 
+    /**
+     * How many cards a column shows. The board used to load every matching
+     * deal on every render, which is fine at fifty deals and a page-long
+     * stall at five thousand. Fifty covers what anybody works from a board;
+     * past that the column header carries the real count, and search — which
+     * narrows the query itself, not the loaded page — is how the rest are
+     * reached.
+     */
+    public const COLUMN_LIMIT = 50;
+
     public function render(): View
     {
         $this->authorize('viewAny', Deal::class);
 
-        $deals = $this->query()->get();
+        $stages = $this->stages();
 
-        return view('livewire.deals.index', [
-            'columns' => $this->columns($deals),
-            'totals' => $deals->groupBy('stage')->map(fn (Collection $g) => $g->sum('value')),
-            'openCount' => $deals->filter->isOpen()->count(),
-            'openValue' => $deals->filter->isOpen()->sum('value'),
-        ])->layout('components.layouts.app', ['title' => 'Pipeline', 'active' => 'deals']);
-    }
-
-    /** @return array<string, Collection<int, Deal>> */
-    protected function columns(Collection $deals): array
-    {
-        $stages = $this->showClosed
-            ? array_keys(Deal::STAGES)
-            : array_values(array_diff(array_keys(Deal::STAGES), Deal::CLOSED_STAGES));
-
-        $grouped = $deals->groupBy('stage');
+        /*
+         * Counts and value totals come from one grouped aggregate rather than
+         * the loaded cards: with columns capped, summing what was loaded
+         * would silently under-report the pipeline's worth.
+         */
+        $summary = $this->query(withRelations: false)
+            ->reorder()
+            ->toBase()
+            ->selectRaw('stage, COUNT(*) as n, SUM(value) as value')
+            ->groupBy('stage')
+            ->get()
+            ->keyBy('stage');
 
         $columns = [];
 
         foreach ($stages as $stage) {
-            $columns[$stage] = $grouped->get($stage, collect());
+            // One capped query per stage — a handful of indexed LIMIT queries,
+            // each bounded no matter how big the pipeline grows.
+            $columns[$stage] = $this->query()
+                ->where('stage', $stage)
+                ->limit(self::COLUMN_LIMIT)
+                ->get();
         }
 
-        return $columns;
+        $open = collect($summary)->except(Deal::CLOSED_STAGES);
+
+        return view('livewire.deals.index', [
+            'columns' => $columns,
+            'counts' => collect($summary)->map(fn ($row) => (int) $row->n),
+            'totals' => collect($summary)->map(fn ($row) => (float) $row->value),
+            'openCount' => (int) $open->sum('n'),
+            'openValue' => (float) $open->sum('value'),
+        ])->layout('components.layouts.app', ['title' => 'Pipeline', 'active' => 'deals']);
     }
 
-    protected function query(): Builder
+    /** @return array<int, string> */
+    protected function stages(): array
+    {
+        return $this->showClosed
+            ? array_keys(Deal::STAGES)
+            : array_values(array_diff(array_keys(Deal::STAGES), Deal::CLOSED_STAGES));
+    }
+
+    protected function query(bool $withRelations = true): Builder
     {
         return Deal::query()
-            ->with('contact')
+            ->when($withRelations, fn (Builder $q) => $q->with('contact'))
             ->when(! $this->showClosed, fn (Builder $q) => $q->open())
             ->when($this->search !== '', function (Builder $query) {
                 $term = '%'.str_replace(['%', '_'], ['\%', '\_'], trim($this->search)).'%';

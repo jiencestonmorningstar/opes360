@@ -251,6 +251,16 @@ class PayrollRunner
         $company = $this->company();
 
         return DB::transaction(function () use ($run, $company, $actor) {
+            // Re-read under a row lock, the same way approve() and markPaid()
+            // do: a replayed void must see the committed status, not the
+            // caller's stale copy, or it reverses the entry a second time.
+            PayrollRun::query()->lockForUpdate()->findOrFail($run->getKey());
+            $run->refresh();
+
+            if ($run->status === 'void') {
+                throw new RuntimeException('This payroll has already been voided.');
+            }
+
             if ($run->isPaid()) {
                 throw new RuntimeException('This payroll has already been paid; reverse the payment first.');
             }

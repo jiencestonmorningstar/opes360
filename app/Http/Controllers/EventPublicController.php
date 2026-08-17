@@ -8,6 +8,7 @@ use App\Models\Scopes\CompanyScope;
 use App\Models\Ticket;
 use App\Services\SoldOutException;
 use App\Services\TicketSeller;
+use App\Support\CurrentCompany;
 use Illuminate\Http\Request;
 use Illuminate\Routing\Controller;
 use Illuminate\Validation\ValidationException;
@@ -28,11 +29,11 @@ class EventPublicController extends Controller
             abort(404);
         }
 
-        return view('public.event', [
+        return app(CurrentCompany::class)->as($event->company, fn () => response()->view('public.event', [
             'event' => $event,
             'company' => $event->company,
             'types' => $event->ticketTypes,
-        ]);
+        ]));
     }
 
     /**
@@ -52,11 +53,11 @@ class EventPublicController extends Controller
             abort(404);
         }
 
-        return view('public.event-embed', [
+        return app(CurrentCompany::class)->as($event->company, fn () => response()->view('public.event-embed', [
             'event' => $event,
             'company' => $event->company,
             'types' => $event->ticketTypes,
-        ]);
+        ]));
     }
 
     public function purchase(Request $request, string $token, TicketSeller $seller)
@@ -79,13 +80,16 @@ class EventPublicController extends Controller
         ]);
 
         try {
-            $tickets = $seller->sell(
+            // Sold as the event's own company: TicketType and Ticket are
+            // tenant-scoped, and a public buyer has no current company —
+            // the share token supplies the tenant, nothing else does.
+            $tickets = app(CurrentCompany::class)->as($event->company, fn () => $seller->sell(
                 $event,
                 $data['quantities'],
                 $data['buyer_name'],
                 $data['buyer_email'] ?? null,
                 $data['buyer_phone'] ?? null,
-            );
+            ));
         } catch (SoldOutException $e) {
             throw ValidationException::withMessages(['quantities' => $e->getMessage()]);
         } catch (\RuntimeException $e) {
@@ -117,22 +121,24 @@ class EventPublicController extends Controller
 
         $ids = $request->session()->get('purchased_tickets', []);
 
-        $tickets = Ticket::query()
-            ->withoutGlobalScope(CompanyScope::class)
-            ->with(['ticketType', 'verificationToken'])
-            ->whereKey($ids)
-            ->where('event_id', $event->id)
-            ->get();
+        return app(CurrentCompany::class)->as($event->company, function () use ($event, $token, $ids) {
+            $tickets = Ticket::query()
+                ->withoutGlobalScope(CompanyScope::class)
+                ->with(['ticketType', 'verificationToken'])
+                ->whereKey($ids)
+                ->where('event_id', $event->id)
+                ->get();
 
-        if ($tickets->isEmpty()) {
-            return redirect()->to('/e/'.$token);
-        }
+            if ($tickets->isEmpty()) {
+                return redirect()->to('/e/'.$token);
+            }
 
-        return view('public.event-tickets', [
-            'event' => $event,
-            'company' => $event->company,
-            'tickets' => $tickets,
-        ]);
+            return response()->view('public.event-tickets', [
+                'event' => $event,
+                'company' => $event->company,
+                'tickets' => $tickets,
+            ]);
+        });
     }
 
     protected function findEvent(string $token): ?Event

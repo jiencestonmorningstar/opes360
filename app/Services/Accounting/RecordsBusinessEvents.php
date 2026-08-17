@@ -82,6 +82,7 @@ class RecordsBusinessEvents
         $net = round((float) $document->subtotal, 2);
         $tax = round((float) $document->tax_total, 2);
         $gross = round((float) $document->total, 2);
+        $discount = round((float) $document->discount_total, 2);
 
         if ($gross <= 0) {
             return null;
@@ -103,8 +104,34 @@ class RecordsBusinessEvents
             ['account' => 'receivables', $customerSide => $gross, 'narration' => $document->contact?->displayName()],
         ];
 
-        foreach ($this->revenueByAccount($document, $net) as $role => $amount) {
+        /*
+         * A discount changed the total the customer owes but not, until this
+         * existed, anything on the other side of the entry — which left the
+         * entry out of balance by exactly the discount, the ledger refusing
+         * it, and a discounted sale never reaching the books at all.
+         *
+         * SYSCOHADA's answer is 709, Rabais, remises et ristournes accordés:
+         * revenue stands at the price asked and the reduction is its own
+         * debit, so the compte de résultat shows the discounting for what it
+         * is instead of quietly shrinking the sales line. A chart seeded
+         * before 709 existed falls back to crediting revenue net of the
+         * discount — a balanced entry with the discount folded in beats no
+         * entry, which is the very bug this replaces.
+         */
+        $discountAccount = $discount > 0
+            ? ChartOfAccounts::account($company, 'discounts_granted')
+            : null;
+
+        $revenueBase = $discountAccount !== null ? $net : round($net - $discount, 2);
+
+        foreach ($this->revenueByAccount($document, $revenueBase) as $role => $amount) {
             $lines[] = ['account' => $role, $incomeSide => $amount];
+        }
+
+        if ($discountAccount !== null) {
+            // Same side as the customer: on an invoice the rabais is given,
+            // on a credit note it is taken back with everything else.
+            $lines[] = ['account' => $discountAccount, $customerSide => $discount];
         }
 
         if ($tax > 0) {

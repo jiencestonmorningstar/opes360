@@ -142,6 +142,28 @@ class Show extends Component
         $this->dispatch('toast', message: 'Unit added, vacant and ready to let.');
     }
 
+    /** Off the market and back on: vacant ⇄ unavailable. Never over a tenant. */
+    public function toggleAvailability(string $unitId): void
+    {
+        Gate::authorize('estate.manage');
+
+        $unit = $this->property->units()->findOrFail($unitId);
+
+        try {
+            $unit->status === 'unavailable'
+                ? app(Tenancies::class)->markAvailable($unit, auth()->user())
+                : app(Tenancies::class)->markUnavailable($unit, auth()->user());
+        } catch (RuntimeException $e) {
+            $this->addError('letting', $e->getMessage());
+
+            return;
+        }
+
+        $this->dispatch('toast', message: $unit->fresh()->status === 'unavailable'
+            ? "{$unit->label} taken off the market."
+            : "{$unit->label} is lettable again.");
+    }
+
     public function startLetting(string $unitId): void
     {
         Gate::authorize('estate.manage');

@@ -4,6 +4,7 @@ namespace App\Livewire\Settings;
 
 use App\Support\TokenAbilities;
 use Illuminate\Contracts\View\View;
+use Illuminate\Support\Facades\Gate;
 use Illuminate\Validation\Rule;
 use Livewire\Component;
 
@@ -30,8 +31,23 @@ class ApiTokens extends Component
     /** Shown once, immediately after minting, then never again. */
     public ?string $plainTextToken = null;
 
+    /*
+     * Gated on `settings.update`, the same trust webhooks demand for the same
+     * reason: a token is a standing credential that outlives a password change,
+     * so minting one is account configuration, not personal preference. There
+     * is no dedicated ability for it, and `settings.view` is handed to every
+     * role — a gate everybody passes is not a gate. Checked in mount() AND in
+     * each action, because Livewire actions arrive without re-running mount.
+     */
+    public function mount(): void
+    {
+        Gate::authorize('settings.update');
+    }
+
     public function create(): void
     {
+        Gate::authorize('settings.update');
+
         $this->validate([
             'name' => ['required', 'string', 'max:120'],
             'abilities' => ['required', 'array', 'min:1'],
@@ -50,6 +66,8 @@ class ApiTokens extends Component
 
     public function revoke(string $id): void
     {
+        Gate::authorize('settings.update');
+
         // Scoped to the signed-in user's own tokens: an id from somebody
         // else's account must not resolve here.
         auth()->user()->tokens()->whereKey($id)->delete();

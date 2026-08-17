@@ -221,14 +221,16 @@ class CreditNoteTest extends TestCase
      */
     public function test_a_partial_credit_splits_the_tax_at_the_invoices_own_rate(): void
     {
-        // 1 000 HT plus 19.25% is 1 192.50 TTC. Crediting 596.25 is half of it.
+        // 1 000 HT plus 19.25% is 1 192.50 TTC. Crediting 596.25 is half of it
+        // — but the invoice is in XAF, so the note lands on 596 whole francs
+        // and the split stays whole with it.
         $invoice = $this->invoice(1000, DocumentType::Invoice, tax: 192.50);
 
         $note = app(DocumentConverter::class)->creditNote($invoice->fresh(), $this->owner, 596.25);
 
-        $this->assertSame(96.25, (float) $note->tax_total);
+        $this->assertSame(96.0, (float) $note->tax_total);
         $this->assertSame(500.0, (float) $note->subtotal);
-        $this->assertSame(596.25, (float) $note->total);
+        $this->assertSame(596.0, (float) $note->total);
     }
 
     public function test_several_partial_credits_add_up(): void

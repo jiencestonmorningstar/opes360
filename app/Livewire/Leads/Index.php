@@ -30,6 +30,9 @@ class Index extends Component
 {
     use AuthorizesRequests;
 
+    /** How many leads the register shows at once; the count says the rest exist. */
+    public const LIST_LIMIT = 100;
+
     #[Url]
     public string $tab = 'leads'; // leads|activity|forecast
 
@@ -244,8 +247,18 @@ class Index extends Component
 
         $forecast = new SalesForecast;
 
+        /*
+         * The register is capped the same way the deals board is: the page
+         * shows the most recent hundred, the header count is the real total
+         * from a COUNT, and search narrows the query itself. Loading every
+         * open lead on every Livewire render is invisible at fifty leads and
+         * a multi-second stall at ten thousand.
+         */
+        $leadsTotal = $this->leadsQuery()->count();
+
         return view('livewire.leads.index', [
-            'leads' => $this->leadsQuery()->get(),
+            'leads' => $this->leadsQuery()->limit(self::LIST_LIMIT)->get(),
+            'leadsTotal' => $leadsTotal,
             'openCount' => Lead::query()->open()->count(),
             // Overdue first: the whole reason to open the activity tab.
             'overdueActivities' => CrmActivity::query()->overdue()

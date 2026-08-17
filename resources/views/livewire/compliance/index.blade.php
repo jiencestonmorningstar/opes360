@@ -139,6 +139,30 @@
             </table>
         </div>
 
+        @if ($refused->isNotEmpty())
+            <p class="mt-6 text-[13px] font-semibold uppercase tracking-wide text-muted">Refused — needs correcting</p>
+            @error('refused')
+                <p class="mt-2 text-[13px] font-medium text-warning">{{ $message }}</p>
+            @enderror
+            <ul class="mt-2 space-y-2 text-[14px] text-ink-2">
+                @foreach ($refused as $refusedFiling)
+                    <li class="flex flex-wrap items-center justify-between gap-3">
+                        <span>
+                            {{ $refusedFiling->obligation?->name ?? '—' }} —
+                            due {{ $refusedFiling->due_on->toFormattedDateString() }}
+                            <span class="text-muted">({{ $refusedFiling->statusLabel() }})</span>
+                        </span>
+                        @can('compliance.file')
+                            <button type="button" wire:click="reprepare('{{ $refusedFiling->id }}')"
+                                    class="tap focusable rounded-full border border-border px-3.5 py-1.5 text-[13.5px] font-semibold text-ink-2">
+                                Send back for correction
+                            </button>
+                        @endcan
+                    </li>
+                @endforeach
+            </ul>
+        @endif
+
         @if ($inProgress->isNotEmpty())
             <p class="mt-6 text-[13px] font-semibold uppercase tracking-wide text-muted">Being prepared</p>
             <ul class="mt-2 space-y-1.5 text-[14px] text-ink-2">

@@ -209,6 +209,15 @@ class Show extends Component
         $this->act(fn () => app(JobOffers::class)->decline($offer, auth()->user(), $reason ?: null));
     }
 
+    public function withdrawOffer(string $offerId): void
+    {
+        Gate::authorize('recruitment.offer');
+
+        $offer = $this->application->offers()->findOrFail($offerId);
+
+        $this->act(fn () => app(JobOffers::class)->withdraw($offer, auth()->user()));
+    }
+
     /**
      * The services throw plain-language RuntimeExceptions; the screen shows
      * them beside the work instead of a 500 page.

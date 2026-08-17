@@ -137,6 +137,51 @@ class ServiceScreensTest extends ServiceTestCase
         $this->assertNull($target->resolution_minutes);
     }
 
+    /**
+     * Editing a policy pushes the new promise onto tickets still open —
+     * and leaves settled tickets alone. A resolved ticket's deadlines are
+     * the promise as it stood when the work was done; rewriting them would
+     * let a widened policy erase breaches already reported.
+     */
+    public function test_changing_a_target_recomputes_open_tickets_but_not_settled_ones(): void
+    {
+        $this->policy();
+
+        $desk = app(TicketDesk::class);
+
+        $open = $desk->open([
+            'contact_id' => $this->customer()->id,
+            'subject' => 'Line down',
+            'priority' => 'urgent',
+        ], $this->owner);
+
+        $settled = $desk->open([
+            'contact_id' => $this->customer()->id,
+            'subject' => 'Already handled',
+            'priority' => 'urgent',
+        ], $this->owner);
+        $desk->resolve($settled, $this->owner, 'Fixed.');
+
+        $openDueBefore = $open->refresh()->resolution_due_at;
+        $settledDueBefore = $settled->refresh()->resolution_due_at;
+
+        // Halve the resolution promise: 4 hours becomes 2.
+        Livewire::actingAs($this->owner)
+            ->test(Policies::class)
+            ->set('targets.urgent.resolution', '120')
+            ->call('saveTargets')
+            ->assertHasNoErrors();
+
+        $this->assertTrue(
+            $open->refresh()->resolution_due_at->lt($openDueBefore),
+            'The open ticket should be due earlier under the tightened target.'
+        );
+        $this->assertTrue(
+            $settled->refresh()->resolution_due_at->equalTo($settledDueBefore),
+            'The settled ticket must keep the deadline it was resolved under.'
+        );
+    }
+
     public function test_the_ticket_screen_shows_why_the_clock_is_stopped(): void
     {
         $this->policy();

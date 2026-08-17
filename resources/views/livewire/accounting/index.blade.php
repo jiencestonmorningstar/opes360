@@ -423,5 +423,98 @@
                 reference it, and a balance that cites a vanished account explains nothing.
             </p>
         @endif
+
+        {{-- Exercices — financial years and the periods inside them --}}
+        @if ($tab === 'periods')
+            @error('periods')
+                <p class="mt-4 rounded-xl bg-tint-red px-4 py-2.5 text-[13px] font-medium text-negative">{{ $message }}</p>
+            @enderror
+
+            @can('accounting.manage')
+                <x-ui.panel title="New financial year" class="mt-5">
+                    <div class="grid gap-3 min-[640px]:grid-cols-[1fr_190px_auto]">
+                        <label>
+                            <span class="mb-1 block text-[12px] font-semibold uppercase tracking-wide text-faint">Name</span>
+                            <input type="text" wire:model="yearName" placeholder="Exercice 2027" class="{{ $inputClass }}">
+                        </label>
+                        <label>
+                            <span class="mb-1 block text-[12px] font-semibold uppercase tracking-wide text-faint">Starts on</span>
+                            <input type="date" wire:model="yearStartsOn" class="{{ $inputClass }}">
+                        </label>
+                        <div class="flex items-end">
+                            <button type="button" wire:click="createYear"
+                                    class="focusable h-11 rounded-lg bg-fill-brand px-4 text-[13.5px] font-semibold text-white hover:opacity-90">
+                                Create the year
+                            </button>
+                        </div>
+                    </div>
+                    @error('yearName') <p class="mt-2 text-[12.5px] font-medium text-warning">{{ $message }}</p> @enderror
+                    @error('yearStartsOn') <p class="mt-2 text-[12.5px] font-medium text-warning">{{ $message }}</p> @enderror
+                    <p class="mt-2 text-[12px] text-muted">
+                        Twelve monthly periods are created with it. A closed period refuses new
+                        postings dated inside it, so March keeps having one answer.
+                    </p>
+                </x-ui.panel>
+            @endcan
+
+            @forelse ($years as $year)
+                <div wire:key="fy-{{ $year->id }}" class="card mt-5 p-4">
+                    <div class="flex flex-wrap items-center justify-between gap-3">
+                        <div>
+                            <p class="text-[15px] font-bold text-ink">
+                                {{ $year->name }}
+                                @if ($year->isClosed())
+                                    <span class="ml-1.5 rounded bg-surface-2 px-1.5 py-0.5 text-[11px] font-semibold text-muted">closed</span>
+                                @endif
+                            </p>
+                            <p class="mt-0.5 text-[12.5px] text-muted">
+                                {{ $year->starts_on->format('d M Y') }} — {{ $year->ends_on->format('d M Y') }}
+                            </p>
+                        </div>
+
+                        @can('accounting.manage')
+                            @if ($year->isClosed())
+                                <button type="button" wire:click="reopenYear('{{ $year->id }}')"
+                                        class="focusable rounded-lg border border-border bg-surface px-3.5 py-2 text-[12.5px] font-semibold text-ink-2 hover:bg-surface-2">
+                                    Reopen the year
+                                </button>
+                            @else
+                                <button type="button" wire:click="closeYear('{{ $year->id }}')"
+                                        wire:confirm="Close {{ $year->name }} and every period in it? The books will refuse postings dated inside it."
+                                        class="focusable rounded-lg bg-fill-brand px-3.5 py-2 text-[12.5px] font-semibold text-white hover:opacity-90">
+                                    Close the year
+                                </button>
+                            @endif
+                        @endcan
+                    </div>
+
+                    <div class="mt-3 grid gap-1.5 sm:grid-cols-2 lg:grid-cols-3">
+                        @foreach ($year->periods as $period)
+                            <div wire:key="fp-{{ $period->id }}"
+                                 class="flex items-center justify-between rounded-lg bg-surface-2 px-3 py-2">
+                                <span class="text-[13px] {{ $period->isClosed() ? 'text-muted line-through decoration-border' : 'font-medium text-ink-2' }}">
+                                    {{ $period->name }}
+                                </span>
+                                @can('accounting.manage')
+                                    @if ($period->isClosed())
+                                        <button type="button" wire:click="reopenPeriod('{{ $period->id }}')"
+                                                class="focusable text-[12px] font-semibold text-brand hover:underline">Reopen</button>
+                                    @else
+                                        <button type="button" wire:click="closePeriod('{{ $period->id }}')"
+                                                class="focusable text-[12px] font-semibold text-muted hover:underline">Close</button>
+                                    @endif
+                                @else
+                                    <span class="text-[12px] text-faint">{{ $period->isClosed() ? 'Closed' : 'Open' }}</span>
+                                @endcan
+                            </div>
+                        @endforeach
+                    </div>
+                </div>
+            @empty
+                <p class="mt-6 py-6 text-center text-[13.5px] text-muted">
+                    No financial years defined yet. Until one exists the books accept postings on any date.
+                </p>
+            @endforelse
+        @endif
     @endif
 </div>

@@ -154,4 +154,27 @@ class ApiTokenScreenTest extends TestCase
         $this->postJson('/api/v1/contacts', ['name' => 'Nope'], ['Authorization' => 'Bearer '.$plain])
             ->assertForbidden();
     }
+
+    /**
+     * Minting a credential is account configuration, gated on
+     * `settings.update` like the webhooks screen next to it. A token outlives
+     * a password change, so a role that may only look at settings must not be
+     * able to arrange standing API access for itself.
+     */
+    public function test_a_role_without_settings_update_cannot_reach_the_screen(): void
+    {
+        $clerk = User::factory()->create();
+        $company = Company::query()->firstOrFail();
+
+        $this->joinCompany($company, $clerk, Role::SALES_OFFICER);
+        $clerk->forceFill(['current_company_id' => $company->id])->save();
+
+        $this->actingAs($clerk)
+            ->get(route('settings.api-tokens'))
+            ->assertForbidden();
+
+        Livewire::actingAs($clerk)
+            ->test(ApiTokens::class)
+            ->assertForbidden();
+    }
 }

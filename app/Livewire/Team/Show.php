@@ -7,12 +7,14 @@ use App\Models\EmploymentContract;
 use App\Models\LeaveRequest;
 use App\Models\Payslip;
 use App\Models\SalaryComponent;
+use App\Services\HR\Employment;
 use App\Support\CurrentCompany;
 use Illuminate\Contracts\View\View;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Gate;
 use Livewire\Component;
+use RuntimeException;
 
 /**
  * One person: who they are, what they are on, what they are paid and when they
@@ -231,11 +233,52 @@ class Show extends Component
                 ->update(['status' => 'ended', 'ended_on' => $date]);
         });
 
+        $this->employee->emitDomainEvent('hr.employee.ended', ['ended_on' => $this->endDate]);
+
         $this->ending = false;
 
         $this->employee->refresh();
 
         session()->flash('status', $this->employee->name().' marked as having left.');
+    }
+
+    /**
+     * A pause, not a departure: the record stays, the contract stays. What a
+     * suspension means for pay is the payroll run's question, not this
+     * button's.
+     */
+    public function suspend(): void
+    {
+        Gate::authorize('employees.update');
+
+        try {
+            app(Employment::class)->suspend($this->employee, auth()->user());
+        } catch (RuntimeException $e) {
+            $this->addError('employee', $e->getMessage());
+
+            return;
+        }
+
+        $this->employee->refresh();
+
+        session()->flash('status', $this->employee->name().' suspended. The record and the contract stay as they are.');
+    }
+
+    public function unsuspend(): void
+    {
+        Gate::authorize('employees.update');
+
+        try {
+            app(Employment::class)->unsuspend($this->employee, auth()->user());
+        } catch (RuntimeException $e) {
+            $this->addError('employee', $e->getMessage());
+
+            return;
+        }
+
+        $this->employee->refresh();
+
+        session()->flash('status', $this->employee->name().' is back on active duty.');
     }
 
     public function reinstate(): void
@@ -426,7 +469,7 @@ class Show extends Component
             'leaveTo.after_or_equal' => 'Leave cannot end before it starts.',
         ]);
 
-        LeaveRequest::create([
+        $leave = LeaveRequest::create([
             'company_id' => app(CurrentCompany::class)->get()->id,
             'employee_id' => $this->employee->id,
             'type' => $this->leaveType,
@@ -439,6 +482,8 @@ class Show extends Component
             'reason' => $this->leaveReason ?: null,
             'requested_by' => auth()->id(),
         ]);
+
+        $leave->emitDomainEvent('hr.leave.requested');
 
         $this->addingLeave = false;
         $this->employee->refresh();
@@ -461,6 +506,12 @@ class Show extends Component
             'decided_by' => auth()->id(),
             'decided_at' => now(),
         ]);
+
+        // Only the approval is announced: `hr.leave.approved` is the
+        // catalogued moment; a decline changes nobody's balance.
+        if ($decision === 'approve') {
+            $leave->emitDomainEvent('hr.leave.approved');
+        }
 
         $this->employee->refresh();
 

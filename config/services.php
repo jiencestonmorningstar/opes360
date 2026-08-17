@@ -28,6 +28,25 @@ return [
         'region' => env('AWS_DEFAULT_REGION', 'us-east-1'),
     ],
 
+    /*
+     * The ClamAV daemon UploadGate streams uploads to. In services.php rather
+     * than a config file of its own because that is exactly what clamd is — a
+     * third-party service the app talks to over a socket — and a one-key file
+     * would exist only to hold this line. Read via config(), never env():
+     * a raw env() call outside config/ returns null once `config:cache` has
+     * run, which is every production deploy, and would switch scanning off
+     * precisely where it matters.
+     *
+     *   CLAMAV_SOCKET=unix:///var/run/clamav/clamd.ctl   (the VPS)
+     *   CLAMAV_SOCKET=tcp://127.0.0.1:3310
+     *
+     * Leave it unset anywhere clamd does not run; the gate degrades to its
+     * sniff checks.
+     */
+    'clamav' => [
+        'socket' => env('CLAMAV_SOCKET'),
+    ],
+
     'slack' => [
         'notifications' => [
             'bot_user_oauth_token' => env('SLACK_BOT_USER_OAUTH_TOKEN'),

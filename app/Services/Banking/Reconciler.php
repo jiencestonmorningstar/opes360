@@ -331,7 +331,16 @@ class Reconciler
 
             $amount = $locked->absoluteAmount();
 
-            $entry = $this->books->recordQuietly(fn () => app(Ledger::class)->post(
+            /*
+             * Posted directly, never through recordQuietly: a swallowed
+             * failure here used to mark the line matched with
+             * journal_entry_id = null — reconciled against nothing, the
+             * money invisible to the books and the line never offered for
+             * matching again. Failing loud rolls the whole transaction back
+             * and the line stays unmatched, the same deliberate choice
+             * AccountTransfers makes and documents.
+             */
+            $entry = app(Ledger::class)->post(
                 company: $company,
                 journal: 'BQ',
                 entryDate: $locked->value_date->toDateString(),
@@ -348,11 +357,11 @@ class Reconciler
                 narration: $narration ?? $locked->description,
                 reference: $locked->reference,
                 actor: $actor,
-            ));
+            );
 
             $locked->forceFill([
                 'status' => 'matched',
-                'journal_entry_id' => $entry?->id,
+                'journal_entry_id' => $entry->id,
                 'matched_at' => now(),
                 'matched_by' => $actor?->id,
             ])->save();

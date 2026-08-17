@@ -134,6 +134,19 @@ class UploadGateTest extends TestCase
         $this->addToAssertionCount(1);
     }
 
+    /**
+     * The socket comes from config, not a raw env() call. env() outside
+     * config/ reads null once `config:cache` has run — which is every
+     * production deploy — so a raw call would have disabled scanning exactly
+     * where it was configured to run.
+     */
+    public function test_the_socket_is_read_from_config_so_it_survives_config_cache(): void
+    {
+        config(['services.clamav.socket' => 'tcp://127.0.0.1:3310']);
+
+        $this->assertSame('tcp://127.0.0.1:3310', $this->gate()->socket());
+    }
+
     public function test_an_eicar_hit_is_refused_without_naming_the_scanner(): void
     {
         // The daemon's answer is faked at the socket layer; clamd need not exist.

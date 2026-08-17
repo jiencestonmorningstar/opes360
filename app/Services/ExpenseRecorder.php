@@ -159,6 +159,17 @@ class ExpenseRecorder
         }
 
         DB::transaction(function () use ($expense, $company, $actor) {
+            // Re-read under a row lock: a replayed void (retried job, second
+            // tab) must find the status already flipped and stop here rather
+            // than reversing the entry a second time. Ledger::reverse is also
+            // idempotent now, but the guard belongs at the door.
+            Expense::query()->lockForUpdate()->findOrFail($expense->getKey());
+            $expense->refresh();
+
+            if ($expense->status === 'void') {
+                throw new RuntimeException('This expense is already void.');
+            }
+
             $expense->loadMissing('account');
 
             if ($expense->payments()->exists()) {

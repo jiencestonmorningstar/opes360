@@ -134,13 +134,19 @@ class Stocktaker
      */
     public function post(Stocktake $stocktake, ?User $actor = null): Stocktake
     {
-        if (! $stocktake->isDraft()) {
-            throw new RuntimeException('This count has already been posted.');
-        }
-
         $company = $this->companyOf($stocktake);
 
         return DB::transaction(function () use ($stocktake, $company, $actor) {
+            // Re-read under a row lock: two concurrent posts of the same
+            // count would both pass a stale draft check and write the
+            // adjustment movements twice. Lock-before-check, as everywhere.
+            Stocktake::query()->lockForUpdate()->findOrFail($stocktake->getKey());
+            $stocktake->refresh();
+
+            if (! $stocktake->isDraft()) {
+                throw new RuntimeException('This count has already been posted.');
+            }
+
             $stocktake->loadMissing('lines.item');
 
             $counted = $stocktake->lines->filter(fn (StocktakeLine $line) => $line->isCounted());
@@ -206,13 +212,19 @@ class Stocktaker
      */
     public function void(Stocktake $stocktake, ?User $actor = null): Stocktake
     {
-        if ($stocktake->isVoid()) {
-            throw new RuntimeException('This count is already void.');
-        }
-
         $company = $this->companyOf($stocktake);
 
         return DB::transaction(function () use ($stocktake, $company, $actor) {
+            // Re-read under a row lock: a replayed void must find the status
+            // already flipped instead of writing the opposite movements and
+            // reversing the journal entry a second time.
+            Stocktake::query()->lockForUpdate()->findOrFail($stocktake->getKey());
+            $stocktake->refresh();
+
+            if ($stocktake->isVoid()) {
+                throw new RuntimeException('This count is already void.');
+            }
+
             if ($stocktake->isPosted()) {
                 $movements = StockMovement::query()
                     ->withoutGlobalScopes()

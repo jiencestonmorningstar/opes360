@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use App\Models\Concerns\BelongsToCompany;
+use App\Models\Concerns\EmitsDomainEvents;
 use Illuminate\Database\Eloquent\Concerns\HasUlids;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -21,6 +22,7 @@ use Illuminate\Support\Carbon;
 class LeaveRequest extends Model
 {
     use BelongsToCompany;
+    use EmitsDomainEvents;
     use HasFactory;
     use HasUlids;
     use SoftDeletes;

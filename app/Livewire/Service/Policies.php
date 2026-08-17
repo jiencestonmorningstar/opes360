@@ -4,6 +4,7 @@ namespace App\Livewire\Service;
 
 use App\Models\ServiceSlaPolicy;
 use App\Models\ServiceTicket;
+use App\Services\Service\SlaClock;
 use Illuminate\Contracts\View\View;
 use Illuminate\Support\Facades\Gate;
 use Livewire\Attributes\Url;
@@ -157,12 +158,10 @@ class Policies extends Component
                 ->all(),
         ]);
 
+        $this->recompute($policy);
         $this->load();
 
-        // Said out loud rather than left to be discovered: tickets already
-        // raised keep the deadlines that were worked out under the old
-        // calendar. Nothing recomputes them.
-        $this->dispatch('toast', message: 'Saved. Tickets already open keep the deadlines they were given.');
+        $this->dispatch('toast', message: 'Saved. Deadlines on open tickets have been recomputed.');
     }
 
     public function saveTargets(): void
@@ -192,8 +191,41 @@ class Policies extends Component
             ])->save();
         }
 
+        $this->recompute($policy);
         $this->load();
-        $this->dispatch('toast', message: 'Targets saved.');
+        $this->dispatch('toast', message: 'Targets saved. Deadlines on open tickets have been recomputed.');
+    }
+
+    /**
+     * Push an edited policy onto the tickets still governed by it.
+     *
+     * Open tickets only. A settled ticket's deadlines are history — the
+     * promise as it stood when the work was done — and rewriting them after
+     * the fact would let a widened policy quietly erase breaches the board
+     * already reported. (`pending_customer` tickets are included: their clock
+     * is paused, not finished, and they will resume under the new terms.)
+     *
+     * Runs through SlaClock::apply(), the same recompute-from-opening rule
+     * every other deadline change uses, so pause credits and priorities are
+     * honoured identically. Chunked inline rather than queued: the audience
+     * is one manager saving a form, the per-ticket work is two indexed reads
+     * and one write, and on the installs this ships to (often sync-queue,
+     * no worker) a queued job would either run inline anyway or never run.
+     * If a desk ever has enough open tickets for this to feel slow, move the
+     * loop into a queued job — the chunking already makes that a cut-paste.
+     */
+    protected function recompute(ServiceSlaPolicy $policy): void
+    {
+        $clock = app(SlaClock::class);
+
+        ServiceTicket::query()
+            ->where('sla_policy_id', $policy->id)
+            ->whereNotIn('status', ServiceTicket::SETTLED)
+            ->chunkById(100, function ($tickets) use ($clock) {
+                foreach ($tickets as $ticket) {
+                    $clock->apply($ticket);
+                }
+            });
     }
 
     public function render(): View

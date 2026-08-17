@@ -123,14 +123,16 @@ class DebitNoteTest extends TestCase
      */
     public function test_the_tax_splits_at_the_invoices_own_rate(): void
     {
-        // 1 000 HT plus 19.25% is 1 192.50 TTC.
+        // 1 000 HT plus 19.25% is 1 192.50 TTC. The note is in XAF, so the
+        // asked-for 596.25 lands as 596 whole francs — no fraction of a franc
+        // ever reaches a customer-facing document.
         $invoice = $this->invoice(1000, tax: 192.50);
 
         $note = app(DebitNotes::class)->raise($this->owner, 596.25, 'Complément', $invoice->fresh());
 
-        $this->assertSame(96.25, (float) $note->tax_total);
+        $this->assertSame(96.0, (float) $note->tax_total);
         $this->assertSame(500.0, (float) $note->subtotal);
-        $this->assertSame(596.25, (float) $note->total);
+        $this->assertSame(596.0, (float) $note->total);
     }
 
     public function test_the_tva_reaches_the_books(): void
@@ -141,7 +143,8 @@ class DebitNoteTest extends TestCase
 
         $vat = LedgerAccount::query()->where('number', '443')->first();
 
-        $this->assertSame(288.75, $this->balanceOf($vat));
+        // The invoice's 192.50 plus the note's 96 whole XAF francs.
+        $this->assertSame(288.50, $this->balanceOf($vat));
     }
 
     // ─────────────────────────────────────────────────── standalone ──
@@ -167,8 +170,10 @@ class DebitNoteTest extends TestCase
             $this->owner, 1192.50, 'Prestation omise', null, $this->customer, taxRate: 0.1925
         );
 
+        // XAF again: 1 192.50 asked, 1 193 charged, and the split stays whole.
         $this->assertSame(1000.0, (float) $note->subtotal);
-        $this->assertSame(192.50, (float) $note->tax_total);
+        $this->assertSame(193.0, (float) $note->tax_total);
+        $this->assertSame(1193.0, (float) $note->total);
     }
 
     public function test_it_falls_due_on_the_customers_terms(): void

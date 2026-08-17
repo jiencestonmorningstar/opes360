@@ -48,6 +48,22 @@ class VerificationController extends Controller
 
         $company = Company::find($verification->company_id);
 
+        if ($company === null) {
+            // An orphaned token — the company behind it is gone. The same
+            // branded "unknown" verdict as a token that never existed, never
+            // a 500 out of CurrentCompany::as(null).
+            return response()->view('verification.show', [
+                'verdict' => 'unknown',
+                'subjectKind' => null,
+                'company' => null,
+                'document' => null,
+                'receipt' => null,
+                'paper' => null,
+                'ticket' => null,
+                'loyaltyCard' => null,
+            ], 404);
+        }
+
         return app(CurrentCompany::class)->as($company, function () use ($request, $verification, $company) {
             $this->recordScan($request, $verification);
 
@@ -158,8 +174,13 @@ class VerificationController extends Controller
         // A customer's loyalty card. There is no voided/tampered distinction
         // here — the card is either a live card on this contact or it isn't;
         // a contact merged or deleted after issue simply resolves to unknown.
+        //
+        // Scoped like every sibling branch: resolveSubject runs inside
+        // CurrentCompany::as($company), so a token whose subject drifted to
+        // another tenant resolves to null instead of leaking that tenant's
+        // contact onto a public page.
         if ($verification->subject_type === Contact::class) {
-            $contact = Contact::withoutGlobalScopes()->find($verification->subject_id);
+            $contact = Contact::find($verification->subject_id);
 
             if ($contact === null) {
                 return ['voided', 'loyalty', null, null, null, null, null];

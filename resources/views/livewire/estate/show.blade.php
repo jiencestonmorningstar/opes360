@@ -122,6 +122,18 @@
                                         class="tap focusable rounded-full bg-fill-brand px-4 py-2 text-[13.5px] font-semibold text-white">
                                     Move a tenant in
                                 </button>
+                                <button type="button" wire:click="toggleAvailability('{{ $unit->id }}')"
+                                        wire:confirm="Take {{ $unit->label }} off the market? Nobody can be moved in until it is made lettable again."
+                                        class="tap focusable rounded-full border border-border px-4 py-2 text-[13.5px] font-semibold text-ink-2">
+                                    Mark unavailable
+                                </button>
+                            @endcan
+                        @elseif ($unit->status === 'unavailable')
+                            @can('estate.manage')
+                                <button type="button" wire:click="toggleAvailability('{{ $unit->id }}')"
+                                        class="tap focusable rounded-full border border-border px-4 py-2 text-[13.5px] font-semibold text-ink-2">
+                                    Make lettable
+                                </button>
                             @endcan
                         @endif
                     </div>

@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Http\Controllers\Concerns\AbortsForSuspendedCompany;
 use App\Models\BusinessDocumentShare;
 use App\Models\Company;
 use App\Models\Scopes\CompanyScope;
@@ -24,6 +25,8 @@ use Illuminate\Routing\Controller;
  */
 class DocumentShareController extends Controller
 {
+    use AbortsForSuspendedCompany;
+
     protected const UNLOCKED_SESSION_KEY = 'unlocked_shares';
 
     public function show(Request $request, string $token, DocumentComposer $composer)
@@ -41,7 +44,12 @@ class DocumentShareController extends Controller
             ]);
         }
 
+        // Gone or suspended, the link goes dark: never CurrentCompany::as(null),
+        // and a business suspended for abuse does not keep serving its papers.
         $company = Company::find($share->company_id);
+
+        abort_if($company === null, 404);
+        $this->abortIfSuspended($company);
 
         return app(CurrentCompany::class)->as($company, function () use ($request, $share, $company, $composer) {
             if ($share->isPasswordProtected() && ! $this->isUnlocked($request, $share)) {

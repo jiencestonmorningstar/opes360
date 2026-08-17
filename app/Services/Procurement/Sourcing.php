@@ -339,7 +339,120 @@ class Sourcing
         });
     }
 
+    /**
+     * Stop taking answers without choosing one.
+     *
+     * The honest end of a sourcing round that produced nothing worth buying —
+     * every quote came in too high, or the need went away. The requisition
+     * goes back to `approved`, because the approval still stands and the
+     * market can be asked again.
+     */
+    public function closeRfq(Rfq $rfq, User $actor, ?string $reason = null): Rfq
+    {
+        if (! $rfq->isOpen()) {
+            throw new RuntimeException("{$rfq->number} is already ".(Rfq::STATUSES[$rfq->status] ?? $rfq->status).'.');
+        }
+
+        return DB::transaction(function () use ($rfq, $reason) {
+            $rfq->forceFill([
+                'status' => 'closed',
+                'notes' => filled($reason)
+                    ? trim(($rfq->notes ? $rfq->notes."\n" : '').'Closed: '.$reason)
+                    : $rfq->notes,
+            ])->save();
+
+            $this->releaseRequisition($rfq);
+
+            $rfq->emitDomainEvent('rfq.closed', ['number' => $rfq->number]);
+
+            return $rfq->refresh();
+        });
+    }
+
+    /** Strike the round entirely — same guards as closing, its own word for the record. */
+    public function cancelRfq(Rfq $rfq, User $actor, ?string $reason = null): Rfq
+    {
+        if (! $rfq->isOpen()) {
+            throw new RuntimeException("{$rfq->number} is already ".(Rfq::STATUSES[$rfq->status] ?? $rfq->status).'.');
+        }
+
+        return DB::transaction(function () use ($rfq, $reason) {
+            $rfq->forceFill([
+                'status' => 'cancelled',
+                'notes' => filled($reason)
+                    ? trim(($rfq->notes ? $rfq->notes."\n" : '').'Cancelled: '.$reason)
+                    : $rfq->notes,
+            ])->save();
+
+            $this->releaseRequisition($rfq);
+
+            $rfq->emitDomainEvent('rfq.cancelled', ['number' => $rfq->number]);
+
+            return $rfq->refresh();
+        });
+    }
+
+    /**
+     * Mark a quotation as one of the front-runners — or take the mark off.
+     *
+     * A bookmark, not a decision: it commits nothing and nobody is told.
+     * The decision is award(), and only award() closes the round.
+     */
+    public function shortlist(SupplierQuotation $quotation, User $actor): SupplierQuotation
+    {
+        $rfq = $quotation->rfq;
+
+        if ($rfq === null || ! $rfq->isOpen()) {
+            throw new RuntimeException('That request for quotation has already been decided.');
+        }
+
+        if (! in_array($quotation->status, ['received', 'shortlisted'], true)) {
+            throw new RuntimeException(
+                'That quotation is '.(SupplierQuotation::STATUSES[$quotation->status] ?? $quotation->status).' and cannot be shortlisted.'
+            );
+        }
+
+        $quotation->forceFill([
+            'status' => $quotation->status === 'shortlisted' ? 'received' : 'shortlisted',
+        ])->save();
+
+        return $quotation->refresh();
+    }
+
+    /** The supplier took their price back. Off the comparison, kept on the record. */
+    public function withdrawQuotation(SupplierQuotation $quotation, User $actor): SupplierQuotation
+    {
+        if ($quotation->status === 'awarded') {
+            throw new RuntimeException('That quotation was awarded — an order rests on it. It can no longer be withdrawn.');
+        }
+
+        if (! in_array($quotation->status, ['received', 'shortlisted'], true)) {
+            throw new RuntimeException(
+                'That quotation is already '.(SupplierQuotation::STATUSES[$quotation->status] ?? $quotation->status).'.'
+            );
+        }
+
+        $quotation->forceFill(['status' => 'withdrawn'])->save();
+
+        return $quotation->refresh();
+    }
+
     // ------------------------------------------------------------- internals
+
+    /**
+     * A round that ended without an order hands the requisition back: the
+     * approval still stands, and `approved` is what lets it be sourced again.
+     */
+    protected function releaseRequisition(Rfq $rfq): void
+    {
+        $requisition = $rfq->requisition;
+
+        if ($requisition !== null
+            && $requisition->status === 'sourcing'
+            && $requisition->purchase_order_id === null) {
+            $requisition->forceFill(['status' => 'approved'])->save();
+        }
+    }
 
     /**
      * The one gate that matters, asked of the engine rather than of a column.

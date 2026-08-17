@@ -4,8 +4,10 @@ namespace Tests\Feature\Workflow;
 
 use App\Livewire\Workflow\Edit;
 use App\Livewire\Workflow\Index;
+use App\Models\BusinessDocument;
 use App\Models\Contract;
 use App\Models\Expense;
+use App\Models\PurchaseRequisition;
 use App\Models\Role;
 use App\Models\Workflow;
 use App\Models\WorkflowInstance;
@@ -46,11 +48,11 @@ class WorkflowAdminTest extends WorkflowTestCase
 
         Livewire::test(Index::class)
             ->call('startCreating')
-            ->set('name', 'Expense approval')
-            ->set('subjectType', Expense::class)
+            ->set('name', 'Letters need a second pair of eyes')
+            ->set('subjectType', BusinessDocument::class)
             ->call('create');
 
-        $workflow = Workflow::query()->where('name', 'Expense approval')->firstOrFail();
+        $workflow = Workflow::query()->where('name', 'Letters need a second pair of eyes')->firstOrFail();
 
         Livewire::test(Edit::class, ['workflow' => $workflow])
             ->call('addStep')
@@ -68,8 +70,15 @@ class WorkflowAdminTest extends WorkflowTestCase
         $this->assertTrue($workflow->is_default);
         $this->assertSame(1, $workflow->steps->first()->position);
 
-        $expense = $this->expense();
-        $instance = app(WorkflowEngine::class)->start($expense, Workflow::defaultFor(Expense::class), $this->owner);
+        $paper = BusinessDocument::create([
+            'company_id' => $this->company->id,
+            'template' => 'letter',
+            'title' => 'Offer letter',
+            'body' => 'Terms.',
+            'status' => 'draft',
+            'created_by' => $this->owner->id,
+        ]);
+        $instance = app(WorkflowEngine::class)->start($paper, Workflow::defaultFor(BusinessDocument::class), $this->owner);
 
         $this->assertSame('running', $instance->status);
         $this->assertTrue($instance->assignments()->where('user_id', $manager->id)->exists());
@@ -380,9 +389,9 @@ class WorkflowAdminTest extends WorkflowTestCase
 
     public function test_the_fields_offered_are_the_ones_the_record_actually_has(): void
     {
-        $fields = WorkflowSubjects::fields(Expense::class);
+        $fields = WorkflowSubjects::fields(PurchaseRequisition::class);
 
-        $this->assertContains('total', $fields);
+        $this->assertContains('estimated_total', $fields);
         $this->assertNotContains('company_id', $fields);
         $this->assertNotContains('id', $fields);
         $this->assertSame([], WorkflowSubjects::fields('App\\Models\\NotApprovable'));

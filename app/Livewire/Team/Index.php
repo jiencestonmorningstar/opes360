@@ -118,7 +118,7 @@ class Index extends Component
 
         $company = app(CurrentCompany::class)->get();
 
-        DB::transaction(function () use ($company) {
+        $employee = DB::transaction(function () use ($company) {
             $employee = Employee::create([
                 'company_id' => $company->id,
                 'first_name' => trim($this->firstName),
@@ -146,7 +146,13 @@ class Index extends Component
                 'currency' => $company->currency ?: 'XAF',
                 'status' => 'active',
             ]);
+
+            return $employee;
         });
+
+        // Announced after the transaction: a rule reacting to a person who
+        // was then rolled back would be reacting to nobody.
+        $employee->emitDomainEvent('hr.employee.created');
 
         $this->adding = false;
         $this->resetPage();

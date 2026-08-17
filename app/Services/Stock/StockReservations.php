@@ -55,6 +55,21 @@ class StockReservations
         $company = $this->company();
 
         return DB::transaction(function () use ($company, $item, $quantity, $location, $batch, $for, $expiresAt, $actor, $note) {
+            /*
+             * The item row is the mutex serialising this check-then-act.
+             * "Available" is SUM(movements) − SUM(live reservations): pure
+             * aggregates, no row of their own to lock, so two concurrent
+             * reserves would read the same snapshot, both pass the check
+             * below, and both insert — the same unit promised to two
+             * customers. Taking the item row FOR UPDATE first makes the
+             * second transaction wait and re-run the sums against the
+             * winner's committed reservation. (A no-op on sqlite, where the
+             * single writer serialises anyway.)
+             */
+            if ($item->track_stock) {
+                Item::query()->withoutGlobalScopes()->whereKey($item->getKey())->lockForUpdate()->first();
+            }
+
             $available = $batch
                 ? $this->availableOfBatch($batch, $location)
                 : $this->availableOf($item, $location);

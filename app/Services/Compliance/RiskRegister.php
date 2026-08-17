@@ -93,6 +93,25 @@ class RiskRegister
     }
 
     /**
+     * The control was tried and it did not do the job.
+     *
+     * The loudest honest state on the register: a mitigation everyone believed
+     * in is not working, and saying so is exactly what keeps the residual
+     * score from being reassurance. What was known about it — the date it went
+     * in, its judged effectiveness — is kept: history, not decoration.
+     */
+    public function markControlFailed(RiskControl $control): RiskControl
+    {
+        if ($control->status === 'failed') {
+            throw new RuntimeException('This control is already marked as not working.');
+        }
+
+        $control->forceFill(['status' => 'failed'])->save();
+
+        return $control->refresh();
+    }
+
+    /**
      * Somebody looked at this risk again, on this date.
      *
      * The next review is counted from when the review actually happened —

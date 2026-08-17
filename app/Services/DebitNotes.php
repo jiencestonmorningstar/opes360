@@ -8,6 +8,7 @@ use App\Models\Contact;
 use App\Models\Document;
 use App\Models\DocumentLine;
 use App\Models\User;
+use App\Support\Vat;
 use Illuminate\Support\Facades\DB;
 use RuntimeException;
 
@@ -64,7 +65,12 @@ class DebitNotes
         ?float $taxRate = null,
     ): Document {
         $reason = trim($reason);
-        $amount = round($amount, 2);
+
+        // Rounded the currency's own way: an XAF note demanding 8 385,74 F
+        // asks the customer for a fraction of a franc that cannot be paid.
+        $currency = $against?->currency ?? auth()->user()?->currentCompany?->currency ?? 'XAF';
+        $decimals = Vat::decimalsFor($currency);
+        $amount = round($amount, $decimals);
 
         if ($amount <= 0) {
             throw new RuntimeException('A debit note for nothing is not a debit note.');
@@ -101,12 +107,12 @@ class DebitNotes
             throw new RuntimeException('A debit note has to be charged to somebody.');
         }
 
-        [$net, $tax] = $this->split($amount, $against, $taxRate);
+        [$net, $tax] = $this->split($amount, $against, $taxRate, $decimals);
 
         $contactId = $against?->contact_id ?? $customer?->id;
         $terms = ($against?->contact ?? $customer)?->payment_terms_days ?? 14;
 
-        return DB::transaction(function () use ($user, $amount, $net, $tax, $reason, $against, $contactId, $terms) {
+        return DB::transaction(function () use ($user, $amount, $net, $tax, $reason, $against, $currency, $contactId, $terms) {
             $note = Document::create([
                 'type' => DocumentType::DebitNote,
                 'contact_id' => $contactId,
@@ -117,7 +123,7 @@ class DebitNotes
                 // overdue, so dunning and the collections queue would never see
                 // it.
                 'due_date' => now()->addDays($terms)->toDateString(),
-                'currency' => $against?->currency ?? auth()->user()?->currentCompany?->currency ?? 'XAF',
+                'currency' => $currency,
                 // Explicitly 1 rather than null for a standalone note: the
                 // column is NOT NULL with a default, and passing null through
                 // mass assignment sets null rather than falling back to it.
@@ -169,13 +175,13 @@ class DebitNotes
      *
      * @return array{0: float, 1: float} [net, tax]
      */
-    protected function split(float $amount, ?Document $against, ?float $taxRate): array
+    protected function split(float $amount, ?Document $against, ?float $taxRate, int $decimals = 2): array
     {
         if ($against !== null) {
             $gross = (float) $against->total;
-            $tax = $gross > 0 ? round($amount * ((float) $against->tax_total / $gross), 2) : 0.0;
+            $tax = $gross > 0 ? round($amount * ((float) $against->tax_total / $gross), $decimals) : 0.0;
 
-            return [round($amount - $tax, 2), $tax];
+            return [round($amount - $tax, $decimals), $tax];
         }
 
         // No rate given means none applies. A late-payment charge is
@@ -187,8 +193,8 @@ class DebitNotes
             return [$amount, 0.0];
         }
 
-        $tax = round($amount * $taxRate / (1 + $taxRate), 2);
+        $tax = round($amount * $taxRate / (1 + $taxRate), $decimals);
 
-        return [round($amount - $tax, 2), $tax];
+        return [round($amount - $tax, $decimals), $tax];
     }
 }

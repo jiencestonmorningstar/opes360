@@ -103,6 +103,67 @@ class RiskScreensTest extends ComplianceTestCase
         $this->assertFalse($risk->fresh()->hasBeenReassessed());
     }
 
+    public function test_a_control_can_be_marked_as_not_working(): void
+    {
+        $risk = $this->risk();
+        $control = app(RiskRegister::class)->addControl($risk, ['title' => 'Monthly load test'], $this->owner);
+
+        Livewire::actingAs($this->owner)
+            ->test(Index::class)
+            ->call('markControlFailed', $control->id)
+            ->assertHasNoErrors();
+
+        $this->assertSame('failed', $control->fresh()->status);
+
+        // Saying it twice earns the refusal, not a silent overwrite.
+        Livewire::actingAs($this->owner)
+            ->test(Index::class)
+            ->call('markControlFailed', $control->id)
+            ->assertHasErrors('control');
+    }
+
+    public function test_closing_a_risk_needs_a_reason_and_takes_it_off_the_register(): void
+    {
+        $risk = $this->risk();
+
+        Livewire::actingAs($this->owner)
+            ->test(Index::class)
+            ->call('startClosing', $risk->id)
+            ->call('closeRisk')
+            ->assertHasErrors('closureReason');
+
+        $this->assertFalse($risk->fresh()->isClosed());
+
+        Livewire::actingAs($this->owner)
+            ->test(Index::class)
+            ->call('startClosing', $risk->id)
+            ->set('closureReason', 'The generator was replaced; the exposure is gone.')
+            ->call('closeRisk')
+            ->assertHasNoErrors();
+
+        $fresh = $risk->fresh();
+        $this->assertTrue($fresh->isClosed());
+        $this->assertSame('The generator was replaced; the exposure is gone.', $fresh->closure_reason);
+        // Cleared so a closed risk stops appearing on the review list.
+        $this->assertNull($fresh->next_review_on);
+    }
+
+    public function test_a_closed_risk_is_visible_and_can_be_reopened(): void
+    {
+        $risk = $this->risk();
+        app(RiskRegister::class)->close($risk, 'Tidied up.', $this->owner);
+
+        Livewire::actingAs($this->owner)
+            ->test(Index::class)
+            ->assertSee('Recently closed')
+            ->call('reopenRisk', $risk->id)
+            ->assertHasNoErrors();
+
+        $fresh = $risk->fresh();
+        $this->assertSame('open', $fresh->status);
+        $this->assertNull($fresh->closure_reason);
+    }
+
     public function test_reviewing_moves_the_next_review_date(): void
     {
         $risk = $this->risk(['next_review_on' => now()->subMonth()->toDateString()]);

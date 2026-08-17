@@ -249,6 +249,41 @@
                                 </li>
                             @endforeach
                         </ul>
+
+                        @can('logistics.manage')
+                            @if ($closing === $manifest->id)
+                                <div class="mt-3 flex flex-wrap items-end gap-2">
+                                    <div>
+                                        <label class="block text-[12.5px] font-medium text-muted">Odometer out</label>
+                                        <input type="number" min="0" wire:model="startOdometer" placeholder="km"
+                                               class="{{ $inputClass }} mt-1 h-10 w-32">
+                                    </div>
+                                    <div>
+                                        <label class="block text-[12.5px] font-medium text-muted">Odometer back</label>
+                                        <input type="number" min="0" wire:model="endOdometer" placeholder="km"
+                                               class="{{ $inputClass }} mt-1 h-10 w-32">
+                                    </div>
+                                    <button type="button" wire:click="closeManifest('{{ $manifest->id }}')"
+                                            class="tap focusable shrink-0 rounded-full bg-fill-brand px-4 py-2 text-[13.5px] font-semibold text-white">
+                                        Close manifest
+                                    </button>
+                                    <button type="button" wire:click="$set('closing', null)"
+                                            class="tap focusable shrink-0 rounded-full border border-border px-4 py-2 text-[13.5px] font-semibold text-ink">
+                                        Cancel
+                                    </button>
+                                </div>
+                                @error('startOdometer') <p class="mt-1 text-[13px] text-rose-600">{{ $message }}</p> @enderror
+                                @error('endOdometer') <p class="mt-1 text-[13px] text-rose-600">{{ $message }}</p> @enderror
+                                <p class="mt-1 text-[12.5px] text-muted">Both readings write the journey into the vehicle's trip log. Leave them blank to close without one.</p>
+                            @else
+                                <div class="mt-3">
+                                    <button type="button" wire:click="startClosing('{{ $manifest->id }}')"
+                                            class="tap focusable rounded-full border border-border px-4 py-2 text-[13.5px] font-semibold text-ink">
+                                        Close manifest
+                                    </button>
+                                </div>
+                            @endif
+                        @endcan
                     </div>
                 @empty
                     <p class="text-[13.5px] text-muted">Nothing on the road.</p>

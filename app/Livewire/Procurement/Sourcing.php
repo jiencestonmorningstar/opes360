@@ -257,6 +257,74 @@ class Sourcing extends Component
         session()->flash('draftOrderId', $order->id);
     }
 
+    /** Stop taking answers without choosing one; the requisition can go out again. */
+    public function closeRfq(): void
+    {
+        Gate::authorize('procurement.rfq-manage');
+
+        $rfq = Rfq::query()->findOrFail($this->rfqId);
+
+        try {
+            app(SourcingService::class)->closeRfq($rfq, auth()->user());
+        } catch (RuntimeException $e) {
+            $this->addError('rfqState', $e->getMessage());
+
+            return;
+        }
+
+        session()->flash('status', "{$rfq->number} closed without an award. The requisition is approved and waiting again.");
+    }
+
+    public function cancelRfq(): void
+    {
+        Gate::authorize('procurement.rfq-manage');
+
+        $rfq = Rfq::query()->findOrFail($this->rfqId);
+
+        try {
+            app(SourcingService::class)->cancelRfq($rfq, auth()->user());
+        } catch (RuntimeException $e) {
+            $this->addError('rfqState', $e->getMessage());
+
+            return;
+        }
+
+        session()->flash('status', "{$rfq->number} cancelled. The requisition is approved and waiting again.");
+    }
+
+    /** A bookmark on the comparison, not a decision — award() decides. */
+    public function shortlist(string $quotationId): void
+    {
+        Gate::authorize('procurement.rfq-manage');
+
+        $quotation = SupplierQuotation::query()->with('rfq')->findOrFail($quotationId);
+
+        try {
+            app(SourcingService::class)->shortlist($quotation, auth()->user());
+        } catch (RuntimeException $e) {
+            $this->addError('award', $e->getMessage());
+
+            return;
+        }
+    }
+
+    public function withdrawQuotation(string $quotationId): void
+    {
+        Gate::authorize('procurement.rfq-manage');
+
+        $quotation = SupplierQuotation::query()->findOrFail($quotationId);
+
+        try {
+            app(SourcingService::class)->withdrawQuotation($quotation, auth()->user());
+        } catch (RuntimeException $e) {
+            $this->addError('award', $e->getMessage());
+
+            return;
+        }
+
+        session()->flash('status', 'Quotation withdrawn — off the comparison, kept on the record.');
+    }
+
     public function render(): View
     {
         $rfq = $this->rfqId === null

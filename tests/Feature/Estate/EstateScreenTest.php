@@ -115,6 +115,54 @@ class EstateScreenTest extends TestCase
         $this->assertNotNull($tenancy->deposit_entry_id);
     }
 
+    public function test_a_vacant_unit_toggles_off_and_back_onto_the_market(): void
+    {
+        $property = Property::create([
+            'company_id' => $this->company->id,
+            'name' => 'Immeuble Akwa',
+            'kind' => 'residential',
+        ]);
+        $unit = PropertyUnit::create([
+            'company_id' => $this->company->id,
+            'property_id' => $property->id,
+            'label' => 'Studio 3',
+            'status' => 'vacant',
+        ]);
+
+        Livewire::test(EstateShow::class, ['property' => $property])
+            ->call('toggleAvailability', $unit->id)
+            ->assertHasNoErrors();
+
+        $this->assertSame('unavailable', $unit->refresh()->status);
+
+        Livewire::test(EstateShow::class, ['property' => $property])
+            ->call('toggleAvailability', $unit->id)
+            ->assertHasNoErrors();
+
+        $this->assertSame('vacant', $unit->refresh()->status);
+    }
+
+    public function test_an_occupied_unit_cannot_be_taken_off_the_market(): void
+    {
+        $property = Property::create([
+            'company_id' => $this->company->id,
+            'name' => 'Immeuble Bonanjo',
+            'kind' => 'residential',
+        ]);
+        $unit = PropertyUnit::create([
+            'company_id' => $this->company->id,
+            'property_id' => $property->id,
+            'label' => 'Shop 1',
+            'status' => 'occupied',
+        ]);
+
+        Livewire::test(EstateShow::class, ['property' => $property])
+            ->call('toggleAvailability', $unit->id)
+            ->assertHasErrors('letting');
+
+        $this->assertSame('occupied', $unit->refresh()->status);
+    }
+
     public function test_the_screen_surfaces_the_service_refusal_instead_of_crashing(): void
     {
         $property = Property::create([

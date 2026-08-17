@@ -5,11 +5,10 @@ namespace App\Support;
 use App\Models\BusinessDocument;
 use App\Models\ComplianceFiling;
 use App\Models\Contract;
-use App\Models\Expense;
 use App\Models\ExpenseClaim;
-use App\Models\Project;
+use App\Models\InsuranceClaim;
+use App\Models\JobOffer;
 use App\Models\PurchaseRequisition;
-use App\Models\ServiceJob;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Str;
@@ -39,10 +38,6 @@ class WorkflowSubjects
             'label' => 'Staff expense claims',
             'hint' => 'Money an employee paid themselves and wants back.',
         ],
-        Expense::class => [
-            'label' => 'Expenses',
-            'hint' => 'What the business spent, recorded against a supplier or a category.',
-        ],
         Contract::class => [
             'label' => 'Contracts',
             'hint' => 'Signing the business up to something.',
@@ -51,17 +46,17 @@ class WorkflowSubjects
             'label' => 'Statutory filings',
             'hint' => 'Swearing that a return went in. The filer should not be the only witness.',
         ],
-        ServiceJob::class => [
-            'label' => 'Service visits',
-            'hint' => 'Work carried out at a customer’s site, before it is billed.',
-        ],
         BusinessDocument::class => [
             'label' => 'Documents',
             'hint' => 'Letters, memos and anything else issued on the company’s paper.',
         ],
-        Project::class => [
-            'label' => 'Projects',
-            'hint' => 'A piece of work with a budget behind it.',
+        JobOffer::class => [
+            'label' => 'Job offers',
+            'hint' => 'An offer letter commits a salary every month from now on.',
+        ],
+        InsuranceClaim::class => [
+            'label' => 'Claim settlements',
+            'hint' => 'Paying out on an insurance claim, before the money leaves.',
         ],
     ];
 

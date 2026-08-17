@@ -2,9 +2,12 @@
 
 namespace App\Livewire\Accounting;
 
+use App\Models\FiscalPeriod;
+use App\Models\FiscalYear;
 use App\Models\JournalEntry;
 use App\Models\LedgerAccount;
 use App\Services\Accounting\Books;
+use App\Services\Accounting\FiscalPeriods;
 use App\Support\Accounting\ChartOfAccounts;
 use App\Support\CurrentCompany;
 use Carbon\CarbonImmutable;
@@ -12,6 +15,7 @@ use Illuminate\Contracts\View\View;
 use Illuminate\Foundation\Auth\Access\AuthorizesRequests;
 use Livewire\Attributes\Url;
 use Livewire\Component;
+use RuntimeException;
 use Symfony\Component\HttpFoundation\StreamedResponse;
 
 /**
@@ -49,7 +53,14 @@ class Index extends Component
         'income' => 'Compte de résultat',
         'sheet' => 'Bilan',
         'chart' => 'Plan comptable',
+        'periods' => 'Exercices',
     ];
+
+    // ---- fiscal periods ----
+
+    public string $yearName = '';
+
+    public string $yearStartsOn = '';
 
     // ---- chart management ----
 
@@ -255,6 +266,94 @@ class Index extends Component
         session()->flash('accountingStatus', "Account {$account->number} removed.");
     }
 
+    /**
+     * A financial year with its twelve months, created together.
+     *
+     * Monthly because that is what the businesses this serves actually close
+     * on — see FiscalPeriods::createYearWithMonths for the reasoning.
+     */
+    public function createYear(FiscalPeriods $periods): void
+    {
+        $this->authorize('accounting.manage');
+
+        $this->validate([
+            'yearName' => ['required', 'string', 'max:60'],
+            'yearStartsOn' => ['required', 'date'],
+        ]);
+
+        $company = app(CurrentCompany::class)->get();
+
+        $periods->createYearWithMonths(
+            $company,
+            trim($this->yearName),
+            CarbonImmutable::parse($this->yearStartsOn),
+            auth()->user(),
+        );
+
+        $this->reset('yearName', 'yearStartsOn');
+        session()->flash('accountingStatus', 'Financial year created with its twelve months.');
+    }
+
+    public function closePeriod(string $id, FiscalPeriods $periods): void
+    {
+        $this->authorize('accounting.manage');
+
+        try {
+            $periods->closePeriod(FiscalPeriod::query()->findOrFail($id), auth()->user());
+        } catch (RuntimeException $e) {
+            $this->addError('periods', $e->getMessage());
+
+            return;
+        }
+
+        session()->flash('accountingStatus', 'Period closed — the books refuse new postings dated inside it.');
+    }
+
+    public function reopenPeriod(string $id, FiscalPeriods $periods): void
+    {
+        $this->authorize('accounting.manage');
+
+        try {
+            $periods->reopenPeriod(FiscalPeriod::query()->findOrFail($id));
+        } catch (RuntimeException $e) {
+            $this->addError('periods', $e->getMessage());
+
+            return;
+        }
+
+        session()->flash('accountingStatus', 'Period reopened.');
+    }
+
+    public function closeYear(string $id, FiscalPeriods $periods): void
+    {
+        $this->authorize('accounting.manage');
+
+        try {
+            $periods->closeYear(FiscalYear::query()->findOrFail($id), auth()->user());
+        } catch (RuntimeException $e) {
+            $this->addError('periods', $e->getMessage());
+
+            return;
+        }
+
+        session()->flash('accountingStatus', 'Financial year closed, with every period in it.');
+    }
+
+    public function reopenYear(string $id, FiscalPeriods $periods): void
+    {
+        $this->authorize('accounting.manage');
+
+        try {
+            $periods->reopenYear(FiscalYear::query()->findOrFail($id));
+        } catch (RuntimeException $e) {
+            $this->addError('periods', $e->getMessage());
+
+            return;
+        }
+
+        session()->flash('accountingStatus', 'Financial year reopened. Its periods stay closed until reopened one by one.');
+    }
+
     public function render(Books $books): View
     {
         $company = app(CurrentCompany::class)->get();
@@ -287,6 +386,10 @@ class Index extends Component
                     [],
                 ))->reject(fn ($name, $number) => $accounts->contains('number', (string) $number)),
             ],
+            'periods' => ['years' => FiscalYear::query()
+                ->with('periods')
+                ->orderByDesc('starts_on')
+                ->get()],
             'ledger' => ['ledger' => $selected
                 ? $books->accountLedger($company, $selected, $this->from, $this->to)
                 : null],

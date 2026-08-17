@@ -158,9 +158,26 @@ class ComplianceRegister
      * Sent back for something missing. Not a refusal — "no" and "not yet" are
      * different answers here for the same reason they are in the engine, and
      * a returned filing goes back to being prepared.
+     *
+     * A *rejected* filing comes back through here too. The deadline the
+     * refusal was about is still there, and a statutory return that cannot be
+     * corrected and refiled would leave the obligation permanently unmet —
+     * so "refused" is a state to recover from, never a dead end.
      */
     public function returnToPreparer(ComplianceFiling $filing): ComplianceFiling
     {
+        // Already back with the preparer: nothing to do, and not an error —
+        // the listener may deliver the same verdict more than once.
+        if ($filing->status === 'draft') {
+            return $filing;
+        }
+
+        if (! in_array($filing->status, ['submitted', 'rejected'], true)) {
+            throw new RuntimeException(
+                'Only a filing awaiting sign-off or a refused one can go back to being prepared. This one is '.$filing->statusLabel().'.'
+            );
+        }
+
         $filing->forceFill(['status' => 'draft'])->save();
 
         return $filing->refresh();

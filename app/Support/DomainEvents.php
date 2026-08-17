@@ -154,6 +154,57 @@ class DomainEvents
             'estate.tenancy.rent_changed',
         ],
 
+        /*
+         * The service desk and the visits that resolve it. Each is the moment
+         * TicketDesk / ServiceScheduling / ServiceBilling emit it; `sla.breached`
+         * is also raised by the `service:sla-sweep` command for a promise that
+         * quietly expired between page loads.
+         */
+        'service' => [
+            'service.ticket.opened',
+            'service.ticket.assigned',
+            'service.ticket.reprioritised',
+            'service.ticket.resolved',
+            'service.ticket.closed',
+            'service.ticket.reopened',
+            'service.sla.breached',
+            'service.job.scheduled',
+            'service.job.completed',
+            'service.job.billed',
+        ],
+
+        /*
+         * Sourcing: asked, quoted, chosen. `quotation.awarded` is where the
+         * spend is committed, which is the event an approval-adjacent rule
+         * actually wants.
+         */
+        'procurement' => [
+            'requisition.created',
+            'rfq.opened',
+            // Closed is the shutter coming down with quotes in hand;
+            // cancelled is the enquiry withdrawn before any decision.
+            'rfq.closed',
+            'rfq.cancelled',
+            'quotation.received',
+            'quotation.awarded',
+        ],
+
+        // Agreements. Raised is the draft, activated is the signature,
+        // renewed commits another term, terminated ends one early.
+        'contract' => [
+            'contract.raised',
+            'contract.activated',
+            'contract.renewed',
+            'contract.terminated',
+        ],
+
+        // The register's two movements that are acts rather than book-keeping:
+        // equipment handed to somebody, and a service actually done.
+        'asset' => [
+            'asset.transferred',
+            'asset.serviced',
+        ],
+
         'hr' => [
             'hr.employee.created',
             'hr.employee.ended',

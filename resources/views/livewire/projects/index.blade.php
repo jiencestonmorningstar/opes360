@@ -76,6 +76,10 @@
         </div>
     </div>
 
+    @error('projects')
+        <p class="mt-3 rounded-xl bg-negative/10 px-4 py-2.5 text-[13.5px] text-negative">{{ $message }}</p>
+    @enderror
+
     <div class="mt-5">
         <x-ui.panel>
             @forelse ($projects as $project)
@@ -113,15 +117,133 @@
                         </p>
                     @endif
 
-                    @can('update', $project)
-                        @if ($project->status !== 'cancelled')
-                            <button type="button" wire:click="archive('{{ $project->id }}')"
-                                    wire:confirm="Cancel this project?"
-                                    class="focusable mt-3 flex h-8 items-center rounded-full border border-border bg-surface px-3 text-[12.5px] font-semibold text-ink-2 hover:bg-surface-2">
-                                Cancel project
-                            </button>
-                        @endif
-                    @endcan
+                    <div class="mt-3 flex flex-wrap gap-2">
+                        @can('update', $project)
+                            @if ($project->status === 'planning')
+                                <button type="button" wire:click="transition('{{ $project->id }}', 'active')"
+                                        class="focusable flex h-8 items-center rounded-full bg-fill-brand px-3 text-[12.5px] font-semibold text-white hover:opacity-90">
+                                    Start
+                                </button>
+                            @endif
+                            @if ($project->status === 'active')
+                                <button type="button" wire:click="transition('{{ $project->id }}', 'on_hold')"
+                                        class="focusable flex h-8 items-center rounded-full border border-border bg-surface px-3 text-[12.5px] font-semibold text-ink-2 hover:bg-surface-2">
+                                    Put on hold
+                                </button>
+                            @endif
+                            @if ($project->status === 'on_hold')
+                                <button type="button" wire:click="transition('{{ $project->id }}', 'active')"
+                                        class="focusable flex h-8 items-center rounded-full bg-fill-brand px-3 text-[12.5px] font-semibold text-white hover:opacity-90">
+                                    Resume
+                                </button>
+                            @endif
+                            @if ($project->isOpen())
+                                <button type="button" wire:click="transition('{{ $project->id }}', 'completed')"
+                                        wire:confirm="Mark this project completed?"
+                                        class="focusable flex h-8 items-center rounded-full border border-border bg-surface px-3 text-[12.5px] font-semibold text-ink-2 hover:bg-surface-2">
+                                    Complete
+                                </button>
+                                <button type="button" wire:click="transition('{{ $project->id }}', 'cancelled')"
+                                        wire:confirm="Cancel this project?"
+                                        class="focusable flex h-8 items-center rounded-full border border-border bg-surface px-3 text-[12.5px] font-semibold text-negative hover:bg-surface-2">
+                                    Cancel project
+                                </button>
+                            @endif
+                        @endcan
+
+                        <button type="button" wire:click="toggleOpen('{{ $project->id }}')"
+                                class="focusable flex h-8 items-center gap-1 rounded-full border border-border bg-surface px-3 text-[12.5px] font-semibold text-ink-2 hover:bg-surface-2">
+                            {{ $open === $project->id ? 'Hide tasks' : 'Tasks & milestones' }}
+                        </button>
+                    </div>
+
+                    @if ($open === $project->id && $openProject)
+                        <div class="mt-3 rounded-xl border border-border bg-surface p-4">
+                            @error('projects')
+                                <p class="mb-3 rounded-lg bg-negative/10 px-3 py-2 text-[13px] text-negative">{{ $message }}</p>
+                            @enderror
+
+                            {{-- Milestones --}}
+                            <p class="text-[13px] font-semibold text-ink-2">Milestones</p>
+                            <div class="mt-2 grid gap-1.5">
+                                @forelse ($openProject->milestones as $milestone)
+                                    <div wire:key="ms-{{ $milestone->id }}" class="flex items-center justify-between rounded-lg bg-surface-2 px-3 py-2">
+                                        <span class="text-[13px] {{ $milestone->isComplete() ? 'text-muted line-through decoration-border' : ($milestone->isOverdue() ? 'font-medium text-negative' : 'font-medium text-ink-2') }}">
+                                            {{ $milestone->name }}
+                                            @if ($milestone->due_on) <span class="font-normal text-muted">· {{ $milestone->due_on->format('d M') }}</span> @endif
+                                        </span>
+                                        @can('update', $project)
+                                            <button type="button" wire:click="completeMilestone('{{ $milestone->id }}')"
+                                                    class="focusable text-[12px] font-semibold text-brand hover:underline">
+                                                {{ $milestone->isComplete() ? 'Reopen' : 'Done' }}
+                                            </button>
+                                        @endcan
+                                    </div>
+                                @empty
+                                    <p class="text-[12.5px] text-muted">No milestones yet.</p>
+                                @endforelse
+                            </div>
+
+                            @can('update', $project)
+                                <form wire:submit="addMilestone" class="mt-2 flex flex-wrap items-end gap-2">
+                                    <input wire:model="milestoneName" type="text" placeholder="New milestone"
+                                           class="focusable h-9 min-w-44 flex-1 rounded-lg border border-border bg-surface px-3 text-[13px] text-ink">
+                                    <input wire:model="milestoneDueOn" type="date"
+                                           class="focusable h-9 rounded-lg border border-border bg-surface px-2 text-[13px] text-ink">
+                                    <button type="submit" class="focusable h-9 rounded-full border border-border bg-surface px-3.5 text-[12.5px] font-semibold text-ink-2 hover:bg-surface-2">Add</button>
+                                </form>
+                                @error('milestoneName') <p class="mt-1 text-[12.5px] text-negative">{{ $message }}</p> @enderror
+                            @endcan
+
+                            {{-- Tasks --}}
+                            <p class="mt-4 text-[13px] font-semibold text-ink-2">Tasks</p>
+                            <div class="mt-2 grid gap-1.5">
+                                @forelse ($openProject->tasks as $task)
+                                    <div wire:key="task-{{ $task->id }}" class="flex flex-wrap items-center justify-between gap-2 rounded-lg bg-surface-2 px-3 py-2">
+                                        <span class="min-w-0 text-[13px] {{ $task->status === 'done' ? 'text-muted line-through decoration-border' : ($task->isOverdue() ? 'font-medium text-negative' : 'font-medium text-ink-2') }}">
+                                            {{ $task->title }}
+                                            @if ($task->milestone) <span class="font-normal text-muted">· {{ $task->milestone->name }}</span> @endif
+                                            @if ($task->due_on) <span class="font-normal text-muted">· {{ $task->due_on->format('d M') }}</span> @endif
+                                        </span>
+                                        @can('update', $project)
+                                            <select wire:change="moveTask('{{ $task->id }}', $event.target.value)"
+                                                    class="focusable h-8 rounded-lg border border-border bg-surface px-2 text-[12.5px] text-ink-2"
+                                                    aria-label="Task status">
+                                                @foreach ($taskStatuses as $value => $label)
+                                                    <option value="{{ $value }}" @selected($task->status === $value)>{{ $label }}</option>
+                                                @endforeach
+                                            </select>
+                                        @else
+                                            <span class="text-[12px] text-muted">{{ $taskStatuses[$task->status] ?? $task->status }}</span>
+                                        @endcan
+                                    </div>
+                                @empty
+                                    <p class="text-[12.5px] text-muted">No tasks yet.</p>
+                                @endforelse
+                            </div>
+
+                            @can('update', $project)
+                                <form wire:submit="addTask" class="mt-2 flex flex-wrap items-end gap-2">
+                                    <input wire:model="taskTitle" type="text" placeholder="New task"
+                                           class="focusable h-9 min-w-44 flex-1 rounded-lg border border-border bg-surface px-3 text-[13px] text-ink">
+                                    <input wire:model="taskDueOn" type="date"
+                                           class="focusable h-9 rounded-lg border border-border bg-surface px-2 text-[13px] text-ink">
+                                    @if ($openProject->milestones->isNotEmpty())
+                                        <select wire:model="taskMilestoneId"
+                                                class="focusable h-9 rounded-lg border border-border bg-surface px-2 text-[13px] text-ink-2"
+                                                aria-label="Milestone">
+                                            <option value="">No milestone</option>
+                                            @foreach ($openProject->milestones as $milestone)
+                                                <option value="{{ $milestone->id }}">{{ $milestone->name }}</option>
+                                            @endforeach
+                                        </select>
+                                    @endif
+                                    <button type="submit" class="focusable h-9 rounded-full border border-border bg-surface px-3.5 text-[12.5px] font-semibold text-ink-2 hover:bg-surface-2">Add</button>
+                                </form>
+                                @error('taskTitle') <p class="mt-1 text-[12.5px] text-negative">{{ $message }}</p> @enderror
+                            @endcan
+                        </div>
+                    @endif
                 </div>
             @empty
                 <p class="py-8 text-center text-[13.5px] text-muted">

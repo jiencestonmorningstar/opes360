@@ -2,13 +2,14 @@
 
 namespace App\Support;
 
+use App\Models\BusinessDocument;
 use App\Models\Company;
 use App\Models\ComplianceFiling;
 use App\Models\Contract;
 use App\Models\ExpenseClaim;
+use App\Models\InsuranceClaim;
 use App\Models\JobOffer;
 use App\Models\PurchaseRequisition;
-use App\Models\ServiceJob;
 use App\Models\Workflow;
 use App\Models\WorkflowStep;
 use Illuminate\Support\Facades\DB;
@@ -108,15 +109,26 @@ class DefaultWorkflows
                 'name' => 'Statutory filings',
                 'step' => 'Owner approves',
             ],
-            // Work carried out at a customer's site, before it is billed.
-            ServiceJob::class => [
-                'name' => 'Service visits',
-                'step' => 'Owner approves',
-            ],
             // An offer letter commits a salary every month from now on. No
             // threshold: there is no such thing as a wage too small to sign.
             JobOffer::class => [
                 'name' => 'Job offers',
+                'step' => 'Owner approves',
+            ],
+            // Paying out on a claim is the one insurance decision with money
+            // in it. Without this path the settle button on the claim screen
+            // can only ever refuse — the listener that settles an approved
+            // claim exists, and nothing could ever reach it.
+            InsuranceClaim::class => [
+                'name' => 'Claim settlements',
+                'step' => 'Owner approves',
+            ],
+            // A letter issued on the company's paper speaks for the company.
+            // The workflow screen has always offered documents; without a
+            // seeded path the first submit refused with "no approval path is
+            // defined" — the exact dead end this class exists to prevent.
+            BusinessDocument::class => [
+                'name' => 'Document approvals',
                 'step' => 'Owner approves',
             ],
         ];

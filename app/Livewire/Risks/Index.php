@@ -74,6 +74,11 @@ class Index extends Component
 
     public string $reviewNotes = '';
 
+    // ── Closing ─────────────────────────────────────────────────────────
+    public ?string $closing = null;
+
+    public string $closureReason = '';
+
     public function mount(): void
     {
         Gate::authorize('risks.view');
@@ -99,6 +104,7 @@ class Index extends Component
         $this->addingControlTo = null;
         $this->reassessing = null;
         $this->reviewing = null;
+        $this->closing = null;
         $this->resetValidation();
     }
 
@@ -205,6 +211,76 @@ class Index extends Component
     }
 
     /**
+     * The control was tried and it is not doing the job — the loudest honest
+     * thing the register can say about a mitigation.
+     */
+    public function markControlFailed(string $controlId): void
+    {
+        Gate::authorize('risks.manage');
+
+        try {
+            app(RiskRegister::class)->markControlFailed(RiskControl::findOrFail($controlId));
+        } catch (RuntimeException $e) {
+            $this->addError('control', $e->getMessage());
+
+            return;
+        }
+
+        session()->flash('status', 'Marked as not working. The risk it was treating deserves another look.');
+    }
+
+    public function startClosing(string $riskId): void
+    {
+        Gate::authorize('risks.manage');
+
+        $this->closing = $riskId;
+        $this->open = $riskId;
+        $this->closureReason = '';
+        $this->resetValidation();
+    }
+
+    public function closeRisk(): void
+    {
+        Gate::authorize('risks.manage');
+
+        $this->validate(
+            ['closureReason' => ['required', 'string', 'max:500']],
+            ['closureReason.required' => 'Why is this no longer on the register? The reason is the record.'],
+        );
+
+        $risk = Risk::findOrFail($this->closing);
+
+        try {
+            app(RiskRegister::class)->close($risk, $this->closureReason, auth()->user());
+        } catch (RuntimeException $e) {
+            $this->addError('closing', $e->getMessage());
+
+            return;
+        }
+
+        $this->closing = null;
+        $this->open = null;
+        session()->flash('status', 'Risk closed, with the reason kept.');
+    }
+
+    public function reopenRisk(string $riskId): void
+    {
+        Gate::authorize('risks.manage');
+
+        $risk = Risk::findOrFail($riskId);
+
+        try {
+            app(RiskRegister::class)->reopen($risk);
+        } catch (RuntimeException $e) {
+            $this->addError('risk', $e->getMessage());
+
+            return;
+        }
+
+        session()->flash('status', 'Back on the register. Give it a review date so it is not forgotten again.');
+    }
+
+    /**
      * Reassessing is `risks.review`, not `risks.manage`.
      *
      * Deliberately not held by the person who owns the risk: letting somebody
@@ -301,6 +377,13 @@ class Index extends Component
                 ->open()
                 ->with(['owner', 'controls.owner'])
                 ->mostSevereFirst()
+                ->get(),
+            // Recently closed, so a closure is visible and reversible rather
+            // than a disappearance.
+            'closedRisks' => Risk::query()
+                ->where('status', 'closed')
+                ->latest('closed_on')
+                ->limit(10)
                 ->get(),
             'toReview' => $calendar->risksDueForReview(),
             'overdueControls' => $calendar->overdueControls(),

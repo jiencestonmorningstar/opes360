@@ -436,6 +436,40 @@ class Tenancies
     }
 
     /**
+     * Take a door off the market — under renovation, condemned, kept for the
+     * owner. Only an empty unit can be withdrawn: somebody lives behind an
+     * occupied one, and their tenancy, not this flag, is the fact that counts.
+     */
+    public function markUnavailable(PropertyUnit $unit, ?User $actor = null): PropertyUnit
+    {
+        if ($unit->status === 'occupied') {
+            throw new RuntimeException(
+                "{$unit->label} is occupied. End the tenancy before taking it off the market."
+            );
+        }
+
+        if ($unit->status === 'unavailable') {
+            throw new RuntimeException("{$unit->label} is already unavailable.");
+        }
+
+        $unit->forceFill(['status' => 'unavailable'])->save();
+
+        return $unit->refresh();
+    }
+
+    /** Back on the market: unavailable becomes vacant, ready to let. */
+    public function markAvailable(PropertyUnit $unit, ?User $actor = null): PropertyUnit
+    {
+        if ($unit->status !== 'unavailable') {
+            throw new RuntimeException("{$unit->label} is not marked unavailable.");
+        }
+
+        $unit->forceFill(['status' => 'vacant'])->save();
+
+        return $unit->refresh();
+    }
+
+    /**
      * A maintenance request IS a service ticket — same desk, same SLA clock,
      * same board. This only fills in what the estate side knows: which door,
      * and that the tenant is the customer.

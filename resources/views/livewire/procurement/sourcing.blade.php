@@ -35,6 +35,7 @@
 
     @error('award') <p class="mt-4 text-[14px] font-semibold text-rose-600">{{ $message }}</p> @enderror
     @error('opening') <p class="mt-4 text-[14px] font-semibold text-rose-600">{{ $message }}</p> @enderror
+    @error('rfqState') <p class="mt-4 text-[14px] font-semibold text-rose-600">{{ $message }}</p> @enderror
 
     <div class="mt-5 flex gap-1 border-b border-border pb-3">
         <button type="button" wire:click="$set('tab', 'rfqs')" class="{{ $tabClass('rfqs') }}">Out to suppliers</button>
@@ -163,7 +164,26 @@
         @if ($rfq)
             {{-- ───────────────────────────────────────────── invitations ── --}}
             <div class="mt-6 rounded-2xl border border-border p-4">
-                <p class="text-[15.5px] font-semibold text-ink">{{ $rfq->number }} — who was asked</p>
+                <div class="flex flex-wrap items-center justify-between gap-2">
+                    <p class="text-[15.5px] font-semibold text-ink">{{ $rfq->number }} — who was asked</p>
+
+                    @can('procurement.rfq-manage')
+                        @if ($rfq->isOpen())
+                            <div class="flex gap-2">
+                                <button type="button" wire:click="closeRfq"
+                                        wire:confirm="Close {{ $rfq->number }} without awarding? The requisition goes back to approved and can be sourced again."
+                                        class="tap focusable rounded-full border border-border px-3.5 py-1.5 text-[13.5px] font-semibold text-ink-2">
+                                    Close without awarding
+                                </button>
+                                <button type="button" wire:click="cancelRfq"
+                                        wire:confirm="Cancel {{ $rfq->number }}? The round is struck and the requisition goes back to approved."
+                                        class="tap focusable rounded-full border border-border px-3.5 py-1.5 text-[13.5px] font-semibold text-rose-600">
+                                    Cancel
+                                </button>
+                            </div>
+                        @endif
+                    @endcan
+                </div>
 
                 <ul class="mt-2 space-y-1 text-[14px] text-ink-2">
                     @forelse ($rfq->invitations as $invitation)
@@ -341,12 +361,26 @@
                                     @if ($quotation->status === 'awarded')
                                         <span class="text-[13.5px] font-semibold text-emerald-700 dark:text-emerald-300">Chosen</span>
                                     @elseif ($rfq->isOpen())
-                                        @can('procurement.rfq-award')
-                                            <button type="button" wire:click="award('{{ $quotation->id }}')"
-                                                    class="tap focusable rounded-full bg-fill-brand px-4 py-1.5 text-[13.5px] font-semibold text-white">
-                                                Award
-                                            </button>
-                                        @endcan
+                                        <div class="flex flex-wrap items-center justify-end gap-2">
+                                            @can('procurement.rfq-manage')
+                                                <button type="button" wire:click="shortlist('{{ $quotation->id }}')"
+                                                        class="tap focusable rounded-full border px-3.5 py-1.5 text-[13.5px] font-semibold
+                                                               {{ $quotation->status === 'shortlisted' ? 'border-amber-400 bg-amber-50 text-amber-800 dark:bg-amber-500/10 dark:text-amber-300' : 'border-border text-ink-2' }}">
+                                                    {{ $quotation->status === 'shortlisted' ? 'Shortlisted' : 'Shortlist' }}
+                                                </button>
+                                                <button type="button" wire:click="withdrawQuotation('{{ $quotation->id }}')"
+                                                        wire:confirm="Mark this quotation as withdrawn by the supplier? It leaves the comparison but stays on the record."
+                                                        class="tap focusable rounded-full border border-border px-3.5 py-1.5 text-[13.5px] font-semibold text-rose-600">
+                                                    Withdrawn
+                                                </button>
+                                            @endcan
+                                            @can('procurement.rfq-award')
+                                                <button type="button" wire:click="award('{{ $quotation->id }}')"
+                                                        class="tap focusable rounded-full bg-fill-brand px-4 py-1.5 text-[13.5px] font-semibold text-white">
+                                                    Award
+                                                </button>
+                                            @endcan
+                                        </div>
                                     @else
                                         <span class="text-[13.5px] text-muted">Not chosen</span>
                                     @endif

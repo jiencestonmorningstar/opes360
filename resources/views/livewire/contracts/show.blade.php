@@ -336,4 +336,7 @@
             </x-ui.panel>
         </div>
     @endif
+
+    {{-- What has happened to this record — see App\Livewire\Audit\History. --}}
+    <livewire:audit.history :subject-type="$contract" />
 </div>

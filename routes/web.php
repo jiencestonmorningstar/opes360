@@ -53,6 +53,7 @@ use App\Livewire\Estate\Show as EstateShow;
 use App\Livewire\Events\Index as EventsIndex;
 use App\Livewire\Events\Manage as EventsManage;
 use App\Livewire\Events\Show as EventsShow;
+use App\Livewire\Expenses\Claims as ExpenseClaims;
 use App\Livewire\Expenses\Index as ExpensesIndex;
 use App\Livewire\Fleet\Vehicles as FleetVehicles;
 use App\Livewire\Forms\Builder as FormsBuilder;
@@ -300,6 +301,10 @@ Route::middleware('auth')->group(function () {
     Route::get('/partners/earnings', PartnerEarnings::class)->middleware('can:partners.view')->name('partners.earnings');
     Route::get('/payments', PaymentsIndex::class)->middleware('can:payments.view')->name('payments');
     Route::get('/expenses', ExpensesIndex::class)->middleware('can:expenses.view')->name('expenses');
+    // Claims are gated on their own ability, not expenses.view: a sales
+    // officer claims back their own taxi fare without any sight of what the
+    // business itself spends.
+    Route::get('/expenses/claims', ExpenseClaims::class)->middleware('can:expenses.claim-view')->name('expenses.claims');
 
     /*
      * People and pay. The team file is separate from Users: an employee is
@@ -505,7 +510,10 @@ Route::middleware('auth')->group(function () {
     Route::get('/calendar', CalendarIndex::class)->middleware('can:sales.view')->name('calendar');
     Route::get('/settings', SettingsIndex::class)->name('settings');
     Route::get('/settings/billing', SettingsBilling::class)->middleware('can:business.update')->name('settings.billing');
-    Route::get('/settings/api-tokens', SettingsApiTokens::class)->name('settings.api-tokens');
+    // A token is a standing credential that survives a password change —
+    // the same trust tier as webhooks, so the same gate.
+    Route::get('/settings/api-tokens', SettingsApiTokens::class)
+        ->middleware('can:settings.update')->name('settings.api-tokens');
     /*
      * Webhooks. Gated at the route as well as in the component, because
      * `webhooks.manage` is the Owner's and the Administrator's alone —

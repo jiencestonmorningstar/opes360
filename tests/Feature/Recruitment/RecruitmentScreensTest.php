@@ -53,6 +53,40 @@ class RecruitmentScreensTest extends RecruitmentTestCase
         $this->assertSame($this->owner->id, $fresh->stageMoves()->where('to_stage', 'screening')->value('moved_by'));
     }
 
+    public function test_an_offer_can_be_withdrawn_from_the_screen(): void
+    {
+        $application = $this->application();
+        $offer = $this->approvedOffer($application);
+
+        $this->actingAs($this->owner);
+
+        Livewire::test(Show::class, ['application' => $application])
+            ->assertSee('Withdraw offer')
+            ->call('withdrawOffer', $offer->id)
+            ->assertHasNoErrors();
+
+        $this->assertSame('withdrawn', $offer->fresh()->status);
+        // Nobody was hired off a withdrawn offer.
+        $this->assertSame(0, Employee::query()->count());
+        // The pipeline is free for different terms.
+        $this->assertNull($application->fresh()->currentOffer());
+    }
+
+    public function test_an_accepted_offer_shows_the_services_refusal_instead_of_withdrawing(): void
+    {
+        $application = $this->application();
+        $offer = $this->approvedOffer($application);
+        $this->offers()->accept($offer, $this->owner);
+
+        $this->actingAs($this->owner);
+
+        Livewire::test(Show::class, ['application' => $application])
+            ->call('withdrawOffer', $offer->id)
+            ->assertHasErrors('action');
+
+        $this->assertSame('accepted', $offer->fresh()->status);
+    }
+
     public function test_somebody_without_the_ability_cannot_reach_the_screen(): void
     {
         $stranger = User::factory()->create();

@@ -54,14 +54,19 @@ class Dashboard extends Component
         $current = $this->metrics($from, $to, $currency);
         $previous = $this->metrics($prevFrom, $prevTo, $currency);
 
+        // Built once and reused for the total: this used to be called twice —
+        // one identical invoice query per render just to sum what the first
+        // call already held.
+        $chart = $this->chart($now, $currency);
+
         return view('livewire.dashboard', [
             'company' => $company,
             'currency' => $currency,
             'greeting' => $this->greeting($now),
             'rangeLabel' => $this->rangeLabel(),
             'stats' => $this->stats($current, $previous, $currency),
-            'chart' => $this->chart($now, $currency),
-            'chartTotal' => Money::format($this->chart($now, $currency)->sum('value'), $currency),
+            'chart' => $chart,
+            'chartTotal' => Money::format($chart->sum('value'), $currency),
             'topCustomers' => $this->topCustomers($now, $currency),
             'recentInvoices' => $this->recentInvoices(),
             'counters' => $this->counters($now, $currency),
@@ -273,14 +278,21 @@ class Dashboard extends Component
             ->where('created_at', '>=', $now->startOfMonth())
             ->count();
 
-        // withStock, or this is one SUM per tracked product every time anybody
-        // opens the dashboard — which on the demo alone was ten of them.
+        /*
+         * One COUNT in SQL, not a hydrated model per tracked product. The
+         * previous version pulled every tracked item into memory to ask each
+         * one isLowStock() — fine at ten products, a real cost at ten
+         * thousand, on every dashboard hit. The comparison lives in a
+         * correlated subquery against the movement ledger (the same sum
+         * withStock() builds) written in portable SQL: COALESCE and a plain
+         * comparison run identically on MySQL and SQLite.
+         */
         $lowStock = Item::query()->products()->active()
             ->where('track_stock', true)
             ->whereNotNull('reorder_level')
-            ->withStock()
-            ->get()
-            ->filter(fn (Item $item) => $item->isLowStock())
+            ->whereRaw(
+                'COALESCE((SELECT SUM(sm.quantity) FROM stock_movements sm WHERE sm.item_id = items.id), 0) <= items.reorder_level'
+            )
             ->count();
 
         /*

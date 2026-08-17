@@ -276,6 +276,14 @@
                 </tbody>
             </table>
             </div>
+
+            {{-- The list is capped; the count owns the truth. Search filters
+                 the query itself, so the rest are always reachable. --}}
+            @if ($leadsTotal > $leads->count())
+                <p class="border-t border-border px-4 py-3 text-center text-[12.5px] font-medium text-faint">
+                    Showing {{ $leads->count() }} of {{ $leadsTotal }} — search to find the rest
+                </p>
+            @endif
         </div>
     @endif
 

@@ -128,6 +128,26 @@ class StockLedger
             return 0;
         }
 
+        /*
+         * Idempotent per document, the way reverseSale() always was: a
+         * replayed issue (retried job, double-delivered webhook, sync
+         * envelope) must not take the goods off the shelf a second time.
+         * The check-then-act is safe because every caller reaches here
+         * holding the document row FOR UPDATE (DocumentIssuer locks it),
+         * which serialises concurrent replays of the same document.
+         */
+        $already = StockMovement::query()
+            ->withoutGlobalScopes()
+            ->where('company_id', $company->id)
+            ->where('reference_type', Document::class)
+            ->where('reference_id', $document->id)
+            ->whereIn('reason', ['sale', 'credit'])
+            ->exists();
+
+        if ($already) {
+            return 0;
+        }
+
         // One location or none: a business with locations turned off has no
         // shelf to name, and one that has them keeps its stock where it says
         // it does by default. Selling from a specific van is a question the

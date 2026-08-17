@@ -9,6 +9,7 @@ use App\Models\LedgerAccount;
 use App\Models\User;
 use App\Support\Accounting\ChartOfAccounts;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\UniqueConstraintViolationException;
 use Illuminate\Support\Facades\DB;
 use RuntimeException;
 
@@ -79,22 +80,38 @@ class Ledger
         }
 
         return DB::transaction(function () use ($company, $journal, $entryDate, $resolved, $source, $narration, $reference, $actor) {
-            if ($source !== null && $existing = $this->entryFor($company, $source)) {
+            // Locked, so a concurrent replay of the same source serialises
+            // behind this transaction instead of both reading "nothing yet"
+            // from the same snapshot. lockForUpdate is a no-op on sqlite;
+            // the unique index below is the guard that holds everywhere.
+            if ($source !== null && $existing = $this->entryFor($company, $source, lock: true)) {
                 // Already recorded. Returning the original rather than throwing
                 // keeps the caller's retry harmless, which is the point.
                 return $existing;
             }
 
-            $entry = JournalEntry::create([
-                'company_id' => $company->id,
-                'journal' => $journal,
-                'entry_date' => $entryDate,
-                'reference' => $reference,
-                'narration' => $narration,
-                'source_type' => $source ? $source::class : null,
-                'source_id' => $source?->getKey(),
-                'created_by' => $actor?->id,
-            ]);
+            try {
+                $entry = JournalEntry::create([
+                    'company_id' => $company->id,
+                    'journal' => $journal,
+                    'entry_date' => $entryDate,
+                    'reference' => $reference,
+                    'narration' => $narration,
+                    'source_type' => $source ? $source::class : null,
+                    'source_id' => $source?->getKey(),
+                    'created_by' => $actor?->id,
+                ]);
+            } catch (UniqueConstraintViolationException $collision) {
+                // The race the lock could not see (a gap the storage engine's
+                // locking read missed, or a driver where the lock is a no-op):
+                // the unique index on (company_id, source_type, source_id)
+                // caught it. Find the entry the winner posted, or refuse.
+                if ($source !== null && $existing = $this->entryFor($company, $source, lock: true)) {
+                    return $existing;
+                }
+
+                throw $collision;
+            }
 
             foreach ($resolved as $index => $line) {
                 JournalLine::create([
@@ -133,6 +150,31 @@ class Ledger
         ])->all();
 
         return DB::transaction(function () use ($company, $entry, $lines, $actor, $narration) {
+            /*
+             * Reversing is idempotent per entry. entryFor() deliberately
+             * ignores reversals, so every replayed void used to find the
+             * *original* entry again and extourne it a second time — doubling
+             * the correction. The original row is locked as the mutex (two
+             * concurrent reversals serialise here; a no-op on sqlite, where
+             * the single-threaded re-read below still catches the replay),
+             * then an existing reversal is returned rather than repeated.
+             */
+            JournalEntry::query()
+                ->withoutGlobalScopes()
+                ->whereKey($entry->getKey())
+                ->lockForUpdate()
+                ->firstOrFail();
+
+            $already = JournalEntry::query()
+                ->withoutGlobalScopes()
+                ->where('company_id', $entry->company_id)
+                ->where('reverses_entry_id', $entry->getKey())
+                ->first();
+
+            if ($already !== null) {
+                return $already->load('lines.account');
+            }
+
             $reversal = $this->post(
                 $company,
                 $entry->journal,
@@ -150,8 +192,14 @@ class Ledger
         });
     }
 
-    /** The entry already recorded for a source, if there is one. */
-    public function entryFor(Company $company, Model $source): ?JournalEntry
+    /**
+     * The entry already recorded for a source, if there is one.
+     *
+     * `$lock` takes the row FOR UPDATE — pass it when the answer decides a
+     * write inside the same transaction, so a concurrent replay cannot read
+     * the same "not yet" and act on it twice.
+     */
+    public function entryFor(Company $company, Model $source, bool $lock = false): ?JournalEntry
     {
         return JournalEntry::query()
             ->withoutGlobalScopes()
@@ -159,6 +207,7 @@ class Ledger
             ->where('source_type', $source::class)
             ->where('source_id', $source->getKey())
             ->whereNull('reverses_entry_id')
+            ->when($lock, fn ($query) => $query->lockForUpdate())
             ->first();
     }
 

@@ -142,7 +142,12 @@ class DocumentController extends ApiController
                     'description' => $line['description'],
                     'quantity' => $line['quantity'],
                     'unit' => $line['unit'] ?? 'unit',
-                    'unit_price' => $line['unit_price'],
+                    // Always stored net of tax, as the composer stores it: a
+                    // TTC-keyed business sending gross prices here must not
+                    // end up with lines that mean something different from
+                    // the ones its own screen writes. (Rows stored before
+                    // this keep the value they were given.)
+                    'unit_price' => $vat['lines'][$index]['unit_net'] ?? (float) $line['unit_price'],
                     'tax_amount' => $vat['lines'][$index]['tax'] ?? 0.0,
                     'line_total' => $vat['lines'][$index]['net'] ?? 0.0,
                     'sort_order' => $index,

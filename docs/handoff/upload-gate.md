@@ -40,7 +40,9 @@ to tabular shapes.
 
 ## ClamAV
 
-One env key, no package:
+One env key, no package. The key is surfaced as `config('services.clamav.socket')`
+(`config/services.php`), so it survives `php artisan config:cache` — set it in
+`.env` as usual:
 
 ```
 # The VPS (clamav-daemon installed):

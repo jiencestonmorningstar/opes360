@@ -2,9 +2,12 @@
 
 namespace Tests\Feature;
 
+use App\Models\BusinessDocument;
 use App\Models\Company;
+use App\Models\InsuranceClaim;
 use App\Models\PurchaseRequisition;
 use App\Models\Role;
+use App\Models\ServiceJob;
 use App\Models\User;
 use App\Models\Workflow;
 use App\Support\CurrentCompany;
@@ -162,6 +165,41 @@ class DefaultWorkflowsTest extends TestCase
         foreach (DefaultWorkflows::subjects() as $subject) {
             $this->assertNotNull(Workflow::defaultFor($subject), "Still nothing for {$subject}.");
         }
+    }
+
+    /**
+     * The two paths added by the flows audit reach businesses that were
+     * seeded before they existed — the command tops a business up rather
+     * than skipping it because it already has "some" paths.
+     */
+    public function test_the_backfill_tops_up_a_business_seeded_before_the_new_paths_existed(): void
+    {
+        DefaultWorkflows::seed($this->company);
+
+        // Roll back to how a pre-audit business looks: no claim-settlement
+        // and no document path.
+        Workflow::withoutGlobalScopes()
+            ->whereIn('subject_type', [InsuranceClaim::class, BusinessDocument::class])
+            ->forceDelete();
+
+        $this->assertNull(Workflow::defaultFor(InsuranceClaim::class));
+
+        $this->artisan('opes:seed-workflows')->assertSuccessful();
+
+        $this->assertNotNull(Workflow::defaultFor(InsuranceClaim::class));
+        $this->assertNotNull(Workflow::defaultFor(BusinessDocument::class));
+    }
+
+    /**
+     * ServiceJob left the catalogue deliberately: nothing submits one, no
+     * listener consumes its verdict, and its status machine has no approval
+     * states — a seeded path for it is machinery that can never run.
+     */
+    public function test_service_jobs_are_no_longer_seeded_a_path_that_cannot_run(): void
+    {
+        $this->assertNotContains(ServiceJob::class, DefaultWorkflows::subjects());
+        $this->assertContains(InsuranceClaim::class, DefaultWorkflows::subjects());
+        $this->assertContains(BusinessDocument::class, DefaultWorkflows::subjects());
     }
 
     /** Signing up gives you the paths, without anybody having to know to ask. */

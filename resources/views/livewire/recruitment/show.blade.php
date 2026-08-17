@@ -193,6 +193,13 @@
                                 @if ($offer->status === 'pending')
                                     <p class="text-[13px] text-muted">Awaiting approval — the decision happens on the Approvals screen.</p>
                                 @endif
+                                @if (in_array($offer->status, ['draft', 'pending', 'approved'], true))
+                                    <button type="button" wire:click="withdrawOffer('{{ $offer->id }}')"
+                                            wire:confirm="Withdraw this offer? The candidate can then be offered different terms."
+                                            class="focusable flex h-9 items-center rounded-full border border-border bg-surface px-4 text-[13px] font-semibold text-negative hover:bg-surface-2">
+                                        Withdraw offer
+                                    </button>
+                                @endif
                             </div>
                         @endcan
                     </div>

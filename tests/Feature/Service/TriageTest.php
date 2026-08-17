@@ -11,6 +11,7 @@ use App\Models\ServiceTicketEvent;
 use App\Models\User;
 use App\Models\VerificationToken;
 use App\Services\Service\TicketDesk;
+use App\Support\CurrentCompany;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Str;
 
@@ -50,6 +51,22 @@ class TriageTest extends ServiceTestCase
             ->middleware(['web', 'throttle:6,1'])->name('triage.submit');
 
         Route::getRoutes()->refreshNameLookups();
+    }
+
+    /**
+     * The triage POST runs as a guest, and SetCurrentCompany now clears the
+     * CurrentCompany singleton on guest requests — fail-closed against a
+     * stale tenant under a long-lived worker. The test process shares that
+     * singleton, so the company is re-pinned after each request or every
+     * scoped assertion below would read from no tenant at all.
+     */
+    public function post($uri, array $data = [], array $headers = [], $options = 0)
+    {
+        $response = parent::post($uri, $data, $headers, $options);
+
+        app(CurrentCompany::class)->set($this->company);
+
+        return $response;
     }
 
     /** A valid walk-in submission, ready to be overridden per test. */

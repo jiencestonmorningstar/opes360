@@ -78,6 +78,41 @@ class TeamTest extends TestCase
 
     // ─────────────────────────────────────────────────────────── the file ──
 
+    public function test_an_employee_can_be_suspended_and_unsuspended_from_their_page(): void
+    {
+        $employee = $this->hire();
+
+        Livewire::actingAs($this->owner)
+            ->test(TeamShow::class, ['employee' => $employee])
+            ->call('suspend')
+            ->assertHasNoErrors();
+
+        $employee->refresh();
+        $this->assertSame('suspended', $employee->status);
+        // A pause, not a departure: the contract stays in force.
+        $this->assertNotNull($employee->activeContract());
+
+        Livewire::actingAs($this->owner)
+            ->test(TeamShow::class, ['employee' => $employee])
+            ->call('unsuspend')
+            ->assertHasNoErrors();
+
+        $this->assertSame('active', $employee->fresh()->status);
+    }
+
+    public function test_somebody_who_has_left_cannot_be_suspended(): void
+    {
+        $employee = $this->hire();
+        $employee->forceFill(['status' => 'ended'])->save();
+
+        Livewire::actingAs($this->owner)
+            ->test(TeamShow::class, ['employee' => $employee])
+            ->call('suspend')
+            ->assertHasErrors('employee');
+
+        $this->assertSame('ended', $employee->fresh()->status);
+    }
+
     /** An employee is not a user. Nobody has to be given a login to be paid. */
     public function test_someone_can_be_employed_without_a_login(): void
     {

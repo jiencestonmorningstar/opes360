@@ -6,8 +6,11 @@ use App\Models\BusinessDocument;
 use App\Models\Company;
 use App\Models\User;
 use App\Models\VerificationToken;
+use App\Models\Workflow;
+use App\Models\WorkflowInstance;
 use App\Services\Documents\CustomDocumentTemplates;
 use App\Services\Documents\DocumentFieldRegistry;
+use App\Services\Workflow\WorkflowEngine;
 use App\Support\DocumentTemplates;
 use Carbon\CarbonImmutable;
 use Illuminate\Support\Facades\DB;
@@ -240,6 +243,36 @@ class DocumentComposer
      * Mirrors DocumentIssuer for the sales ledger — same guarantees, same single
      * path in and out of the immutable state.
      */
+    /**
+     * Put a draft to the approval workflow before it is issued.
+     *
+     * Approval is advice sought before issuing, not a gate on it — a business
+     * that wants every letter signed off can rely on this path, and one that
+     * does not can issue directly, exactly as before. The verdict comes back
+     * through the engine (TranslateDocumentWorkflowEvents restates it as
+     * document.approved / document.rejected for the rules screens).
+     */
+    public function submitForApproval(BusinessDocument $document, User $submitter): WorkflowInstance
+    {
+        if (! $document->isDraft()) {
+            throw new RuntimeException('Only a draft can be sent for approval. This one is already '.$document->status.'.');
+        }
+
+        if ($document->isAwaitingApproval()) {
+            throw new RuntimeException('This document is already with somebody for a decision.');
+        }
+
+        $workflow = Workflow::defaultFor(BusinessDocument::class);
+
+        if ($workflow === null) {
+            throw new RuntimeException(
+                'No approval workflow is set up for documents. Define one on the approval paths screen, or issue it directly.'
+            );
+        }
+
+        return app(WorkflowEngine::class)->start($document, $workflow, $submitter);
+    }
+
     public function issue(BusinessDocument $document, User $user): BusinessDocument
     {
         if (! $document->isDraft()) {
@@ -248,6 +281,14 @@ class DocumentComposer
                 $document->reference ?? $document->title,
                 $document->status,
             ));
+        }
+
+        // Not a demand that approval happen — only that one already asked
+        // for is answered before the document becomes immutable.
+        if ($document->isAwaitingApproval()) {
+            throw new RuntimeException(
+                'This document is with somebody for approval. Let that finish before issuing it.'
+            );
         }
 
         return DB::transaction(function () use ($document, $user) {

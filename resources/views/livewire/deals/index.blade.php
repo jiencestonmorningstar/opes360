@@ -76,7 +76,8 @@
                         <span class="flex items-center gap-2 text-[13px] font-bold uppercase tracking-wide text-ink-2">
                             <span class="size-2 rounded-full {{ $accent['dot'] }}"></span>
                             {{ Deal::STAGES[$stage] }}
-                            <span class="tnum rounded-full bg-surface-2 px-1.5 text-[11.5px] font-semibold text-muted">{{ $deals->count() }}</span>
+                            {{-- The real count from the aggregate, not the capped page. --}}
+                            <span class="tnum rounded-full bg-surface-2 px-1.5 text-[11.5px] font-semibold text-muted">{{ $counts[$stage] ?? 0 }}</span>
                         </span>
                         @if (($totals[$stage] ?? 0) > 0)
                             <span class="tnum text-[12px] font-semibold text-faint">{{ Money::format($totals[$stage], $currency, false) }}</span>
@@ -136,6 +137,15 @@
                         @empty
                             <p class="px-2 py-6 text-center text-[12.5px] text-faint">Nothing here.</p>
                         @endforelse
+
+                        {{-- Columns are capped; say what is not shown rather than
+                             pretending the board is the whole pipeline. Search is
+                             the way in — it filters the query, not the page. --}}
+                        @if (($counts[$stage] ?? 0) > $deals->count())
+                            <p class="px-2 pb-1 text-center text-[12px] font-medium text-faint">
+                                +{{ ($counts[$stage] ?? 0) - $deals->count() }} more — search to find them
+                            </p>
+                        @endif
                     </div>
                 </div>
             @endforeach

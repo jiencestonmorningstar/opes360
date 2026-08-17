@@ -49,6 +49,22 @@ class FormsTest extends TestCase
         app(CurrentCompany::class)->set($this->company);
     }
 
+    /**
+     * The public form POST runs as a guest, and SetCurrentCompany clears the
+     * CurrentCompany singleton on guest requests — fail-closed against a stale
+     * tenant under a long-lived worker. The test process shares that
+     * singleton, so the company is re-pinned after each request or every
+     * scoped assertion below would read from no tenant at all.
+     */
+    public function post($uri, array $data = [], array $headers = [], $options = 0)
+    {
+        $response = parent::post($uri, $data, $headers, $options);
+
+        app(CurrentCompany::class)->set($this->company);
+
+        return $response;
+    }
+
     protected function makeForm(array $fields = [], string $status = 'open'): Form
     {
         return Form::create([

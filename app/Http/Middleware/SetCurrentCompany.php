@@ -27,6 +27,13 @@ class SetCurrentCompany
         $user = $request->user('web') ?? $request->user('sanctum');
 
         if ($user === null) {
+            // Fail closed: a guest request must never inherit a tenant left in
+            // the singleton by a previous request. Under php-fpm the container
+            // is fresh anyway, but under a long-lived worker (Octane, a shared
+            // queue container) a stale company here would let every public
+            // page resolve scoped relations as an unrelated tenant.
+            $this->current->set(null);
+
             return $next($request);
         }
 

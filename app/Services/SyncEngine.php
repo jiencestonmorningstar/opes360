@@ -76,7 +76,13 @@ class SyncEngine
 
         // Replay check first: an envelope already seen returns its recorded
         // outcome without touching the database again.
-        if ($existing = SyncReceipt::query()->withoutGlobalScopes()->find($id)) {
+        //
+        // Scoped to the current company on purpose: the envelope id is
+        // client-generated, so an unscoped lookup would let a device from one
+        // company read another company's receipt (assigned_number,
+        // server_version) — or pre-register ids so a colliding legitimate
+        // envelope is swallowed as a duplicate and never retried.
+        if ($existing = SyncReceipt::query()->find($id)) {
             return [
                 'id' => $id,
                 'status' => 'duplicate',

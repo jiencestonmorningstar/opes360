@@ -183,9 +183,21 @@
                     </button>
 
                     @if ($employee->isActive())
-                        <button type="button" wire:click="startEnding"
-                                class="tap focusable flex h-12 items-center justify-center rounded-xl px-4 text-[14.5px] font-semibold text-negative hover:bg-tint-red">
-                            Record that they have left
+                        <div class="flex flex-col gap-3 sm:flex-row sm:items-center">
+                            <button type="button" wire:click="startEnding"
+                                    class="tap focusable flex h-12 items-center justify-center rounded-xl px-4 text-[14.5px] font-semibold text-negative hover:bg-tint-red">
+                                Record that they have left
+                            </button>
+                            <button type="button" wire:click="suspend"
+                                    wire:confirm="Suspend {{ $employee->name() }}? Nothing is deleted — the record and the contract stay as they are."
+                                    class="tap focusable flex h-12 items-center justify-center rounded-xl px-4 text-[14.5px] font-semibold text-warning hover:bg-tint-red">
+                                Suspend
+                            </button>
+                        </div>
+                    @elseif ($employee->status === 'suspended')
+                        <button type="button" wire:click="unsuspend"
+                                class="tap focusable flex h-12 items-center justify-center rounded-xl px-4 text-[14.5px] font-semibold text-brand hover:bg-tint-blue">
+                            Lift the suspension
                         </button>
                     @else
                         <button type="button" wire:click="reinstate"
@@ -194,6 +206,7 @@
                         </button>
                     @endif
                 </div>
+                @error('employee') <p class="mt-2 text-[13px] font-medium text-negative">{{ $message }}</p> @enderror
             @endcan
 
             @if ($ending)
@@ -563,4 +576,7 @@
             @endforelse
         </div>
     @endif
+
+    {{-- What has happened to this record — see App\Livewire\Audit\History. --}}
+    <livewire:audit.history :subject-type="$employee" />
 </div>

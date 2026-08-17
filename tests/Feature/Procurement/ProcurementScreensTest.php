@@ -280,6 +280,81 @@ class ProcurementScreensTest extends TestCase
         $this->assertSame('awarded', $quotation->fresh()->status);
     }
 
+    public function test_an_rfq_can_be_closed_without_an_award_and_the_requisition_is_released(): void
+    {
+        $rfq = $this->quotedRfq();
+
+        Livewire::actingAs($this->buyer)
+            ->test(SourcingScreen::class, ['rfqId' => $rfq->id])
+            ->call('closeRfq')
+            ->assertHasNoErrors();
+
+        $this->assertSame('closed', $rfq->fresh()->status);
+        // The approval still stands; the market can be asked again.
+        $this->assertSame('approved', $rfq->fresh()->requisition->status);
+    }
+
+    public function test_an_rfq_can_be_cancelled_and_a_decided_one_cannot(): void
+    {
+        $rfq = $this->quotedRfq();
+
+        Livewire::actingAs($this->buyer)
+            ->test(SourcingScreen::class, ['rfqId' => $rfq->id])
+            ->call('cancelRfq')
+            ->assertHasNoErrors();
+
+        $this->assertSame('cancelled', $rfq->fresh()->status);
+        $this->assertSame('approved', $rfq->fresh()->requisition->status);
+
+        // Already decided: the second strike shows the refusal, changes nothing.
+        Livewire::actingAs($this->buyer)
+            ->test(SourcingScreen::class, ['rfqId' => $rfq->id])
+            ->call('closeRfq')
+            ->assertHasErrors('rfqState');
+
+        $this->assertSame('cancelled', $rfq->fresh()->status);
+    }
+
+    public function test_a_quotation_can_be_shortlisted_and_the_mark_taken_off(): void
+    {
+        $rfq = $this->quotedRfq();
+        $quotation = $rfq->quotations()->firstOrFail();
+
+        $screen = Livewire::actingAs($this->buyer)
+            ->test(SourcingScreen::class, ['rfqId' => $rfq->id]);
+
+        $screen->call('shortlist', $quotation->id)->assertHasNoErrors();
+        $this->assertSame('shortlisted', $quotation->fresh()->status);
+
+        // A bookmark, not a decision — pressing it again takes it off.
+        $screen->call('shortlist', $quotation->id)->assertHasNoErrors();
+        $this->assertSame('received', $quotation->fresh()->status);
+    }
+
+    public function test_a_withdrawn_quotation_leaves_the_comparison_but_an_awarded_one_cannot_be(): void
+    {
+        $rfq = $this->quotedRfq();
+        $quotation = $rfq->quotations()->firstOrFail();
+
+        Livewire::actingAs($this->buyer)
+            ->test(SourcingScreen::class, ['rfqId' => $rfq->id])
+            ->call('withdrawQuotation', $quotation->id)
+            ->assertHasNoErrors();
+
+        $this->assertSame('withdrawn', $quotation->fresh()->status);
+        $this->assertTrue(app(SourcingService::class)->compare($rfq->fresh())->isEmpty());
+
+        // An awarded quotation carries an order and cannot be taken back.
+        $quotation->forceFill(['status' => 'awarded'])->save();
+
+        Livewire::actingAs($this->buyer)
+            ->test(SourcingScreen::class, ['rfqId' => $rfq->id])
+            ->call('withdrawQuotation', $quotation->id)
+            ->assertHasErrors('award');
+
+        $this->assertSame('awarded', $quotation->fresh()->status);
+    }
+
     public function test_somebody_without_the_award_ability_cannot_award(): void
     {
         $rfq = $this->quotedRfq();

@@ -40,6 +40,23 @@ class Show extends Component
         $this->paper = $this->paper->fresh()->load('verificationToken');
     }
 
+    /** Sought before issuing; the engine's verdict shows on this screen. */
+    public function submitForApproval(): void
+    {
+        $this->authorize('update', $this->paper);
+
+        try {
+            app(DocumentComposer::class)->submitForApproval($this->paper, auth()->user());
+        } catch (RuntimeException $e) {
+            session()->flash('paperError', $e->getMessage());
+
+            return;
+        }
+
+        $this->paper = $this->paper->fresh()->load('verificationToken');
+        $this->dispatch('toast', message: 'Sent for approval. It will show up in the approver\'s actions.');
+    }
+
     public function openVoid(): void
     {
         $this->voidingOpen = true;

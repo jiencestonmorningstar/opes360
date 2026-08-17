@@ -12,6 +12,7 @@ use Illuminate\Foundation\Bus\Dispatchable;
 use Illuminate\Queue\InteractsWithQueue;
 use Illuminate\Queue\SerializesModels;
 use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
 use Throwable;
 
@@ -177,6 +178,29 @@ class DeliverWebhook implements ShouldQueue
         $delay = $delivery->hasAttemptsLeft()
             ? WebhookDelivery::backoffAfter($delivery->attempts)
             : null;
+
+        /*
+         * On the sync driver, "queue the next attempt in a minute" is a lie:
+         * sync ignores delays and runs the dispatch inline, so the self-
+         * dispatch below would execute the entire retry schedule — timeouts
+         * included, up to five HTTP attempts at ten seconds each — inside
+         * whatever web request recorded the payment. One dead endpoint would
+         * cost the person at the till most of a minute per sale. So under
+         * sync a delivery gets exactly one attempt: the failure is booked,
+         * logged, and left for an operator — the honest behaviour on an
+         * install that has not provisioned a worker, and the log line tells
+         * them what provisioning one would buy.
+         */
+        if ($delay !== null && config('queue.default') === 'sync') {
+            Log::warning('DeliverWebhook: retry skipped because the queue is sync; run a queue worker to enable webhook retries.', [
+                'delivery' => $delivery->id,
+                'endpoint' => $endpoint->id,
+                'error' => $error,
+            ]);
+
+            $delay = null;
+            $error = Str::limit($error, 400).' (No retry: the queue runs inline; configure a queue worker to enable retries.)';
+        }
 
         $delivery->forceFill([
             'status' => $delay === null ? WebhookDelivery::FAILED : WebhookDelivery::PENDING,

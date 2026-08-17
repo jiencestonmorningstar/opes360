@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Http\Controllers\Concerns\AbortsForSuspendedCompany;
 use App\Models\BusinessDocumentSignature;
 use App\Models\Company;
 use App\Models\Scopes\CompanyScope;
@@ -25,6 +26,8 @@ use RuntimeException;
  */
 class SignatureController extends Controller
 {
+    use AbortsForSuspendedCompany;
+
     public function show(Request $request, string $token)
     {
         $signature = $this->findSignature($token);
@@ -33,7 +36,7 @@ class SignatureController extends Controller
             return response()->view('signatures.show', ['verdict' => 'unknown'], 404);
         }
 
-        $company = Company::find($signature->company_id);
+        $company = $this->companyFor($signature);
 
         return app(CurrentCompany::class)->as($company, function () use ($request, $signature, $company) {
             /*
@@ -86,7 +89,7 @@ class SignatureController extends Controller
             'typed_name' => ['required', 'string', 'max:200'],
         ]);
 
-        $company = Company::find($signature->company_id);
+        $company = $this->companyFor($signature);
 
         return app(CurrentCompany::class)->as($company, function () use ($signature, $data, $request) {
             // A typed-name confirmation, not a drawn signature: what makes
@@ -119,7 +122,7 @@ class SignatureController extends Controller
             'reason' => ['required', 'string', 'max:2000'],
         ]);
 
-        $company = Company::find($signature->company_id);
+        $company = $this->companyFor($signature);
 
         return app(CurrentCompany::class)->as($company, function () use ($signature, $data) {
             try {
@@ -139,5 +142,25 @@ class SignatureController extends Controller
             ->withoutGlobalScope(CompanyScope::class)
             ->where('signing_token', $token)
             ->first();
+    }
+
+    /**
+     * The token's own company, or a 404 when it is gone or suspended.
+     *
+     * Gone: a hard-deleted company with a live token must read as an unknown
+     * link, never a TypeError out of CurrentCompany::as(null). Suspended: a
+     * business suspended for abuse must not keep executing legally-binding
+     * signatures — unlike verification, nothing here is already in a
+     * customer's hands.
+     */
+    protected function companyFor(BusinessDocumentSignature $signature): Company
+    {
+        $company = Company::find($signature->company_id);
+
+        abort_if($company === null, 404);
+
+        $this->abortIfSuspended($company);
+
+        return $company;
     }
 }

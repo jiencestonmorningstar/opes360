@@ -251,6 +251,9 @@ class WebhookTest extends TestCase
         Http::fake(['*' => Http::response('nope', 500)]);
         Queue::fake();
 
+        // Retries only chain on a real queue; sync gets one attempt and stops.
+        config(['queue.default' => 'database']);
+
         $endpoint = $this->endpoint([WebhookEvents::DEAL_WON]);
         $delivery = $this->pendingDelivery($endpoint);
 
@@ -271,17 +274,53 @@ class WebhookTest extends TestCase
         $this->assertSame([60, 300, 1800, 7200, 21600], WebhookDelivery::BACKOFF);
     }
 
-    /** After the last attempt it stops, and says why. */
-    public function test_a_delivery_gives_up_after_five_attempts(): void
+    /**
+     * On the sync queue a failed delivery stops after one attempt.
+     *
+     * Sync ignores dispatch delays, so chaining retries would run the whole
+     * schedule — five HTTP timeouts — inline in the originating request.
+     * The job refuses to do that: one attempt, then failed, with the reason
+     * on the delivery.
+     */
+    public function test_a_sync_queue_gets_one_attempt_and_then_the_delivery_fails(): void
     {
-        // sync queue: the job re-dispatches itself and runs the whole schedule
-        // in one call, which is exactly what makes the count assertable.
         Http::fake(['*' => Http::response('nope', 500)]);
 
         $endpoint = $this->endpoint([WebhookEvents::DEAL_WON]);
         $delivery = $this->pendingDelivery($endpoint);
 
         (new DeliverWebhook($delivery->id))->handle();
+
+        $delivery->refresh();
+
+        $this->assertSame(1, $delivery->attempts);
+        $this->assertSame(WebhookDelivery::FAILED, $delivery->status);
+        $this->assertNull($delivery->next_attempt_at);
+        $this->assertStringContainsString('500', (string) $delivery->last_error);
+        $this->assertStringContainsString('No retry', (string) $delivery->last_error);
+
+        Http::assertSentCount(1);
+
+        $this->assertSame(1, $endpoint->fresh()->consecutive_failures);
+    }
+
+    /** After the last attempt it stops, and says why. */
+    public function test_a_delivery_gives_up_after_five_attempts(): void
+    {
+        Http::fake(['*' => Http::response('nope', 500)]);
+
+        // A real queue driver, so the retry chain is allowed — the database
+        // driver here runs nothing by itself, so each retry is drained by
+        // handling the job again, which is what makes the count assertable.
+        config(['queue.default' => 'database']);
+        Queue::fake();
+
+        $endpoint = $this->endpoint([WebhookEvents::DEAL_WON]);
+        $delivery = $this->pendingDelivery($endpoint);
+
+        for ($attempt = 1; $attempt <= WebhookDelivery::MAX_ATTEMPTS; $attempt++) {
+            (new DeliverWebhook($delivery->id))->handle();
+        }
 
         $delivery->refresh();
 

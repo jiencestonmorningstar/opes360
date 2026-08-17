@@ -66,6 +66,16 @@ class ChartOfAccounts
         'sales_services' => ['706', 'Services vendus'],
 
         /*
+         * Where a commercial discount goes. The plan's contra-revenue account:
+         * revenue is credited at the price asked and the rabais debited here,
+         * so the books show both what the business charges and what it gives
+         * away — folding the discount into 701 would hide a margin leak the
+         * owner ought to be able to read off the compte de résultat. Sits in
+         * class 7 but runs the other way, like 28 does in class 2.
+         */
+        'discounts_granted' => ['709', 'Rabais, remises et ristournes accordés'],
+
+        /*
          * Payroll. A run touches seven accounts at once, which is why they are
          * roles: the gross is a charge, the employer's contributions are a
          * second and larger charge nobody sees on a payslip, and what actually
@@ -386,6 +396,15 @@ class ChartOfAccounts
             $tens = (int) substr($number, 1, 1);
 
             return $tens % 2 === 1 ? 'debit' : 'credit';
+        }
+
+        /*
+         * 709 is class 7's own exception: rabais accordés reduce revenue, so
+         * the account grows on the debit side even though it lives among the
+         * produits — the same shape as 28 sitting in class 2 to reduce assets.
+         */
+        if (str_starts_with($number, '709')) {
+            return 'debit';
         }
 
         if ($class === 4) {

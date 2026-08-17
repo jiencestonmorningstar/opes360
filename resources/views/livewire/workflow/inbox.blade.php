@@ -79,4 +79,40 @@
             @endif
         </x-ui.panel>
     </div>
+
+    @if ($stuck->isNotEmpty())
+        <div class="mt-5">
+            <x-ui.panel title="Stuck approvals ({{ $stuck->count() }})">
+                <p class="text-[13px] text-muted">These stopped because nobody could be asked at a step. Fix who fills the step, then send them back round.</p>
+
+                @error('stuck')
+                    <p class="mt-2 text-[13px] font-medium text-warning">{{ $message }}</p>
+                @enderror
+
+                @foreach ($stuck as $instance)
+                    <div wire:key="stuck-{{ $instance->id }}" class="mt-3 rounded-xl bg-surface-2 p-4">
+                        <div class="flex flex-wrap items-center justify-between gap-3">
+                            <div class="min-w-0">
+                                <p class="truncate text-[14.5px] font-semibold text-ink">
+                                    {{ $instance->subject?->description
+                                        ?? $instance->subject?->title
+                                        ?? $instance->subject?->reference
+                                        ?? $instance->workflow?->name
+                                        ?? 'Awaiting approval' }}
+                                </p>
+                                <p class="mt-0.5 text-[12.5px] text-muted">
+                                    {{ $instance->workflow?->name }} · stalled at {{ $instance->currentStep()?->name ?? 'a step' }}
+                                </p>
+                            </div>
+
+                            <button type="button" wire:click="resubmit('{{ $instance->id }}')"
+                                    class="focusable flex h-9 shrink-0 items-center rounded-full border border-border bg-surface px-4 text-[13px] font-semibold text-ink-2 hover:bg-surface-2">
+                                Resubmit
+                            </button>
+                        </div>
+                    </div>
+                @endforeach
+            </x-ui.panel>
+        </div>
+    @endif
 </div>

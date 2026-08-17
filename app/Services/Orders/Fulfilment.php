@@ -189,6 +189,19 @@ class Fulfilment
         }
 
         return DB::transaction(function () use ($order, $actor, $creditOverride) {
+            /*
+             * Re-read under a row lock: the draft check above ran on the
+             * caller's in-memory copy, and two concurrent confirms would
+             * both pass it and each reserve the full order — the shelf
+             * promised twice. Lock-before-check, as in PaymentRecorder.
+             */
+            SalesOrder::query()->lockForUpdate()->findOrFail($order->getKey());
+            $order->refresh();
+
+            if (! $order->isDraft()) {
+                throw new RuntimeException("{$order->number} has already been confirmed.");
+            }
+
             $shortages = [];
 
             foreach ($order->lines()->with('item')->get() as $line) {
@@ -203,6 +216,17 @@ class Fulfilment
 
                     continue;
                 }
+
+                /*
+                 * The item row is the mutex serialising reservation
+                 * arithmetic. "Available" is SUM(movements) − SUM(live
+                 * reservations) — aggregates with no lockable row of their
+                 * own — so two concurrent confirms would read the same
+                 * snapshot and together promise the same shelf twice. The
+                 * lock is held to commit; a no-op on sqlite, where the
+                 * single connection serialises anyway.
+                 */
+                Item::query()->withoutGlobalScopes()->whereKey($item->id)->lockForUpdate()->first();
 
                 $available = max(0.0, $this->reservations->availableOf($item));
                 $hold = round(min($ordered, $available), 3);
@@ -340,7 +364,23 @@ class Fulfilment
         $company = $this->company();
 
         return DB::transaction(function () use ($order, $picks, $actor, $note, $company) {
-            $lines = $order->lines()->with('item')->get();
+            /*
+             * Status and quantities re-read under lock inside the
+             * transaction: two concurrent delivers of the same order would
+             * both read the caller's stale quantity_reserved, both pass the
+             * over-delivery check, and the same goods would leave the shelf
+             * twice (quantity_reserved going negative). The order row is the
+             * mutex; the lines are locked too because quantity_reserved is
+             * the figure the whole method trusts.
+             */
+            SalesOrder::query()->lockForUpdate()->findOrFail($order->getKey());
+            $order->refresh();
+
+            if (! $order->isOpen()) {
+                throw new RuntimeException("{$order->number} is {$order->status} — only a confirmed order can be delivered.");
+            }
+
+            $lines = $order->lines()->with('item')->lockForUpdate()->get();
 
             $deliveries = [];
 
@@ -551,18 +591,25 @@ class Fulfilment
      */
     public function cancel(SalesOrder $order, ?User $actor = null): SalesOrder
     {
-        if ($order->isCancelled()) {
-            return $order;
-        }
-
-        if ((float) $order->lines()->sum('quantity_delivered') > 0.0005) {
-            throw new RuntimeException(
-                "{$order->number} has deliveries against it — credit the invoice and record the return instead of cancelling."
-            );
-        }
-
         return DB::transaction(function () use ($order) {
-            foreach ($order->lines as $line) {
+            // Re-read under lock: a cancel racing a deliver must see the
+            // committed deliveries, or it releases holds for goods that are
+            // already on a truck. The order row is the same mutex deliver()
+            // takes, so the two serialise.
+            SalesOrder::query()->lockForUpdate()->findOrFail($order->getKey());
+            $order->refresh();
+
+            if ($order->isCancelled()) {
+                return $order;
+            }
+
+            if ((float) $order->lines()->sum('quantity_delivered') > 0.0005) {
+                throw new RuntimeException(
+                    "{$order->number} has deliveries against it — credit the invoice and record the return instead of cancelling."
+                );
+            }
+
+            foreach ($order->lines()->get() as $line) {
                 $this->reservations->releaseFor($line);
                 $line->forceFill(['quantity_reserved' => 0, 'quantity_backordered' => 0])->save();
             }
@@ -589,14 +636,28 @@ class Fulfilment
         }
 
         return DB::transaction(function () use ($order, $actor) {
+            // Same lock-before-check as confirm(): the open check above ran
+            // on the caller's copy, and re-reserving against a stale order
+            // races a concurrent deliver or cancel.
+            SalesOrder::query()->lockForUpdate()->findOrFail($order->getKey());
+            $order->refresh();
+
+            if (! $order->isOpen()) {
+                throw new RuntimeException("{$order->number} is {$order->status} — there is nothing to re-reserve.");
+            }
+
             $shortages = [];
 
-            foreach ($order->lines()->with('item')->get() as $line) {
+            foreach ($order->lines()->with('item')->lockForUpdate()->get() as $line) {
                 $short = (float) $line->quantity_backordered;
 
                 if ($short <= 0 || $line->item === null) {
                     continue;
                 }
+
+                // Item row locked as the mutex for the availability sum —
+                // see the identical lock in confirm() for why.
+                Item::query()->withoutGlobalScopes()->whereKey($line->item_id)->lockForUpdate()->first();
 
                 $available = max(0.0, $this->reservations->availableOf($line->item));
                 $hold = round(min($short, $available), 3);

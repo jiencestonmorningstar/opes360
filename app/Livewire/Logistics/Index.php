@@ -68,6 +68,14 @@ class Index extends Component
 
     public ?string $loadShipmentId = null;
 
+    // ── Close a manifest ────────────────────────────────────────────────
+    /** The manifest whose closing strip is open, if any. */
+    public ?string $closing = null;
+
+    public ?string $startOdometer = null;
+
+    public ?string $endOdometer = null;
+
     /** Re-quote from the rate card whenever the route or the weight changes. */
     public function updated(string $property): void
     {
@@ -196,6 +204,48 @@ class Index extends Component
         }
 
         $this->dispatch('toast', message: 'Manifest dispatched.');
+    }
+
+    public function startClosing(string $manifestId): void
+    {
+        Gate::authorize('logistics.manage');
+
+        $this->resetValidation();
+        $this->closing = $manifestId;
+        $this->startOdometer = null;
+        $this->endOdometer = null;
+    }
+
+    /**
+     * The van is back. The odometer readings are optional — a manifest can
+     * close without them — but given together they write the journey into the
+     * fleet's own trip log, so they are asked for at the one moment somebody
+     * actually has them.
+     */
+    public function closeManifest(string $manifestId): void
+    {
+        Gate::authorize('logistics.manage');
+
+        $this->validate([
+            'startOdometer' => ['nullable', 'integer', 'min:0', 'required_with:endOdometer'],
+            'endOdometer' => ['nullable', 'integer', 'min:0', 'required_with:startOdometer'],
+        ]);
+
+        try {
+            app(Dispatch::class)->close(
+                TripManifest::findOrFail($manifestId),
+                auth()->user(),
+                $this->startOdometer !== null && $this->startOdometer !== '' ? (int) $this->startOdometer : null,
+                $this->endOdometer !== null && $this->endOdometer !== '' ? (int) $this->endOdometer : null,
+            );
+        } catch (RuntimeException $e) {
+            $this->addError('endOdometer', $e->getMessage());
+
+            return;
+        }
+
+        $this->reset('closing', 'startOdometer', 'endOdometer');
+        $this->dispatch('toast', message: 'Manifest closed.');
     }
 
     public function render(): View

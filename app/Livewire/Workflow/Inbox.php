@@ -4,8 +4,10 @@ namespace App\Livewire\Workflow;
 
 use App\Models\User;
 use App\Models\WorkflowAssignment;
+use App\Models\WorkflowInstance;
 use App\Services\Workflow\WorkflowEngine;
 use Illuminate\Contracts\View\View;
+use Illuminate\Database\Eloquent\Builder;
 use Livewire\Component;
 use Livewire\WithPagination;
 use RuntimeException;
@@ -56,6 +58,62 @@ class Inbox extends Component
         );
 
         $this->reset(['comment', 'acting']);
+    }
+
+    /**
+     * Send a stalled approval back round the workflow.
+     *
+     * A stalled instance has no pending assignment, so it can never surface
+     * in the "waiting on you" list above — it is waiting on its *submitter*,
+     * and this screen is that person's action list. The submitter may
+     * resubmit their own; whoever holds `workflows.manage` may resubmit
+     * anybody's, because a step nobody can fill is an administration problem
+     * (add somebody to the role) rather than the submitter's mistake.
+     */
+    public function resubmit(string $instanceId): void
+    {
+        $instance = $this->stuck()->where('id', $instanceId)->first();
+
+        if ($instance === null) {
+            $this->addError('stuck', 'That approval is not yours to resubmit.');
+
+            return;
+        }
+
+        try {
+            $instance = app(WorkflowEngine::class)->resubmit($instance, $this->user());
+        } catch (RuntimeException $e) {
+            $this->addError('stuck', $e->getMessage());
+
+            return;
+        }
+
+        if ($instance->status === 'stalled') {
+            $this->addError('stuck', 'It stalled again on "'.($instance->currentStep()?->name ?? 'the same step').'" — nobody currently fills that step. Fix the workflow or the role first.');
+
+            return;
+        }
+
+        $this->dispatch('toast', message: 'Sent back round for approval.');
+    }
+
+    /**
+     * Stalled approvals this user may recover.
+     *
+     * Only `stalled`, never `changes_requested`: a returned record is
+     * corrected and resubmitted from its own module's screen, which starts a
+     * fresh submission — resubmitting the instance here would re-run the
+     * approval behind the record's back.
+     */
+    protected function stuck(): Builder
+    {
+        return WorkflowInstance::query()
+            ->where('status', 'stalled')
+            ->when(
+                ! $this->user()->can('workflows.manage'),
+                fn (Builder $query) => $query->where('started_by', $this->user()->id),
+            )
+            ->with(['subject', 'workflow']);
     }
 
     protected function decide(string $instanceId, string $action): void
@@ -113,6 +171,9 @@ class Inbox extends Component
 
         return view('livewire.workflow.inbox', [
             'assignments' => $assignments,
+            // Bounded like the list above: a business with many stalled
+            // approvals needs the workflow fixed, not a longer page.
+            'stuck' => $this->stuck()->latest('started_at')->limit(20)->get(),
         ])->layout('components.layouts.app', ['title' => 'My actions', 'active' => 'actions']);
     }
 }

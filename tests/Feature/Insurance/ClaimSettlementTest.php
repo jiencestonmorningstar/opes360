@@ -7,6 +7,7 @@ use App\Models\InsurancePolicy;
 use App\Models\Role;
 use App\Services\Insurance\Claims;
 use App\Services\Insurance\Policies;
+use App\Support\DefaultWorkflows;
 use RuntimeException;
 
 /**
@@ -133,6 +134,33 @@ class ClaimSettlementTest extends InsuranceTestCase
             'incident_on' => now()->subMonths(6)->toDateString(),
             'description' => 'Before cover started.',
         ], $this->owner);
+    }
+
+    /**
+     * The audit's F2.1: the settle-via-approval button used to be a
+     * guaranteed error because no business could ever have a workflow for
+     * claims. The seeded default is what makes the submit path real.
+     */
+    public function test_the_seeded_default_path_makes_settlement_submission_work(): void
+    {
+        DefaultWorkflows::seed($this->company);
+
+        $policy = $this->activePolicy();
+        $claim = $this->claims()->open($policy, [
+            'incident_on' => now()->subDays(3)->toDateString(),
+            'description' => 'Burst pipe, stock damage.',
+            'claimed_amount' => 250_000,
+        ], $this->owner);
+        $this->claims()->assess($claim, [], $this->owner);
+
+        $instance = $this->claims()->submitSettlement($claim->fresh(), 200_000, $this->owner);
+
+        $this->assertSame('running', $instance->status);
+        $this->assertTrue($instance->assignments()->where('user_id', $this->owner->id)->exists());
+
+        $this->engine()->act($instance, $this->owner, 'approved');
+
+        $this->assertSame('settled', $claim->fresh()->status);
     }
 
     public function test_nothing_in_the_vertical_grew_an_approve_method(): void
