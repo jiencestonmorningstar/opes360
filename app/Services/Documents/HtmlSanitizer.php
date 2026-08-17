@@ -26,7 +26,7 @@ class HtmlSanitizer
         'strong', 'b', 'em', 'i', 'u', 's',
         'ul', 'ol', 'li',
         'table', 'thead', 'tbody', 'tr', 'th', 'td',
-        'blockquote', 'hr', 'a',
+        'blockquote', 'hr', 'a', 'span',
     ];
 
     /** Tags whose *content* is as unwanted as the tag itself. */
@@ -37,6 +37,7 @@ class HtmlSanitizer
         'a' => ['href'],
         'th' => ['colspan', 'rowspan'],
         'td' => ['colspan', 'rowspan'],
+        'span' => ['data-token'],
     ];
 
     public function clean(string $html): string
@@ -103,7 +104,13 @@ class HtmlSanitizer
             return;
         }
 
-        if (! in_array($tag, self::ALLOWED, true)) {
+        // A field chip is the only reason a span exists in this vocabulary —
+        // one without a token is not something the editor's toolbar (or this
+        // sanitizer's own chip-insertion path) could have produced, so it is
+        // unwrapped exactly like any other unknown tag.
+        $isBareSpan = $tag === 'span' && ! $node->hasAttribute('data-token');
+
+        if (! in_array($tag, self::ALLOWED, true) || $isBareSpan) {
             // Unwrap: keep the (sanitized) children, lose the tag.
             $this->sanitizeChildren($node);
 

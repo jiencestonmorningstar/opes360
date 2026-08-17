@@ -10,9 +10,12 @@ use App\Models\Workflow;
 use App\Models\WorkflowInstance;
 use App\Services\Documents\CustomDocumentTemplates;
 use App\Services\Documents\DocumentFieldRegistry;
+use App\Services\Documents\DocumentLinker;
 use App\Services\Workflow\WorkflowEngine;
 use App\Support\DocumentTemplates;
 use Carbon\CarbonImmutable;
+use DOMDocument;
+use DOMElement;
 use Illuminate\Support\Facades\DB;
 use RuntimeException;
 use Throwable;
@@ -29,7 +32,81 @@ class DocumentComposer
     public function __construct(
         protected DocumentNumbers $numbers,
         protected CustomDocumentTemplates $customTemplates,
+        protected DocumentLinker $linker,
     ) {}
+
+    /**
+     * Model class => DocumentFieldRegistry context key, for resolving field
+     * chips (§3.2 of the master spec) against whatever ERP record a document
+     * is linked to. Mirrors RecordDocumentComposer's own map — kept separate
+     * rather than shared, since that class already depends on this one and a
+     * shared dependency back the other way would be circular.
+     *
+     * @var array<class-string, string>
+     */
+    protected const LIVE_CONTEXT_KEYS = [
+        \App\Models\Contact::class => 'customer',
+        \App\Models\Employee::class => 'employee',
+        \App\Models\Project::class => 'project',
+        \App\Models\Contract::class => 'contract',
+    ];
+
+    /**
+     * The registry context built from whichever ERP record $document is
+     * linked to with the "about" role — the same role RecordDocumentComposer
+     * attaches on compose, and the one a manual "Documents" panel link uses
+     * by default. A document with no such link, or one about a record type
+     * with no registered context key, simply resolves no live fields.
+     *
+     * @return array<string, mixed>
+     */
+    protected function liveContextFor(BusinessDocument $document): array
+    {
+        $relation = $this->linker->relationsOf($document)
+            ->firstWhere('role', 'about');
+
+        $related = $relation?->related;
+
+        if ($related === null) {
+            return [];
+        }
+
+        $key = self::LIVE_CONTEXT_KEYS[$related::class] ?? null;
+
+        return $key === null ? [] : [$key => $related];
+    }
+
+    /**
+     * Every field chip $document's editor can offer to insert, as
+     * `token => human label` pairs — what drives the `@` autocomplete in the
+     * rich editor. Values come from whatever ERP record the document is
+     * linked to (see liveContextFor()); a document with no link, or none of
+     * whose providers have anything to say, offers an empty list rather than
+     * an error.
+     *
+     * @return array<string, string>
+     */
+    public function availableTokens(BusinessDocument $document): array
+    {
+        $context = $this->liveContextFor($document);
+
+        if ($context === []) {
+            return [];
+        }
+
+        $values = $this->automaticValues($document->company, $context);
+
+        return collect($values)
+            ->keys()
+            ->mapWithKeys(fn (string $token) => [$token => $this->labelFor($token)])
+            ->all();
+    }
+
+    /** "customer.name" -> "Customer name" — good enough for a picker; nothing here claims to be translated. */
+    protected function labelFor(string $token): string
+    {
+        return ucfirst(str_replace(['.', '_'], ' ', $token));
+    }
 
     /**
      * Resolves a template by key from either catalogue.
@@ -293,7 +370,7 @@ class DocumentComposer
      * there is no markdown dependency and no path by which user text becomes
      * markup. Everything is escaped before any tag is introduced.
      */
-    public function toHtml(string $body): string
+    public function toHtml(string $body, ?BusinessDocument $document = null): string
     {
         /*
          * A body the rich editor wrote is already HTML; re-sanitize on the
@@ -301,9 +378,17 @@ class DocumentComposer
          * it through, so the show screen and the print/PDF views render it
          * unchanged. Everything else is the plain template prose this method
          * has always converted.
+         *
+         * $document, when given, additionally resolves any field-chip spans
+         * against whatever ERP record it is linked to — see
+         * resolveFieldChips(). Optional: a caller with only a body string in
+         * hand (Compose's live preview, ahead of the document existing) gets
+         * the chip's last-rendered text, exactly like before this existed.
          */
         if (str_starts_with(trim($body), '<')) {
-            return app(Documents\HtmlSanitizer::class)->clean($body);
+            $clean = app(Documents\HtmlSanitizer::class)->clean($body);
+
+            return $document === null ? $clean : $this->resolveFieldChips($clean, $document);
         }
 
         $blocks = preg_split("/\n\s*\n/", trim($body));
@@ -350,6 +435,66 @@ class DocumentComposer
     protected function inline(string $text): string
     {
         return preg_replace('/\*\*(.+?)\*\*/s', '<strong>$1</strong>', e($text));
+    }
+
+    /**
+     * Field chips (`<span data-token="customer.name">…</span>`) carry only
+     * the token, not the value — resolving it here is what makes a chip
+     * "living" per §3.3 of the master spec, rather than text frozen at the
+     * moment it was inserted. A token that resolves to nothing (record
+     * unlinked, or its provider has nothing to say) keeps its already
+     * rendered text: a document mid-edit should never show a blank hole
+     * where a value used to be.
+     */
+    protected function resolveFieldChips(string $html, BusinessDocument $document): string
+    {
+        if (! str_contains($html, 'data-token')) {
+            return $html;
+        }
+
+        $context = $this->liveContextFor($document);
+
+        if ($context === []) {
+            return $html;
+        }
+
+        $values = $this->automaticValues($document->company, $context);
+
+        $doc = new DOMDocument;
+        libxml_use_internal_errors(true);
+        $doc->loadHTML('<?xml encoding="utf-8"?><body>'.$html.'</body>', LIBXML_HTML_NOIMPLIED | LIBXML_HTML_NODEFDTD);
+        libxml_clear_errors();
+
+        $body = $doc->getElementsByTagName('body')->item(0);
+
+        if ($body === null) {
+            return $html;
+        }
+
+        foreach (iterator_to_array($doc->getElementsByTagName('span')) as $span) {
+            if (! $span instanceof DOMElement || ! $span->hasAttribute('data-token')) {
+                continue;
+            }
+
+            $token = $span->getAttribute('data-token');
+
+            if (! array_key_exists($token, $values)) {
+                continue;
+            }
+
+            foreach (iterator_to_array($span->childNodes) as $child) {
+                $span->removeChild($child);
+            }
+
+            $span->appendChild($doc->createTextNode((string) $values[$token]));
+        }
+
+        $out = '';
+        foreach (iterator_to_array($body->childNodes) as $child) {
+            $out .= $doc->saveHTML($child);
+        }
+
+        return trim($out);
     }
 
     /**

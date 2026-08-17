@@ -48,7 +48,7 @@ class Edit extends Component
 
         $this->paper = $paper;
         $this->title = $paper->title;
-        $this->body = app(DocumentComposer::class)->toHtml((string) $paper->body);
+        $this->body = app(DocumentComposer::class)->toHtml((string) $paper->body, $paper);
 
         // Claim the lock if the person may write at all; a viewer without
         // update rights simply gets the read-only screen.
@@ -154,7 +154,7 @@ class Edit extends Component
 
         $this->paper->refresh();
         $this->title = $this->paper->title;
-        $this->body = app(DocumentComposer::class)->toHtml((string) $this->paper->body);
+        $this->body = app(DocumentComposer::class)->toHtml((string) $this->paper->body, $this->paper);
         $this->dispatch('editor-set-content', html: $this->body);
     }
 
@@ -177,6 +177,7 @@ class Edit extends Component
             'holder' => $holder,
             'versions' => $this->paper->versions()->orderByDesc('version_number')->with('creator')->limit(30)->get(),
             'comments' => $this->paper->comments()->whereNull('parent_id')->with('author')->orderByDesc('created_at')->limit(50)->get(),
+            'availableTokens' => app(DocumentComposer::class)->availableTokens($this->paper),
         ])->layout('components.layouts.app', [
             'title' => 'Edit '.$this->paper->title,
             'active' => 'papers',

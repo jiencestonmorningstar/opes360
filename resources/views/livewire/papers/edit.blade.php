@@ -49,7 +49,7 @@
         {{-- The editor island. wire:ignore: Tiptap owns this DOM; Livewire must never morph it. --}}
         <div class="lg:col-span-2">
             <div class="card overflow-hidden"
-                 x-data="opesRichEditor({ content: @js($body), editable: @js($editable) })"
+                 x-data="opesRichEditor({ content: @js($body), editable: @js($editable), availableTokens: @js($availableTokens) })"
                  x-on:editor-set-content.window="setContent($event.detail.html)">
 
                 <div x-show="editable" class="flex flex-wrap items-center gap-1 border-b border-border px-3 py-2" role="toolbar" aria-label="Formatting">

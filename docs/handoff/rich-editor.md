@@ -2,7 +2,54 @@
 
 The "many people work on a document" capability, honestly scoped: rich
 editing + autosave + version snapshots + soft edit-locking + the existing
-comments. **Not** keystroke-realtime — that upgrade path is at the bottom.
+comments + field chips (§3.1/§3.2 of the master spec — see below).
+**Not** keystroke-realtime — that upgrade path is at the bottom.
+
+## Field chips (2026-08-17 addition)
+
+Typing `@` in the editor opens a picker of every field the document's linked
+ERP record can offer (`customer.name`, `employee.name`, `project.name`,
+`contract.title` — whatever `DocumentComposer::availableTokens()` reports);
+choosing one inserts an immutable chip, deletable only as a whole unit.
+
+- **Node/extension**: `resources/js/editor/field-token.js` — a Tiptap inline
+  atom node (`fieldToken`) rendered as `<span data-token="…">label</span>`,
+  plus a `@`-triggered `@tiptap/suggestion` picker.
+- **Server resolution**: `DocumentComposer::resolveFieldChips()`, called from
+  `toHtml($body, $document)` — every time a draft's HTML body is rendered,
+  each chip's text is re-fetched from `DocumentFieldRegistry` against the
+  document's linked "about" record. A chip is "living" (§3.3): open the
+  document tomorrow after the customer's name changed, and the chip shows
+  the new name, not what was typed when it was inserted.
+- **Context source**: `DocumentComposer::liveContextFor()` reads the
+  document's `about`-role relation via `DocumentLinker` and maps its class to
+  a registry prefix (`Contact` → `customer`, `Employee` → `employee`,
+  `Project` → `project`, `Contract` → `contract` — same map
+  `RecordDocumentComposer` uses for compose-time context, duplicated rather
+  than shared to avoid a circular constructor dependency between the two
+  classes). A document with no such link, or one about a record type with no
+  registered prefix, offers no chips to insert and resolves none that exist.
+- **Sanitizer**: `HtmlSanitizer` now allows `span` only when it carries
+  `data-token` — a bare `<span>` (anything the toolbar or a paste could
+  produce that isn't a chip) still unwraps exactly as before this existed.
+- **Deliberately NOT resolved live**: the print, e-signature, and external
+  share paths (`PrintController`, `SignatureController`,
+  `DocumentShareController`, `DocumentBundles`) still call `toHtml($body)`
+  with no `$document` — resolving a chip there could show a value that
+  postdates whatever was signed or hashed, which would undermine the
+  existing issuance snapshot guarantee (§3.3's "Rendered Text Engine"). Same
+  reasoning gates `Show.php`: an issued document's chips stay frozen at
+  whatever text they last rendered before issuance; only a draft re-resolves.
+  Actually freezing a chip's token into permanent plain text at the moment of
+  issuance — so the immutability is enforced rather than merely un-triggered
+  — is not yet built; see the roadmap plan
+  (`docs/superpowers/plans/2026-08-17-collaborative-editor-roadmap.md`,
+  item 1) for the follow-up.
+- **No reverse tokenization**: editing a chip's displayed text does nothing —
+  it is an atom node, not editable inline — and there is no write-back path
+  from the document into the ERP record yet (master spec §3.2 "Write-Through"
+  and §9 "Reverse Tokenization" are still open; same roadmap plan, item 5).
+- **Tests**: `tests/Feature/Documents/LiveTokenChipTest.php`.
 
 ## What shipped
 

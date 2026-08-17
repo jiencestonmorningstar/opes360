@@ -1,6 +1,7 @@
 import { Editor } from '@tiptap/core';
 import StarterKit from '@tiptap/starter-kit';
 import { TableKit } from '@tiptap/extension-table';
+import { fieldTokenExtensions } from './field-token.js';
 
 /**
  * The Tiptap island for the papers rich editor.
@@ -11,10 +12,11 @@ import { TableKit } from '@tiptap/extension-table';
  * costs one request, not one per keystroke. The server is the authority on
  * what HTML is allowed (HtmlSanitizer); this side only produces it.
  */
-export default function richEditor({ content, editable }) {
+export default function richEditor({ content, editable, availableTokens = {} }) {
     return {
         editor: null,
         editable,
+        availableTokens,
         saveTimer: null,
         /** Bumped on every transaction so Alpine re-evaluates isActive(). */
         tick: 0,
@@ -50,6 +52,7 @@ export default function richEditor({ content, editable }) {
                         },
                     }),
                     TableKit.configure({ table: { resizable: false } }),
+                    ...fieldTokenExtensions(this.availableTokens),
                 ],
                 onTransaction: () => { this.tick++; },
                 onUpdate: () => this.queueSave(),

@@ -116,7 +116,16 @@ class Show extends Component
          * one via its own screen or API).
          */
         return view('livewire.papers.show', [
-            'bodyHtml' => app(DocumentComposer::class)->toHtml($this->paper->body),
+            // A draft's chips re-resolve on every view — that is the whole
+            // point of a "living document" (§3.3). An issued document is a
+            // frozen legal snapshot; showing it with a chip re-resolved to a
+            // value that postdates the signature would contradict the very
+            // guarantee issuance exists to make, so this stays exactly as
+            // rendered before this feature existed once isIssued() is true.
+            'bodyHtml' => app(DocumentComposer::class)->toHtml(
+                $this->paper->body,
+                $this->paper->isIssued() ? null : $this->paper,
+            ),
             'notice' => ($this->paper->template()['binding'] ?? false)
                 ? DocumentTemplates::reviewNotice()
                 : null,
