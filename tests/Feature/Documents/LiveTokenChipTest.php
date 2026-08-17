@@ -110,4 +110,63 @@ class LiveTokenChipTest extends DocumentsTestCase
 
         $this->assertSame([], app(DocumentComposer::class)->availableTokens($paper));
     }
+
+    /* ------------------------------------------------------------------ *
+     * Freezing at issuance — §3.3's "Rendered Text Engine"
+     * ------------------------------------------------------------------ */
+
+    public function test_issuing_freezes_a_field_chip_to_plain_resolved_text(): void
+    {
+        $contact = $this->contact('Ada Lovelace');
+        $paper = $this->document([
+            'body' => '<p>Dear <span data-token="customer.name">Old Name</span>,</p>',
+        ]);
+        app(DocumentLinker::class)->attach($paper, $contact, 'about', $this->owner);
+
+        $issued = app(DocumentComposer::class)->issue($paper, $this->owner);
+
+        $this->assertStringNotContainsString('data-token', $issued->body);
+        $this->assertStringNotContainsString('<span', $issued->body);
+        $this->assertStringContainsString('Dear Ada Lovelace,', $issued->body);
+    }
+
+    public function test_an_issued_documents_content_hash_covers_the_frozen_text_not_the_token(): void
+    {
+        $contact = $this->contact('Ada Lovelace');
+        $paper = $this->document([
+            'body' => '<p><span data-token="customer.name">Ada Lovelace</span></p>',
+        ]);
+        app(DocumentLinker::class)->attach($paper, $contact, 'about', $this->owner);
+
+        $issued = app(DocumentComposer::class)->issue($paper, $this->owner);
+
+        $this->assertFalse($issued->isTampered());
+        $this->assertSame(hash('sha256', $issued->canonicalPayload()), $issued->content_hash);
+    }
+
+    public function test_issuing_a_document_with_no_chips_leaves_the_body_untouched(): void
+    {
+        $paper = $this->document(['body' => '<p>Plain prose, no chips at all.</p>']);
+
+        $issued = app(DocumentComposer::class)->issue($paper, $this->owner);
+
+        $this->assertSame('<p>Plain prose, no chips at all.</p>', $issued->body);
+    }
+
+    public function test_a_frozen_chip_no_longer_updates_after_issuance_even_if_the_customer_is_renamed(): void
+    {
+        $contact = $this->contact('Ada Lovelace');
+        $paper = $this->document([
+            'body' => '<p><span data-token="customer.name">Ada Lovelace</span></p>',
+        ]);
+        app(DocumentLinker::class)->attach($paper, $contact, 'about', $this->owner);
+
+        $issued = app(DocumentComposer::class)->issue($paper, $this->owner);
+        $contact->update(['name' => 'Someone Else']);
+
+        $html = app(DocumentComposer::class)->toHtml($issued->fresh()->body, $issued->fresh());
+
+        $this->assertStringContainsString('Ada Lovelace', $html);
+        $this->assertStringNotContainsString('Someone Else', $html);
+    }
 }

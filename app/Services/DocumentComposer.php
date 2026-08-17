@@ -498,6 +498,60 @@ class DocumentComposer
     }
 
     /**
+     * Issuance's compile run — §3.3's "Rendered Text Engine". Every field
+     * chip is resolved one last time (same lookup as resolveFieldChips())
+     * and then unwrapped entirely: the `<span data-token>` disappears, only
+     * its resolved plain text remains. Unlike a draft's chips, this result
+     * is what gets hashed and stored, so a document issued today reads
+     * exactly the same in ten years even if the customer it named is long
+     * since renamed or deleted — the whole point of a legal snapshot.
+     *
+     * A body with no chips at all round-trips unchanged; this only ever
+     * touches a document that actually had something to freeze.
+     */
+    protected function freezeFieldChips(BusinessDocument $document): string
+    {
+        $html = (string) $document->body;
+
+        if (! str_contains($html, 'data-token')) {
+            return $html;
+        }
+
+        $context = $this->liveContextFor($document);
+        $values = $context === [] ? [] : $this->automaticValues($document->company, $context);
+
+        $doc = new DOMDocument;
+        libxml_use_internal_errors(true);
+        $doc->loadHTML('<?xml encoding="utf-8"?><body>'.$html.'</body>', LIBXML_HTML_NOIMPLIED | LIBXML_HTML_NODEFDTD);
+        libxml_clear_errors();
+
+        $body = $doc->getElementsByTagName('body')->item(0);
+
+        if ($body === null) {
+            return $html;
+        }
+
+        foreach (iterator_to_array($doc->getElementsByTagName('span')) as $span) {
+            if (! $span instanceof DOMElement || ! $span->hasAttribute('data-token')) {
+                continue;
+            }
+
+            $token = $span->getAttribute('data-token');
+            $text = array_key_exists($token, $values) ? (string) $values[$token] : $span->textContent;
+
+            $replacement = $doc->createTextNode($text);
+            $span->parentNode?->replaceChild($replacement, $span);
+        }
+
+        $out = '';
+        foreach (iterator_to_array($body->childNodes) as $child) {
+            $out .= $doc->saveHTML($child);
+        }
+
+        return trim($out);
+    }
+
+    /**
      * Freezes a draft: permanent reference, content hash, verification token.
      *
      * Mirrors DocumentIssuer for the sales ledger — same guarantees, same single
@@ -562,6 +616,13 @@ class DocumentComposer
             $document->save();
 
             $document->refresh();
+
+            $frozen = $this->freezeFieldChips($document);
+
+            if ($frozen !== $document->body) {
+                $document->forceFill(['body' => $frozen])->saveQuietly();
+            }
+
             $document->forceFill([
                 'content_hash' => hash('sha256', $document->canonicalPayload()),
             ])->saveQuietly();

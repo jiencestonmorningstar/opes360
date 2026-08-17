@@ -39,22 +39,16 @@ locking or CRDT/OT.
    it was typed. See `docs/handoff/rich-editor.md` for the full design.
    **Not** built as part of this: `/`-slash command insertion (only `@` was
    scoped — a slash command for the same picker would be a small follow-up,
-   not a new subsystem), and freezing a chip into permanent plain text at
-   issuance (§3.3's other half — an issued document currently just stops
-   being shown with live resolution at all, via `Show.php`'s `isIssued()`
-   check, rather than the token being compiled away in the stored body; see
-   item 1a below).
+   not a new subsystem).
 
-1a. **Freeze field chips to plain text at issuance** (§3.3 "Rendered Text
-    Engine"). Today `BusinessDocument::canonicalPayload()`/issuance hashes
-    whatever HTML is already stored, chip markup included — an issued
-    document with an unresolved-looking `<span data-token>` in its stored
-    body is not actively wrong (nothing re-resolves it, per item 1's
-    `Show.php` guard) but it is not the compiled, self-contained legal
-    snapshot §3.3 describes either. The real fix: at the same point
-    `DocumentIssuer` freezes/hashes a document, run `resolveFieldChips()`
-    once and store the result as plain text (stripping the `data-token`
-    wrapper), so the hash covers resolved values, not tokens.
+1a. ~~**Freeze field chips to plain text at issuance**~~ (§3.3 "Rendered Text
+    Engine") — **shipped 2026-08-17**. `DocumentComposer::freezeFieldChips()`
+    runs inside `issue()`, right before the content hash is computed: each
+    `<span data-token>` is resolved one last time and unwrapped to bare
+    resolved text, so the hash covers what a reader actually sees, and a
+    later rename of the linked customer/employee/project can never change
+    what an already-issued document reads. A body with no chips is left
+    byte-for-byte untouched. See `tests/Feature/Documents/LiveTokenChipTest.php`.
 2. **Visual masking of restricted fields** (§6). Needs verification — if
    `DocumentFieldRegistry` values are ever rendered without a permission
    check at the point of substitution, `{{employee.salary}}` leaks to anyone
