@@ -187,6 +187,34 @@ what still needs attention.
 Deleting a comment is narrower still: only its author, or a document
 administrator.
 
+## Editing
+
+A draft document opens in a rich editor — headings, emphasis, lists, tables,
+quotes and links, with the document autosaving a few seconds after you pause
+typing. Nothing to remember to click; close the tab and your work is there.
+
+**One person writes at a time.** Opening the editor takes the editing lock;
+anyone else who opens the same document sees it read-only, with a banner
+naming who is writing and a **Request takeover** button. Takeover succeeds
+when the current writer has released the lock or gone quiet — a crashed tab
+or a closed laptop frees the document by itself within about a minute and a
+half, so nobody is ever locked out by an accident. While the lock is live in
+someone else's hands, your save is refused rather than silently overwriting
+theirs.
+
+**Versions are milestones, not keystrokes.** Autosaves land continuously, but
+the version history gains an entry at most every few minutes per writer, plus
+one final entry when a writer leaves — so the history reads as "what did the
+document say when each person finished", not a film strip of half-typed
+sentences. Any earlier version can be restored from the editor's sidebar; the
+content it replaces is kept as a version of its own.
+
+**Issued documents cannot be edited — by anyone, ever.** The moment a
+document is issued, a copy of it exists outside this system: printed, signed,
+emailed. Editing the copy in here would leave the two disagreeing, and the QR
+verification would rightly report tampering. Revise a draft, or void the
+issued document and issue a replacement.
+
 ## Comparing versions
 
 Two versions can be compared side by side, word by word — not just "this

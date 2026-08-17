@@ -4,10 +4,10 @@ namespace Tests\Feature\Documents;
 
 use App\Livewire\Papers\Edit;
 use App\Models\Role;
+use App\Services\DocumentComposer;
 use App\Services\Documents\DocumentVersioner;
 use App\Services\Documents\EditLocks;
 use App\Services\Documents\HtmlSanitizer;
-use App\Services\DocumentComposer;
 use Livewire\Livewire;
 
 class RichEditorTest extends DocumentsTestCase

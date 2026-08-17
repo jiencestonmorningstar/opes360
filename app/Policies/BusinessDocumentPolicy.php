@@ -34,8 +34,23 @@ class BusinessDocumentPolicy extends CompanyScopedPolicy
         return $paper instanceof BusinessDocument
             && $paper->isDraft()
             && ! $paper->is_locked
-            && parent::update($user, $paper)
+            && $this->owns($paper)
+            && $this->mayWrite($user)
             && $this->readable($user, $paper);
+    }
+
+    /**
+     * The papers permission group has no `update` slug — drafting rides on
+     * `create` instead: whoever may write a document for the business may
+     * also revise one that is still a draft. A separate update permission
+     * would only ever be granted to exactly the same people, and the rich
+     * editor's whole point is several colleagues taking turns on a draft.
+     * `allows('update')` is still consulted first so the distinction can be
+     * introduced later without touching this class.
+     */
+    protected function mayWrite(User $user): bool
+    {
+        return $this->allows($user, 'update') || $this->allows($user, 'create');
     }
 
     public function delete(User $user, Model $paper): bool

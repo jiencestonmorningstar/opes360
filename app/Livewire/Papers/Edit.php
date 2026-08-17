@@ -4,11 +4,11 @@ namespace App\Livewire\Papers;
 
 use App\Models\BusinessDocument;
 use App\Models\BusinessDocumentVersion;
+use App\Services\DocumentComposer;
 use App\Services\Documents\DocumentComments;
 use App\Services\Documents\DocumentVersioner;
 use App\Services\Documents\EditLocks;
 use App\Services\Documents\HtmlSanitizer;
-use App\Services\DocumentComposer;
 use Illuminate\Contracts\View\View;
 use Illuminate\Foundation\Auth\Access\AuthorizesRequests;
 use Livewire\Component;
@@ -107,7 +107,10 @@ class Edit extends Component
 
         $locks = app(EditLocks::class);
 
-        if (! $this->editable || ! $locks->heldBy($this->paper, auth()->user())) {
+        // claim(), not heldBy(): a lock that merely went stale while nobody
+        // else wanted it (laptop lid, missed polls) re-arms silently. Only a
+        // live lock in someone else's hands refuses the save.
+        if (! $this->editable || ! $locks->claim($this->paper, auth()->user())) {
             $this->editable = false;
             $this->addError('body', 'You no longer hold the editing lock, so this change was not saved.');
 
@@ -128,8 +131,6 @@ class Edit extends Component
             $this->paper,
             fn () => $this->paper->update(['title' => trim($this->title), 'body' => $clean]),
         );
-
-        $locks->heartbeat($this->paper, auth()->user());
     }
 
     /** The editor closing cleanly: capture the tail of the session, free the pen. */

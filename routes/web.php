@@ -75,6 +75,7 @@ use App\Livewire\Orders\Index as OrdersIndex;
 use App\Livewire\Orders\Show as OrdersShow;
 use App\Livewire\Papers\Analytics as PapersAnalytics;
 use App\Livewire\Papers\Compose as PapersCompose;
+use App\Livewire\Papers\Edit as PapersEdit;
 use App\Livewire\Papers\Index as PapersIndex;
 use App\Livewire\Papers\Show as PapersShow;
 use App\Livewire\Partners\Clients as PartnerClients;
@@ -483,6 +484,9 @@ Route::middleware('auth')->group(function () {
         ->middleware('can:papers.manage')->name('papers.analytics');
     Route::get('/library/{paper}', PapersShow::class)->middleware('can:view,paper')->name('papers.show');
     Route::get('/library/{paper}/edit', PapersCompose::class)->middleware('can:update,paper')->name('papers.edit');
+    // Named .editor rather than .edit — that name is Compose's (template
+    // field fill), and this is the rich-text screen that opens after.
+    Route::get('/library/{paper}/editor', PapersEdit::class)->middleware('can:view,paper')->name('papers.editor');
     Route::get('/library/{paper}/print', [PrintController::class, 'paper'])->middleware('can:view,paper')->name('papers.print');
     /*
      * Module 16 — Opes Forms. The builder saves as it goes, so "create" is a

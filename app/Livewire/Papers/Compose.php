@@ -9,6 +9,7 @@ use App\Support\CurrentCompany;
 use App\Support\DocumentTemplates;
 use Illuminate\Contracts\View\View;
 use Illuminate\Foundation\Auth\Access\AuthorizesRequests;
+use Illuminate\Support\Facades\Route;
 use Livewire\Component;
 use RuntimeException;
 
@@ -127,7 +128,7 @@ class Compose extends Component
         // A saved draft opens in the rich editor when that route exists — the
         // template fill is the starting point, the editor is where the prose
         // gets worked on. Issued documents go to show: nothing left to edit.
-        if (! $issue && \Illuminate\Support\Facades\Route::has('papers.editor')) {
+        if (! $issue && Route::has('papers.editor')) {
             $this->redirectRoute('papers.editor', $this->paper);
 
             return;
