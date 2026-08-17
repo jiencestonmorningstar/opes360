@@ -244,6 +244,10 @@ class DemoClientEngagementTest extends TestCase
             ->assertSee(self::NAME)
             ->assertSee($ticket->serial);
 
+        // The guest GET fail-closed the singleton again; re-pin before the
+        // scoped lazy-load below.
+        app(CurrentCompany::class)->set($company);
+
         // The ticket's own verification page also works.
         $token = $ticket->verificationToken;
         $this->get('/v/'.$token->token)->assertOk()->assertSee(self::NAME);
