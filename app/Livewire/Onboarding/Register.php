@@ -11,6 +11,7 @@ use App\Services\Partners\PartnerProgramme;
 use App\Support\Accounting\ChartOfAccounts;
 use App\Support\CurrentCompany;
 use App\Support\DefaultWorkflows;
+use App\Support\Sectors;
 use Illuminate\Contracts\View\View;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
@@ -40,6 +41,14 @@ class Register extends Component
     public string $industry = '';
 
     public string $motto = '';
+
+    /**
+     * The sector picked on step 2. Empty means the question was skipped,
+     * which resolves to 'everything' — exactly today's defaults, untouched.
+     * The sector guides the starting module set; it never locks anything,
+     * and Settings → Modules stays the source of truth afterwards.
+     */
+    public string $sector = '';
 
     /*
      * XAF, not USD. Every price on the site is quoted in FCFA, mobile money
@@ -165,6 +174,11 @@ class Register extends Component
 
             $user->forceFill(['current_company_id' => $company->id])->save();
 
+            // The sector's module switches, applied once, here, inside the
+            // transaction. An unknown or skipped answer falls back to
+            // 'everything' rather than failing a registration over a card.
+            Sectors::apply($company, $this->sector ?: Sectors::EVERYTHING);
+
             // The business gets its permanent public identity immediately, so its
             // QR works from the first minute rather than on first visit to Business.
             app(CurrentCompany::class)->as($company, fn () => VerificationToken::create([
@@ -189,6 +203,10 @@ class Register extends Component
 
         Auth::login($user, remember: true);
         session()->regenerate();
+
+        // The dashboard's first-run card reads this once and dismisses it.
+        // Session-borne on purpose: it is a welcome, not a record.
+        session()->put('onboarding.welcome', $company->fresh()->sector ?? Sectors::EVERYTHING);
 
         $this->redirectRoute('dashboard');
     }

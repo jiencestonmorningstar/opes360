@@ -8,6 +8,7 @@ use App\Models\VerificationToken;
 use App\Support\Accounting\ChartOfAccounts;
 use App\Support\CurrentCompany;
 use App\Support\DefaultWorkflows;
+use App\Support\Sectors;
 use Illuminate\Contracts\View\View;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
@@ -29,6 +30,12 @@ class Companies extends Component
     public string $newIndustry = '';
 
     public string $newCurrency = 'USD';
+
+    /**
+     * Optional, same as at signup: the sector guides the new business's
+     * starting module set and locks nothing. Defaults to 'everything'.
+     */
+    public string $newSector = Sectors::EVERYTHING;
 
     public function switchTo(string $companyId): void
     {
@@ -59,7 +66,7 @@ class Companies extends Component
 
     public function cancelCreating(): void
     {
-        $this->reset('creating', 'newName', 'newIndustry');
+        $this->reset('creating', 'newName', 'newIndustry', 'newSector');
     }
 
     public function createCompany(): void
@@ -104,6 +111,9 @@ class Companies extends Component
             // Without these, every submit-for-approval in the product refuses:
             // the engine is data-driven and a business with no rows has no path.
             DefaultWorkflows::seed($company);
+
+            // Applied once, here — the sector is never re-read afterwards.
+            Sectors::apply($company, $this->newSector);
 
             return $company;
         });

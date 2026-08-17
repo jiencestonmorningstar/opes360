@@ -39,6 +39,35 @@ Each one is written the same way:
 4. **Things that surprise people** — the behaviour that generates support
    questions, stated up front instead of discovered.
 
+## Onboarding: the sector question
+
+**Everyone.**
+
+At signup, step two asks what the business does — a shop, a consultancy, an
+insurance broker, a transporter, and so on. The answer decides which modules
+start switched on: an insurance broker gets the policies screens and loses
+manufacturing; a real-estate agency gets properties and tenancies and loses
+stock. A clinic or pharmacy keeps Products & stock, where batch and expiry
+(lot) tracking is switched on per product.
+
+Three things worth knowing:
+
+1. **The question is optional.** Skip it and you get the standard set —
+   everything on except the specialist modules, exactly as if the question had
+   never been asked.
+2. **The sector guides, it does not lock.** It only sets the starting point.
+   Settings → Modules is the source of truth, and any switch you flip there
+   stays flipped — the sector never overrules you later.
+3. **Nothing is ever hidden for good.** A module the sector switched off can
+   be switched back on in Settings → Modules at any time, and switching off
+   never deletes data — the screens go quiet and the data waits.
+
+After signup, the dashboard shows a one-time card listing what got switched
+on. Dismiss it once and it stays gone. If the modules have drifted and you
+want the sector's starting set back, Settings → Modules has a "Reset to
+sector defaults" action (admin only) — it replaces every manual switch, and
+says so before it does.
+
 ## If a guide is wrong
 
 The product changes; documentation drifts. A guide that disagrees with what the

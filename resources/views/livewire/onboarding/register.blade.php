@@ -118,6 +118,31 @@
                 @endif
             </div>
 
+            {{-- The sector question. It guides the starting module set — an
+                 insurance broker gets policies and loses manufacturing — and
+                 nothing more: Settings → Modules stays the source of truth,
+                 and skipping the question means today's standard set. --}}
+            <div class="mt-5">
+                <span class="{{ $labelClass }}">What does the business do? <span class="font-normal text-faint">(optional)</span></span>
+                <div class="grid gap-2 sm:grid-cols-2">
+                    @foreach (\App\Support\Sectors::catalogue() as $slug => $option)
+                        @php $picked = $sector === $slug; @endphp
+                        <button type="button" wire:key="sector-{{ $slug }}"
+                                wire:click="$set('sector', {{ $picked ? "''" : "'{$slug}'" }})"
+                                aria-pressed="{{ $picked ? 'true' : 'false' }}"
+                                class="focusable rounded-xl border p-3 text-left transition-colors
+                                       {{ $picked ? 'border-brand bg-tint-blue ring-1 ring-brand/40' : 'border-border bg-surface hover:bg-surface-2' }}">
+                            <span class="block text-[13.5px] font-semibold {{ $picked ? 'text-brand' : 'text-ink' }}">{{ $option['label'] }}</span>
+                            <span class="mt-0.5 block text-[12px] leading-snug text-muted">{{ $option['description'] }}</span>
+                        </button>
+                    @endforeach
+                </div>
+                <p class="mt-2 text-[12px] leading-relaxed text-faint">
+                    This only sets which screens start switched on. You can change any of it later
+                    in Settings → Modules.
+                </p>
+            </div>
+
             {{-- Every field here declares what it is. Left blank, a password
                  manager has only heuristics to go on — label text, placeholder,
                  position — and "Motto" means nothing to it, so it guessed, and

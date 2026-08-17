@@ -98,4 +98,8 @@ use App\Http\Controllers\Api\WorkflowRuleController;
 - **Scopes**: reads under `read`, writes under `write`. Nothing here moves
   money — an order's invoice still goes out through the existing documents
   endpoints — so none of it sits under `money`.
-- The docs are updated (`docs/API.md` §24–§30).
+- The docs are updated (`docs/API.md` §23–§29; the old "not here yet"
+  section is now §30). The 9 endpoints docs.md flagged as missing from
+  API.md (accounting reports, template publish/unpublish, comment reopen,
+  partners/commissions) were already written up in the current file —
+  verified present, nothing further to add there.

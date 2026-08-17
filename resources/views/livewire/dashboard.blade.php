@@ -17,6 +17,35 @@
         </div>
     @else
 
+        {{-- The first-run card: what the sector answer switched on. Shows
+             once, on the session the signup created, and dismisses for good.
+             The sector guided the starting set — it locked nothing, which is
+             why the card points straight at Settings → Modules. --}}
+        @if ($welcomeSector !== '')
+            <div class="card mb-5 p-5">
+                <div class="flex items-start justify-between gap-3">
+                    <div class="min-w-0">
+                        <p class="text-[12px] font-semibold uppercase tracking-wide text-brand">{{ $welcomeLabel }}</p>
+                        <h2 class="mt-1 text-[17px] font-bold text-ink">Here is what we switched on for you</h2>
+                        <p class="mt-1 text-[13.5px] leading-relaxed text-muted">
+                            Your sector set a starting point, nothing more — every module below can be
+                            switched on or off any time in
+                            <a href="{{ route('settings') }}" class="font-semibold text-brand hover:underline">Settings → Modules</a>.
+                        </p>
+                    </div>
+                    <button type="button" wire:click="dismissWelcome" aria-label="Dismiss"
+                            class="tap focusable flex size-8 shrink-0 items-center justify-center rounded-lg text-faint hover:bg-surface-2 hover:text-ink">
+                        <x-icon name="x-mark" class="size-4" stroke-width="2" />
+                    </button>
+                </div>
+                <div class="mt-3 flex flex-wrap gap-1.5">
+                    @foreach ($welcomeModules as $label)
+                        <span class="rounded-full bg-tint-blue px-3 py-1 text-[12.5px] font-semibold text-brand">{{ $label }}</span>
+                    @endforeach
+                </div>
+            </div>
+        @endif
+
         {{-- Greeting --}}
         <div class="flex items-start justify-between gap-4">
             <div class="min-w-0">

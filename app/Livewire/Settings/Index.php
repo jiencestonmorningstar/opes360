@@ -9,6 +9,7 @@ use App\Services\TeamInvitations;
 use App\Services\TwoFactor;
 use App\Support\CurrentCompany;
 use App\Support\Modules;
+use App\Support\Sectors;
 use Illuminate\Contracts\View\View;
 use Illuminate\Foundation\Auth\Access\AuthorizesRequests;
 use Illuminate\Support\Facades\Hash;
@@ -187,6 +188,32 @@ class Index extends Component
                 : ' '.implode(' and ', array_map(fn (string $k) => Modules::label($k), $also)).
                   (count($also) === 1 ? ' went with it — it cannot work without this.' : ' went with it.')
         ));
+    }
+
+    /**
+     * Throw away every manual switch and go back to what the sector set.
+     *
+     * The one deliberate exception to "the sector is never re-applied": here
+     * somebody with `settings.update` explicitly asks for it. Replaces the
+     * stored departures wholesale — a reset that kept half the manual
+     * switches would not be a reset, just a surprise.
+     */
+    public function resetModulesToSector(): void
+    {
+        $this->authorize('settings.update');
+
+        $company = app(CurrentCompany::class)->get();
+
+        if ($company === null) {
+            return;
+        }
+
+        $sector = $company->sector ?? Sectors::EVERYTHING;
+
+        $company->forceFill(['modules' => Sectors::modulesFor($sector)])->save();
+        Modules::flush();
+
+        session()->flash('moduleStatus', 'Modules reset to the '.Sectors::label($sector).' defaults.');
     }
 
     public function revokeDevice(string $deviceId): void

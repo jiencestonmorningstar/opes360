@@ -1343,12 +1343,216 @@ comment's author, the document's owner, or a document administrator.
 `DELETE /api/v1/library/comments/{comment}` — the comment's author, or a
 document administrator.
 
-## 23. What is not here yet
+## 23. Service desk
 
-Every module through Library, including its versions, has an API. **Projects
-does not yet** — it shipped 2026-08-16 with a screen and no API, and that is a
-gap to close, not a choice; noted here rather than let the claim below
-overstate what exists.
+`GET /api/v1/service/tickets` · `POST` · `GET /api/v1/service/tickets/{id}` ·
+`POST /api/v1/service/tickets/{id}/respond` ·
+`POST /api/v1/service/tickets/{id}/resolve`
+
+Filters: `status` (`new`, `open`, `pending_customer`, `resolved`, `closed`,
+`cancelled`), `priority`, `assignee_id`, `contact_id`, `open`, `per_page`.
+
+Ticket ingestion is the classic API use case — a website form, a WhatsApp
+bridge, a monitoring system — and this is that endpoint. Opening a ticket
+starts the SLA clock through the same service the screens use, so
+`response_due_at` and `resolution_due_at` come back computed and the show
+route carries the full event history: every status change, who made it, and
+the working minutes any pause credited.
+
+```json
+{ "subject": "Freezer not cooling", "contact_id": "01j…", "priority": "high", "channel": "portal" }
+```
+
+`respond` records that somebody answered the customer. **Only the first
+response counts** — the promise was about it, and a second call changes
+nothing rather than letting a late desk look punctual by replying again.
+
+`resolve` takes an optional `resolution` and needs **`service.complete`**, a
+separate trust from `service.update`: saying the work is done is not the same
+act as working it. A settled ticket refuses with 422 and the sentence to act
+on ("SD-… is resolved and cannot be resolved… Reopen it first").
+
+Assignment, pausing, escalation and reopening stay on the screens for now.
+
+---
+
+## 24. Sales orders
+
+`GET /api/v1/orders` · `POST` · `GET /api/v1/orders/{id}` ·
+`POST /api/v1/orders/{id}/confirm` · `POST /api/v1/orders/{id}/deliver`
+
+Filters: `status` (`draft`, `confirmed`, `picking`, `delivered`, `invoiced`,
+`cancelled`), `contact_id`, `per_page`.
+
+An order is the promise before the paper. Drafting one reserves nothing;
+`lines` name catalogue items (`item_id`, `quantity`, optional `unit_price` —
+the catalogue price rides in when none is given).
+
+**Confirming** (`orders.confirm`) holds stock through the one reservations
+service and returns what it could not hold as named `shortages` — a
+backorder a person reads, never a quiet truncation. A customer whose overdue
+balance exceeds their credit limit is refused with 422 unless
+`credit_override_reason` is written, which is then stored on the order with
+who wrote it.
+
+**Delivering** (`orders.deliver`) writes the delivery note and the real stock
+movements in one transaction and returns the note (201). `picks` is optional
+— line id → quantity for a partial delivery; omitted means everything held.
+Only what is reserved may leave; delivering past the hold is refused.
+
+Both accept an `Idempotency-Key`: a retry must not promise or ship the same
+goods twice. Invoicing what was delivered happens from the order screen, and
+the invoice is then an ordinary document under §7.
+
+---
+
+## 25. Insurance
+
+`GET /api/v1/insurance/policies` · `POST` · `GET /api/v1/insurance/policies/{id}` ·
+`GET /api/v1/insurance/claims` · `GET /api/v1/insurance/claims/{id}` ·
+`POST /api/v1/insurance/policies/{id}/claims`
+
+Policy filters: `status` (`draft`, `active`, `lapsed`, `cancelled`),
+`product_line`, `holder_contact_id`. Claim filters: `status` (`fnol`,
+`assessed`, `settled`, `rejected`), `policy_id`.
+
+Placing a policy (`insurance.manage`) needs `holder_contact_id` and
+`covers_from`; it arrives **`draft`** — binding is the moment the insurer
+goes on risk, and that stays a decision made on the screen. A policy set to
+renew automatically without a `notice_period_days` is refused with 422:
+cover that rolls over in silence is the trap the register exists to prevent.
+
+A claim is opened against its policy so the incident date is checked against
+the right cover — an incident outside the cover dates is refused, and a
+claim during cover is valid even if the policy has since expired, which is
+the common case for a loss reported late. Claims arrive `fnol`.
+
+Assessing, settling and rejecting stay on the screens: settlement goes
+through the approval workflow and the `insurance.settle` money act.
+
+---
+
+## 26. Logistics
+
+`GET /api/v1/logistics/shipments` · `POST` ·
+`GET /api/v1/logistics/shipments/{id}` ·
+`GET /api/v1/logistics/shipments/{id}/events`
+
+Filters: `status` (`booked`, `loaded`, `in_transit`, `delivered`,
+`exception`, `returned`, `cancelled`), `sender_id`, `receiver_id`.
+
+Booking (`logistics.manage`) needs both parties from the customer book,
+`cargo_description`, `from_location` and `to_location`. The response carries
+**`tracking_url`** — the public tracking link is minted at booking, so the
+caller can hand it to the receiver at the counter, not when the van leaves.
+
+`events` is the status history the tracking page tells — one row per turn of
+the dial, in the words the office wrote. The show route embeds the same list.
+
+Manifests (loading, dispatching, closing over odometer readings) are
+loading-bay work and stay on the screens.
+
+---
+
+## 27. Estate
+
+`GET /api/v1/estate/properties` · `GET /api/v1/estate/properties/{id}` ·
+`GET /api/v1/estate/tenancies` · `GET /api/v1/estate/tenancies/{id}`
+
+Property filters: `kind` (`residential`, `commercial`, `mixed`, `land`).
+Tenancy filters: `status` (`active`, `ended`), `tenant_contact_id`.
+
+**Read only, and deliberately.** Moving a tenant in raises a lease, posts the
+deposit to the ledger and starts the rent schedule in one transaction —
+money-shaped acts a person answers for on a screen. What an integration
+wants from this vertical is the register: which doors, who is in them, at
+what rent. Properties carry their units; tenancies carry the ids of the
+lease contract and the recurring invoice billing the rent, both readable
+through their own modules.
+
+---
+
+## 28. Manufacturing
+
+`GET /api/v1/manufacturing/boms` · `GET /api/v1/manufacturing/boms/{id}` ·
+`GET /api/v1/manufacturing/orders` · `POST /api/v1/manufacturing/orders` ·
+`GET /api/v1/manufacturing/orders/{id}` ·
+`POST /api/v1/manufacturing/orders/{id}/complete`
+
+BOM filters: `active`. Order filters: `status` (`planned`, `in-progress`,
+`completed`, `cancelled`), `bill_of_material_id`.
+
+Recipes are read only — a bill of materials is written once, on a screen.
+Raising an order (`manufacturing.manage`) takes `bill_of_material_id` and
+`quantity`; the recipe is snapshotted onto the order's lines, scrap
+included, so editing it tomorrow cannot restate what this order was going to
+use.
+
+**Completing** needs **`manufacturing.complete`** — the same trust as
+adjusting stock, because this is where goods actually move: components out,
+finished goods in, in one transaction of ordinary stock movements. The
+finished cost comes back on the order (`total_cost`, `unit_cost`), priced at
+the valuation's own weighted average. A component the shelf cannot cover
+refuses the **whole** completion with the item named — driving stock
+negative would manufacture goods out of planks the ledger says were never
+there. A lot-tracked finished product needs `lot_code`. Accepts an
+`Idempotency-Key`: a retried completion must not consume the components
+twice.
+
+---
+
+## 29. Workflow rules
+
+`GET /api/v1/workflows` · `POST` · `GET /api/v1/workflows/{id}` ·
+`PUT|PATCH /api/v1/workflows/{id}`
+
+Filters: `subject_type`, `active`. This is the definition side of §21's
+approvals — reading needs `workflows.view`, writing needs
+**`workflows.manage`**, Owner and Administrator only: whoever can rewrite a
+path can write themselves one with no approver in it.
+
+```json
+{
+  "name": "Purchase requests",
+  "subject_type": "App\\Models\\PurchaseRequisition",
+  "steps": [
+    { "name": "Manager approves", "approver_mode": "manager" },
+    { "name": "Owner signs", "approver_mode": "owner", "due_days": 3 }
+  ]
+}
+```
+
+`subject_type` is one of the workflow catalogue's classes (§21's subjects).
+A new workflow arrives **inactive and non-default** — a path with no steps
+approves everything the instant it starts, which is also why activating one
+with zero steps is refused with 422. `PATCH` with `"is_default": true` makes
+it what new records of that subject go through (and activates it — a
+switched-off default answers nothing).
+
+Sending `steps` **replaces** the whole list, positions assigned in the order
+given. Before anything moves, the current definition is frozen exactly as
+the admin screen freezes it: approvals already running are moved onto an
+archived copy and finish under the rules they started under, while the
+workflow keeps its id and the next submission gets the new rules. Frozen
+copies never appear in the index and 404 if addressed — they are a record,
+not a definition. Once a workflow has been used, its `subject_type` cannot
+change (422 — duplicate it instead); each step stores only the approver
+field its `approver_mode` names, so a stale user id cannot survive beside a
+role.
+
+Deleting is absent on purpose, as is deciding without being asked — see §21.
+
+---
+
+## 30. What is not here yet
+
+Every module through Library, and now the service desk, sales orders and the
+four verticals (§23–§28), has an API. **Projects does not yet** — it shipped
+2026-08-16 with a screen and no API, and that is a gap to close, not a
+choice; noted here rather than let the claim below overstate what exists.
+Within the newer modules, the acts still absent are absent by choice, each
+argued in its own section: binding/renewing/cancelling a policy, settling a
+claim, manifest work, tenancy moves, and deleting a workflow.
 
 Everything else absent below is absent by choice, and each section above says
 why in its own place:

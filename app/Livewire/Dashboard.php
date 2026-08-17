@@ -10,7 +10,9 @@ use App\Models\Item;
 use App\Models\Payment;
 use App\Models\Receipt;
 use App\Support\CurrentCompany;
+use App\Support\Modules;
 use App\Support\Money;
+use App\Support\Sectors;
 use Carbon\CarbonImmutable;
 use Illuminate\Contracts\View\View;
 use Illuminate\Support\Collection;
@@ -28,6 +30,25 @@ class Dashboard extends Component
 
     /** Window for the top-customers panel, independent of both. */
     public string $customerRange = 'month';
+
+    /**
+     * The sector chosen at signup, carried here once by the session so the
+     * first visit can say what got switched on. Empty means no card: an
+     * ordinary visit, or the welcome already dismissed.
+     */
+    public string $welcomeSector = '';
+
+    public function mount(): void
+    {
+        $this->welcomeSector = (string) session('onboarding.welcome', '');
+    }
+
+    /** Dismissed is dismissed — the session key goes, so it never returns. */
+    public function dismissWelcome(): void
+    {
+        session()->forget('onboarding.welcome');
+        $this->welcomeSector = '';
+    }
 
     public function setRange(string $range): void
     {
@@ -61,6 +82,15 @@ class Dashboard extends Component
 
         return view('livewire.dashboard', [
             'company' => $company,
+            // The first-run card's content: the sector's name and the modules
+            // its answer left switched on. Computed only while the card shows.
+            'welcomeLabel' => $this->welcomeSector !== '' ? Sectors::label($this->welcomeSector) : '',
+            'welcomeModules' => $this->welcomeSector !== ''
+                ? array_map(
+                    fn (string $key) => Modules::label($key),
+                    array_values(array_intersect(Modules::enabledFor($company), array_keys(Modules::switchable())))
+                )
+                : [],
             'currency' => $currency,
             'greeting' => $this->greeting($now),
             'rangeLabel' => $this->rangeLabel(),

@@ -19,6 +19,7 @@ use App\Support\Accounting\ChartOfAccounts;
 use App\Support\CurrentCompany;
 use App\Support\DefaultWorkflows;
 use App\Support\DocumentTemplates;
+use App\Support\Sectors;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 
@@ -31,11 +32,11 @@ use Illuminate\Support\Str;
 class DemoAccountProvisioner
 {
     /** @return array{company: Company, user: User, password: string} */
-    public function provision(string $ownerName, string $email, string $businessName, ?string $industry): array
+    public function provision(string $ownerName, string $email, string $businessName, ?string $industry, ?string $sector = null): array
     {
         $password = Str::password(12);
 
-        return DB::transaction(function () use ($ownerName, $email, $businessName, $industry, $password) {
+        return DB::transaction(function () use ($ownerName, $email, $businessName, $industry, $sector, $password) {
             $user = User::create([
                 'name' => trim($ownerName),
                 'email' => strtolower(trim($email)),
@@ -73,6 +74,12 @@ class DemoAccountProvisioner
             // Without these, every submit-for-approval in the product refuses:
             // the engine is data-driven and a business with no rows has no path.
             DefaultWorkflows::seed($company);
+
+            // Same optional guidance the signup form offers: the sector sets
+            // the starting module switches once and never gets re-applied.
+            if ($sector !== null) {
+                Sectors::apply($company, $sector);
+            }
 
             $user->forceFill(['current_company_id' => $company->id])->save();
 

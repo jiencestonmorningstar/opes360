@@ -191,6 +191,17 @@ class DocumentComposer
      */
     public function toHtml(string $body): string
     {
+        /*
+         * A body the rich editor wrote is already HTML; re-sanitize on the
+         * way out (defence in depth — the save path sanitizes too) and pass
+         * it through, so the show screen and the print/PDF views render it
+         * unchanged. Everything else is the plain template prose this method
+         * has always converted.
+         */
+        if (str_starts_with(trim($body), '<')) {
+            return app(Documents\HtmlSanitizer::class)->clean($body);
+        }
+
         $blocks = preg_split("/\n\s*\n/", trim($body));
         $html = [];
 

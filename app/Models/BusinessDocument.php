@@ -40,6 +40,7 @@ class BusinessDocument extends Model
             'fields' => 'array',
             'tags' => 'array',
             'issued_at' => 'datetime',
+            'editing_heartbeat_at' => 'datetime',
             'voided_at' => 'datetime',
             'expires_on' => 'date',
         ];
@@ -179,6 +180,9 @@ class BusinessDocument extends Model
                 'kind', 'description', 'security', 'language', 'tags',
                 'owner_id', 'expires_on', 'folder_id', 'department_id', 'is_locked',
                 'signature_mode',
+                // Edit-lock presence, not content — see EditLocks. Listed so a
+                // stale lock left on a since-issued document can still clear.
+                'editing_user_id', 'editing_heartbeat_at',
                 'legal_hold', 'legal_hold_reason', 'legal_hold_set_by', 'legal_hold_set_at',
             ];
             $illegal = array_diff(array_keys($document->getDirty()), $mutable);

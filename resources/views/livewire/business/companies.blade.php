@@ -64,6 +64,17 @@
                             </select>
                         </label>
                     </div>
+                    {{-- Optional, same as at signup: sets which modules start
+                         switched on for the new business, and locks nothing —
+                         Settings → Modules can change any of it later. --}}
+                    <label class="block">
+                        <span class="{{ $labelClass }}">Sector</span>
+                        <select wire:model="newSector" class="{{ $inputClass }}">
+                            @foreach (\App\Support\Sectors::catalogue() as $slug => $option)
+                                <option value="{{ $slug }}">{{ $option['label'] }}</option>
+                            @endforeach
+                        </select>
+                    </label>
                 </div>
 
                 <button type="button" wire:click="createCompany" wire:loading.attr="disabled"

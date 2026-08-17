@@ -415,6 +415,25 @@
                     waits, so turning something back on picks up exactly where it left off.
                 </p>
 
+                {{-- The sector set the starting point at signup and has had no
+                     say since: these switches are the source of truth. The
+                     reset is the one deliberate way to ask for the sector's
+                     set again. --}}
+                <div class="mx-1.5 mt-3 flex flex-wrap items-center justify-between gap-2 rounded-xl bg-surface-2 px-4 py-2.5">
+                    <p class="text-[13px] text-muted">
+                        Sector at signup:
+                        <span class="font-semibold text-ink">{{ \App\Support\Sectors::label($company?->sector ?? \App\Support\Sectors::EVERYTHING) }}</span>
+                        — a starting point, not a rule.
+                    </p>
+                    @can('settings.update')
+                        <button type="button" wire:click="resetModulesToSector"
+                                wire:confirm="This replaces every manual switch below with the sector's starting set. Continue?"
+                                class="focusable rounded-lg px-3 py-1.5 text-[12.5px] font-semibold text-brand hover:bg-tint-blue">
+                            Reset to sector defaults
+                        </button>
+                    @endcan
+                </div>
+
                 @if (session('moduleStatus'))
                     <div class="mx-1.5 mt-3 rounded-xl bg-tint-green px-4 py-2.5 text-[13px] font-semibold text-positive">
                         {{ session('moduleStatus') }}
