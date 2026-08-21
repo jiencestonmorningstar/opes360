@@ -4,6 +4,7 @@ namespace App\Support;
 
 use App\Models\Company;
 use Illuminate\Support\Facades\Cache;
+use Throwable;
 
 /**
  * Turns an owner's branding inputs into the full CSS token map.
@@ -30,13 +31,30 @@ class BrandPalette
     {
         $inputs = self::inputsFor($company);
 
-        return Cache::remember(
-            // Keyed on the inputs themselves, so saving an edit invalidates
-            // without anyone having to remember to flush.
-            'brand-palette:'.md5((string) json_encode($inputs)),
-            now()->addDay(),
-            fn () => self::derive($inputs),
-        );
+        try {
+            return Cache::remember(
+                // Keyed on the inputs themselves, so saving an edit invalidates
+                // without anyone having to remember to flush.
+                'brand-palette:'.md5((string) json_encode($inputs)),
+                now()->addDay(),
+                fn () => self::derive($inputs),
+            );
+        } catch (Throwable) {
+            /*
+             * The cache is unreachable. Derive it in-process instead.
+             *
+             * This is not defensive padding: the cache store is `database`,
+             * and every layout in the product renders this palette into its
+             * <head>. Without this, a database that is down takes the error
+             * pages down with it — the 500 and the 503 would themselves throw,
+             * in precisely the conditions they exist to report. A palette is a
+             * page's appearance, and appearance is never worth a fatal.
+             *
+             * derive() is pure computation, so the fallback needs nothing that
+             * could be failing.
+             */
+            return self::derive($inputs);
+        }
     }
 
     /**

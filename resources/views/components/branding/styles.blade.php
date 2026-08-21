@@ -24,7 +24,20 @@
      *             quotation should see their supplier's colours, not ours.
      *   current   whoever is signed in
      */
-    $tokens = $palette ?? BrandPalette::for($company ?? app(CurrentCompany::class)->get());
+    /*
+     * Resolving the palette must never be the thing that fails a page.
+     *
+     * BrandPalette::for() already falls back when the cache is unreachable,
+     * but working out *whose* palette to use can touch the container and the
+     * request too. On an error page none of that is guaranteed to be standing.
+     * So the last word is a platform-default palette derived in-process: the
+     * page loses the company's colours and keeps its legibility.
+     */
+    try {
+        $tokens = $palette ?? BrandPalette::for($company ?? app(CurrentCompany::class)->get());
+    } catch (\Throwable) {
+        $tokens = BrandPalette::derive(\App\Support\BrandDefaults::inputs());
+    }
 
     /**
      * Values are whitelisted, not escaped.
