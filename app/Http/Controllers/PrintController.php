@@ -201,7 +201,8 @@ class PrintController extends Controller
             ),
             'paper' => $paper,
             'company' => app(CurrentCompany::class)->get(),
-            'bodyHtml' => $composer->toHtml($paper->body),
+            'bodyHtml' => app(\App\Services\Documents\SignatureBlocks::class)
+                ->injectInto($composer->toHtml($paper->body), $paper),
             'notice' => ($paper->template()['binding'] ?? false)
                 ? DocumentTemplates::reviewNotice()
                 : null,

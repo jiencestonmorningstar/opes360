@@ -34,6 +34,17 @@ class BusinessDocumentSignature extends Model
         ];
     }
 
+    /** A signature placed at a specific block, rather than on the document as a whole. */
+    public function isAnchored(): bool
+    {
+        return $this->anchor_id !== null && $this->anchor_id !== '';
+    }
+
+    public function scopeAnchoredTo(\Illuminate\Database\Eloquent\Builder $query, string $anchorId): \Illuminate\Database\Eloquent\Builder
+    {
+        return $query->where('anchor_id', $anchorId);
+    }
+
     public function document(): BelongsTo
     {
         return $this->belongsTo(BusinessDocument::class, 'business_document_id');

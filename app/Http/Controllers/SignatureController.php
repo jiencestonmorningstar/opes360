@@ -60,7 +60,10 @@ class SignatureController extends Controller
                     ),
                     'paper' => $document,
                     'company' => $company,
-                    'bodyHtml' => app(DocumentComposer::class)->toHtml($document->body),
+                    'bodyHtml' => app(\App\Services\Documents\SignatureBlocks::class)->injectInto(
+                        app(DocumentComposer::class)->toHtml($document->body),
+                        $document,
+                    ),
                     'notice' => ($document->template()['binding'] ?? false)
                         ? DocumentTemplates::reviewNotice()
                         : null,

@@ -24,7 +24,7 @@ class DocumentSignatureRequests
     public const MODES = ['sequential', 'parallel'];
 
     /**
-     * @param  array<int, array{name: string, email: string, user_id?: ?int}>  $signers
+     * @param  array<int, array{name: string, email: string, user_id?: ?int, anchor_id?: ?string}>  $signers
      */
     public function request(
         BusinessDocument $document,
@@ -59,6 +59,11 @@ class DocumentSignatureRequests
             'signer_name' => $signer['name'],
             'signer_email' => $signer['email'],
             'signer_user_id' => $signer['user_id'] ?? null,
+            // Where in the body this signature belongs, when it belongs
+            // anywhere in particular. Null signs the document as a whole,
+            // which is what every signature did before §19's block placement
+            // and remains the ordinary case.
+            'anchor_id' => $signer['anchor_id'] ?? null,
             'signing_token' => BusinessDocumentSignature::newSigningToken(),
             'status' => 'pending',
         ]));

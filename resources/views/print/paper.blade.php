@@ -62,6 +62,18 @@
 
         .body { flex: 1; padding-top: 7mm; font-size: 10pt; line-height: 1.65; overflow-wrap: break-word; }
         .body h1 { font-size: 17pt; font-weight: 800; letter-spacing: -0.02em; text-align: center; margin: 6mm 0 4mm; }
+        /* Signature blocks placed within the text (§19). Kept with the
+           block above them: a signature that breaks onto its own page,
+           away from the clause it signs, is the one thing this feature
+           exists to prevent. */
+        .signature-block { display: flex; flex-wrap: wrap; gap: 10mm; margin: 7mm 0 5mm; break-inside: avoid; page-break-inside: avoid; }
+        .signature-slot { flex: 1 1 60mm; min-width: 55mm; break-inside: avoid; }
+        .signature-rule { border-bottom: 0.4mm solid #0f172a; height: 12mm; }
+        .signature-name { font-size: 9pt; font-weight: 700; margin-top: 1.5mm; }
+        .signature-meta { font-size: 7.5pt; color: #475569; margin-top: 0.5mm; }
+        .signature-declined .signature-rule { border-bottom-style: dashed; border-bottom-color: #b91c1c; }
+        .signature-declined .signature-meta { color: #b91c1c; }
+
         .body h2 { font-size: 10.5pt; font-weight: 800; margin: 6mm 0 2mm; letter-spacing: -0.01em; }
         .body h2:first-child { margin-top: 0; }
         .body p { margin-bottom: 3.5mm; }

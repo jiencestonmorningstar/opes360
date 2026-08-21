@@ -85,7 +85,8 @@ class DocumentShareController extends Controller
                     ),
                     'paper' => $document,
                     'company' => $company,
-                    'bodyHtml' => $composer->toHtml($document->body),
+                    'bodyHtml' => app(\App\Services\Documents\SignatureBlocks::class)
+                        ->injectInto($composer->toHtml($document->body), $document),
                     'notice' => ($document->template()['binding'] ?? false)
                         ? DocumentTemplates::reviewNotice()
                         : null,
@@ -99,7 +100,8 @@ class DocumentShareController extends Controller
                 'share' => $share,
                 'document' => $share->document,
                 'company' => $company,
-                'bodyHtml' => $composer->toHtml($share->document->body),
+                'bodyHtml' => app(\App\Services\Documents\SignatureBlocks::class)
+                    ->injectInto($composer->toHtml($share->document->body), $share->document),
             ]);
         });
     }
