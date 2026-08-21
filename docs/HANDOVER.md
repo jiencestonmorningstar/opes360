@@ -123,13 +123,26 @@ If one fails the generator is wrong — never loosen the assertion.
 - **Dunning** — reminders at 7/30/60 days, each rung sent once
 - **Procurement cycle** — purchase order → goods receipt → three-way match
 
-### Documents module — core underway
+### Documents module — complete
+
+*This section described "core underway" until 2026-09-18. It was two sessions
+out of date; corrected here rather than left to mislead the next reader.*
 
 Audit first (`docs/superpowers/specs/2026-08-15-documents-module-audit.md`),
-which found two blockers before any code was written.
+which found two blockers before any code was written: `documents` is the ERP's
+table, and a Documents module already existed in embryo.
 
-Built: classification metadata, folders, ERP relationships, uploads with a
-private disk, the Library panel on the customer profile.
+The module is now built out — 18 migrations, 18 services, 16 models, 50 test
+files, **472 tests**. Metadata, folders, ERP relations, uploads on a private
+disk, versions with word-by-word comparison, soft edit-locking, comments
+anchored to blocks, the unified activity timeline, approvals routed through the
+one workflow engine, e-signature with public unauthenticated signing, sharing,
+retention and legal hold, per-kind numbering schemes, custom and multilingual
+templates, an extensible field registry, bundles/dossiers/packages/checklists,
+bulk actions, watermarks, analytics, and a Tiptap rich editor with field chips
+that freeze to plain text at issuance.
+
+`docs/GAP-ANALYSIS.md` carries the per-section detail and is the authority.
 
 ---
 
@@ -203,21 +216,32 @@ Of the three findings that reordered the work on 2026-08-16, two are now done:
 
 ### Documents (plan: `docs/superpowers/plans/2026-08-15-documents-core.md`)
 
-Done: metadata, folders, relations, uploads, Library panel.
-Remaining in phase 1: permissions (`Papers` group + `share`/`manage`), the
-workspace screen, the API, documentation.
+Phase 1 and everything after it is done — see section 3. The plan file is
+kept for its reasoning, not as a to-do list.
 
-Then, in value order: versions and locking → comments and action centre →
-workflow and approvals → signatures → sharing and security → templates as data
-→ search.
+Several things this document once listed as blocked were built in the meantime:
+departments and projects now exist, PDF rendering exists (a document and its
+bundles render as PDF), and the rich editor shipped.
 
-**Deferred for missing prerequisites** — none of these exist in the codebase:
-departments, projects, a PDF engine (PDF is `window.print()` today), DOCX,
-a websocket tier, an AI provider, OCR, a search index.
+**Still deferred, and every one is an infrastructure gap rather than a code
+gap** — the dependency is absent from the box, not from the codebase:
 
-Two I would argue against rather than merely defer: **realtime co-editing**
-(months of OT/CRDT work plus a websocket tier, for something most tenants will
-never have two people doing at once, on an offline-first PWA) and **DOCX
+| Capability | Missing prerequisite |
+|---|---|
+| DOCX import/export, Office preview | No conversion engine |
+| OCR | No Tesseract on this box — a VPS item |
+| AI assistant and AI search | No AI provider configured |
+| Translation workflows | No translation service |
+
+One code-level remnant: **signature blocks positioned within the document
+text** (§19). Rounds, sequential and parallel signing, public signing links,
+per-signer status, reminders and the request screen all exist; what is missing
+is placing a signature field at a specific point in the body.
+
+Two I would still argue against rather than merely defer: **realtime
+co-editing** (months of OT/CRDT work plus a websocket tier, for something most
+tenants will never have two people doing at once, on an offline-first PWA —
+soft edit-locking ships instead and is the better fit) and **DOCX
 import/export** (the weakest value-per-effort item in the brief).
 
 ### ERP roadmap — 5 of 8 remaining
