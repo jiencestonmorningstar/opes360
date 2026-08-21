@@ -63,4 +63,84 @@ class ShowSidePanelTest extends DocumentsTestCase
             ->test(Show::class, ['paper' => $paper])
             ->assertViewHas('activity', fn ($activity) => $activity->isEmpty());
     }
+
+    // ── Requesting signatures — the write UI §53 explicitly left out ─────
+
+    public function test_requesting_signatures_creates_the_round_and_closes_the_form(): void
+    {
+        $paper = $this->document();
+
+        Livewire::actingAs($this->owner)
+            ->test(Show::class, ['paper' => $paper])
+            ->call('openSignatureForm')
+            ->set('signers.0.name', 'Ada Lovelace')
+            ->set('signers.0.email', 'ada@example.com')
+            ->call('requestSignatures')
+            ->assertSet('signatureFormOpen', false);
+
+        $this->assertSame(1, $paper->fresh()->signatures()->count());
+        $this->assertSame('Ada Lovelace', $paper->fresh()->signatures()->first()->signer_name);
+    }
+
+    public function test_a_second_signer_row_can_be_added_and_removed(): void
+    {
+        Livewire::actingAs($this->owner)
+            ->test(Show::class, ['paper' => $this->document()])
+            ->call('openSignatureForm')
+            ->call('addSigner')
+            ->assertCount('signers', 2)
+            ->call('removeSigner', 0)
+            ->assertCount('signers', 1);
+    }
+
+    public function test_every_signer_needs_a_name_and_a_valid_email(): void
+    {
+        Livewire::actingAs($this->owner)
+            ->test(Show::class, ['paper' => $this->document()])
+            ->call('openSignatureForm')
+            ->set('signers.0.name', '')
+            ->set('signers.0.email', 'not-an-email')
+            ->call('requestSignatures')
+            ->assertHasErrors(['signers.0.name', 'signers.0.email']);
+    }
+
+    public function test_a_second_round_cannot_be_requested_while_one_is_pending(): void
+    {
+        $paper = $this->document();
+        app(\App\Services\Documents\DocumentSignatureRequests::class)
+            ->request($paper, [['name' => 'A', 'email' => 'a@example.com']]);
+
+        Livewire::actingAs($this->owner)
+            ->test(Show::class, ['paper' => $paper->fresh()])
+            ->call('openSignatureForm')
+            ->set('signers.0.name', 'B')
+            ->set('signers.0.email', 'b@example.com')
+            ->call('requestSignatures');
+
+        // Refused by the service, not silently accepted as a second round.
+        $this->assertSame(1, $paper->fresh()->signatures()->count());
+    }
+
+    public function test_someone_who_may_not_share_the_document_cannot_request_signatures(): void
+    {
+        $cashier = $this->memberAt(Role::CASHIER);
+        $paper = $this->document();
+
+        Livewire::actingAs($cashier)
+            ->test(Show::class, ['paper' => $paper])
+            ->call('openSignatureForm')
+            ->assertStatus(403);
+    }
+
+    public function test_an_existing_rounds_status_is_listed_per_signer(): void
+    {
+        $paper = $this->document();
+        app(\App\Services\Documents\DocumentSignatureRequests::class)
+            ->request($paper, [['name' => 'Ada Lovelace', 'email' => 'ada@example.com']]);
+
+        Livewire::actingAs($this->owner)
+            ->test(Show::class, ['paper' => $paper->fresh()])
+            ->assertSee('Ada Lovelace')
+            ->assertSee('Pending');
+    }
 }

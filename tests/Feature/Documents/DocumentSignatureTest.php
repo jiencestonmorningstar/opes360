@@ -4,7 +4,9 @@ namespace Tests\Feature\Documents;
 
 use App\Models\BusinessDocument;
 use App\Models\Role;
+use App\Notifications\SignatureRequested;
 use App\Services\Documents\DocumentSignatureRequests;
+use Illuminate\Support\Facades\Notification;
 use RuntimeException;
 
 class DocumentSignatureTest extends DocumentsTestCase
@@ -208,6 +210,73 @@ class DocumentSignatureTest extends DocumentsTestCase
         $this->requests()->sign($signature);
 
         $this->assertFalse($paper->fresh()->isTampered());
+    }
+
+    // ── Notifications ────────────────────────────────────────────────────
+
+    public function test_requesting_in_parallel_notifies_every_signer_at_once(): void
+    {
+        Notification::fake();
+        $paper = $this->document();
+
+        $this->requests()->request($paper, [
+            ['name' => 'A', 'email' => 'a@example.com'],
+            ['name' => 'B', 'email' => 'b@example.com'],
+        ], 'parallel');
+
+        Notification::assertSentOnDemand(
+            SignatureRequested::class,
+            fn ($notification, $channels, $notifiable) => $notifiable->routes['mail'] === 'a@example.com',
+        );
+        Notification::assertSentOnDemand(
+            SignatureRequested::class,
+            fn ($notification, $channels, $notifiable) => $notifiable->routes['mail'] === 'b@example.com',
+        );
+    }
+
+    public function test_requesting_sequentially_notifies_only_the_first_signer(): void
+    {
+        Notification::fake();
+        $paper = $this->document();
+
+        $this->requests()->request($paper, [
+            ['name' => 'A', 'email' => 'a@example.com'],
+            ['name' => 'B', 'email' => 'b@example.com'],
+        ], 'sequential');
+
+        Notification::assertSentOnDemandTimes(SignatureRequested::class, 1);
+        Notification::assertSentOnDemand(
+            SignatureRequested::class,
+            fn ($notification, $channels, $notifiable) => $notifiable->routes['mail'] === 'a@example.com',
+        );
+    }
+
+    public function test_the_next_sequential_signer_is_notified_once_the_first_signs(): void
+    {
+        $paper = $this->document();
+        $signatures = $this->requests()->request($paper, [
+            ['name' => 'A', 'email' => 'a@example.com'],
+            ['name' => 'B', 'email' => 'b@example.com'],
+        ], 'sequential');
+
+        Notification::fake();
+        $this->requests()->sign($signatures->first());
+
+        Notification::assertSentOnDemand(
+            SignatureRequested::class,
+            fn ($notification, $channels, $notifiable) => $notifiable->routes['mail'] === 'b@example.com',
+        );
+    }
+
+    public function test_completing_the_final_signature_sends_no_further_request(): void
+    {
+        $paper = $this->document();
+        $signature = $this->requests()->request($paper, [['name' => 'A', 'email' => 'a@example.com']])->first();
+
+        Notification::fake();
+        $this->requests()->sign($signature);
+
+        Notification::assertNothingSent();
     }
 
     // ── Permissions ───────────────────────────────────────────────────────

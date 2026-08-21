@@ -5,7 +5,9 @@ namespace App\Services\Documents;
 use App\Models\BusinessDocument;
 use App\Models\BusinessDocumentSignature;
 use App\Models\VerificationToken;
+use App\Notifications\SignatureRequested;
 use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\Notification;
 use RuntimeException;
 
 /**
@@ -69,6 +71,14 @@ class DocumentSignatureRequests
             'signer_count' => $created->count(),
         ]);
 
+        // Everyone who can act right now gets mailed their link — parallel
+        // means everyone, sequential means only whoever is first. Nothing
+        // sent this before the notification existed; a signer had to
+        // somehow already know their own signing link.
+        $created
+            ->filter(fn (BusinessDocumentSignature $signature) => ! $this->isBlockedBySequence($signature))
+            ->each(fn (BusinessDocumentSignature $signature) => $this->notifyRequested($signature, $document));
+
         return $created;
     }
 
@@ -92,6 +102,15 @@ class DocumentSignatureRequests
 
         if ($this->isFullySigned($document)) {
             $this->complete($document);
+        } elseif ($document->signature_mode === 'sequential') {
+            // The signer this one was blocking can now act — a sequential
+            // round with nobody telling person #2 their turn arrived would
+            // sit exactly as stuck as one with no notifications at all.
+            $next = $document->signatures()->pending()->orderBy('order')->first();
+
+            if ($next !== null) {
+                $this->notifyRequested($next, $document);
+            }
         }
 
         return $signature->fresh();
@@ -139,6 +158,18 @@ class DocumentSignatureRequests
      * In a sequential round, a signer may act only once everybody ordered
      * before them has signed. A parallel round has no such gate.
      */
+    protected function notifyRequested(BusinessDocumentSignature $signature, BusinessDocument $document): void
+    {
+        $company = $document->company;
+
+        if ($company === null) {
+            return;
+        }
+
+        Notification::route('mail', $signature->signer_email)
+            ->notify(new SignatureRequested($signature, $company));
+    }
+
     protected function isBlockedBySequence(BusinessDocumentSignature $signature): bool
     {
         if ($signature->document->signature_mode !== 'sequential') {

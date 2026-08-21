@@ -101,6 +101,16 @@ Schedule::command('opes:remind-actions')
     ->withoutOverlapping();
 
 /*
+ * Mail the actual signer their link again, not just tell the business the
+ * request is stale (opes:remind-actions above does that half). Same hour:
+ * whatever nudge is going out about a slow signature, it should all land
+ * in the same morning batch rather than trickling through the day.
+ */
+Schedule::command('opes:remind-pending-signatures')
+    ->dailyAt('07:45')
+    ->withoutOverlapping();
+
+/*
  * Trim the audit log under each business's retention policy.
  *
  * Small hours, because the deletes are chunked but plentiful on a busy

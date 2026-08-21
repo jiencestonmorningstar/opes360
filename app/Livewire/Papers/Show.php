@@ -5,6 +5,7 @@ namespace App\Livewire\Papers;
 use App\Models\BusinessDocument;
 use App\Services\DocumentComposer;
 use App\Services\Documents\DocumentActivity;
+use App\Services\Documents\DocumentSignatureRequests;
 use App\Support\DocumentTemplates;
 use Illuminate\Contracts\View\View;
 use Illuminate\Foundation\Auth\Access\AuthorizesRequests;
@@ -20,6 +21,15 @@ class Show extends Component
     public bool $voidingOpen = false;
 
     public string $voidReason = '';
+
+    // ── Request signatures — §53 said this stayed API-only; it does not anymore ──
+
+    public bool $signatureFormOpen = false;
+
+    public string $signatureMode = 'parallel';
+
+    /** @var array<int, array{name: string, email: string}> */
+    public array $signers = [['name' => '', 'email' => '']];
 
     public function mount(BusinessDocument $paper): void
     {
@@ -103,6 +113,64 @@ class Show extends Component
         $this->paper = $this->paper->fresh()->load('verificationToken');
     }
 
+    public function openSignatureForm(): void
+    {
+        $this->authorize('share', $this->paper);
+
+        $this->signatureFormOpen = true;
+        $this->signatureMode = 'parallel';
+        $this->signers = [['name' => '', 'email' => '']];
+        $this->resetErrorBag();
+    }
+
+    public function closeSignatureForm(): void
+    {
+        $this->signatureFormOpen = false;
+    }
+
+    public function addSigner(): void
+    {
+        $this->signers[] = ['name' => '', 'email' => ''];
+    }
+
+    public function removeSigner(int $index): void
+    {
+        unset($this->signers[$index]);
+        $this->signers = array_values($this->signers);
+
+        if ($this->signers === []) {
+            $this->signers = [['name' => '', 'email' => '']];
+        }
+    }
+
+    public function requestSignatures(): void
+    {
+        $this->authorize('share', $this->paper);
+
+        $this->validate([
+            'signatureMode' => ['required', 'in:'.implode(',', DocumentSignatureRequests::MODES)],
+            'signers' => ['required', 'array', 'min:1'],
+            'signers.*.name' => ['required', 'string', 'max:120'],
+            'signers.*.email' => ['required', 'email', 'max:190'],
+        ]);
+
+        try {
+            app(DocumentSignatureRequests::class)->request(
+                $this->paper,
+                array_values($this->signers),
+                $this->signatureMode,
+            );
+        } catch (RuntimeException $e) {
+            session()->flash('paperError', $e->getMessage());
+
+            return;
+        }
+
+        $this->signatureFormOpen = false;
+        $this->paper = $this->paper->fresh()->load('verificationToken');
+        $this->dispatch('toast', message: 'Signature request sent.');
+    }
+
     public function render(): View
     {
         /*
@@ -136,6 +204,7 @@ class Show extends Component
             'commentCount' => $this->paper->comments()->count(),
             'shares' => $this->paper->shares()->latest()->limit(5)->get(),
             'signatures' => $this->paper->signatures()->latest()->limit(5)->get(),
+            'signatureStatus' => app(DocumentSignatureRequests::class)->status($this->paper),
         ])->layout('components.layouts.app', [
             'title' => $this->paper->title,
             'active' => 'papers',

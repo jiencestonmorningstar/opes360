@@ -196,6 +196,83 @@
                 </div>
             </x-ui.panel>
 
+            @can('share', $paper)
+                <x-ui.panel title="Signatures">
+                    @if ($signatureStatus['status'] === 'not_requested' || $signatureStatus['status'] === 'declined')
+                        @if (! $signatureFormOpen)
+                            <button type="button" wire:click="openSignatureForm"
+                                    class="focusable w-full rounded-xl border border-border bg-surface py-2.5 text-[13.5px] font-semibold text-ink-2 hover:bg-surface-2">
+                                Request signatures
+                            </button>
+                        @else
+                            <div class="space-y-3">
+                                <div class="flex gap-2">
+                                    <button type="button" wire:click="$set('signatureMode', 'parallel')"
+                                            class="focusable flex-1 rounded-lg py-2 text-[12.5px] font-semibold {{ $signatureMode === 'parallel' ? 'bg-tint-blue text-brand ring-1 ring-brand/40' : 'border border-border bg-surface text-ink-2' }}">
+                                        Anyone, any order
+                                    </button>
+                                    <button type="button" wire:click="$set('signatureMode', 'sequential')"
+                                            class="focusable flex-1 rounded-lg py-2 text-[12.5px] font-semibold {{ $signatureMode === 'sequential' ? 'bg-tint-blue text-brand ring-1 ring-brand/40' : 'border border-border bg-surface text-ink-2' }}">
+                                        In order
+                                    </button>
+                                </div>
+
+                                @foreach ($signers as $index => $signer)
+                                    <div class="flex items-start gap-2">
+                                        <div class="flex-1 space-y-1.5">
+                                            <input type="text" wire:model="signers.{{ $index }}.name" placeholder="Name"
+                                                   class="w-full rounded-lg border border-border bg-surface px-2.5 py-1.5 text-[13px] text-ink focus:border-brand focus:outline-none focus:ring-2 focus:ring-brand/20">
+                                            <input type="email" wire:model="signers.{{ $index }}.email" placeholder="Email"
+                                                   class="w-full rounded-lg border border-border bg-surface px-2.5 py-1.5 text-[13px] text-ink focus:border-brand focus:outline-none focus:ring-2 focus:ring-brand/20">
+                                        </div>
+                                        @if (count($signers) > 1)
+                                            <button type="button" wire:click="removeSigner({{ $index }})"
+                                                    class="focusable mt-1.5 flex size-7 items-center justify-center rounded-lg text-[16px] text-faint hover:text-warning" aria-label="Remove signer">
+                                                &times;
+                                            </button>
+                                        @endif
+                                    </div>
+                                @endforeach
+                                @error('signers') <p class="text-[12.5px] font-medium text-warning">{{ $message }}</p> @enderror
+                                @error('signers.*.name') <p class="text-[12.5px] font-medium text-warning">Every signer needs a name.</p> @enderror
+                                @error('signers.*.email') <p class="text-[12.5px] font-medium text-warning">Every signer needs a valid email.</p> @enderror
+
+                                <button type="button" wire:click="addSigner"
+                                        class="focusable text-[12.5px] font-semibold text-brand hover:underline">
+                                    + Add another signer
+                                </button>
+
+                                <div class="flex gap-2 pt-1">
+                                    <button type="button" wire:click="requestSignatures"
+                                            class="focusable flex-1 rounded-xl bg-fill-brand py-2.5 text-[13.5px] font-semibold text-white hover:opacity-90">
+                                        Send request
+                                    </button>
+                                    <button type="button" wire:click="closeSignatureForm"
+                                            class="focusable rounded-xl border border-border bg-surface px-4 py-2.5 text-[13.5px] font-semibold text-ink-2 hover:bg-surface-2">
+                                        Cancel
+                                    </button>
+                                </div>
+                            </div>
+                        @endif
+                    @else
+                        <ul class="space-y-2 text-[13.5px]">
+                            @foreach ($signatures as $signature)
+                                <li class="flex items-center justify-between gap-2">
+                                    <span class="min-w-0 truncate text-ink-2">{{ $signature->signer_name }}</span>
+                                    <x-ui.status-badge
+                                        :label="ucfirst($signature->status)"
+                                        :tone="match ($signature->status) {
+                                            'signed' => 'positive',
+                                            'declined' => 'negative',
+                                            default => 'neutral',
+                                        }" />
+                                </li>
+                            @endforeach
+                        </ul>
+                    @endif
+                </x-ui.panel>
+            @endcan
+
             @can('papers.manage')
                 @if ($activity->isNotEmpty())
                     <x-ui.panel title="Recent activity">

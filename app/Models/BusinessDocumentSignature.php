@@ -30,6 +30,7 @@ class BusinessDocumentSignature extends Model
         return [
             'signed_at' => 'datetime',
             'declined_at' => 'datetime',
+            'last_reminded_at' => 'datetime',
         ];
     }
 
@@ -65,5 +66,11 @@ class BusinessDocumentSignature extends Model
             fn () => Str::random(32),
             fn (string $token) => static::query()->withoutGlobalScopes()->where('signing_token', $token)->exists(),
         );
+    }
+
+    /** The link this signer uses — what SignatureRequested/SignatureReminder mail. */
+    public function signingUrl(): string
+    {
+        return route('signatures.show', $this->signing_token);
     }
 }
