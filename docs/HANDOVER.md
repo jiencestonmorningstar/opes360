@@ -233,10 +233,10 @@ gap** — the dependency is absent from the box, not from the codebase:
 | AI assistant and AI search | No AI provider configured |
 | Translation workflows | No translation service |
 
-One code-level remnant: **signature blocks positioned within the document
-text** (§19). Rounds, sequential and parallel signing, public signing links,
-per-signer status, reminders and the request screen all exist; what is missing
-is placing a signature field at a specific point in the body.
+No code-level remnants remain. §19 closed on 2026-09-19 with signature
+blocks positioned in the body; everything still outstanding is in the table
+above, and every row of it waits on something absent from the box rather than
+from the codebase.
 
 Two I would still argue against rather than merely defer: **realtime
 co-editing** (months of OT/CRDT work plus a websocket tier, for something most
